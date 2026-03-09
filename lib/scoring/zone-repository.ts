@@ -45,22 +45,22 @@ export const getRuntimeZoneCatalog = async (): Promise<RuntimeZoneCatalog> => {
 
   if (!error && data && data.length > 0) {
     const mapped = data
-      .map((row) => ({
+      .map((row: any) => ({
         slug: row.slug,
         city: row.city,
         score: row.score,
         aliases: isStringArray(row.aliases) ? row.aliases : [],
         updated_at: row.updated_at,
       }))
-      .filter((row) => Number.isFinite(row.score));
+      .filter((row: any) => Number.isFinite(row.score));
 
     const latestUpdatedAt = mapped
-      .map((row) => row.updated_at)
-      .filter((value): value is string => Boolean(value))
+      .map((row: any) => row.updated_at)
+      .filter((value: any): value is string => Boolean(value))
       .sort()
       .at(-1);
 
-    const catalogFromDb: ZoneCatalogEntry[] = mapped.map((row) => ({
+    const catalogFromDb: ZoneCatalogEntry[] = mapped.map((row: any) => ({
       slug: row.slug,
       city: row.city,
       score: row.score,

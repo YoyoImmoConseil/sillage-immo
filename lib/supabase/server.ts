@@ -4,8 +4,8 @@ import { createServerClient } from "@supabase/ssr";
 import type { Database } from "@/types/db/supabase";
 import { publicEnv } from "../env/public";
 
-export const createSupabaseServerClient = () => {
-  const cookieStore = cookies();
+export const createSupabaseServerClient = async (): Promise<any> => {
+  const cookieStore = await cookies();
 
   return createServerClient<Database>(
     publicEnv.NEXT_PUBLIC_SUPABASE_URL,
@@ -22,5 +22,5 @@ export const createSupabaseServerClient = () => {
         },
       },
     }
-  );
+  ) as any;
 };

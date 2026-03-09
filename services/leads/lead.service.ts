@@ -40,7 +40,7 @@ export const createLead = async (
   input: LeadInput,
   meta?: LeadExecutionMeta
 ): Promise<LeadCreateResult> => {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
 
   const { data, error } = await supabase
     .from("leads")

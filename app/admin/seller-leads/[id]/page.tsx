@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import type { Database } from "@/types/db/supabase";
 import { SellerLeadStatusForm } from "./status-form";
 import { SellerLeadScoreCard } from "./score-card";
 import { PropertyDetailsForm } from "./property-details-form";
@@ -104,19 +105,25 @@ type SellerLeadDetailPageProps = {
 
 export default async function SellerLeadDetailPage({ params }: SellerLeadDetailPageProps) {
   const { id } = await params;
-  const { data, error } = await supabaseAdmin
+  const { data: leadData, error } = await supabaseAdmin
     .from("seller_leads")
     .select("*")
     .eq("id", id)
     .maybeSingle();
 
-  const { data: latestScoreEvent } = await supabaseAdmin
+  const { data: latestScoreEventData } = await supabaseAdmin
     .from("seller_scoring_events")
     .select("created_at, score, segment, next_best_action, breakdown")
     .eq("seller_lead_id", id)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
+  const latestScoreEvent = latestScoreEventData as
+    | Pick<
+        Database["public"]["Tables"]["seller_scoring_events"]["Row"],
+        "created_at" | "score" | "segment" | "next_best_action" | "breakdown"
+      >
+    | null;
 
   if (error) {
     return (
@@ -131,11 +138,12 @@ export default async function SellerLeadDetailPage({ params }: SellerLeadDetailP
     );
   }
 
-  if (!data) notFound();
+  const lead = leadData as Database["public"]["Tables"]["seller_leads"]["Row"] | null;
+  if (!lead) notFound();
 
   const metadata =
-    data.metadata && typeof data.metadata === "object"
-      ? (data.metadata as Record<string, unknown>)
+    lead.metadata && typeof lead.metadata === "object"
+      ? (lead.metadata as Record<string, unknown>)
       : {};
   const propertyDetails =
     metadata.property_details && typeof metadata.property_details === "object"
@@ -203,22 +211,22 @@ export default async function SellerLeadDetailPage({ params }: SellerLeadDetailP
               Accueil
             </Link>
           </div>
-          <h1 className="text-2xl font-semibold">{data.full_name}</h1>
+          <h1 className="text-2xl font-semibold">{lead.full_name}</h1>
           <p className="text-sm opacity-70">
-            Cree le {formatDate(data.created_at)} - {data.email}
+            Cree le {formatDate(lead.created_at)} - {lead.email}
           </p>
         </section>
 
         <section className="rounded-2xl border p-6 space-y-4">
           <h2 className="text-lg font-medium">Pilotage commercial</h2>
           <p className="text-sm opacity-70">
-            Statut actuel: {formatStatusLabel(data.status)}
+            Statut actuel: {formatStatusLabel(lead.status)}
           </p>
-          <SellerLeadStatusForm sellerLeadId={data.id} initialStatus={data.status} />
+          <SellerLeadStatusForm sellerLeadId={lead.id} initialStatus={lead.status} />
         </section>
 
         <SellerLeadScoreCard
-          sellerLeadId={data.id}
+          sellerLeadId={lead.id}
           latestScore={
             latestScoreEvent
               ? {
@@ -273,7 +281,7 @@ export default async function SellerLeadDetailPage({ params }: SellerLeadDetailP
         />
 
         <PropertyDetailsForm
-          sellerLeadId={data.id}
+          sellerLeadId={lead.id}
           initial={{
             livingArea:
               typeof propertyDetails.living_area === "number"
@@ -326,7 +334,7 @@ export default async function SellerLeadDetailPage({ params }: SellerLeadDetailP
         />
 
         <ValuationSyncCard
-          sellerLeadId={data.id}
+          sellerLeadId={lead.id}
           valuation={
             valuationData
               ? {
@@ -389,29 +397,29 @@ export default async function SellerLeadDetailPage({ params }: SellerLeadDetailP
           <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
             <div>
               <dt className="opacity-70">Telephone</dt>
-              <dd>{data.phone ?? "-"}</dd>
+              <dd>{lead.phone ?? "-"}</dd>
             </div>
             <div>
               <dt className="opacity-70">Type de bien</dt>
-              <dd>{data.property_type ?? "-"}</dd>
+              <dd>{lead.property_type ?? "-"}</dd>
             </div>
             <div>
               <dt className="opacity-70">Adresse</dt>
-              <dd>{data.property_address ?? "-"}</dd>
+              <dd>{lead.property_address ?? "-"}</dd>
             </div>
             <div>
               <dt className="opacity-70">Ville</dt>
               <dd>
-                {data.city ?? "-"} {data.postal_code ?? ""}
+                {lead.city ?? "-"} {lead.postal_code ?? ""}
               </dd>
             </div>
             <div>
               <dt className="opacity-70">Delai de vente</dt>
-              <dd>{formatTimelineLabel(data.timeline)}</dd>
+              <dd>{formatTimelineLabel(lead.timeline)}</dd>
             </div>
             <div>
               <dt className="opacity-70">Occupation</dt>
-              <dd>{formatOccupancyLabel(data.occupancy_status)}</dd>
+              <dd>{formatOccupancyLabel(lead.occupancy_status)}</dd>
             </div>
             <div>
               <dt className="opacity-70">Ascenseur</dt>
@@ -439,35 +447,35 @@ export default async function SellerLeadDetailPage({ params }: SellerLeadDetailP
             </div>
             <div>
               <dt className="opacity-70">Diagnostics prets</dt>
-              <dd>{data.diagnostics_ready === null ? "-" : data.diagnostics_ready ? "Oui" : "Non"}</dd>
+              <dd>{lead.diagnostics_ready === null ? "-" : lead.diagnostics_ready ? "Oui" : "Non"}</dd>
             </div>
             <div>
               <dt className="opacity-70">Accompagnement diagnostics</dt>
               <dd>
-                {data.diagnostics_support_needed === null
+                {lead.diagnostics_support_needed === null
                   ? "-"
-                  : data.diagnostics_support_needed
+                  : lead.diagnostics_support_needed
                     ? "Oui"
                     : "Non"}
               </dd>
             </div>
             <div>
               <dt className="opacity-70">Documents syndic prets</dt>
-              <dd>{data.syndic_docs_ready === null ? "-" : data.syndic_docs_ready ? "Oui" : "Non"}</dd>
+              <dd>{lead.syndic_docs_ready === null ? "-" : lead.syndic_docs_ready ? "Oui" : "Non"}</dd>
             </div>
             <div>
               <dt className="opacity-70">Accompagnement syndic</dt>
               <dd>
-                {data.syndic_support_needed === null
+                {lead.syndic_support_needed === null
                   ? "-"
-                  : data.syndic_support_needed
+                  : lead.syndic_support_needed
                     ? "Oui"
                     : "Non"}
               </dd>
             </div>
             <div className="sm:col-span-2">
               <dt className="opacity-70">Message</dt>
-              <dd>{data.message ?? "-"}</dd>
+              <dd>{lead.message ?? "-"}</dd>
             </div>
           </dl>
         </section>

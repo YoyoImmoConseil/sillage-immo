@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import type { Database } from "@/types/db/supabase";
 
 const formatDate = (value: string) => {
   return new Date(value).toLocaleString("fr-FR");
@@ -36,11 +37,18 @@ const formatTimelineLabel = (timeline: string | null) => {
 };
 
 export default async function SellerLeadsAdminPage() {
-  const { data, error } = await supabaseAdmin
+  const { data: rows, error } = await supabaseAdmin
     .from("seller_leads")
     .select("id, created_at, full_name, email, city, timeline, status")
     .order("created_at", { ascending: false })
     .limit(100);
+  const data =
+    (rows as Array<
+      Pick<
+        Database["public"]["Tables"]["seller_leads"]["Row"],
+        "id" | "created_at" | "full_name" | "email" | "city" | "timeline" | "status"
+      >
+    > | null) ?? [];
 
   if (error) {
     return (

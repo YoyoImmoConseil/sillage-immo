@@ -65,7 +65,8 @@ export const PATCH = async (request: Request, { params }: RouteParams) => {
     );
   }
 
-  const { data: lead, error: readError } = await supabaseAdmin
+  const admin = supabaseAdmin as any;
+  const { data: leadData, error: readError } = await admin
     .from("seller_leads")
     .select("id, metadata")
     .eq("id", id)
@@ -74,6 +75,7 @@ export const PATCH = async (request: Request, { params }: RouteParams) => {
   if (readError) {
     return NextResponse.json({ ok: false, message: readError.message }, { status: 500 });
   }
+  const lead = leadData as { id: string; metadata: Record<string, unknown> | null } | null;
   if (!lead) {
     return NextResponse.json({ ok: false, message: "Lead vendeur introuvable." }, { status: 404 });
   }
@@ -103,8 +105,7 @@ export const PATCH = async (request: Request, { params }: RouteParams) => {
       updated_at: new Date().toISOString(),
     },
   };
-
-  const { error: updateError } = await supabaseAdmin
+  const { error: updateError } = await admin
     .from("seller_leads")
     .update({ metadata: nextMetadata })
     .eq("id", id);

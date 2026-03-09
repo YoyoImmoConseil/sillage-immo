@@ -31,7 +31,8 @@ export const PATCH = async (request: Request, { params }: RouteParams) => {
     );
   }
 
-  const { data, error } = await supabaseAdmin
+  const admin = supabaseAdmin as any;
+  const { data, error } = await admin
     .from("seller_leads")
     .update({ status: body.status })
     .eq("id", id)
