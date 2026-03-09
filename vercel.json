@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/internal/cron/domain-events?limit=25",
+      "schedule": "*/5 * * * *"
+    }
+  ]
+}

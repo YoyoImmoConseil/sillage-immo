@@ -1,9 +1,6 @@
-import { ValuationWidget } from "@/app/components/valuation-widget";
-import { SellerEstimationForm } from "./seller-estimation-form";
+import { SellerApiFirstFlow } from "./seller-api-first-flow";
 
 export default function EstimationPage() {
-  const valuationContainerId = process.env.NEXT_PUBLIC_WLV_CONTAINER_ID ?? "";
-  const valuationWidgetKey = process.env.NEXT_PUBLIC_WLV_WIDGET_KEY ?? "";
 
   return (
     <main className="min-h-screen p-8">
@@ -16,22 +13,7 @@ export default function EstimationPage() {
             vente).
           </p>
         </section>
-
-        <section className="rounded-2xl border p-6 space-y-4">
-          <h2 className="text-lg font-medium">Estimateur en ligne</h2>
-          <ValuationWidget
-            widgetKey={valuationWidgetKey}
-            containerId={valuationContainerId}
-          />
-        </section>
-
-        <section className="rounded-2xl border p-6 space-y-4">
-          <h2 className="text-lg font-medium">Finaliser votre demande vendeur</h2>
-          <p className="text-sm opacity-75">
-            Ce formulaire nous permet de prioriser votre dossier et d&apos;agir vite.
-          </p>
-          <SellerEstimationForm />
-        </section>
+        <SellerApiFirstFlow />
       </div>
     </main>
   );

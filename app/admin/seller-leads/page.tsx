@@ -20,6 +20,21 @@ const formatStatusLabel = (status: string) => {
   }
 };
 
+const formatTimelineLabel = (timeline: string | null) => {
+  switch (timeline) {
+    case "immediate":
+      return "Immediat";
+    case "3_months":
+      return "Sous 3 mois";
+    case "6_months":
+      return "Sous 6 mois";
+    case "future":
+      return "Projet futur";
+    default:
+      return timeline ?? "-";
+  }
+};
+
 export default async function SellerLeadsAdminPage() {
   const { data, error } = await supabaseAdmin
     .from("seller_leads")
@@ -82,7 +97,7 @@ export default async function SellerLeadsAdminPage() {
                     <td className="p-3">{lead.full_name}</td>
                     <td className="p-3">{lead.email}</td>
                     <td className="p-3">{lead.city ?? "-"}</td>
-                    <td className="p-3">{lead.timeline ?? "-"}</td>
+                    <td className="p-3">{formatTimelineLabel(lead.timeline)}</td>
                     <td className="p-3">{formatStatusLabel(lead.status)}</td>
                     <td className="p-3">
                       <Link className="underline" href={`/admin/seller-leads/${lead.id}`}>

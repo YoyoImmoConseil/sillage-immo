@@ -206,6 +206,117 @@ export type Database = {
           metadata?: Record<string, unknown>;
         };
       };
+      seller_scoring_events: {
+        Row: {
+          id: string;
+          created_at: string;
+          seller_lead_id: string;
+          score: number;
+          segment: string;
+          next_best_action: string;
+          breakdown: Record<string, unknown>;
+          reasons: string[];
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          seller_lead_id: string;
+          score: number;
+          segment: string;
+          next_best_action: string;
+          breakdown?: Record<string, unknown>;
+          reasons?: string[];
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          seller_lead_id?: string;
+          score?: number;
+          segment?: string;
+          next_best_action?: string;
+          breakdown?: Record<string, unknown>;
+          reasons?: string[];
+        };
+      };
+      seller_email_verifications: {
+        Row: {
+          id: string;
+          created_at: string;
+          email: string;
+          code_hash: string;
+          verification_token: string;
+          expires_at: string;
+          verified_at: string | null;
+          consumed_at: string | null;
+          attempts: number;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          email: string;
+          code_hash: string;
+          verification_token: string;
+          expires_at: string;
+          verified_at?: string | null;
+          consumed_at?: string | null;
+          attempts?: number;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          email?: string;
+          code_hash?: string;
+          verification_token?: string;
+          expires_at?: string;
+          verified_at?: string | null;
+          consumed_at?: string | null;
+          attempts?: number;
+        };
+      };
+      domain_events: {
+        Row: {
+          id: string;
+          created_at: string;
+          occurred_at: string;
+          aggregate_type: string;
+          aggregate_id: string;
+          event_name: string;
+          event_version: number;
+          payload: Record<string, unknown>;
+          status: "pending" | "processed" | "failed";
+          attempts: number;
+          last_error: string | null;
+          published_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          occurred_at?: string;
+          aggregate_type: string;
+          aggregate_id: string;
+          event_name: string;
+          event_version?: number;
+          payload?: Record<string, unknown>;
+          status?: "pending" | "processed" | "failed";
+          attempts?: number;
+          last_error?: string | null;
+          published_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          occurred_at?: string;
+          aggregate_type?: string;
+          aggregate_id?: string;
+          event_name?: string;
+          event_version?: number;
+          payload?: Record<string, unknown>;
+          status?: "pending" | "processed" | "failed";
+          attempts?: number;
+          last_error?: string | null;
+          published_at?: string | null;
+        };
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

@@ -1,5 +1,7 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { sanitizeAuditInput } from "@/lib/audit/sanitize";
+import { emitDomainEvent } from "@/lib/events/domain-events";
+import { scoreSellerLead } from "./seller-score.service";
 
 export type SellerLeadInput = {
   fullName: string;
@@ -18,6 +20,7 @@ export type SellerLeadInput = {
   syndicSupportNeeded?: boolean;
   message?: string;
   source?: string;
+  metadata?: Record<string, unknown>;
 };
 
 export type CreateSellerLeadResult =
@@ -52,6 +55,7 @@ export const createSellerLead = async (
       syndic_support_needed: input.syndicSupportNeeded ?? null,
       message: normalizeOptional(input.message),
       source: normalizeOptional(input.source),
+      metadata: input.metadata ?? {},
     })
     .select("id")
     .single();
@@ -89,6 +93,27 @@ export const createSellerLead = async (
       }),
     },
   });
+
+  try {
+    await emitDomainEvent({
+      aggregateType: "seller_lead",
+      aggregateId: data.id,
+      eventName: "seller_lead.created",
+      payload: {
+        source: input.source ?? null,
+        status: "new",
+      },
+    });
+  } catch {
+    // non-blocking: lead creation must not fail on event bus issues
+  }
+
+  // Best effort auto-scoring on creation. If scoring fails, lead creation still succeeds.
+  try {
+    await scoreSellerLead(data.id);
+  } catch {
+    // no-op
+  }
 
   return {
     status: "created",

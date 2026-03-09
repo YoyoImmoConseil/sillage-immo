@@ -71,6 +71,44 @@ create table if not exists public.seller_leads (
   metadata jsonb not null default '{}'::jsonb
 );
 
+create table if not exists public.seller_scoring_events (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  seller_lead_id uuid not null references public.seller_leads(id) on delete cascade,
+  score integer not null,
+  segment text not null,
+  next_best_action text not null,
+  breakdown jsonb not null default '{}'::jsonb,
+  reasons jsonb not null default '[]'::jsonb
+);
+
+create table if not exists public.seller_email_verifications (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  email text not null,
+  code_hash text not null,
+  verification_token text not null,
+  expires_at timestamptz not null,
+  verified_at timestamptz,
+  consumed_at timestamptz,
+  attempts int2 not null default 0
+);
+
+create table if not exists public.domain_events (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  occurred_at timestamptz not null default now(),
+  aggregate_type text not null,
+  aggregate_id uuid not null,
+  event_name text not null,
+  event_version int2 not null default 1,
+  payload jsonb not null default '{}'::jsonb,
+  status text not null default 'pending',
+  attempts int2 not null default 0,
+  last_error text,
+  published_at timestamptz
+);
+
 do $$
 begin
   if not exists (
@@ -164,6 +202,16 @@ begin
       add constraint chk_zone_catalog_aliases_array
       check (jsonb_typeof(aliases) = 'array');
   end if;
+
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'chk_domain_events_status_values'
+  ) then
+    alter table public.domain_events
+      add constraint chk_domain_events_status_values
+      check (status in ('pending', 'processed', 'failed'));
+  end if;
 end
 $$;
 
@@ -184,3 +232,15 @@ on public.zone_catalog (is_active, city);
 
 create index if not exists idx_seller_leads_status_created_at
 on public.seller_leads (status, created_at desc);
+
+create index if not exists idx_seller_scoring_events_lead_created_at
+on public.seller_scoring_events (seller_lead_id, created_at desc);
+
+create index if not exists idx_seller_email_verifications_email_created_at
+on public.seller_email_verifications (email, created_at desc);
+
+create index if not exists idx_domain_events_status_created_at
+on public.domain_events (status, created_at asc);
+
+create index if not exists idx_domain_events_aggregate_created_at
+on public.domain_events (aggregate_type, aggregate_id, created_at desc);
