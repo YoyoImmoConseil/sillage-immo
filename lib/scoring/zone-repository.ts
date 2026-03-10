@@ -1,5 +1,6 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import type { Database } from "@/types/db/supabase";
 import {
   zoneCatalog,
   ZONE_CATALOG_VERSION,
@@ -11,6 +12,8 @@ type RuntimeZoneCatalog = {
   version: string;
   source: "database" | "static";
 };
+
+type ZoneCatalogRow = Database["public"]["Tables"]["zone_catalog"]["Row"];
 
 const CACHE_TTL_MS = 5 * 60 * 1000;
 
@@ -45,22 +48,22 @@ export const getRuntimeZoneCatalog = async (): Promise<RuntimeZoneCatalog> => {
 
   if (!error && data && data.length > 0) {
     const mapped = data
-      .map((row: any) => ({
+      .map((row: ZoneCatalogRow) => ({
         slug: row.slug,
         city: row.city,
         score: row.score,
         aliases: isStringArray(row.aliases) ? row.aliases : [],
         updated_at: row.updated_at,
       }))
-      .filter((row: any) => Number.isFinite(row.score));
+      .filter((row) => Number.isFinite(row.score));
 
     const latestUpdatedAt = mapped
-      .map((row: any) => row.updated_at)
-      .filter((value: any): value is string => Boolean(value))
+      .map((row) => row.updated_at)
+      .filter((value): value is string => Boolean(value))
       .sort()
       .at(-1);
 
-    const catalogFromDb: ZoneCatalogEntry[] = mapped.map((row: any) => ({
+    const catalogFromDb: ZoneCatalogEntry[] = mapped.map((row) => ({
       slug: row.slug,
       city: row.city,
       score: row.score,

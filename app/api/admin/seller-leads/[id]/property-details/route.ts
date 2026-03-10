@@ -65,8 +65,7 @@ export const PATCH = async (request: Request, { params }: RouteParams) => {
     );
   }
 
-  const admin = supabaseAdmin as any;
-  const { data: leadData, error: readError } = await admin
+  const { data: leadData, error: readError } = await supabaseAdmin
     .from("seller_leads")
     .select("id, metadata")
     .eq("id", id)
@@ -105,7 +104,7 @@ export const PATCH = async (request: Request, { params }: RouteParams) => {
       updated_at: new Date().toISOString(),
     },
   };
-  const { error: updateError } = await admin
+  const { error: updateError } = await supabaseAdmin
     .from("seller_leads")
     .update({ metadata: nextMetadata })
     .eq("id", id);

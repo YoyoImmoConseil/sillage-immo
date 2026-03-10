@@ -109,6 +109,16 @@ create table if not exists public.domain_events (
   published_at timestamptz
 );
 
+create table if not exists public.api_idempotency_keys (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  scope text not null,
+  key_hash text not null,
+  status_code int2,
+  response_payload jsonb,
+  expires_at timestamptz not null
+);
+
 do $$
 begin
   if not exists (
@@ -212,6 +222,16 @@ begin
       add constraint chk_domain_events_status_values
       check (status in ('pending', 'processed', 'failed'));
   end if;
+
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'uq_api_idempotency_scope_key_hash'
+  ) then
+    alter table public.api_idempotency_keys
+      add constraint uq_api_idempotency_scope_key_hash
+      unique (scope, key_hash);
+  end if;
 end
 $$;
 
@@ -244,3 +264,6 @@ on public.domain_events (status, created_at asc);
 
 create index if not exists idx_domain_events_aggregate_created_at
 on public.domain_events (aggregate_type, aggregate_id, created_at desc);
+
+create index if not exists idx_api_idempotency_expires_at
+on public.api_idempotency_keys (expires_at asc);

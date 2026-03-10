@@ -197,9 +197,9 @@ export function PropertyDetailsForm({ sellerLeadId, initial }: PropertyDetailsFo
             onChange={(event) => setBuildingAge(event.target.value)}
           >
             <option value="">Non renseigne</option>
-            <option value="ancien_1950">Ancien (jusqu'a 1950)</option>
+            <option value="ancien_1950">Ancien (jusqu&apos;a 1950)</option>
             <option value="recent_1950_1970">Recent (1950-1970)</option>
-            <option value="moderne_1980_today">Moderne (1980 - Aujourd'hui)</option>
+            <option value="moderne_1980_today">Moderne (1980 - Aujourd&apos;hui)</option>
           </select>
         </label>
         <label>

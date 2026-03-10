@@ -1,10 +1,11 @@
 import "server-only";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/db/supabase";
 import { publicEnv } from "../env/public";
 
-export const createSupabaseServerClient = async (): Promise<any> => {
+export const createSupabaseServerClient = async (): Promise<SupabaseClient<Database>> => {
   const cookieStore = await cookies();
 
   return createServerClient<Database>(
@@ -22,5 +23,5 @@ export const createSupabaseServerClient = async (): Promise<any> => {
         },
       },
     }
-  ) as any;
+  );
 };

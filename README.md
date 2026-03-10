@@ -1,36 +1,117 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Sillage Immo - Plateforme Immobiliere Premium
 
-## Getting Started
+Sillage Immo est une plateforme immobiliere orientee production pour Nice et la Cote d'Azur:
 
-First, run the development server:
+- Site premium de generation de leads (vendeurs + acquereurs)
+- Back-office metier pour piloter les leads vendeurs
+- Backend IA-ready avec couche MCP (Model Context Protocol)
+- Infrastructure orientee scalabilite et observabilite (health/readyz/domain events)
+
+Stack principale:
+
+- Next.js 16 (App Router), TypeScript strict
+- Supabase (Postgres, Auth, RLS, policies SQL)
+- MCP tools versionnes et audites
+
+## Composantes produit (etat actuel)
+
+- **Marketing premium**
+  - Home et parcours de conversion
+  - Parcours estimation vendeur (`/estimation`, `/merci-vendeur`)
+  - Formulaire acquereur et assistant commercial home
+- **CRM vendeur**
+  - Dashboard admin leads vendeurs (`/admin/seller-leads`)
+  - Fiche lead detaillee avec edition statut/details bien
+  - Scoring vendeur + AI insight + synchro valuation
+- **Couches IA-ready**
+  - Endpoint MCP (`GET/POST /api/mcp`)
+  - Registry des tools (`lib/mcp/*`)
+  - Catalogue de versions tools (`/api/admin/tool-versions`)
+  - Journalisation/audit des executions MCP
+- **Resilience et operations**
+  - Domain events + processor
+  - Idempotency API (`api_idempotency_keys`)
+  - Probes internes: `/api/internal/livez`, `/api/internal/health`, `/api/internal/readyz`
+  - Runbook readyz: `docs/ops/readyz-runbook.md`
+
+## Structure projet
+
+- `app/` routes UI + API
+- `app/api/` endpoints metier et internes
+- `services/` logique metier (leads, scoring, events, seller flows)
+- `lib/` clients, env, MCP, audit, utilitaires
+- `db/` schema SQL, migrations, policies RLS
+- `types/` types partages (Supabase DB)
+- `docs/` documentation operationnelle
+
+## Installation locale
+
+1. Installer les dependances:
+
+```bash
+npm install
+```
+
+2. Copier les variables d'environnement:
+
+```bash
+cp .env.example .env.local
+```
+
+3. Renseigner les cles necessaires dans `.env.local`.
+
+4. Lancer le serveur:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Application locale: [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Variables d'environnement principales
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Obligatoires en production:
 
-## Learn More
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `ADMIN_API_KEY`
+- `DOMAIN_EVENTS_CRON_SECRET`
 
-To learn more about Next.js, take a look at the following resources:
+Selon les modules actives:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- `OPENAI_API_KEY`
+- `LOUPE_API_BASE_URL`, `LOUPE_API_EMAIL`, `LOUPE_API_PASSWORD`
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM_EMAIL`, `SMTP_FROM_NAME`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Reference complete: `.env.example`
 
-## Deploy on Vercel
+## Base de donnees
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Documentation DB: `db/README.md`
+- Installation complete: `db/install.sql`
+- Schema de reference: `db/schema.sql`
+- Migrations versionnees: `db/migrations/*`
+- Policies RLS: `db/policies/*`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Endpoints internes utiles
+
+- `GET /api/internal/livez`: disponibilite process
+- `GET /api/internal/health?scope=core|full`: etat env + Supabase + queue events
+- `GET /api/internal/readyz`: prete pour trafic metier
+- `POST /api/admin/domain-events/process`: traitement manuel des events en attente
+
+## Vision cible (fusion des chantiers)
+
+Le socle actuel couvre deja les composantes critiques de la phase "plateforme":
+
+- Acquisition leads multi-parcours
+- CRM vendeur operationnel
+- Couche IA/MCP securisee et versionnee
+- Fondations ops (health/readiness/events/idempotency)
+
+La suite naturelle est d'intensifier:
+
+- durcissement des tests (integration API + workflows metier),
+- extension du CRM (auth/roles plus fines),
+- automatisations IA supplementaires sur les workflows internes.

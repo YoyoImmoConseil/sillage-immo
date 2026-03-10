@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import { createSellerLead } from "@/services/sellers/seller-lead.service";
-import { scoreSellerLead } from "@/services/sellers/seller-score.service";
 import { computeLoupeValuation } from "@/services/valuation/loupe-valuation.service";
 import { consumeSellerEmailVerificationToken } from "@/services/sellers/seller-email-verification.service";
+import {
+  checkIdempotency,
+  persistIdempotencyResponse,
+} from "@/lib/idempotency/request-idempotency";
 
 type EstimateAndCreateInput = {
   fullName: string;
@@ -113,6 +116,31 @@ const validate = (payload: unknown): payload is EstimateAndCreateInput => {
 };
 
 export const POST = async (request: Request) => {
+  const idempotencyKey = request.headers.get("idempotency-key") ?? "";
+  if (idempotencyKey.trim().length > 0) {
+    try {
+      const idempotency = await checkIdempotency("seller.estimate_and_create", idempotencyKey);
+      if (idempotency.kind === "replay") {
+        return NextResponse.json(idempotency.payload, {
+          status: idempotency.statusCode,
+          headers: { "x-idempotent-replay": "true" },
+        });
+      }
+      if (idempotency.kind === "in_progress") {
+        return NextResponse.json(
+          {
+            ok: false,
+            message:
+              "Une demande identique est deja en cours de traitement. Merci de patienter.",
+          },
+          { status: 409 }
+        );
+      }
+    } catch {
+      // no-op: idempotency is best-effort if table is not migrated yet
+    }
+  }
+
   let body: unknown = null;
   try {
     body = await request.json();
@@ -203,18 +231,48 @@ export const POST = async (request: Request) => {
   });
 
   if (created.status === "failed") {
-    return NextResponse.json({ ok: false, message: created.reason }, { status: 500 });
+    const payload = { ok: false, message: created.reason };
+    if (idempotencyKey.trim().length > 0) {
+      try {
+        await persistIdempotencyResponse("seller.estimate_and_create", idempotencyKey, 500, payload);
+      } catch {
+        // no-op
+      }
+    }
+    return NextResponse.json(payload, { status: 500 });
   }
 
-  try {
-    await scoreSellerLead(created.sellerLeadId);
-  } catch {
-    // no-op
+  if (created.status === "duplicate_blocked") {
+    const payload = {
+      ok: false,
+      createStatus: "duplicate_blocked" as const,
+      message: created.reason,
+      sellerLeadId: created.sellerLeadId,
+    };
+    if (idempotencyKey.trim().length > 0) {
+      try {
+        await persistIdempotencyResponse("seller.estimate_and_create", idempotencyKey, 409, payload);
+      } catch {
+        // no-op
+      }
+    }
+    return NextResponse.json(payload, { status: 409 });
   }
 
-  return NextResponse.json({
+  const payload = {
     ok: true,
+    createStatus: created.status,
     sellerLeadId: created.sellerLeadId,
     valuation,
-  });
+  };
+
+  if (idempotencyKey.trim().length > 0) {
+    try {
+      await persistIdempotencyResponse("seller.estimate_and_create", idempotencyKey, 200, payload);
+    } catch {
+      // no-op
+    }
+  }
+
+  return NextResponse.json(payload);
 };

@@ -44,8 +44,10 @@ const logProcessedEvent = async (event: DomainEventRow, status: "processed" | "f
 const handleDomainEvent = async (event: DomainEventRow) => {
   switch (event.event_name) {
     case "seller_lead.created":
+    case "seller_lead.duplicate_detected":
     case "seller_lead.scored":
     case "seller_lead.ai_insight_generated":
+    case "seller_lead.chat_message_logged":
       await logProcessedEvent(event, "processed");
       return;
     default:

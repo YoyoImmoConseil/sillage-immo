@@ -317,6 +317,35 @@ export type Database = {
           published_at?: string | null;
         };
       };
+      api_idempotency_keys: {
+        Row: {
+          id: string;
+          created_at: string;
+          scope: string;
+          key_hash: string;
+          status_code: number | null;
+          response_payload: Record<string, unknown> | null;
+          expires_at: string;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          scope: string;
+          key_hash: string;
+          status_code?: number | null;
+          response_payload?: Record<string, unknown> | null;
+          expires_at: string;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          scope?: string;
+          key_hash?: string;
+          status_code?: number | null;
+          response_payload?: Record<string, unknown> | null;
+          expires_at?: string;
+        };
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

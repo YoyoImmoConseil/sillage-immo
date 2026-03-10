@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AddressAutocompleteInput } from "./address-autocomplete-input";
+import { SellerResultChat } from "./seller-result-chat";
 
 type Step = "form" | "verify" | "result";
 
@@ -85,6 +86,14 @@ const toOptionalInteger = (value: string) => {
   if (!normalized) return undefined;
   const parsed = Number.parseInt(normalized, 10);
   return Number.isFinite(parsed) ? parsed : undefined;
+};
+
+const formatEur = (value: number) => {
+  return new Intl.NumberFormat("fr-FR", {
+    style: "currency",
+    currency: "EUR",
+    maximumFractionDigits: 0,
+  }).format(value);
 };
 
 export function SellerApiFirstFlow() {
@@ -232,16 +241,16 @@ export function SellerApiFirstFlow() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-2xl border p-6 space-y-4">
+      <section className="sillage-card rounded-2xl p-6 space-y-4">
         <h1 className="text-2xl font-semibold">Estimation vendeur Sillage Immo</h1>
         <p className="text-sm opacity-75">
-          Remplissez ce formulaire une seule fois. Nous verifions votre email, puis
-          nous calculons l&apos;estimation automatiquement.
+          Un parcours clair, guide et securise: vous renseignez votre bien une fois, nous
+          verifions votre email, puis nous produisons votre estimation pour cadrer la suite.
         </p>
       </section>
 
-      <section className="rounded-2xl border p-6 space-y-4">
-        <h2 className="text-lg font-medium">Etape 1 - Informations vendeur et bien</h2>
+      <section className="sillage-card rounded-2xl p-6 space-y-4">
+        <h2 className="text-lg font-medium">Etape 1 - Votre projet et votre bien</h2>
         <div className="grid gap-3 sm:grid-cols-2 text-sm">
           <label>
             Nom complet *
@@ -440,7 +449,7 @@ export function SellerApiFirstFlow() {
         </div>
 
         <button
-          className="rounded bg-black px-4 py-2 text-sm text-white disabled:opacity-60"
+          className="sillage-btn rounded px-4 py-2 text-sm disabled:opacity-60"
           type="button"
           disabled={
             loading ||
@@ -452,15 +461,17 @@ export function SellerApiFirstFlow() {
           }
           onClick={sendOtp}
         >
-          {loading && step === "form" ? "Envoi..." : "Etape 2 - Verifier mon email"}
+          {loading && step === "form"
+            ? "Envoi..."
+            : "Etape 2 - Securiser mon email"}
         </button>
       </section>
 
       {step !== "form" ? (
-        <section className="rounded-2xl border p-6 space-y-4">
-          <h2 className="text-lg font-medium">Etape 2 - Verification email</h2>
+        <section className="sillage-card rounded-2xl p-6 space-y-4">
+          <h2 className="text-lg font-medium">Etape 2 - Verification de votre email</h2>
           <p className="text-sm opacity-75">
-            Entrez le code recu par email pour debloquer l&apos;estimation.
+            Entrez le code recu par email pour finaliser la securisation de votre demande.
           </p>
           <div className="flex gap-3 items-end flex-wrap">
             <label className="text-sm">
@@ -472,7 +483,7 @@ export function SellerApiFirstFlow() {
               />
             </label>
             <button
-              className="rounded bg-black px-4 py-2 text-sm text-white disabled:opacity-60"
+              className="sillage-btn rounded px-4 py-2 text-sm disabled:opacity-60"
               type="button"
               disabled={loading || otp.trim().length < 4}
               onClick={verifyOtp}
@@ -488,23 +499,26 @@ export function SellerApiFirstFlow() {
           {verificationToken ? (
             <div className="space-y-3">
               <button
-                className="rounded bg-black px-4 py-2 text-sm text-white disabled:opacity-60"
+                className="sillage-btn rounded px-4 py-2 text-sm disabled:opacity-60"
                 type="button"
                 disabled={loading}
                 onClick={estimateAndCreate}
               >
-                {loading ? "Calcul en cours..." : "Etape 3 - Obtenir mon estimation"}
+                {loading ? "Calcul en cours..." : "Etape 3 - Obtenir mon estimation precise"}
               </button>
               {isEstimating ? (
                 <div className="space-y-1">
                   <div className="h-2 w-full overflow-hidden rounded bg-zinc-200">
                     <div
-                      className="h-full bg-black transition-all duration-500"
-                      style={{ width: `${estimateProgress}%` }}
+                      className="h-full transition-all duration-500"
+                      style={{
+                        width: `${estimateProgress}%`,
+                        backgroundColor: "var(--sillage-blue)",
+                      }}
                     />
                   </div>
                   <p className="text-xs opacity-70">
-                    Estimation en cours... {estimateProgress}%
+                    Analyse en cours... {estimateProgress}%
                   </p>
                 </div>
               ) : null}
@@ -514,7 +528,7 @@ export function SellerApiFirstFlow() {
       ) : null}
 
       {step === "result" && valuation && sellerLeadId ? (
-        <section className="rounded-2xl border p-6 space-y-3">
+        <section className="sillage-card rounded-2xl p-6 space-y-3">
           <h2 className="text-lg font-medium">Votre estimation est prete</h2>
           <p className="text-sm opacity-75">
             {valuation.addressLabel ?? form.propertyAddress}{" "}
@@ -525,14 +539,19 @@ export function SellerApiFirstFlow() {
               <>
                 Fourchette estimee:{" "}
                 <strong>
-                  {valuation.valuationPriceLow ?? "-"} EUR -{" "}
-                  {valuation.valuationPriceHigh ?? "-"} EUR
+                  {valuation.valuationPriceLow !== null
+                    ? formatEur(valuation.valuationPriceLow)
+                    : "-"}{" "}
+                  -{" "}
+                  {valuation.valuationPriceHigh !== null
+                    ? formatEur(valuation.valuationPriceHigh)
+                    : "-"}
                 </strong>
               </>
             ) : valuation.valuationPrice !== null ? (
               <>
                 Valeur estimee (indicative):{" "}
-                <strong>{valuation.valuationPrice} EUR</strong>
+                <strong>{formatEur(valuation.valuationPrice)}</strong>
               </>
             ) : (
               <>
@@ -541,12 +560,43 @@ export function SellerApiFirstFlow() {
               </>
             )}
           </p>
+          <div className="rounded-xl border bg-white p-4 space-y-2">
+            <h3 className="text-sm font-semibold">
+              Pourquoi confier la vente a Sillage Immo ?
+            </h3>
+            <ul className="text-sm space-y-2 list-disc pl-5">
+              <li>
+                Positionnement premium local a Nice et sur la Cote d&apos;Azur pour capter des
+                acheteurs qualifies.
+              </li>
+              <li>
+                Strategie de mise en vente sur-mesure (prix, presentation, ciblage, diffusion)
+                pour accelerer les visites utiles.
+              </li>
+              <li>
+                Accompagnement complet: diagnostics, documents syndic, cadrage juridique et
+                negociation.
+              </li>
+            </ul>
+            <p className="text-xs opacity-70">
+              Objectif: vous aider a vendre au bon prix, dans le bon delai, avec un pilotage
+              clair a chaque etape.
+            </p>
+          </div>
+          <div className="rounded-xl border p-4 space-y-1">
+            <p className="text-sm font-medium">Votre prochain pas (recommande)</p>
+            <p className="text-sm opacity-80">
+              Finalisez votre demande pour recevoir un appel de cadrage avec un interlocuteur
+              unique et un plan de commercialisation sur-mesure.
+            </p>
+          </div>
+          <SellerResultChat sellerLeadId={sellerLeadId} />
           <button
             type="button"
-            className="rounded bg-black px-4 py-2 text-sm text-white"
+            className="sillage-btn rounded px-4 py-2 text-sm"
             onClick={() => router.push(`/merci-vendeur?leadId=${encodeURIComponent(sellerLeadId)}`)}
           >
-            Finaliser ma demande vendeur
+            Finaliser et etre rappele par un conseiller
           </button>
         </section>
       ) : null}

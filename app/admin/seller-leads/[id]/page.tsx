@@ -438,7 +438,7 @@ export default async function SellerLeadDetailPage({ params }: SellerLeadDetailP
               <dd>{propertyDetailsView.seaView}</dd>
             </div>
             <div>
-              <dt className="opacity-70">Nombre d'etages immeuble</dt>
+              <dt className="opacity-70">Nombre d&apos;etages immeuble</dt>
               <dd>{propertyDetailsView.buildingTotalFloors}</dd>
             </div>
             <div>

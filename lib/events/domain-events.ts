@@ -3,8 +3,10 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export type DomainEventName =
   | "seller_lead.created"
+  | "seller_lead.duplicate_detected"
   | "seller_lead.scored"
-  | "seller_lead.ai_insight_generated";
+  | "seller_lead.ai_insight_generated"
+  | "seller_lead.chat_message_logged";
 
 type EmitDomainEventInput = {
   aggregateType: "seller_lead";
