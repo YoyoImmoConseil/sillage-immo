@@ -35,6 +35,7 @@ export type Database = {
           status?: string;
           metadata?: Record<string, unknown>;
         };
+        Relationships: [];
       };
       audit_log: {
         Row: {
@@ -67,6 +68,7 @@ export type Database = {
           entity_id?: string | null;
           data?: Record<string, unknown>;
         };
+        Relationships: [];
       };
       tool_versions: {
         Row: {
@@ -102,6 +104,7 @@ export type Database = {
           description?: string | null;
           changelog?: Record<string, unknown>;
         };
+        Relationships: [];
       };
       zone_catalog: {
         Row: {
@@ -137,6 +140,7 @@ export type Database = {
           is_active?: boolean;
           metadata?: Record<string, unknown>;
         };
+        Relationships: [];
       };
       seller_leads: {
         Row: {
@@ -205,6 +209,7 @@ export type Database = {
           status?: string;
           metadata?: Record<string, unknown>;
         };
+        Relationships: [];
       };
       seller_scoring_events: {
         Row: {
@@ -237,6 +242,15 @@ export type Database = {
           breakdown?: Record<string, unknown>;
           reasons?: string[];
         };
+        Relationships: [
+          {
+            foreignKeyName: "seller_scoring_events_seller_lead_id_fkey";
+            columns: ["seller_lead_id"];
+            isOneToOne: false;
+            referencedRelation: "seller_leads";
+            referencedColumns: ["id"];
+          }
+        ];
       };
       seller_email_verifications: {
         Row: {
@@ -272,6 +286,7 @@ export type Database = {
           consumed_at?: string | null;
           attempts?: number;
         };
+        Relationships: [];
       };
       domain_events: {
         Row: {
@@ -316,6 +331,7 @@ export type Database = {
           last_error?: string | null;
           published_at?: string | null;
         };
+        Relationships: [];
       };
       api_idempotency_keys: {
         Row: {
@@ -345,6 +361,7 @@ export type Database = {
           response_payload?: Record<string, unknown> | null;
           expires_at?: string;
         };
+        Relationships: [];
       };
     };
     Views: Record<string, never>;

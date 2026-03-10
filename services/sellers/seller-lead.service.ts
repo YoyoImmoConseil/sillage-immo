@@ -2,7 +2,6 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { sanitizeAuditInput } from "@/lib/audit/sanitize";
 import { emitDomainEvent } from "@/lib/events/domain-events";
 import { scoreSellerLead } from "./seller-score.service";
-import type { Database } from "@/types/db/supabase";
 import { createHash } from "crypto";
 
 export type SellerLeadInput = {
@@ -43,8 +42,6 @@ export type CreateSellerLeadResult =
       duplicateDetected: true;
     }
   | { status: "failed"; reason: string };
-
-type SellerLeadRow = Database["public"]["Tables"]["seller_leads"]["Row"];
 
 const normalizeOptional = (value?: string) => {
   const normalized = value?.trim();
@@ -104,7 +101,7 @@ export const createSellerLead = async (
     };
   }
 
-  const duplicate = (recentLeads ?? []).find((lead: SellerLeadRow) => {
+  const duplicate = (recentLeads ?? []).find((lead) => {
     const samePhone = phone && normalizePhone(lead.phone ?? undefined) === phone;
     const sameAddress =
       propertyAddressNorm.length > 0 &&

@@ -2,9 +2,11 @@ import { randomInt } from "crypto";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { hashValue } from "@/lib/audit/hash";
 import { sendOtpEmail } from "@/lib/email/smtp";
+import type { Database } from "@/types/db/supabase";
 
 const OTP_TTL_MINUTES = 10;
 const MAX_ATTEMPTS = 5;
+type SellerEmailVerificationRow = Database["public"]["Tables"]["seller_email_verifications"]["Row"];
 
 const generateOtp = () => String(randomInt(100000, 999999));
 
@@ -55,42 +57,43 @@ export const verifySellerEmailOtp = async (email: string, code: string) => {
   if (readError || !verification) {
     throw new Error("Aucune verification en cours pour cet email.");
   }
+  const verificationRow = verification as SellerEmailVerificationRow;
 
-  if (verification.verified_at) {
+  if (verificationRow.verified_at) {
     return {
-      verificationToken: verification.verification_token,
+      verificationToken: verificationRow.verification_token,
       email: normalizedEmail,
     };
   }
 
-  const isExpired = new Date(verification.expires_at).getTime() < Date.now();
+  const isExpired = new Date(verificationRow.expires_at).getTime() < Date.now();
   if (isExpired) {
     throw new Error("Le code est expire. Merci de demander un nouveau code.");
   }
 
-  if (verification.attempts >= MAX_ATTEMPTS) {
+  if (verificationRow.attempts >= MAX_ATTEMPTS) {
     throw new Error("Nombre maximal de tentatives atteint. Demandez un nouveau code.");
   }
 
-  if (verification.code_hash !== codeHash) {
+  if (verificationRow.code_hash !== codeHash) {
     await supabaseAdmin
       .from("seller_email_verifications")
-      .update({ attempts: verification.attempts + 1 })
-      .eq("id", verification.id);
+      .update({ attempts: verificationRow.attempts + 1 })
+      .eq("id", verificationRow.id);
     throw new Error("Code de verification incorrect.");
   }
 
   const { error: updateError } = await supabaseAdmin
     .from("seller_email_verifications")
     .update({ verified_at: new Date().toISOString() })
-    .eq("id", verification.id);
+    .eq("id", verificationRow.id);
 
   if (updateError) {
     throw new Error(updateError.message);
   }
 
   return {
-    verificationToken: verification.verification_token,
+    verificationToken: verificationRow.verification_token,
     email: normalizedEmail,
   };
 };
@@ -111,19 +114,20 @@ export const consumeSellerEmailVerificationToken = async (
   if (error || !verification) {
     throw new Error("Token de verification invalide.");
   }
+  const verificationRow = verification as SellerEmailVerificationRow;
 
-  if (!verification.verified_at) {
+  if (!verificationRow.verified_at) {
     throw new Error("Email non verifie.");
   }
 
-  if (new Date(verification.expires_at).getTime() < Date.now()) {
+  if (new Date(verificationRow.expires_at).getTime() < Date.now()) {
     throw new Error("Verification expiree.");
   }
 
   const { error: consumeError } = await supabaseAdmin
     .from("seller_email_verifications")
     .update({ consumed_at: new Date().toISOString() })
-    .eq("id", verification.id);
+    .eq("id", verificationRow.id);
 
   if (consumeError) {
     throw new Error(consumeError.message);

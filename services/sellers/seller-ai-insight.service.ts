@@ -1,6 +1,7 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { emitDomainEvent } from "@/lib/events/domain-events";
+import type { Database } from "@/types/db/supabase";
 
 type AiInsight = {
   summary: string;
@@ -60,19 +61,20 @@ export const generateSellerAiInsight = async (sellerLeadId: string): Promise<AiI
   if (leadError || !lead) {
     throw new Error(leadError?.message ?? "Lead vendeur introuvable.");
   }
+  const leadRow = lead as Database["public"]["Tables"]["seller_leads"]["Row"];
 
-  const metadata = asRecord(lead.metadata) ?? {};
+  const metadata = asRecord(leadRow.metadata) ?? {};
   const propertyDetails = asRecord(metadata.property_details) ?? {};
   const scoring = asRecord(metadata.scoring) ?? {};
 
   const prompt = {
     context: {
-      fullName: lead.full_name,
-      city: lead.city,
-      postalCode: lead.postal_code,
-      propertyType: lead.property_type,
-      timeline: lead.timeline,
-      message: lead.message,
+      fullName: leadRow.full_name,
+      city: leadRow.city,
+      postalCode: leadRow.postal_code,
+      propertyType: leadRow.property_type,
+      timeline: leadRow.timeline,
+      message: leadRow.message,
       score: scoring.score ?? null,
       segment: scoring.segment ?? null,
       nextBestAction: scoring.next_best_action ?? null,

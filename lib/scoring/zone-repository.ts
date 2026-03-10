@@ -1,6 +1,5 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import type { Database } from "@/types/db/supabase";
 import {
   zoneCatalog,
   ZONE_CATALOG_VERSION,
@@ -12,8 +11,6 @@ type RuntimeZoneCatalog = {
   version: string;
   source: "database" | "static";
 };
-
-type ZoneCatalogRow = Database["public"]["Tables"]["zone_catalog"]["Row"];
 
 const CACHE_TTL_MS = 5 * 60 * 1000;
 
@@ -48,7 +45,7 @@ export const getRuntimeZoneCatalog = async (): Promise<RuntimeZoneCatalog> => {
 
   if (!error && data && data.length > 0) {
     const mapped = data
-      .map((row: ZoneCatalogRow) => ({
+      .map((row) => ({
         slug: row.slug,
         city: row.city,
         score: row.score,

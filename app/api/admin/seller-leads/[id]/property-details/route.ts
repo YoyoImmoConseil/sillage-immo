@@ -52,6 +52,16 @@ const computeIsTopFloor = (floorRaw: unknown, totalFloorsRaw: unknown) => {
   return floor === totalFloors;
 };
 
+type SellerLeadsUpdater = {
+  from: (
+    table: "seller_leads"
+  ) => {
+    update: (values: { metadata: Record<string, unknown> }) => {
+      eq: (column: "id", value: string) => Promise<{ error: { message: string } | null }>;
+    };
+  };
+};
+
 export const PATCH = async (request: Request, { params }: RouteParams) => {
   const { id } = await params;
   let body: PropertyDetailsInput | null = null;
@@ -104,7 +114,8 @@ export const PATCH = async (request: Request, { params }: RouteParams) => {
       updated_at: new Date().toISOString(),
     },
   };
-  const { error: updateError } = await supabaseAdmin
+  const admin = supabaseAdmin as unknown as SellerLeadsUpdater;
+  const { error: updateError } = await admin
     .from("seller_leads")
     .update({ metadata: nextMetadata })
     .eq("id", id);

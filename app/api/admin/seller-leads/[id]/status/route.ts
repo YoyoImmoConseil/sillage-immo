@@ -11,6 +11,28 @@ type RouteParams = {
   params: Promise<{ id: string }>;
 };
 
+type SellerLeadStatusRow = {
+  id: string;
+  status: string;
+};
+
+type SellerLeadsStatusUpdater = {
+  from: (
+    table: "seller_leads"
+  ) => {
+    update: (values: { status: string }) => {
+      eq: (column: "id", value: string) => {
+        select: (columns: "id, status") => {
+          maybeSingle: () => Promise<{
+            data: SellerLeadStatusRow | null;
+            error: { message: string } | null;
+          }>;
+        };
+      };
+    };
+  };
+};
+
 export const PATCH = async (request: Request, { params }: RouteParams) => {
   const { id } = await params;
   let body: { status?: string } | null = null;
@@ -31,7 +53,8 @@ export const PATCH = async (request: Request, { params }: RouteParams) => {
     );
   }
 
-  const { data, error } = await supabaseAdmin
+  const admin = supabaseAdmin as unknown as SellerLeadsStatusUpdater;
+  const { data, error } = await admin
     .from("seller_leads")
     .update({ status: body.status })
     .eq("id", id)
