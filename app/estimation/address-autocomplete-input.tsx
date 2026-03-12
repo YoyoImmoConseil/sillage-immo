@@ -138,12 +138,12 @@ export function AddressAutocompleteInput({
           autoComplete="off"
         />
         {isOpen && value.trim().length >= 3 && suggestions.length > 0 ? (
-          <div className="absolute z-20 mt-1 w-full rounded border bg-white shadow">
+          <div className="absolute z-20 mt-1 w-full rounded border bg-[#f4ece4] shadow">
             {suggestions.map((suggestion) => (
               <button
                 key={suggestion.label}
                 type="button"
-                className="block w-full px-3 py-2 text-left text-sm hover:bg-zinc-100"
+                className="block w-full px-3 py-2 text-left text-sm hover:bg-[rgba(20,20,70,0.08)]"
                 onClick={() => selectSuggestion(suggestion)}
               >
                 {suggestion.label}

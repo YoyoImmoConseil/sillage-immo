@@ -127,8 +127,8 @@ export default async function SellerLeadDetailPage({ params }: SellerLeadDetailP
 
   if (error) {
     return (
-      <main className="min-h-screen p-8">
-        <div className="mx-auto max-w-4xl rounded-2xl border p-6">
+      <main className="min-h-screen bg-[#f4ece4] p-6 md:p-10 xl:p-14 2xl:p-20">
+        <div className="w-full rounded-2xl border border-[rgba(20,20,70,0.22)] p-6">
           <h1 className="text-2xl font-semibold">Lead vendeur</h1>
           <p className="mt-3 text-sm text-red-700">
             Erreur de chargement: {error.message}
@@ -197,28 +197,28 @@ export default async function SellerLeadDetailPage({ params }: SellerLeadDetailP
   };
 
   return (
-    <main className="min-h-screen p-8">
-      <div className="mx-auto max-w-4xl space-y-6">
-        <section className="rounded-2xl border p-6 space-y-2">
+    <main className="min-h-screen bg-[#f4ece4] p-6 md:p-10 xl:p-14 2xl:p-20">
+      <div className="w-full space-y-6">
+        <section className="rounded-2xl bg-[#141446] p-6 text-[#f4ece4] space-y-2">
           <div className="flex gap-2">
             <Link
-              className="inline-block rounded border px-3 py-1 text-sm"
+              className="inline-block rounded border border-[#f4ece4] px-3 py-1 text-sm"
               href="/admin/seller-leads"
             >
               Retour a la liste
             </Link>
-            <Link className="inline-block rounded border px-3 py-1 text-sm" href="/">
+            <Link className="inline-block rounded border border-[#f4ece4] px-3 py-1 text-sm" href="/">
               Accueil
             </Link>
           </div>
           <h1 className="text-2xl font-semibold">{lead.full_name}</h1>
-          <p className="text-sm opacity-70">
+          <p className="text-sm text-[#f4ece4]/75">
             Cree le {formatDate(lead.created_at)} - {lead.email}
           </p>
         </section>
 
-        <section className="rounded-2xl border p-6 space-y-4">
-          <h2 className="text-lg font-medium">Pilotage commercial</h2>
+        <section className="rounded-2xl border border-[rgba(20,20,70,0.22)] p-6 space-y-4">
+          <h2 className="sillage-section-title">Pilotage commercial</h2>
           <p className="text-sm opacity-70">
             Statut actuel: {formatStatusLabel(lead.status)}
           </p>
@@ -392,8 +392,8 @@ export default async function SellerLeadDetailPage({ params }: SellerLeadDetailP
           }
         />
 
-        <section className="rounded-2xl border p-6">
-          <h2 className="text-lg font-medium">Informations vendeur</h2>
+        <section className="rounded-2xl border border-[rgba(20,20,70,0.22)] p-6">
+          <h2 className="sillage-section-title">Informations vendeur</h2>
           <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
             <div>
               <dt className="opacity-70">Telephone</dt>

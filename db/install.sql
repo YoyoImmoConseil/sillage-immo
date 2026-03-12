@@ -243,6 +243,7 @@ alter table public.tool_versions enable row level security;
 alter table public.zone_catalog enable row level security;
 alter table public.seller_leads enable row level security;
 alter table public.seller_scoring_events enable row level security;
+alter table public.seller_email_verifications enable row level security;
 alter table public.domain_events enable row level security;
 alter table public.api_idempotency_keys enable row level security;
 

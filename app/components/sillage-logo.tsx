@@ -8,10 +8,10 @@ type SillageLogoProps = {
 export function SillageLogo({ className, priority }: SillageLogoProps) {
   return (
     <Image
-      src="/logo-sillage.png"
+      src="/logo-sillage-print.svg"
       alt="Logo Sillage Immo"
-      width={1024}
-      height={817}
+      width={1280}
+      height={1024}
       priority={priority}
       className={className ?? "h-auto w-full"}
     />

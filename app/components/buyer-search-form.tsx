@@ -44,8 +44,8 @@ export function BuyerSearchForm() {
   };
 
   return (
-    <section id="acquereur-form" className="sillage-card rounded-2xl p-6 space-y-4">
-      <h2 className="text-lg font-medium">Confier ma recherche acquereur</h2>
+    <section id="acquereur-form" className="sillage-card p-0 space-y-4">
+      <h2 className="sillage-section-title">Confier ma recherche acquereur</h2>
       <p className="text-sm opacity-75">
         Decrivez votre recherche detaillee. Les meilleurs biens peuvent deja etre en base ou
         arriver demain: nous vous accompagnons de A a Z pour capter les bonnes opportunites.

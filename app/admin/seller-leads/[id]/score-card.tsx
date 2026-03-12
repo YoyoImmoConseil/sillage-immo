@@ -117,12 +117,12 @@ export function SellerLeadScoreCard({ sellerLeadId, latestScore, aiInsight }: Sc
   };
 
   return (
-    <section className="rounded-2xl border p-6 space-y-4">
+    <section className="rounded-2xl border border-[rgba(20,20,70,0.22)] p-6 space-y-4">
       <div className="flex items-center justify-between gap-4 flex-wrap">
-        <h2 className="text-lg font-medium">Scoring vendeur</h2>
+        <h2 className="sillage-section-title">Scoring vendeur</h2>
         <div className="flex items-center gap-2">
           <button
-            className="rounded bg-black px-4 py-2 text-sm text-white disabled:opacity-60"
+            className="sillage-btn rounded px-4 py-2 text-sm disabled:opacity-60"
             onClick={recalculate}
             disabled={isPending || isAiPending}
             type="button"
@@ -188,7 +188,7 @@ export function SellerLeadScoreCard({ sellerLeadId, latestScore, aiInsight }: Sc
       )}
 
       {aiInsight ? (
-        <div className="rounded border bg-zinc-50 p-3 text-sm space-y-2">
+        <div className="rounded border border-[rgba(20,20,70,0.2)] bg-[rgba(244,236,228,0.9)] p-3 text-sm space-y-2">
           <p>
             <span className="opacity-70">Synthese IA:</span> {aiInsight.summary}
           </p>

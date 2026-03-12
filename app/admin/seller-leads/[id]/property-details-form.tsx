@@ -97,8 +97,8 @@ export function PropertyDetailsForm({ sellerLeadId, initial }: PropertyDetailsFo
   };
 
   return (
-    <section className="rounded-2xl border p-6 space-y-4">
-      <h2 className="text-lg font-medium">Details du bien estime</h2>
+    <section className="rounded-2xl border border-[rgba(20,20,70,0.22)] p-6 space-y-4">
+      <h2 className="sillage-section-title">Details du bien estime</h2>
       <p className="text-sm opacity-70">
         A completer par le commercial si le widget ne remonte pas automatiquement
         toutes les donnees.
@@ -247,7 +247,7 @@ export function PropertyDetailsForm({ sellerLeadId, initial }: PropertyDetailsFo
       <div className="flex items-center gap-3">
         <button
           type="button"
-          className="rounded bg-black px-4 py-2 text-sm text-white disabled:opacity-60"
+          className="sillage-btn rounded px-4 py-2 text-sm disabled:opacity-60"
           onClick={save}
           disabled={isPending}
         >

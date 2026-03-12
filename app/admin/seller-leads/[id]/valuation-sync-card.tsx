@@ -53,12 +53,12 @@ export function ValuationSyncCard({ sellerLeadId, valuation }: ValuationSyncCard
   };
 
   return (
-    <section className="rounded-2xl border p-6 space-y-4">
+    <section className="rounded-2xl border border-[rgba(20,20,70,0.22)] p-6 space-y-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <h2 className="text-lg font-medium">Donnees estimation (API Loupe)</h2>
+        <h2 className="sillage-section-title">Donnees estimation (API Loupe)</h2>
         <button
           type="button"
-          className="rounded bg-black px-4 py-2 text-sm text-white disabled:opacity-60"
+          className="sillage-btn rounded px-4 py-2 text-sm disabled:opacity-60"
           onClick={syncValuation}
           disabled={isPending}
         >

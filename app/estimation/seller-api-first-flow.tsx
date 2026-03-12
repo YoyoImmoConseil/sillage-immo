@@ -241,7 +241,7 @@ export function SellerApiFirstFlow() {
 
   return (
     <div className="space-y-6">
-      <section className="sillage-card rounded-2xl p-6 space-y-4">
+      <section className="rounded-2xl bg-[#141446] p-6 text-[#f4ece4] space-y-4">
         <h1 className="text-2xl font-semibold">Estimation vendeur Sillage Immo</h1>
         <p className="text-sm opacity-75">
           Un parcours clair, guide et securise: vous renseignez votre bien une fois, nous
@@ -249,8 +249,8 @@ export function SellerApiFirstFlow() {
         </p>
       </section>
 
-      <section className="sillage-card rounded-2xl p-6 space-y-4">
-        <h2 className="text-lg font-medium">Etape 1 - Votre projet et votre bien</h2>
+      <section className="rounded-2xl border border-[rgba(20,20,70,0.2)] bg-[#f4ece4] p-6 space-y-4">
+        <h2 className="sillage-section-title">Etape 1 - Votre projet et votre bien</h2>
         <div className="grid gap-3 sm:grid-cols-2 text-sm">
           <label>
             Nom complet *
@@ -468,9 +468,9 @@ export function SellerApiFirstFlow() {
       </section>
 
       {step !== "form" ? (
-        <section className="sillage-card rounded-2xl p-6 space-y-4">
-          <h2 className="text-lg font-medium">Etape 2 - Verification de votre email</h2>
-          <p className="text-sm opacity-75">
+        <section className="rounded-2xl bg-[#141446] p-6 text-[#f4ece4] space-y-4">
+          <h2 className="sillage-section-title">Etape 2 - Verification de votre email</h2>
+          <p className="text-sm text-[#f4ece4]/80">
             Entrez le code recu par email pour finaliser la securisation de votre demande.
           </p>
           <div className="flex gap-3 items-end flex-wrap">
@@ -483,7 +483,7 @@ export function SellerApiFirstFlow() {
               />
             </label>
             <button
-              className="sillage-btn rounded px-4 py-2 text-sm disabled:opacity-60"
+              className="rounded bg-[#f4ece4] px-4 py-2 text-sm text-[#141446] disabled:opacity-60"
               type="button"
               disabled={loading || otp.trim().length < 4}
               onClick={verifyOtp}
@@ -499,7 +499,7 @@ export function SellerApiFirstFlow() {
           {verificationToken ? (
             <div className="space-y-3">
               <button
-                className="sillage-btn rounded px-4 py-2 text-sm disabled:opacity-60"
+                className="rounded bg-[#f4ece4] px-4 py-2 text-sm text-[#141446] disabled:opacity-60"
                 type="button"
                 disabled={loading}
                 onClick={estimateAndCreate}
@@ -508,7 +508,7 @@ export function SellerApiFirstFlow() {
               </button>
               {isEstimating ? (
                 <div className="space-y-1">
-                  <div className="h-2 w-full overflow-hidden rounded bg-zinc-200">
+                  <div className="h-2 w-full overflow-hidden rounded bg-[rgba(244,236,228,0.4)]">
                     <div
                       className="h-full transition-all duration-500"
                       style={{
@@ -528,8 +528,8 @@ export function SellerApiFirstFlow() {
       ) : null}
 
       {step === "result" && valuation && sellerLeadId ? (
-        <section className="sillage-card rounded-2xl p-6 space-y-3">
-          <h2 className="text-lg font-medium">Votre estimation est prete</h2>
+        <section className="rounded-2xl border border-[rgba(20,20,70,0.2)] bg-[#f4ece4] p-6 space-y-3">
+          <h2 className="sillage-section-title">Votre estimation est prete</h2>
           <p className="text-sm opacity-75">
             {valuation.addressLabel ?? form.propertyAddress}{" "}
             {valuation.cityZipCode ?? form.postalCode} {valuation.cityName ?? form.city}
@@ -560,7 +560,7 @@ export function SellerApiFirstFlow() {
               </>
             )}
           </p>
-          <div className="rounded-xl border bg-white p-4 space-y-2">
+          <div className="rounded-xl border border-[rgba(20,20,70,0.22)] bg-[rgba(244,236,228,0.9)] p-4 space-y-2">
             <h3 className="text-sm font-semibold">
               Pourquoi confier la vente a Sillage Immo ?
             </h3>
@@ -583,7 +583,7 @@ export function SellerApiFirstFlow() {
               clair a chaque etape.
             </p>
           </div>
-          <div className="rounded-xl border p-4 space-y-1">
+          <div className="rounded-xl border border-[rgba(20,20,70,0.22)] p-4 space-y-1">
             <p className="text-sm font-medium">Votre prochain pas (recommande)</p>
             <p className="text-sm opacity-80">
               Finalisez votre demande pour recevoir un appel de cadrage avec un interlocuteur

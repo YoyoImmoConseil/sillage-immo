@@ -6,26 +6,52 @@
   --sillage-blue: #141446;
   --sillage-beige: #f4ece4;
   --sillage-border: rgba(20, 20, 70, 0.16);
-  --sillage-surface: rgba(255, 255, 255, 0.72);
+  --sillage-surface: rgba(244, 236, 228, 0.72);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-hk-grotesk);
+  --font-mono: var(--font-open-sans);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-hk-grotesk), var(--font-open-sans), Arial, Helvetica, sans-serif;
+}
+
+h1 {
+  font-family: var(--font-montagna), var(--font-libre-baskerville), serif;
+}
+
+h2,
+h3 {
+  font-family: var(--font-libre-baskerville), serif;
+}
+
+button,
+nav,
+label {
+  font-family: var(--font-montserrat), var(--font-hk-grotesk), sans-serif;
+}
+
+.sillage-section-title {
+  font-family: var(--font-libre-baskerville), serif;
+  font-size: 1.875rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.sillage-section-title-font {
+  font-family: var(--font-libre-baskerville), serif;
 }
 
 .sillage-card {
-  border: 1px solid var(--sillage-border);
-  background: var(--sillage-surface);
-  backdrop-filter: blur(2px);
+  border: none;
+  background: transparent;
+  backdrop-filter: none;
 }
 
 .sillage-btn {
@@ -47,15 +73,28 @@ body {
 
 .sillage-chip {
   border: 1px solid var(--sillage-border);
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(244, 236, 228, 0.86);
   color: var(--sillage-blue);
+}
+
+.sillage-section-light {
+  background: #f4ece4;
+}
+
+.sillage-section-soft {
+  background: #f4ece4;
+}
+
+.sillage-section-plain {
+  background: #f4ece4;
 }
 
 input,
 select,
 textarea {
   border-color: var(--sillage-border);
-  background: rgba(255, 255, 255, 0.94);
+  background: rgba(244, 236, 228, 0.95);
+  color: var(--sillage-blue);
 }
 
 input:focus,

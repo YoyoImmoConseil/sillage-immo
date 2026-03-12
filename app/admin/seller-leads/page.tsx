@@ -52,8 +52,8 @@ export default async function SellerLeadsAdminPage() {
 
   if (error) {
     return (
-      <main className="min-h-screen p-8">
-        <div className="mx-auto max-w-6xl rounded-2xl border p-6">
+      <main className="min-h-screen bg-[#f4ece4] p-6 md:p-10 xl:p-14 2xl:p-20">
+        <div className="w-full rounded-2xl border border-[rgba(20,20,70,0.22)] p-6">
           <h1 className="text-2xl font-semibold">Leads vendeurs</h1>
           <p className="mt-3 text-sm text-red-700">
             Impossible de charger les leads vendeurs: {error.message}
@@ -64,61 +64,67 @@ export default async function SellerLeadsAdminPage() {
   }
 
   return (
-    <main className="min-h-screen p-8">
-      <div className="mx-auto max-w-6xl space-y-6">
-        <section className="rounded-2xl border p-6">
+    <main className="min-h-screen">
+      <section className="bg-[#141446] text-[#f4ece4]">
+        <div className="w-full px-6 py-8 md:px-10 xl:px-14 2xl:px-20">
           <div className="mb-3">
-            <Link className="inline-block rounded border px-3 py-1 text-sm" href="/">
+            <Link className="inline-block rounded border border-[#f4ece4] px-3 py-1 text-sm" href="/">
               Retour accueil
             </Link>
           </div>
           <h1 className="text-2xl font-semibold">Back-office leads vendeurs</h1>
-          <p className="mt-2 text-sm opacity-70">
+          <p className="mt-2 text-sm text-[#f4ece4]/75">
             Vue operationnelle minimale du sprint 1.1.
           </p>
-        </section>
-
-        <section className="rounded-2xl border p-2">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b text-left">
-                <th className="p-3 font-medium">Date</th>
-                <th className="p-3 font-medium">Nom</th>
-                <th className="p-3 font-medium">Email</th>
-                <th className="p-3 font-medium">Ville</th>
-                <th className="p-3 font-medium">Delai</th>
-                <th className="p-3 font-medium">Statut</th>
-                <th className="p-3 font-medium">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.length === 0 ? (
-                <tr>
-                  <td className="p-3 opacity-70" colSpan={7}>
-                    Aucun lead vendeur pour le moment.
-                  </td>
+        </div>
+      </section>
+      <section className="bg-[#f4ece4]">
+        <div className="w-full px-6 py-8 md:px-10 xl:px-14 2xl:px-20">
+          <section className="rounded-2xl border border-[rgba(20,20,70,0.22)] p-2">
+            <div className="mb-3">
+              <p className="px-3 pt-2 text-sm opacity-75">Derniers leads vendeurs</p>
+            </div>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-[rgba(20,20,70,0.2)] text-left">
+                  <th className="p-3 font-medium">Date</th>
+                  <th className="p-3 font-medium">Nom</th>
+                  <th className="p-3 font-medium">Email</th>
+                  <th className="p-3 font-medium">Ville</th>
+                  <th className="p-3 font-medium">Delai</th>
+                  <th className="p-3 font-medium">Statut</th>
+                  <th className="p-3 font-medium">Action</th>
                 </tr>
-              ) : (
-                data.map((lead) => (
-                  <tr key={lead.id} className="border-b last:border-0">
-                    <td className="p-3">{formatDate(lead.created_at)}</td>
-                    <td className="p-3">{lead.full_name}</td>
-                    <td className="p-3">{lead.email}</td>
-                    <td className="p-3">{lead.city ?? "-"}</td>
-                    <td className="p-3">{formatTimelineLabel(lead.timeline)}</td>
-                    <td className="p-3">{formatStatusLabel(lead.status)}</td>
-                    <td className="p-3">
-                      <Link className="underline" href={`/admin/seller-leads/${lead.id}`}>
-                        Ouvrir
-                      </Link>
+              </thead>
+              <tbody>
+                {data.length === 0 ? (
+                  <tr>
+                    <td className="p-3 opacity-70" colSpan={7}>
+                      Aucun lead vendeur pour le moment.
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </section>
-      </div>
+                ) : (
+                  data.map((lead) => (
+                    <tr key={lead.id} className="border-b border-[rgba(20,20,70,0.15)] last:border-0">
+                      <td className="p-3">{formatDate(lead.created_at)}</td>
+                      <td className="p-3">{lead.full_name}</td>
+                      <td className="p-3">{lead.email}</td>
+                      <td className="p-3">{lead.city ?? "-"}</td>
+                      <td className="p-3">{formatTimelineLabel(lead.timeline)}</td>
+                      <td className="p-3">{formatStatusLabel(lead.status)}</td>
+                      <td className="p-3">
+                        <Link className="underline" href={`/admin/seller-leads/${lead.id}`}>
+                          Ouvrir
+                        </Link>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </section>
+        </div>
+      </section>
     </main>
   );
 }

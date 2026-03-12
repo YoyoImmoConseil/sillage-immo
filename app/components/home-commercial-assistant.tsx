@@ -73,8 +73,8 @@ export function HomeCommercialAssistant() {
   };
 
   return (
-    <section className="sillage-card rounded-2xl p-6 space-y-4">
-      <h2 className="text-lg font-medium">Assistant commercial Sillage Immo</h2>
+    <section className="sillage-card p-0 space-y-4">
+      <h2 className="sillage-section-title">Assistant commercial Sillage Immo</h2>
       <p className="text-sm opacity-75">
         Dites-nous votre projet. Nous vous orientons vers le parcours le plus pertinent, avec un
         accompagnement sur-mesure.
@@ -112,7 +112,7 @@ export function HomeCommercialAssistant() {
         </button>
       </div>
 
-      <div className="max-h-64 overflow-auto rounded-xl border bg-white p-3 space-y-2">
+      <div className="max-h-64 overflow-auto rounded-xl bg-[rgba(244,236,228,0.9)] p-3 text-[#141446] space-y-2">
         {chat.map((item, index) => (
           <div
             key={`${item.role}-${index}`}
@@ -153,10 +153,28 @@ export function HomeCommercialAssistant() {
         <button
           type="button"
           onClick={() => void ask()}
-          className="sillage-btn rounded px-4 py-2 text-sm disabled:opacity-60"
+          className="sillage-btn inline-flex items-center justify-center rounded px-3 py-2 text-sm disabled:opacity-60"
           disabled={loading || message.trim().length < 2}
+          aria-label={loading ? "Envoi en cours" : "Envoyer"}
         >
-          {loading ? "..." : "Me guider"}
+          {loading ? (
+            "..."
+          ) : (
+            <svg
+              aria-hidden
+              viewBox="0 0 24 24"
+              className="h-8 w-8"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M3 11.5L21 3L12.5 21L10 13L3 11.5Z"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinejoin="round"
+              />
+            </svg>
+          )}
         </button>
       </div>
 

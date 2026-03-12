@@ -67,7 +67,7 @@ export function SellerResultChat({ sellerLeadId }: Props) {
         conseiller vous rappelle rapidement.
       </p>
 
-      <div className="max-h-48 overflow-auto space-y-2 rounded border p-3 bg-white">
+      <div className="max-h-48 overflow-auto space-y-2 rounded border p-3 bg-[rgba(244,236,228,0.9)]">
         {chat.map((item, index) => (
           <p
             key={`${item.role}-${index}`}
