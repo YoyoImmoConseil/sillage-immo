@@ -23,8 +23,8 @@ const isCronAuthorized = (request: Request) => {
   return Boolean(bearer && bearer === expected);
 };
 
-const isAuthorized = (request: Request) => {
-  return isAdminRequest(request) || isCronAuthorized(request);
+const isAuthorized = async (request: Request) => {
+  return (await isAdminRequest(request)) || isCronAuthorized(request);
 };
 
 const jsonError = (status: number, message: string) => {
@@ -40,10 +40,10 @@ const parseLimitFromUrl = (request: Request) => {
 };
 
 export const GET = async (request: Request) => {
-  if (!isAuthorized(request)) {
+  if (!(await isAuthorized(request))) {
     return jsonError(401, "Unauthorized.");
   }
-  if (!serverEnv.DOMAIN_EVENTS_CRON_SECRET && !isAdminRequest(request)) {
+  if (!serverEnv.DOMAIN_EVENTS_CRON_SECRET && !(await isAdminRequest(request))) {
     return jsonError(500, "DOMAIN_EVENTS_CRON_SECRET is not configured.");
   }
 

@@ -50,7 +50,7 @@ const isLifecycleStatus = (
 };
 
 export const GET = async (request: Request) => {
-  if (!isAdminRequest(request)) {
+  if (!(await isAdminRequest(request))) {
     return jsonError(401, "Unauthorized.");
   }
 
@@ -67,7 +67,7 @@ export const GET = async (request: Request) => {
 };
 
 export const POST = async (request: Request) => {
-  if (!isAdminRequest(request)) {
+  if (!(await isAdminRequest(request))) {
     return jsonError(401, "Unauthorized.");
   }
 
@@ -113,7 +113,7 @@ export const POST = async (request: Request) => {
 };
 
 export const PUT = async (request: Request) => {
-  if (!isAdminRequest(request)) {
+  if (!(await isAdminRequest(request))) {
     return jsonError(401, "Unauthorized.");
   }
 
@@ -198,7 +198,7 @@ export const PUT = async (request: Request) => {
 };
 
 export const DELETE = async (request: Request) => {
-  if (!isAdminRequest(request)) {
+  if (!(await isAdminRequest(request))) {
     return jsonError(401, "Unauthorized.");
   }
 

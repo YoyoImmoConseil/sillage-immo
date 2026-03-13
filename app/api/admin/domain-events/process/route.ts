@@ -10,7 +10,7 @@ const jsonError = (status: number, message: string) => {
 };
 
 export const GET = async (request: Request) => {
-  if (!isAdminRequest(request)) {
+  if (!(await isAdminRequest(request))) {
     return jsonError(401, "Unauthorized.");
   }
 
@@ -25,7 +25,7 @@ export const GET = async (request: Request) => {
 };
 
 export const POST = async (request: Request) => {
-  if (!isAdminRequest(request)) {
+  if (!(await isAdminRequest(request))) {
     return jsonError(401, "Unauthorized.");
   }
 

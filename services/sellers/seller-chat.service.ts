@@ -6,12 +6,8 @@ import {
   SILLAGE_AGENCY_KNOWLEDGE,
   SILLAGE_AGENCY_KNOWLEDGE_VERSION,
 } from "@/lib/ai/knowledge/sillage-agency-knowledge";
-
-type ChatMessage = {
-  role: "user" | "assistant";
-  text: string;
-  created_at: string;
-};
+import { getSellerMetadataSections, mergeSellerMetadata } from "./seller-metadata";
+import type { SellerChatMessage } from "@/types/domain/sellers";
 
 type SellerChatResult = {
   answer: string;
@@ -38,20 +34,6 @@ Garde-fous:
 - Ne jamais garantir un prix de vente ou un delai certain.
 - Si question sensible (litige, succession, divorce, urgence, contentieux), recommander un rappel humain prioritaire.
 - Si une offre commerciale depend d'une periode ("en ce moment"), la presenter prudemment: "selon conditions en vigueur".`;
-
-const asRecord = (value: unknown): Record<string, unknown> | null => {
-  return value && typeof value === "object" ? (value as Record<string, unknown>) : null;
-};
-
-const isChatMessage = (value: unknown): value is ChatMessage => {
-  const row = asRecord(value);
-  return Boolean(
-    row &&
-      (row.role === "user" || row.role === "assistant") &&
-      typeof row.text === "string" &&
-      typeof row.created_at === "string"
-  );
-};
 
 const needsHumanEscalation = (text: string) => {
   const normalized = text
@@ -117,11 +99,8 @@ export const askSellerChat = async (
     throw new Error(leadError?.message ?? "Lead vendeur introuvable.");
   }
 
-  const metadata = asRecord(lead.metadata) ?? {};
-  const sellerChat = asRecord(metadata.seller_chat) ?? {};
-  const previousMessages = Array.isArray(sellerChat.messages)
-    ? sellerChat.messages.filter(isChatMessage).slice(-8)
-    : [];
+  const { raw: metadata, sellerChat, sellerChatMessages } = getSellerMetadataSections(lead.metadata);
+  const previousMessages = sellerChatMessages.slice(-8);
 
   let mcpContext: unknown = null;
   try {
@@ -173,8 +152,8 @@ export const askSellerChat = async (
   if (!Array.isArray(choices) || choices.length === 0) {
     throw new Error("Reponse IA vide.");
   }
-  const firstChoice = asRecord(choices[0]);
-  const message = asRecord(firstChoice?.message);
+  const firstChoice = choices[0] as Record<string, unknown>;
+  const message = (firstChoice.message as Record<string, unknown> | undefined) ?? null;
   const answerRaw = message?.content;
   const answer =
     typeof answerRaw === "string" && answerRaw.trim().length > 0
@@ -182,21 +161,23 @@ export const askSellerChat = async (
       : "Je vous propose de planifier un rappel avec un conseiller Sillage Immo.";
 
   const now = new Date().toISOString();
-  const transcript: ChatMessage[] = [
+  const transcript: SellerChatMessage[] = [
     ...previousMessages,
     { role: "user" as const, text: cleanedMessage, created_at: now },
     { role: "assistant" as const, text: answer, created_at: now },
   ].slice(-MAX_HISTORY);
 
-  const nextMetadata: Record<string, unknown> = {
-    ...metadata,
+  const finalMetadata = mergeSellerMetadata(metadata, {
     seller_chat: {
       ...(sellerChat ?? {}),
       messages: transcript,
       knowledge_version: SILLAGE_AGENCY_KNOWLEDGE_VERSION,
       updated_at: now,
+      internal: {
+        ...(sellerChat?.internal ?? {}),
+      },
     },
-  };
+  });
 
   const escalateToHuman = needsHumanEscalation(cleanedMessage) || needsHumanEscalation(answer);
   const confidence = confidenceFromSignals({
@@ -207,16 +188,14 @@ export const askSellerChat = async (
     historySize: previousMessages.length,
   });
 
-  const finalMetadata: Record<string, unknown> = {
-    ...nextMetadata,
-    seller_chat: {
-      ...(asRecord(nextMetadata.seller_chat) ?? {}),
-      internal: {
-        confidence_score: confidence.score,
-        confidence_level: confidence.level,
-        mcp_context_used: Boolean(mcpContext),
-        updated_at: now,
-      },
+  finalMetadata.seller_chat = {
+    ...(finalMetadata.seller_chat ?? {}),
+    internal: {
+      ...(finalMetadata.seller_chat?.internal ?? {}),
+      confidence_score: confidence.score,
+      confidence_level: confidence.level,
+      mcp_context_used: Boolean(mcpContext),
+      updated_at: now,
     },
   };
 

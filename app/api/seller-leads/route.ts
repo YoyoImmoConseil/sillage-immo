@@ -3,6 +3,11 @@ import {
   createSellerLead,
   type SellerLeadInput,
 } from "@/services/sellers/seller-lead.service";
+import type {
+  SellerApiErrorResponse,
+  SellerLeadCreateDuplicateResponse,
+  SellerLeadCreateSuccessResponse,
+} from "@/types/api/seller";
 
 const isNonEmptyString = (value: unknown): value is string => {
   return typeof value === "string" && value.trim().length > 0;
@@ -64,18 +69,36 @@ export const POST = async (request: Request) => {
 
   const result = await createSellerLead(body);
   if (result.status === "failed") {
-    return NextResponse.json(
-      { ok: false, message: result.reason },
-      { status: 500 }
-    );
+    const payload: SellerApiErrorResponse = { ok: false, message: result.reason };
+    return NextResponse.json(payload, { status: 500 });
   }
 
-  return NextResponse.json(
-    {
-      ok: true,
+  if (result.status === "duplicate_blocked") {
+    const payload: SellerLeadCreateDuplicateResponse = {
+      ok: false,
+      code: "duplicate_blocked",
+      message: result.reason,
+      data: {
+        createStatus: "duplicate_blocked",
+        sellerLeadId: result.sellerLeadId,
+        auditLogged: result.auditLogged,
+        duplicateDetected: true,
+      },
+    };
+    return NextResponse.json(payload, { status: 409 });
+  }
+
+  const payload: SellerLeadCreateSuccessResponse = {
+    ok: true,
+    data: {
+      createStatus: result.status,
       sellerLeadId: result.sellerLeadId,
       auditLogged: result.auditLogged,
+      duplicateDetected: result.status === "reused",
     },
-    { status: 201 }
+  };
+  return NextResponse.json(
+    payload,
+    { status: result.status === "created" ? 201 : 200 }
   );
 };

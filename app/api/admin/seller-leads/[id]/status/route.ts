@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isAdminRequest } from "@/lib/admin/auth";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 const ALLOWED_STATUSES = ["new", "to_call", "qualified", "closed"] as const;
@@ -34,6 +35,10 @@ type SellerLeadsStatusUpdater = {
 };
 
 export const PATCH = async (request: Request, { params }: RouteParams) => {
+  if (!(await isAdminRequest(request))) {
+    return NextResponse.json({ ok: false, message: "Unauthorized." }, { status: 401 });
+  }
+
   const { id } = await params;
   let body: { status?: string } | null = null;
 

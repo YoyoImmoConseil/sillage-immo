@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/db/supabase";
+import { isInternalRequest } from "@/lib/admin/auth";
 
 const hasValue = (value: string | undefined) => {
   return Boolean(value && value.trim().length > 0);
@@ -71,7 +72,11 @@ const buildNotReadyResponse = (input: {
   );
 };
 
-export const GET = async () => {
+export const GET = async (request: Request) => {
+  if (!(await isInternalRequest(request))) {
+    return NextResponse.json({ ok: false, message: "Unauthorized." }, { status: 401 });
+  }
+
   const missing = getCoreEnvMissing();
   if (missing.length > 0) {
     return buildNotReadyResponse({

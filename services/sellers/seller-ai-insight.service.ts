@@ -2,28 +2,17 @@ import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { emitDomainEvent } from "@/lib/events/domain-events";
 import type { Database } from "@/types/db/supabase";
-
-type AiInsight = {
-  summary: string;
-  competitorRiskLevel: "low" | "medium" | "high";
-  recommendedPitch: string;
-  nextAction: string;
-  generatedAt: string;
-  model: string;
-};
+import { getSellerMetadataSections, mergeSellerMetadata } from "./seller-metadata";
+import type { SellerAiInsight } from "@/types/domain/sellers";
 
 const OPENAI_BASE_URL = "https://api.openai.com/v1/chat/completions";
 
-const asRecord = (value: unknown): Record<string, unknown> | null => {
-  return value && typeof value === "object" ? (value as Record<string, unknown>) : null;
-};
-
-const normalizeRisk = (value: unknown): AiInsight["competitorRiskLevel"] => {
+const normalizeRisk = (value: unknown): SellerAiInsight["competitorRiskLevel"] => {
   if (value === "high" || value === "medium" || value === "low") return value;
   return "medium";
 };
 
-const parseAssistantJson = (raw: string): Omit<AiInsight, "generatedAt" | "model"> => {
+const parseAssistantJson = (raw: string): Omit<SellerAiInsight, "generatedAt" | "model"> => {
   const parsed = JSON.parse(raw) as Record<string, unknown>;
   const summary =
     typeof parsed.summary === "string" && parsed.summary.trim().length > 0
@@ -46,7 +35,9 @@ const parseAssistantJson = (raw: string): Omit<AiInsight, "generatedAt" | "model
   };
 };
 
-export const generateSellerAiInsight = async (sellerLeadId: string): Promise<AiInsight> => {
+export const generateSellerAiInsight = async (
+  sellerLeadId: string
+): Promise<SellerAiInsight> => {
   const openAiApiKey = process.env.OPENAI_API_KEY;
   if (!openAiApiKey) {
     throw new Error("OPENAI_API_KEY manquante. Ajoutez-la dans .env.local.");
@@ -63,9 +54,7 @@ export const generateSellerAiInsight = async (sellerLeadId: string): Promise<AiI
   }
   const leadRow = lead as Database["public"]["Tables"]["seller_leads"]["Row"];
 
-  const metadata = asRecord(leadRow.metadata) ?? {};
-  const propertyDetails = asRecord(metadata.property_details) ?? {};
-  const scoring = asRecord(metadata.scoring) ?? {};
+  const { raw: metadata, propertyDetails, scoring } = getSellerMetadataSections(leadRow.metadata);
 
   const prompt = {
     context: {
@@ -75,9 +64,9 @@ export const generateSellerAiInsight = async (sellerLeadId: string): Promise<AiI
       propertyType: leadRow.property_type,
       timeline: leadRow.timeline,
       message: leadRow.message,
-      score: scoring.score ?? null,
-      segment: scoring.segment ?? null,
-      nextBestAction: scoring.next_best_action ?? null,
+      score: scoring?.score ?? null,
+      segment: scoring?.segment ?? null,
+      nextBestAction: scoring?.next_best_action ?? null,
       propertyDetails,
     },
     instructions: [
@@ -124,8 +113,8 @@ export const generateSellerAiInsight = async (sellerLeadId: string): Promise<AiI
   if (!Array.isArray(choices) || choices.length === 0) {
     throw new Error("OpenAI: reponse vide.");
   }
-  const firstChoice = asRecord(choices[0]);
-  const message = asRecord(firstChoice?.message);
+  const firstChoice = choices[0] as Record<string, unknown>;
+  const message = (firstChoice.message as Record<string, unknown> | undefined) ?? null;
   const content = message?.content;
   if (typeof content !== "string" || content.trim().length === 0) {
     throw new Error("OpenAI: contenu IA invalide.");
@@ -137,19 +126,18 @@ export const generateSellerAiInsight = async (sellerLeadId: string): Promise<AiI
       ? payload.model
       : "gpt-4o-mini";
 
-  const aiInsight: AiInsight = {
+  const aiInsight: SellerAiInsight = {
     ...parsed,
     generatedAt: new Date().toISOString(),
     model,
   };
 
-  const nextMetadata: Record<string, unknown> = {
-    ...metadata,
+  const nextMetadata = mergeSellerMetadata(metadata, {
     scoring: {
-      ...scoring,
+      ...(scoring ?? {}),
       ai_insight: aiInsight,
     },
-  };
+  });
 
   const { error: updateError } = await supabaseAdmin
     .from("seller_leads")

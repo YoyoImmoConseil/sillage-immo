@@ -23,6 +23,12 @@ Stack principale:
   - Dashboard admin leads vendeurs (`/admin/seller-leads`)
   - Fiche lead detaillee avec edition statut/details bien
   - Scoring vendeur + AI insight + synchro valuation
+- **Back-office RBAC**
+  - Connexion admin via Supabase Auth + Google SSO (`/admin/login`)
+  - Roles `collaborateur`, `manager`, `administrateur`
+  - Gestion des utilisateurs et roles (`/admin/users`)
+  - Leads acquereurs structures + matching bidirectionnel
+  - Gestion des biens manuels hors SweepBright (`/admin/properties`)
 - **Couches IA-ready**
   - Endpoint MCP (`GET/POST /api/mcp`)
   - Registry des tools (`lib/mcp/*`)
@@ -83,8 +89,15 @@ Selon les modules actives:
 - `OPENAI_API_KEY`
 - `LOUPE_API_BASE_URL`, `LOUPE_API_EMAIL`, `LOUPE_API_PASSWORD`
 - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM_EMAIL`, `SMTP_FROM_NAME`
+- `SWEEPBRIGHT_API_BASE_URL`, `SWEEPBRIGHT_API_VERSION`, `SWEEPBRIGHT_CLIENT_ID`, `SWEEPBRIGHT_CLIENT_SECRET`
+- `PUBLIC_SITE_URL`
 
 Reference complete: `.env.example`
+
+Note back-office:
+
+- `ADMIN_API_KEY` reste utilise comme cle de bootstrap initial et comme mode de secours legacy pour certains acces admin/internes.
+- Le premier acces admin se fait en autorisant une adresse email puis en finalisant la connexion via Google SSO.
 
 ## Base de donnees
 
@@ -115,3 +128,7 @@ La suite naturelle est d'intensifier:
 - durcissement des tests (integration API + workflows metier),
 - extension du CRM (auth/roles plus fines),
 - automatisations IA supplementaires sur les workflows internes.
+
+## Cadrage metier en attente
+
+- Atelier champs admin: `docs/admin/admin-field-workshops.md`

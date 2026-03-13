@@ -61,6 +61,18 @@ export default function Home() {
               </p>
               <div className="flex flex-wrap gap-3">
                 <Link
+                  href="/vente"
+                  className="inline-block rounded border border-[#f4ece4] px-5 py-2.5 text-sm text-[#f4ece4] hover:bg-[#f4ece4] hover:text-[#141446] transition-colors"
+                >
+                  Voir nos biens en vente
+                </Link>
+                <Link
+                  href="/location"
+                  className="inline-block rounded border border-[#f4ece4] px-5 py-2.5 text-sm text-[#f4ece4] hover:bg-[#f4ece4] hover:text-[#141446] transition-colors"
+                >
+                  Voir nos biens en location
+                </Link>
+                <Link
                   href="/estimation"
                   className="inline-block rounded bg-[#f4ece4] px-5 py-2.5 text-sm text-[#141446] hover:opacity-90 transition-opacity"
                 >
@@ -107,6 +119,31 @@ export default function Home() {
 
       <section className="sillage-section-light">
         <div className="w-full px-6 py-10 md:px-10 md:py-16 xl:px-14 2xl:px-20 space-y-6">
+          <div className="grid gap-6 md:grid-cols-2">
+            <article className="rounded-2xl border border-[rgba(20,20,70,0.18)] p-6 space-y-3">
+              <p className="text-xs uppercase tracking-[0.16em] opacity-70">Catalogue vente</p>
+              <h2 className="sillage-section-title">Nos biens en vente</h2>
+              <p className="text-sm opacity-75">
+                Appartements, maisons, villas et biens premium diffuses par Sillage Immo.
+              </p>
+              <Link href="/vente" className="sillage-btn inline-block rounded px-4 py-2 text-sm">
+                Explorer la selection
+              </Link>
+            </article>
+            <article className="rounded-2xl border border-[rgba(20,20,70,0.18)] p-6 space-y-3">
+              <p className="text-xs uppercase tracking-[0.16em] opacity-70">Catalogue location</p>
+              <h2 className="sillage-section-title">Nos biens en location</h2>
+              <p className="text-sm opacity-75">
+                Une selection de biens a louer, avec un accompagnement locatif clair et reactif.
+              </p>
+              <Link
+                href="/location"
+                className="sillage-btn inline-block rounded px-4 py-2 text-sm"
+              >
+                Voir les opportunites
+              </Link>
+            </article>
+          </div>
           <h2 className="sillage-section-title">Vous vendez ? Notre methode en 6 etapes</h2>
           <p className="text-sm md:text-base opacity-75 max-w-3xl">
             Une execution claire, orientee resultat, pour vendre au bon prix et dans les meilleures

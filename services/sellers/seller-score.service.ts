@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { emitDomainEvent } from "@/lib/events/domain-events";
+import { getSellerMetadataSections, mergeSellerMetadata } from "./seller-metadata";
 
 type SellerLeadForScoring = {
   id: string;
@@ -128,17 +129,10 @@ const computeAsset = (lead: SellerLeadForScoring, reasons: string[]) => {
     points += 5;
   }
 
-  const metadata =
-    lead.metadata && typeof lead.metadata === "object"
-      ? (lead.metadata as Record<string, unknown>)
-      : {};
-  const propertyDetails =
-    metadata.property_details && typeof metadata.property_details === "object"
-      ? (metadata.property_details as Record<string, unknown>)
-      : {};
+  const { propertyDetails } = getSellerMetadataSections(lead.metadata);
 
   const isTopFloor =
-    typeof propertyDetails.is_top_floor === "boolean"
+    typeof propertyDetails?.is_top_floor === "boolean"
       ? propertyDetails.is_top_floor
       : null;
   if (isTopFloor === true) {
@@ -148,7 +142,7 @@ const computeAsset = (lead: SellerLeadForScoring, reasons: string[]) => {
   }
 
   const seaView = normalize(
-    typeof propertyDetails.sea_view === "string" ? propertyDetails.sea_view : null
+    typeof propertyDetails?.sea_view === "string" ? propertyDetails.sea_view : null
   );
   if (seaView === "lateral") {
     seaViewBonus = 2;
@@ -227,26 +221,6 @@ const detectCompetitorRisk = (message: string | null) => {
     /franchise nationale/,
     /orpi|laforet|century 21|era|guy hoquet|foncia|nestenn/i,
   ].some((pattern) => pattern.test(text));
-};
-
-const preservePropertyDetails = (
-  currentMetadata: Record<string, unknown>,
-  nextMetadata: Record<string, unknown>
-) => {
-  const currentPropertyDetails =
-    currentMetadata.property_details && typeof currentMetadata.property_details === "object"
-      ? (currentMetadata.property_details as Record<string, unknown>)
-      : null;
-  const nextPropertyDetails =
-    nextMetadata.property_details && typeof nextMetadata.property_details === "object"
-      ? (nextMetadata.property_details as Record<string, unknown>)
-      : null;
-
-  // Non-blocking guardrail: never drop existing property_details.
-  if (currentPropertyDetails && !nextPropertyDetails) {
-    return { ...nextMetadata, property_details: currentPropertyDetails };
-  }
-  return nextMetadata;
 };
 
 const computeNextBestAction = (
@@ -358,24 +332,16 @@ export const scoreSellerLead = async (sellerLeadId: string): Promise<SellerScore
   const nextStatus =
     segment === "priority_a" ? "to_call" : segment === "priority_b" ? "qualified" : "new";
 
-  const currentMetadata =
-    lead.metadata && typeof lead.metadata === "object"
-      ? (lead.metadata as Record<string, unknown>)
-      : {};
-  const candidateMetadata: Record<string, unknown> = {
-    ...currentMetadata,
+  const { raw: currentMetadata, scoring: currentScoring } = getSellerMetadataSections(lead.metadata);
+  const safeMetadata = mergeSellerMetadata(currentMetadata, {
     scoring: {
-      ...(currentMetadata.scoring &&
-      typeof currentMetadata.scoring === "object"
-        ? (currentMetadata.scoring as Record<string, unknown>)
-        : {}),
+      ...(currentScoring ?? {}),
       score,
       segment,
       next_best_action: nextBestAction,
       updated_at: new Date().toISOString(),
     },
-  };
-  const safeMetadata = preservePropertyDetails(currentMetadata, candidateMetadata);
+  });
 
   await supabaseAdmin
     .from("seller_leads")

@@ -1,27 +1,11 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { getSellerMetadataSections } from "./seller-metadata";
+import type { SellerLeadSnapshot } from "@/types/domain/sellers";
 
-type SellerChatMessage = {
-  role: "user" | "assistant";
-  text: string;
-  created_at: string;
-};
-
-const asRecord = (value: unknown): Record<string, unknown> | null => {
-  return value && typeof value === "object" ? (value as Record<string, unknown>) : null;
-};
-
-const isSellerChatMessage = (value: unknown): value is SellerChatMessage => {
-  const row = asRecord(value);
-  return Boolean(
-    row &&
-      (row.role === "user" || row.role === "assistant") &&
-      typeof row.text === "string" &&
-      typeof row.created_at === "string"
-  );
-};
-
-export const getSellerLeadContextSnapshot = async (sellerLeadId: string) => {
+export const getSellerLeadContextSnapshot = async (
+  sellerLeadId: string
+): Promise<SellerLeadSnapshot> => {
   const { data: lead, error: leadError } = await supabaseAdmin
     .from("seller_leads")
     .select(
@@ -46,16 +30,15 @@ export const getSellerLeadContextSnapshot = async (sellerLeadId: string) => {
     throw new Error(scoreError.message);
   }
 
-  const metadata = asRecord(lead.metadata) ?? {};
-  const scoring = asRecord(metadata.scoring) ?? {};
-  const aiInsight = asRecord(scoring.ai_insight) ?? null;
-  const propertyDetails = asRecord(metadata.property_details) ?? null;
-  const valuation = asRecord(metadata.valuation) ?? null;
-  const sellerChatMetadata = asRecord(metadata.seller_chat) ?? {};
-  const sellerChatInternal = asRecord(sellerChatMetadata.internal) ?? {};
-  const sellerChatMessages = Array.isArray(sellerChatMetadata.messages)
-    ? sellerChatMetadata.messages.filter(isSellerChatMessage).slice(-12)
-    : [];
+  const {
+    propertyDetails,
+    valuation,
+    scoring,
+    aiInsight,
+    sellerChat,
+    sellerChatInternal,
+    sellerChatMessages,
+  } = getSellerMetadataSections(lead.metadata);
 
   return {
     sellerLeadId: lead.id,
@@ -75,36 +58,23 @@ export const getSellerLeadContextSnapshot = async (sellerLeadId: string) => {
       valuation,
     },
     scoring: {
-      score: latestScoreEvent?.score ?? scoring.score ?? null,
-      segment: latestScoreEvent?.segment ?? scoring.segment ?? null,
-      nextBestAction: latestScoreEvent?.next_best_action ?? scoring.next_best_action ?? null,
+      score: latestScoreEvent?.score ?? scoring?.score ?? null,
+      segment: latestScoreEvent?.segment ?? scoring?.segment ?? null,
+      nextBestAction: latestScoreEvent?.next_best_action ?? scoring?.next_best_action ?? null,
       breakdown: latestScoreEvent?.breakdown ?? null,
       reasons: latestScoreEvent?.reasons ?? null,
-      updatedAt: latestScoreEvent?.created_at ?? scoring.updated_at ?? null,
+      updatedAt: latestScoreEvent?.created_at ?? scoring?.updated_at ?? null,
     },
     aiInsight,
     sellerChat: {
-      messages: sellerChatMessages,
+      messages: sellerChatMessages.slice(-12),
       messageCount: sellerChatMessages.length,
-      knowledgeVersion:
-        typeof sellerChatMetadata.knowledge_version === "string"
-          ? sellerChatMetadata.knowledge_version
-          : null,
-      updatedAt:
-        typeof sellerChatMetadata.updated_at === "string" ? sellerChatMetadata.updated_at : null,
+      knowledgeVersion: typeof sellerChat?.knowledge_version === "string" ? sellerChat.knowledge_version : null,
+      updatedAt: typeof sellerChat?.updated_at === "string" ? sellerChat.updated_at : null,
       internal: {
-        confidenceScore:
-          typeof sellerChatInternal.confidence_score === "number"
-            ? sellerChatInternal.confidence_score
-            : null,
-        confidenceLevel:
-          typeof sellerChatInternal.confidence_level === "string"
-            ? sellerChatInternal.confidence_level
-            : null,
-        mcpContextUsed:
-          typeof sellerChatInternal.mcp_context_used === "boolean"
-            ? sellerChatInternal.mcp_context_used
-            : null,
+        confidenceScore: typeof sellerChatInternal?.confidence_score === "number" ? sellerChatInternal.confidence_score : null,
+        confidenceLevel: typeof sellerChatInternal?.confidence_level === "string" ? sellerChatInternal.confidence_level : null,
+        mcpContextUsed: typeof sellerChatInternal?.mcp_context_used === "boolean" ? sellerChatInternal.mcp_context_used : null,
       },
     },
   };

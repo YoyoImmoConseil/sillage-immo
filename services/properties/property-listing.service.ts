@@ -1,0 +1,257 @@
+import "server-only";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+import type { Database } from "@/types/db/supabase";
+import type { PropertyBusinessType, PropertyListingSnapshot } from "@/types/domain/properties";
+
+type ListingRow = Database["public"]["Tables"]["property_listings"]["Row"];
+type PropertyRow = Database["public"]["Tables"]["properties"]["Row"];
+type MediaRow = Database["public"]["Tables"]["property_media"]["Row"];
+
+const isMissingRelationError = (message: string) => {
+  const normalized = message.toLowerCase();
+  return (
+    normalized.includes("could not find the table") ||
+    normalized.includes("relation") ||
+    normalized.includes("schema cache")
+  );
+};
+
+const mapPropertySnapshot = (property: PropertyRow, media: MediaRow[]) => {
+  return {
+    id: property.id,
+    source: property.source,
+    sourceRef: property.source_ref,
+    companyId: property.company_id,
+    projectId: property.project_id,
+    isProject: property.is_project,
+    kind: property.kind,
+    negotiation: property.negotiation,
+    title: property.title,
+    description: property.description,
+    propertyType: property.property_type,
+    subType: property.sub_type,
+    availabilityStatus: property.availability_status,
+    generalCondition: property.general_condition,
+    address: {
+      street: property.street,
+      streetNumber: property.street_number,
+      city: property.city,
+      postalCode: property.postal_code,
+      country: property.country,
+      formattedAddress: property.formatted_address,
+      latitude: property.latitude,
+      longitude: property.longitude,
+    },
+    surfaces: {
+      livingArea: property.living_area,
+      plotArea: property.plot_area,
+    },
+    rooms: {
+      bedrooms: property.bedrooms,
+      bathrooms: property.bathrooms,
+      rooms: property.rooms,
+      floor: property.floor,
+    },
+    amenities: {
+      hasTerrace: property.has_terrace,
+      hasElevator: property.has_elevator,
+    },
+    media: media.map((item) => ({
+      id: item.id,
+      propertyId: item.property_id,
+      kind: item.kind,
+      ordinal: item.ordinal,
+      title: item.title,
+      description: item.description,
+      contentType: item.content_type,
+      remoteUrl: item.remote_url,
+      cachedUrl: item.cached_url,
+      expiresAt: item.expires_at,
+    })),
+    virtualTourUrl: property.virtual_tour_url,
+    videoUrl: property.video_url,
+    appointmentServiceUrl: property.appointment_service_url,
+    negotiator: property.negotiator,
+    legal: property.legal,
+    createdAt: property.created_at,
+    updatedAt: property.updated_at,
+    lastSyncedAt: property.last_synced_at,
+  } satisfies PropertyListingSnapshot["property"];
+};
+
+const mapListingSnapshot = (
+  listing: ListingRow,
+  property: PropertyRow,
+  media: MediaRow[]
+): PropertyListingSnapshot => {
+  return {
+    id: listing.id,
+    propertyId: listing.property_id,
+    businessType: listing.business_type,
+    publicationStatus: listing.publication_status,
+    isPublished: listing.is_published,
+    slug: listing.slug,
+    canonicalPath: listing.canonical_path,
+    title: listing.title,
+    city: listing.city,
+    postalCode: listing.postal_code,
+    propertyType: listing.property_type,
+    coverImageUrl: listing.cover_image_url,
+    rooms: listing.rooms,
+    bedrooms: listing.bedrooms,
+    livingArea: listing.living_area,
+    floor: listing.floor,
+    hasTerrace: listing.has_terrace,
+    hasElevator: listing.has_elevator,
+    priceAmount: listing.price_amount,
+    priceCurrency: listing.price_currency,
+    publishedAt: listing.published_at,
+    unpublishedAt: listing.unpublished_at,
+    property: mapPropertySnapshot(property, media),
+  };
+};
+
+export const formatListingPrice = (input: { amount: number | null; currency: string }) => {
+  if (typeof input.amount !== "number") return "Prix sur demande";
+  return new Intl.NumberFormat("fr-FR", {
+    style: "currency",
+    currency: input.currency || "EUR",
+    maximumFractionDigits: 0,
+  }).format(input.amount);
+};
+
+export const listPublicPropertyListings = async (input: {
+  businessType: PropertyBusinessType;
+  city?: string;
+  propertyType?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  minRooms?: number;
+  maxRooms?: number;
+  minSurface?: number;
+  maxSurface?: number;
+  minFloor?: number;
+  maxFloor?: number;
+  terrace?: boolean;
+  elevator?: boolean;
+}) => {
+  let query = supabaseAdmin
+    .from("property_listings")
+    .select("*")
+    .eq("business_type", input.businessType)
+    .eq("is_published", true)
+    .eq("publication_status", "active")
+    .order("updated_at", { ascending: false });
+
+  if (input.city?.trim()) {
+    query = query.ilike("city", `%${input.city.trim()}%`);
+  }
+  if (input.propertyType?.trim()) {
+    query = query.eq("property_type", input.propertyType.trim());
+  }
+  if (typeof input.minPrice === "number") {
+    query = query.gte("price_amount", input.minPrice);
+  }
+  if (typeof input.maxPrice === "number") {
+    query = query.lte("price_amount", input.maxPrice);
+  }
+  if (typeof input.minRooms === "number") {
+    query = query.gte("rooms", input.minRooms);
+  }
+  if (typeof input.maxRooms === "number") {
+    query = query.lte("rooms", input.maxRooms);
+  }
+  if (typeof input.minSurface === "number") {
+    query = query.gte("living_area", input.minSurface);
+  }
+  if (typeof input.maxSurface === "number") {
+    query = query.lte("living_area", input.maxSurface);
+  }
+  if (typeof input.minFloor === "number") {
+    query = query.gte("floor", input.minFloor);
+  }
+  if (typeof input.maxFloor === "number") {
+    query = query.lte("floor", input.maxFloor);
+  }
+  if (typeof input.terrace === "boolean") {
+    query = query.eq("has_terrace", input.terrace);
+  }
+  if (typeof input.elevator === "boolean") {
+    query = query.eq("has_elevator", input.elevator);
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    if (isMissingRelationError(error.message)) {
+      return [] as ListingRow[];
+    }
+    throw new Error(error.message);
+  }
+
+  return (data ?? []) as ListingRow[];
+};
+
+export const getPublicPropertyListingBySlug = async (slug: string) => {
+  const { data: listingData, error: listingError } = await supabaseAdmin
+    .from("property_listings")
+    .select("*")
+    .eq("slug", slug)
+    .eq("is_published", true)
+    .maybeSingle();
+
+  if (listingError) {
+    if (isMissingRelationError(listingError.message)) {
+      return null;
+    }
+    throw new Error(listingError.message);
+  }
+  if (!listingData) return null;
+
+  const listing = listingData as ListingRow;
+  const { data: propertyData, error: propertyError } = await supabaseAdmin
+    .from("properties")
+    .select("*")
+    .eq("id", listing.property_id)
+    .maybeSingle();
+
+  if (propertyError) {
+    throw new Error(propertyError.message);
+  }
+  if (!propertyData) return null;
+
+  const { data: mediaData, error: mediaError } = await supabaseAdmin
+    .from("property_media")
+    .select("*")
+    .eq("property_id", listing.property_id)
+    .order("ordinal", { ascending: true });
+
+  if (mediaError) {
+    throw new Error(mediaError.message);
+  }
+
+  return mapListingSnapshot(listing, propertyData as PropertyRow, (mediaData ?? []) as MediaRow[]);
+};
+
+export const listPropertyTypesForBusinessType = async (businessType: PropertyBusinessType) => {
+  const { data, error } = await supabaseAdmin
+    .from("property_listings")
+    .select("property_type")
+    .eq("business_type", businessType)
+    .eq("is_published", true)
+    .neq("property_type", null);
+
+  if (error) {
+    if (isMissingRelationError(error.message)) {
+      return [];
+    }
+    throw new Error(error.message);
+  }
+
+  return Array.from(
+    new Set(
+      (data ?? [])
+        .map((row) => row.property_type)
+        .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+    )
+  ).sort((left, right) => left.localeCompare(right, "fr"));
+};

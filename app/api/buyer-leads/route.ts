@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createLead } from "@/services/leads/lead.service";
+import { createBuyerLeadFromWebsite } from "@/services/buyers/buyer-lead.service";
 
 type BuyerLeadInput = {
   fullName?: string;
@@ -28,21 +28,26 @@ export const POST = async (request: Request) => {
     );
   }
 
-  const result = await createLead({
-    fullName,
-    email,
-    phone: phone || undefined,
-    message: searchDetails,
-    source: "website_home_buyer_assistant",
-  });
+  try {
+    const result = await createBuyerLeadFromWebsite({
+      fullName,
+      email,
+      phone: phone || undefined,
+      searchDetails,
+    });
 
-  if (result.status === "failed") {
-    return NextResponse.json({ ok: false, message: result.reason }, { status: 500 });
+    return NextResponse.json({
+      ok: true,
+      leadId: result.lead.id,
+      searchProfileId: result.searchProfile.id,
+    });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message: error instanceof Error ? error.message : "Impossible de creer le lead acquereur.",
+      },
+      { status: 500 }
+    );
   }
-
-  return NextResponse.json({
-    ok: true,
-    leadId: result.leadId,
-    auditLogged: result.auditLogged,
-  });
 };

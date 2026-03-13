@@ -1,11 +1,16 @@
 import { NextResponse } from "next/server";
+import { isAdminRequest } from "@/lib/admin/auth";
 import { scoreSellerLead } from "@/services/sellers/seller-score.service";
 
 type RouteParams = {
   params: Promise<{ id: string }>;
 };
 
-export const POST = async (_request: Request, { params }: RouteParams) => {
+export const POST = async (request: Request, { params }: RouteParams) => {
+  if (!(await isAdminRequest(request))) {
+    return NextResponse.json({ ok: false, message: "Unauthorized." }, { status: 401 });
+  }
+
   const { id } = await params;
 
   if (!id?.trim()) {

@@ -1,11 +1,23 @@
 import { NextResponse } from "next/server";
 import { createSellerLead } from "@/services/sellers/seller-lead.service";
+import { buildSellerPropertyDetails } from "@/services/sellers/seller-metadata";
 import { computeLoupeValuation } from "@/services/valuation/loupe-valuation.service";
 import { consumeSellerEmailVerificationToken } from "@/services/sellers/seller-email-verification.service";
 import {
   checkIdempotency,
   persistIdempotencyResponse,
 } from "@/lib/idempotency/request-idempotency";
+import {
+  SELLER_APARTMENT_CONDITIONS,
+  SELLER_BUILDING_AGES,
+  SELLER_PROPERTY_TYPES,
+  SELLER_SEA_VIEWS,
+} from "@/types/domain/sellers";
+import type {
+  SellerApiErrorResponse,
+  SellerEstimateAndCreateDuplicateResponse,
+  SellerEstimateAndCreateSuccessResponse,
+} from "@/types/api/seller";
 
 type EstimateAndCreateInput = {
   fullName: string;
@@ -55,45 +67,19 @@ const isRequiredAllowedString = (value: unknown, allowed: string[]) => {
   return typeof value === "string" && allowed.includes(value);
 };
 
-const parseFloorNumber = (value: unknown) => {
-  if (typeof value === "number" && Number.isFinite(value)) return Math.trunc(value);
-  if (typeof value !== "string") return null;
-  const match = value.match(/\d+/);
-  if (!match) return null;
-  const parsed = Number.parseInt(match[0], 10);
-  return Number.isFinite(parsed) ? parsed : null;
-};
-
-const computeIsTopFloor = (floorRaw: unknown, totalFloorsRaw: unknown) => {
-  const floor = parseFloorNumber(floorRaw);
-  const totalFloors =
-    typeof totalFloorsRaw === "number" && Number.isFinite(totalFloorsRaw)
-      ? Math.trunc(totalFloorsRaw)
-      : null;
-  if (floor === null || totalFloors === null || floor < 0 || totalFloors < 0) return null;
-  if (floor > totalFloors) return null;
-  return floor === totalFloors;
-};
-
 const validate = (payload: unknown): payload is EstimateAndCreateInput => {
   if (!payload || typeof payload !== "object") return false;
   const input = payload as Record<string, unknown>;
   return (
     isNonEmptyString(input.fullName) &&
     isNonEmptyString(input.email) &&
-    isNonEmptyString(input.propertyType) &&
+    isRequiredAllowedString(input.propertyType, [...SELLER_PROPERTY_TYPES]) &&
     isNonEmptyString(input.propertyAddress) &&
     isNonEmptyString(input.city) &&
     isNonEmptyString(input.postalCode) &&
     isNonEmptyString(input.verificationToken) &&
     typeof input.elevator === "boolean" &&
-    isRequiredAllowedString(input.apartmentCondition, [
-      "a_renover",
-      "renove_20_ans",
-      "renove_10_ans",
-      "renove_moins_5_ans",
-      "neuf",
-    ]) &&
+    isRequiredAllowedString(input.apartmentCondition, [...SELLER_APARTMENT_CONDITIONS]) &&
     (input.phone === undefined || typeof input.phone === "string") &&
     (input.timeline === undefined || typeof input.timeline === "string") &&
     (input.occupancyStatus === undefined || typeof input.occupancyStatus === "string") &&
@@ -101,12 +87,8 @@ const validate = (payload: unknown): payload is EstimateAndCreateInput => {
     isOptionalNumber(input.rooms) &&
     (input.floor === undefined || typeof input.floor === "string") &&
     isOptionalNumber(input.buildingTotalFloors) &&
-    isAllowedString(input.buildingAge, [
-      "ancien_1950",
-      "recent_1950_1970",
-      "moderne_1980_today",
-    ]) &&
-    isAllowedString(input.seaView, ["none", "panoramic", "classic", "lateral"]) &&
+    isAllowedString(input.buildingAge, [...SELLER_BUILDING_AGES]) &&
+    isAllowedString(input.seaView, [...SELLER_SEA_VIEWS]) &&
     isOptionalBoolean(input.diagnosticsReady) &&
     isOptionalBoolean(input.diagnosticsSupportNeeded) &&
     isOptionalBoolean(input.syndicDocsReady) &&
@@ -192,20 +174,18 @@ export const POST = async (request: Request) => {
       source: "direct_form",
       normalized: valuation,
     },
-    property_details: {
-      living_area: input.livingArea ?? valuation.livingSpaceArea ?? null,
-      rooms: input.rooms ?? valuation.rooms ?? null,
-      floor: input.floor ?? valuation.floor ?? null,
-      building_total_floors: input.buildingTotalFloors ?? null,
-      is_top_floor: computeIsTopFloor(input.floor, input.buildingTotalFloors),
-      elevator: input.elevator ?? null,
-      apartment_condition: input.apartmentCondition ?? null,
-      building_age: input.buildingAge ?? null,
-      sea_view: input.seaView ?? null,
-      valuation_low: valuation.valuationPriceLow ?? null,
-      valuation_high: valuation.valuationPriceHigh ?? null,
-      updated_at: new Date().toISOString(),
-    },
+    property_details: buildSellerPropertyDetails({
+      livingArea: input.livingArea ?? valuation.livingSpaceArea,
+      rooms: input.rooms ?? valuation.rooms,
+      floor: input.floor ?? valuation.floor,
+      buildingTotalFloors: input.buildingTotalFloors,
+      elevator: input.elevator,
+      apartmentCondition: input.apartmentCondition,
+      buildingAge: input.buildingAge,
+      seaView: input.seaView,
+      valuationLow: valuation.valuationPriceLow,
+      valuationHigh: valuation.valuationPriceHigh,
+    }),
     verification: {
       email_verified_at: new Date().toISOString(),
     },
@@ -231,7 +211,7 @@ export const POST = async (request: Request) => {
   });
 
   if (created.status === "failed") {
-    const payload = { ok: false, message: created.reason };
+    const payload: SellerApiErrorResponse = { ok: false, message: created.reason };
     if (idempotencyKey.trim().length > 0) {
       try {
         await persistIdempotencyResponse("seller.estimate_and_create", idempotencyKey, 500, payload);
@@ -243,11 +223,14 @@ export const POST = async (request: Request) => {
   }
 
   if (created.status === "duplicate_blocked") {
-    const payload = {
+    const payload: SellerEstimateAndCreateDuplicateResponse = {
       ok: false,
-      createStatus: "duplicate_blocked" as const,
+      code: "duplicate_blocked",
       message: created.reason,
-      sellerLeadId: created.sellerLeadId,
+      data: {
+        createStatus: "duplicate_blocked",
+        sellerLeadId: created.sellerLeadId,
+      },
     };
     if (idempotencyKey.trim().length > 0) {
       try {
@@ -259,11 +242,13 @@ export const POST = async (request: Request) => {
     return NextResponse.json(payload, { status: 409 });
   }
 
-  const payload = {
+  const payload: SellerEstimateAndCreateSuccessResponse = {
     ok: true,
-    createStatus: created.status,
-    sellerLeadId: created.sellerLeadId,
-    valuation,
+    data: {
+      createStatus: created.status,
+      sellerLeadId: created.sellerLeadId,
+      valuation,
+    },
   };
 
   if (idempotencyKey.trim().length > 0) {

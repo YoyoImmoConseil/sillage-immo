@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isInternalRequest } from "@/lib/admin/auth";
 import { bootstrapMcpRegistry } from "@/lib/mcp/bootstrap";
 import { getTool, listTools } from "@/lib/mcp/registry";
 import { validateWithSchema } from "@/lib/mcp/validate";
@@ -59,12 +60,20 @@ const jsonError = (
   );
 };
 
-export const GET = () => {
+export const GET = async (request: Request) => {
+  if (!(await isInternalRequest(request))) {
+    return NextResponse.json({ ok: false, message: "Unauthorized." }, { status: 401 });
+  }
+
   bootstrapMcpRegistry();
   return NextResponse.json<ToolListResponse>({ tools: listTools() });
 };
 
 export const POST = async (request: Request) => {
+  if (!(await isInternalRequest(request))) {
+    return NextResponse.json({ ok: false, message: "Unauthorized." }, { status: 401 });
+  }
+
   bootstrapMcpRegistry();
 
   const startedAt = Date.now();

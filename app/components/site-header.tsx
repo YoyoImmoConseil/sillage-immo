@@ -8,6 +8,12 @@ export function SiteHeader() {
           Accueil
         </Link>
         <nav className="flex items-center gap-5 text-xs uppercase tracking-[0.14em] text-[#f4ece4]/90">
+          <Link href="/vente" className="hover:opacity-80 transition-opacity">
+            Vente
+          </Link>
+          <Link href="/location" className="hover:opacity-80 transition-opacity">
+            Location
+          </Link>
           <Link href="/estimation" className="hover:opacity-80 transition-opacity">
             Estimation
           </Link>

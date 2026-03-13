@@ -1,6 +1,9 @@
 import Link from "next/link";
-import { supabaseAdmin } from "@/lib/supabase/admin";
-import type { Database } from "@/types/db/supabase";
+import { AdminShell } from "@/app/components/admin-shell";
+import { requireAdminPagePermission } from "@/lib/admin/auth";
+import { searchSellerLeads } from "@/services/admin/lead-search.service";
+
+export const dynamic = "force-dynamic";
 
 const formatDate = (value: string) => {
   return new Date(value).toLocaleString("fr-FR");
@@ -36,50 +39,45 @@ const formatTimelineLabel = (timeline: string | null) => {
   }
 };
 
-export default async function SellerLeadsAdminPage() {
-  const { data: rows, error } = await supabaseAdmin
-    .from("seller_leads")
-    .select("id, created_at, full_name, email, city, timeline, status")
-    .order("created_at", { ascending: false })
-    .limit(100);
-  const data =
-    (rows as Array<
-      Pick<
-        Database["public"]["Tables"]["seller_leads"]["Row"],
-        "id" | "created_at" | "full_name" | "email" | "city" | "timeline" | "status"
-      >
-    > | null) ?? [];
+type SellerLeadsAdminPageProps = {
+  searchParams?: Promise<{
+    search?: string;
+    status?: string;
+    city?: string;
+  }>;
+};
 
-  if (error) {
-    return (
-      <main className="min-h-screen bg-[#f4ece4] p-6 md:p-10 xl:p-14 2xl:p-20">
-        <div className="w-full rounded-2xl border border-[rgba(20,20,70,0.22)] p-6">
-          <h1 className="text-2xl font-semibold">Leads vendeurs</h1>
-          <p className="mt-3 text-sm text-red-700">
-            Impossible de charger les leads vendeurs: {error.message}
-          </p>
-        </div>
-      </main>
-    );
-  }
+export default async function SellerLeadsAdminPage({ searchParams }: SellerLeadsAdminPageProps) {
+  const context = await requireAdminPagePermission("leads.sellers.view");
+  const filters = (await searchParams) ?? {};
+  const data = await searchSellerLeads(filters);
 
   return (
-    <main className="min-h-screen">
-      <section className="bg-[#141446] text-[#f4ece4]">
-        <div className="w-full px-6 py-8 md:px-10 xl:px-14 2xl:px-20">
-          <div className="mb-3">
-            <Link className="inline-block rounded border border-[#f4ece4] px-3 py-1 text-sm" href="/">
-              Retour accueil
-            </Link>
-          </div>
-          <h1 className="text-2xl font-semibold">Back-office leads vendeurs</h1>
-          <p className="mt-2 text-sm text-[#f4ece4]/75">
-            Vue operationnelle minimale du sprint 1.1.
-          </p>
-        </div>
-      </section>
+    <AdminShell
+      title="Leads vendeurs"
+      description="Recherche et pilotage commercial des leads vendeurs."
+      role={context.role}
+      profileName={context.profile?.fullName ?? context.profile?.email ?? "Mode admin"}
+    >
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <form className="grid flex-1 gap-3 rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-5 md:grid-cols-4">
+          <input className="rounded border px-3 py-2 text-sm" name="search" defaultValue={filters.search ?? ""} placeholder="Nom, email, telephone, message" />
+          <input className="rounded border px-3 py-2 text-sm" name="city" defaultValue={filters.city ?? ""} placeholder="Ville" />
+          <select className="rounded border px-3 py-2 text-sm" name="status" defaultValue={filters.status ?? ""}>
+            <option value="">Tous les statuts</option>
+            <option value="new">Nouveau</option>
+            <option value="to_call">A rappeler</option>
+            <option value="qualified">Qualifie</option>
+            <option value="closed">Clos</option>
+          </select>
+          <button className="sillage-btn rounded px-4 py-2 text-sm">Filtrer</button>
+        </form>
+        <Link className="text-sm underline text-[#141446]" href="/admin/leads">
+          Vue transverse leads
+        </Link>
+      </div>
       <section className="bg-[#f4ece4]">
-        <div className="w-full px-6 py-8 md:px-10 xl:px-14 2xl:px-20">
+        <div className="w-full">
           <section className="rounded-2xl border border-[rgba(20,20,70,0.22)] p-2">
             <div className="mb-3">
               <p className="px-3 pt-2 text-sm opacity-75">Derniers leads vendeurs</p>
@@ -125,6 +123,6 @@ export default async function SellerLeadsAdminPage() {
           </section>
         </div>
       </section>
-    </main>
+    </AdminShell>
   );
 }

@@ -4,6 +4,7 @@ import {
   checkIdempotency,
   persistIdempotencyResponse,
 } from "@/lib/idempotency/request-idempotency";
+import type { SellerApiErrorResponse, SellerSendOtpSuccessResponse } from "@/types/api/seller";
 
 export const POST = async (request: Request) => {
   const idempotencyKey = request.headers.get("idempotency-key") ?? "";
@@ -41,11 +42,13 @@ export const POST = async (request: Request) => {
 
   try {
     const result = await startSellerEmailVerification(email);
-    const payload = {
+    const payload: SellerSendOtpSuccessResponse = {
       ok: true,
-      sent: result.sent,
-      expiresAt: result.expiresAt,
-      previewCode: result.previewCode,
+      data: {
+        sent: result.sent,
+        expiresAt: result.expiresAt,
+        previewCode: result.previewCode,
+      },
     };
     if (idempotencyKey.trim().length > 0) {
       try {
@@ -60,7 +63,7 @@ export const POST = async (request: Request) => {
     const message = rawMessage.includes("seller_email_verifications")
       ? "La table de verification email n'est pas installee. Execute la migration 20260305_007_create_seller_email_verifications.sql."
       : rawMessage;
-    const payload = { ok: false, message };
+    const payload: SellerApiErrorResponse = { ok: false, message };
     if (idempotencyKey.trim().length > 0) {
       try {
         await persistIdempotencyResponse("seller.email.send_otp", idempotencyKey, 500, payload);

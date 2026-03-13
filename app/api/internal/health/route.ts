@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/db/supabase";
+import { isInternalRequest } from "@/lib/admin/auth";
 
 type HealthStatus = "ok" | "degraded";
 
@@ -47,6 +48,10 @@ const createSupabaseHealthClient = () => {
 };
 
 export const GET = async (request: Request) => {
+  if (!(await isInternalRequest(request))) {
+    return NextResponse.json({ ok: false, message: "Unauthorized." }, { status: 401 });
+  }
+
   const missingCoreEnv = getMissingEnv(CORE_ENV_KEYS);
   const missingOptionalEnv = getMissingEnv(OPTIONAL_ENV_KEYS);
   const supabase = createSupabaseHealthClient();

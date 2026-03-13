@@ -4,6 +4,7 @@ import {
   checkIdempotency,
   persistIdempotencyResponse,
 } from "@/lib/idempotency/request-idempotency";
+import type { SellerApiErrorResponse, SellerVerifyOtpSuccessResponse } from "@/types/api/seller";
 
 export const POST = async (request: Request) => {
   const idempotencyKey = request.headers.get("idempotency-key") ?? "";
@@ -46,7 +47,7 @@ export const POST = async (request: Request) => {
 
   try {
     const verification = await verifySellerEmailOtp(email, code);
-    const payload = { ok: true, data: verification };
+    const payload: SellerVerifyOtpSuccessResponse = { ok: true, data: verification };
     if (idempotencyKey.trim().length > 0) {
       try {
         await persistIdempotencyResponse("seller.email.verify_otp", idempotencyKey, 200, payload);
@@ -58,7 +59,7 @@ export const POST = async (request: Request) => {
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Verification email impossible.";
-    const payload = { ok: false, message };
+    const payload: SellerApiErrorResponse = { ok: false, message };
     if (idempotencyKey.trim().length > 0) {
       try {
         await persistIdempotencyResponse("seller.email.verify_otp", idempotencyKey, 400, payload);
