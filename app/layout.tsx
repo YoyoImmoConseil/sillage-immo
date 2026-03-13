@@ -43,6 +43,11 @@ export const metadata: Metadata = {
   title: "Sillage Immo",
   description:
     "Sillage Immo, boutique immobiliere a Nice: estimation vendeur et accompagnement acquereur sur-mesure.",
+  icons: {
+    icon: "/icon.png",
+    shortcut: "/icon.png",
+    apple: "/icon.png",
+  },
 };
 
 export default function RootLayout({
