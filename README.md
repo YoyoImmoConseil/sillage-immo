@@ -88,6 +88,7 @@ Selon les modules actives:
 
 - `OPENAI_API_KEY`
 - `LOUPE_API_BASE_URL`, `LOUPE_API_EMAIL`, `LOUPE_API_PASSWORD`
+- `RESEND_API_KEY`, `EMAIL_FROM_EMAIL`, `EMAIL_FROM_NAME`
 - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM_EMAIL`, `SMTP_FROM_NAME`
 - `SWEEPBRIGHT_API_BASE_URL`, `SWEEPBRIGHT_API_VERSION`, `SWEEPBRIGHT_CLIENT_ID`, `SWEEPBRIGHT_CLIENT_SECRET`
 - `PUBLIC_SITE_URL`
@@ -98,6 +99,7 @@ Note back-office:
 
 - `ADMIN_API_KEY` reste utilise comme cle de bootstrap initial et comme mode de secours legacy pour certains acces admin/internes.
 - Le premier acces admin se fait en autorisant une adresse email puis en finalisant la connexion via Google SSO.
+- La couche email utilise `Resend` en priorite si `RESEND_API_KEY` est renseignee, avec fallback `SMTP` legacy si besoin.
 
 ## Base de donnees
 

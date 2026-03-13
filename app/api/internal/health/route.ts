@@ -18,12 +18,6 @@ const OPTIONAL_ENV_KEYS = [
   "LOUPE_API_BASE_URL",
   "LOUPE_API_EMAIL",
   "LOUPE_API_PASSWORD",
-  "SMTP_HOST",
-  "SMTP_PORT",
-  "SMTP_USER",
-  "SMTP_PASS",
-  "SMTP_FROM_EMAIL",
-  "SMTP_FROM_NAME",
 ] as const;
 
 const hasValue = (value: string | undefined) => {
@@ -32,6 +26,25 @@ const hasValue = (value: string | undefined) => {
 
 const getMissingEnv = (keys: readonly string[]) => {
   return keys.filter((key) => !hasValue(process.env[key]));
+};
+
+const getEmailEnvHealth = () => {
+  const resendConfigured =
+    hasValue(process.env.RESEND_API_KEY) &&
+    (hasValue(process.env.EMAIL_FROM_EMAIL) || hasValue(process.env.SMTP_FROM_EMAIL));
+  const smtpConfigured =
+    hasValue(process.env.SMTP_HOST) &&
+    hasValue(process.env.SMTP_PORT) &&
+    hasValue(process.env.SMTP_USER) &&
+    hasValue(process.env.SMTP_PASS) &&
+    (hasValue(process.env.EMAIL_FROM_EMAIL) || hasValue(process.env.SMTP_FROM_EMAIL));
+
+  return {
+    ok: resendConfigured || smtpConfigured,
+    resendConfigured,
+    smtpConfigured,
+    missing: resendConfigured || smtpConfigured ? [] : ["RESEND_API_KEY or SMTP_*", "EMAIL_FROM_EMAIL"],
+  };
 };
 
 const createSupabaseHealthClient = () => {
@@ -54,6 +67,7 @@ export const GET = async (request: Request) => {
 
   const missingCoreEnv = getMissingEnv(CORE_ENV_KEYS);
   const missingOptionalEnv = getMissingEnv(OPTIONAL_ENV_KEYS);
+  const emailEnv = getEmailEnvHealth();
   const supabase = createSupabaseHealthClient();
   const startedAt = Date.now();
   const scopeParam = new URL(request.url).searchParams.get("scope");
@@ -104,7 +118,7 @@ export const GET = async (request: Request) => {
   const envHealthyForStatus =
     scope === "core"
       ? missingCoreEnv.length === 0
-      : missingCoreEnv.length === 0 && missingOptionalEnv.length === 0;
+      : missingCoreEnv.length === 0 && missingOptionalEnv.length === 0 && emailEnv.ok;
   const status: HealthStatus =
     envHealthyForStatus && supabaseOk && queueHealthy ? "ok" : "degraded";
 
@@ -116,7 +130,8 @@ export const GET = async (request: Request) => {
       env: {
         ok: envHealthyForStatus,
         missingCoreEnv,
-        missingOptionalEnv,
+        missingOptionalEnv: [...missingOptionalEnv, ...emailEnv.missing],
+        email: emailEnv,
       },
       supabase: {
         ok: supabaseOk,
