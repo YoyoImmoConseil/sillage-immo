@@ -12,11 +12,16 @@ export default async function AdminUsersPage() {
   return (
     <AdminShell
       title="Utilisateurs & roles"
-      description="Gestion simple des acces internes collaborateur, manager et administrateur."
+      description="Les droits sont definis automatiquement par role. Seuls les administrateurs gerent les acces."
       role={context.role}
       profileName={context.profile?.fullName ?? context.profile?.email ?? "Mode admin"}
     >
-      <UsersManager users={users} canManage={hasAdminPermission(context, "admin.users.manage")} />
+      <UsersManager
+        users={users}
+        canManage={hasAdminPermission(context, "admin.users.manage")}
+        currentProfileId={context.profile?.id ?? null}
+        currentUserEmail={context.profile?.email ?? null}
+      />
     </AdminShell>
   );
 }

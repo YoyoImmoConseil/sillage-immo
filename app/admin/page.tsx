@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AdminShell } from "@/app/components/admin-shell";
-import { requireAdminPagePermission } from "@/lib/admin/auth";
+import { hasAdminPermission, requireAdminPagePermission } from "@/lib/admin/auth";
+import type { AdminPermission } from "@/types/domain/admin";
 
 export const dynamic = "force-dynamic";
 
@@ -9,26 +10,31 @@ const cards = [
     href: "/admin/users",
     title: "Utilisateurs & roles",
     description: "Inviter un membre, activer/desactiver un acces et attribuer les roles.",
+    permission: "admin.users.view" as AdminPermission,
   },
   {
     href: "/admin/leads",
     title: "Recherche leads",
     description: "Rechercher dans les leads vendeurs et acquereurs depuis une vue transversale.",
+    permission: "leads.sellers.view" as AdminPermission,
   },
   {
     href: "/admin/properties",
     title: "Biens",
     description: "Piloter les biens manuels et consulter les biens synchronises depuis SweepBright.",
+    permission: "properties.view" as AdminPermission,
   },
   {
     href: "/admin/buyer-leads",
     title: "Matching acquereurs",
     description: "Enrichir les criteres et recalculer les rapprochements acquereur ↔ biens.",
+    permission: "leads.buyers.view" as AdminPermission,
   },
 ];
 
 export default async function AdminDashboardPage() {
   const context = await requireAdminPagePermission("admin.dashboard.view");
+  const visibleCards = cards.filter((card) => hasAdminPermission(context, card.permission));
 
   return (
     <AdminShell
@@ -38,7 +44,7 @@ export default async function AdminDashboardPage() {
       profileName={context.profile?.fullName ?? context.profile?.email ?? "Mode admin"}
     >
       <section className="grid gap-4 md:grid-cols-2">
-        {cards.map((card) => (
+        {visibleCards.map((card) => (
           <Link
             key={card.href}
             href={card.href}

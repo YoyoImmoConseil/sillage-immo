@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { AdminSignOutButton } from "./admin-sign-out-button";
-import type { AdminRole } from "@/types/domain/admin";
-import { ADMIN_ROLE_LABELS } from "@/types/domain/admin";
+import type { AdminPermission, AdminRole } from "@/types/domain/admin";
+import { ADMIN_ROLE_LABELS, ADMIN_ROLE_PERMISSIONS } from "@/types/domain/admin";
 
 type AdminShellProps = {
   title: string;
@@ -13,15 +13,18 @@ type AdminShellProps = {
 
 const NAV_ITEMS = [
   { href: "/admin", label: "Dashboard" },
-  { href: "/admin/users", label: "Utilisateurs & roles" },
-  { href: "/admin/leads", label: "Recherche leads" },
-  { href: "/admin/seller-leads", label: "Leads vendeurs" },
-  { href: "/admin/buyer-leads", label: "Leads acquereurs" },
-  { href: "/admin/properties", label: "Biens" },
-  { href: "/admin/sweepbright-sync", label: "Sync SweepBright" },
+  { href: "/admin/users", label: "Utilisateurs & roles", permission: "admin.users.view" as AdminPermission },
+  { href: "/admin/leads", label: "Recherche leads", permission: "leads.sellers.view" as AdminPermission },
+  { href: "/admin/seller-leads", label: "Leads vendeurs", permission: "leads.sellers.view" as AdminPermission },
+  { href: "/admin/buyer-leads", label: "Leads acquereurs", permission: "leads.buyers.view" as AdminPermission },
+  { href: "/admin/properties", label: "Biens", permission: "properties.view" as AdminPermission },
+  { href: "/admin/sweepbright-sync", label: "Sync SweepBright", permission: "operations.view" as AdminPermission },
 ];
 
 export function AdminShell({ title, description, role, profileName, children }: AdminShellProps) {
+  const permissions = ADMIN_ROLE_PERMISSIONS[role];
+  const visibleItems = NAV_ITEMS.filter((item) => !item.permission || permissions.includes(item.permission));
+
   return (
     <main className="min-h-screen bg-[#f4ece4]">
       <section className="bg-[#141446] text-[#f4ece4]">
@@ -42,7 +45,7 @@ export function AdminShell({ title, description, role, profileName, children }: 
             </div>
           </div>
           <nav className="flex flex-wrap gap-2">
-            {NAV_ITEMS.map((item) => (
+            {visibleItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}

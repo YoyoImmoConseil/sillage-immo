@@ -99,6 +99,7 @@ Note back-office:
 
 - `ADMIN_API_KEY` reste utilise comme cle de bootstrap initial et comme mode de secours legacy pour certains acces admin/internes.
 - Le premier acces admin se fait en autorisant une adresse email puis en finalisant la connexion via Google SSO.
+- V1 droits admin: les permissions sont fixes par role. Seuls les administrateurs peuvent gerer les acces, les roles et l'activation des comptes.
 - La couche email utilise `Resend` en priorite si `RESEND_API_KEY` est renseignee, avec fallback `SMTP` legacy si besoin.
 
 ## Base de donnees

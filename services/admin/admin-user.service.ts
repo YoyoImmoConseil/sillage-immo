@@ -33,6 +33,49 @@ const buildFullName = (firstName?: string | null, lastName?: string | null) => {
   return [firstName?.trim() ?? "", lastName?.trim() ?? ""].filter(Boolean).join(" ").trim() || null;
 };
 
+const countActiveAdministrators = async () => {
+  const { data: activeProfiles, error: profilesError } = await supabaseAdmin
+    .from("admin_profiles")
+    .select("id")
+    .eq("is_active", true);
+
+  if (profilesError) {
+    throw new Error(profilesError.message);
+  }
+
+  const profileIds = (activeProfiles ?? []).map((profile) => profile.id);
+  if (profileIds.length === 0) {
+    return 0;
+  }
+
+  const { count, error: rolesError } = await supabaseAdmin
+    .from("admin_role_assignments")
+    .select("admin_profile_id", { count: "exact", head: true })
+    .eq("role", "administrateur")
+    .eq("is_active", true)
+    .in("admin_profile_id", profileIds);
+
+  if (rolesError) {
+    throw new Error(rolesError.message);
+  }
+
+  return count ?? 0;
+};
+
+const getAdminRoleStatus = async (profileId: string) => {
+  const { data, error } = await supabaseAdmin
+    .from("admin_role_assignments")
+    .select("role, is_active")
+    .eq("admin_profile_id", profileId)
+    .maybeSingle();
+
+  if (error || !data) {
+    throw new Error(error?.message ?? "Impossible de lire le role admin.");
+  }
+
+  return data as { role: string; is_active: boolean };
+};
+
 const auditAdminAction = async (
   action: string,
   entityType: string,
@@ -255,8 +298,21 @@ export const linkAdminProfileToAuthUser = async (input: {
 export const updateAdminRole = async (input: {
   profileId: string;
   role: AdminRole;
-  actorProfileId?: string | null;
+  actorProfileId: string;
 }) => {
+  const currentRole = await getAdminRoleStatus(input.profileId);
+
+  if (input.actorProfileId && input.actorProfileId === input.profileId && input.role !== "administrateur") {
+    throw new Error("Un administrateur ne peut pas se retirer son propre role.");
+  }
+
+  if (currentRole.role === "administrateur" && input.role !== "administrateur") {
+    const activeAdministrators = await countActiveAdministrators();
+    if (activeAdministrators <= 1) {
+      throw new Error("Impossible de retrograder le dernier administrateur actif.");
+    }
+  }
+
   const { error } = await supabaseAdmin
     .from("admin_role_assignments")
     .update({
@@ -282,8 +338,20 @@ export const updateAdminRole = async (input: {
 export const updateAdminUserStatus = async (input: {
   profileId: string;
   isActive: boolean;
-  actorProfileId?: string | null;
+  actorProfileId: string;
 }) => {
+  if (input.actorProfileId && input.actorProfileId === input.profileId && !input.isActive) {
+    throw new Error("Un administrateur ne peut pas suspendre son propre acces.");
+  }
+
+  const currentRole = await getAdminRoleStatus(input.profileId);
+  if (currentRole.role === "administrateur" && !input.isActive) {
+    const activeAdministrators = await countActiveAdministrators();
+    if (activeAdministrators <= 1) {
+      throw new Error("Impossible de suspendre le dernier administrateur actif.");
+    }
+  }
+
   const { data: profileData, error: profileError } = await supabaseAdmin
     .from("admin_profiles")
     .update({

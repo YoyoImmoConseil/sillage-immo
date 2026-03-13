@@ -45,7 +45,6 @@ export const ADMIN_ROLE_PERMISSIONS: Record<AdminRole, AdminPermission[]> = {
   ],
   manager: [
     "admin.dashboard.view",
-    "admin.users.view",
     "leads.sellers.view",
     "leads.sellers.manage",
     "leads.buyers.view",

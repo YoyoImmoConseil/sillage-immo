@@ -20,6 +20,8 @@ const ROLES: AdminRole[] = ["collaborateur", "manager", "administrateur"];
 export function UsersManager(props: {
   users: UserItem[];
   canManage: boolean;
+  currentProfileId: string | null;
+  currentUserEmail: string | null;
 }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -29,6 +31,7 @@ export function UsersManager(props: {
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const activeAdministrators = props.users.filter((user) => user.isActive && user.role === "administrateur").length;
 
   const createUser = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -90,6 +93,28 @@ export function UsersManager(props: {
 
   return (
     <div className="space-y-6">
+      <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6">
+        <h2 className="text-xl font-semibold text-[#141446]">Regle V1 des droits</h2>
+        <p className="mt-2 text-sm text-[#141446]/72">
+          Les droits sont attribues automatiquement selon le role. Aucun droit individuel n&apos;est
+          configure dans cette version.
+        </p>
+        <div className="mt-4 grid gap-3 md:grid-cols-3">
+          <article className="rounded-2xl border border-[rgba(20,20,70,0.12)] p-4 text-sm text-[#141446]/78">
+            <p className="font-semibold text-[#141446]">Collaborateur</p>
+            <p className="mt-2">Travaille sur les leads et les biens selon le perimetre metier standard.</p>
+          </article>
+          <article className="rounded-2xl border border-[rgba(20,20,70,0.12)] p-4 text-sm text-[#141446]/78">
+            <p className="font-semibold text-[#141446]">Manager</p>
+            <p className="mt-2">Pilote l&apos;activite metier mais ne gere pas les acces ni les roles.</p>
+          </article>
+          <article className="rounded-2xl border border-[rgba(20,20,70,0.12)] p-4 text-sm text-[#141446]/78">
+            <p className="font-semibold text-[#141446]">Administrateur</p>
+            <p className="mt-2">Gere tous les acces, les changements de role et les activations.</p>
+          </article>
+        </div>
+      </section>
+
       {props.canManage ? (
         <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6">
           <h2 className="text-xl font-semibold text-[#141446]">Creer un acces admin</h2>
@@ -149,18 +174,25 @@ export function UsersManager(props: {
           </thead>
           <tbody>
             {props.users.map((user) => (
-              <tr key={user.id} className="border-b border-[rgba(20,20,70,0.1)] last:border-0">
+              <tr key={user.id} className="border-b border-[rgba(20,20,70,0.1)] last:border-0 align-top">
                 <td className="p-3">{user.fullName ?? "-"}</td>
                 <td className="p-3">{user.email}</td>
                 <td className="p-3">
                   {props.canManage ? (
+                    (() => {
+                      const isSelf =
+                        props.currentProfileId === user.id ||
+                        props.currentUserEmail?.trim().toLowerCase() === user.email.trim().toLowerCase();
+                      const isLastActiveAdmin = user.role === "administrateur" && user.isActive && activeAdministrators <= 1;
+
+                      return (
                     <select
                       className="rounded border px-3 py-2 text-sm"
                       value={user.role}
                       onChange={(event) =>
                         updateUser(user.id, { role: event.target.value as AdminRole })
                       }
-                      disabled={isPending}
+                      disabled={isPending || isSelf || isLastActiveAdmin}
                     >
                       {ROLES.map((item) => (
                         <option key={item} value={item}>
@@ -168,9 +200,17 @@ export function UsersManager(props: {
                         </option>
                       ))}
                     </select>
+                      );
+                    })()
                   ) : (
                     user.role
                   )}
+                  {props.currentProfileId === user.id ? (
+                    <p className="mt-2 text-xs text-[#141446]/60">Votre propre role ne peut pas etre modifie ici.</p>
+                  ) : null}
+                  {user.role === "administrateur" && user.isActive && activeAdministrators <= 1 ? (
+                    <p className="mt-2 text-xs text-[#141446]/60">Dernier administrateur actif: role verrouille.</p>
+                  ) : null}
                 </td>
                 <td className="p-3">
                   {user.isActive ? "Actif" : "Suspendu"}
@@ -178,14 +218,31 @@ export function UsersManager(props: {
                 </td>
                 <td className="p-3">
                   {props.canManage ? (
-                    <button
-                      type="button"
-                      className="rounded border px-3 py-2 text-sm"
-                      onClick={() => updateUser(user.id, { isActive: !user.isActive })}
-                      disabled={isPending}
-                    >
-                      {user.isActive ? "Suspendre" : "Reactiver"}
-                    </button>
+                    (() => {
+                      const isSelf =
+                        props.currentProfileId === user.id ||
+                        props.currentUserEmail?.trim().toLowerCase() === user.email.trim().toLowerCase();
+                      const isLastActiveAdmin = user.role === "administrateur" && user.isActive && activeAdministrators <= 1;
+
+                      return (
+                        <>
+                          <button
+                            type="button"
+                            className="rounded border px-3 py-2 text-sm"
+                            onClick={() => updateUser(user.id, { isActive: !user.isActive })}
+                            disabled={isPending || isSelf || isLastActiveAdmin}
+                          >
+                            {user.isActive ? "Suspendre" : "Reactiver"}
+                          </button>
+                          {isSelf ? (
+                            <p className="mt-2 text-xs text-[#141446]/60">Vous ne pouvez pas suspendre votre propre acces.</p>
+                          ) : null}
+                          {isLastActiveAdmin ? (
+                            <p className="mt-2 text-xs text-[#141446]/60">Le dernier administrateur actif ne peut pas etre suspendu.</p>
+                          ) : null}
+                        </>
+                      );
+                    })()
                   ) : (
                     "-"
                   )}
