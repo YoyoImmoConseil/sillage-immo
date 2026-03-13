@@ -152,6 +152,11 @@ const buildListingSlug = (estate: SweepBrightEstateData, businessType: "sale" | 
   return toSlug(base) || `${businessType}-${estate.id.slice(0, 8)}`;
 };
 
+const buildSweepBrightCanonicalPath = (estate: SweepBrightEstateData) => {
+  const postalCode = estate.location?.postal_code?.trim().replace(/\s+/g, "") || "property";
+  return `/${encodeURIComponent(postalCode)}/${encodeURIComponent(estate.id)}`;
+};
+
 const mapEstateToPropertyInsert = (estate: SweepBrightEstateData) => {
   const liveableArea = estate.sizes?.liveable_area?.size;
   const plotArea = estate.sizes?.plot_area?.size;
@@ -251,7 +256,7 @@ const upsertPropertyProjection = async (estate: SweepBrightEstateData) => {
   const property = propertyData as PropertyRow;
   const businessType = inferBusinessType(estate);
   const slug = buildListingSlug(estate, businessType);
-  const canonicalPath = `/biens/${slug}`;
+  const canonicalPath = buildSweepBrightCanonicalPath(estate);
   const coverImageUrl =
     estate.images?.find((item) => typeof item?.url === "string" && item.url)?.url ?? null;
 

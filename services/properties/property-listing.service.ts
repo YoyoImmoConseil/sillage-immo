@@ -7,6 +7,8 @@ type ListingRow = Database["public"]["Tables"]["property_listings"]["Row"];
 type PropertyRow = Database["public"]["Tables"]["properties"]["Row"];
 type MediaRow = Database["public"]["Tables"]["property_media"]["Row"];
 
+const SWEEPBRIGHT_SOURCE = "sweepbright";
+
 const isMissingRelationError = (message: string) => {
   const normalized = message.toLowerCase();
   return (
@@ -111,6 +113,33 @@ const mapListingSnapshot = (
   };
 };
 
+const hydrateListingSnapshot = async (listing: ListingRow) => {
+  const { data: propertyData, error: propertyError } = await supabaseAdmin
+    .from("properties")
+    .select("*")
+    .eq("id", listing.property_id)
+    .maybeSingle();
+
+  if (propertyError) {
+    throw new Error(propertyError.message);
+  }
+  if (!propertyData) return null;
+
+  const { data: mediaData, error: mediaError } = await supabaseAdmin
+    .from("property_media")
+    .select("*")
+    .eq("property_id", listing.property_id)
+    .order("ordinal", { ascending: true });
+
+  if (mediaError) {
+    throw new Error(mediaError.message);
+  }
+
+  return mapListingSnapshot(listing, propertyData as PropertyRow, (mediaData ?? []) as MediaRow[]);
+};
+
+const normalizePostalCode = (value: string) => value.trim().replace(/\s+/g, "");
+
 export const formatListingPrice = (input: { amount: number | null; currency: string }) => {
   if (typeof input.amount !== "number") return "Prix sur demande";
   return new Intl.NumberFormat("fr-FR", {
@@ -207,29 +236,52 @@ export const getPublicPropertyListingBySlug = async (slug: string) => {
   }
   if (!listingData) return null;
 
-  const listing = listingData as ListingRow;
+  return hydrateListingSnapshot(listingData as ListingRow);
+};
+
+export const getPublicPropertyListingByExternalId = async (input: {
+  postalCode: string;
+  propertyId: string;
+}) => {
+  const normalizedPostalCode = normalizePostalCode(input.postalCode);
+  const externalId = input.propertyId.trim();
+  if (!normalizedPostalCode || !externalId) {
+    return null;
+  }
+
   const { data: propertyData, error: propertyError } = await supabaseAdmin
     .from("properties")
     .select("*")
-    .eq("id", listing.property_id)
+    .eq("source", SWEEPBRIGHT_SOURCE)
+    .eq("source_ref", externalId)
+    .eq("postal_code", normalizedPostalCode)
     .maybeSingle();
 
   if (propertyError) {
+    if (isMissingRelationError(propertyError.message)) {
+      return null;
+    }
     throw new Error(propertyError.message);
   }
   if (!propertyData) return null;
+  const property = propertyData as PropertyRow;
 
-  const { data: mediaData, error: mediaError } = await supabaseAdmin
-    .from("property_media")
+  const { data: listingData, error: listingError } = await supabaseAdmin
+    .from("property_listings")
     .select("*")
-    .eq("property_id", listing.property_id)
-    .order("ordinal", { ascending: true });
+    .eq("property_id", property.id)
+    .eq("is_published", true)
+    .maybeSingle();
 
-  if (mediaError) {
-    throw new Error(mediaError.message);
+  if (listingError) {
+    if (isMissingRelationError(listingError.message)) {
+      return null;
+    }
+    throw new Error(listingError.message);
   }
+  if (!listingData) return null;
 
-  return mapListingSnapshot(listing, propertyData as PropertyRow, (mediaData ?? []) as MediaRow[]);
+  return hydrateListingSnapshot(listingData as ListingRow);
 };
 
 export const listPropertyTypesForBusinessType = async (businessType: PropertyBusinessType) => {
