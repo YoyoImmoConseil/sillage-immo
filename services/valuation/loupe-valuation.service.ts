@@ -206,7 +206,195 @@ const hasAnyPrice = (valuation: LoupeValuationResult) => {
   );
 };
 
-export const computeLoupeValuation = async (
+type PlaceSearchItem = {
+  code: string;
+  name: string;
+  type: string;
+  data: {
+    cityName?: string;
+    cityZipCode?: string;
+  };
+};
+
+const normalizePlaces = (payload: unknown) => {
+  const root = asRecord(payload) ?? {};
+  const data = Array.isArray(root.data) ? root.data : [];
+  const out: PlaceSearchItem[] = [];
+  for (const item of data) {
+    const row = asRecord(item);
+    if (!row) continue;
+    const code = asString(row.code);
+    const name = asString(row.name);
+    const type = asString(row.type);
+    const nested = asRecord(row.data) ?? {};
+    if (!code || !name || !type) continue;
+    out.push({
+      code,
+      name,
+      type,
+      data: {
+        cityName: asString(nested.cityName) ?? undefined,
+        cityZipCode: asString(nested.cityZipCode) ?? undefined,
+      },
+    });
+  }
+  return out;
+};
+
+const selectBestAddressPlace = (input: LoupeValuationInput, places: PlaceSearchItem[]) => {
+  const expectedAddress = normalizeForMatch(input.addressLabel);
+  const expectedCity = normalizeForMatch(input.cityName);
+  const expectedPostal = normalizeForMatch(input.cityZipCode);
+  const scored = places
+    .filter((item) => item.type === "address")
+    .map((item) => {
+      const city = normalizeForMatch(item.data.cityName ?? null);
+      const postal = normalizeForMatch(item.data.cityZipCode ?? null);
+      const name = normalizeForMatch(item.name);
+      let points = 0;
+      if (expectedCity && city && expectedCity === city) points += 3;
+      if (expectedPostal && postal && expectedPostal === postal) points += 5;
+      if (expectedAddress && name && (name.includes(expectedAddress) || expectedAddress.includes(name))) {
+        points += 6;
+      }
+      points += getSharedAddressTokenCount(input.addressLabel, item.name) * 2;
+      return { points, item };
+    });
+
+  scored.sort((left, right) => right.points - left.points);
+  return scored[0]?.item ?? null;
+};
+
+type PlaceTreeAddress = {
+  addressLabel: string | null;
+  cityName: string | null;
+  cityZipCode: string | null;
+  cadastreCode: string | null;
+};
+
+const normalizePlaceTreeAddress = (payload: unknown): PlaceTreeAddress => {
+  const root = asRecord(payload) ?? {};
+  const data = asRecord(root.data) ?? {};
+  const address = asRecord(data.address) ?? {};
+  return {
+    addressLabel: asString(address.label),
+    cityName: asString(address.cityName),
+    cityZipCode: asString(address.cityZipCode),
+    cadastreCode: asString(address.cadastreCode),
+  };
+};
+
+type WhiteLabelConfig = {
+  slug: string;
+  priceCentil: number;
+  priceLowCentil: number;
+  priceHighCentil: number;
+};
+
+const getWhiteLabelConfig = async (): Promise<WhiteLabelConfig> => {
+  const fallbackSlug = process.env.NEXT_PUBLIC_WLV_WIDGET_KEY ?? "Y2MtMjg0MA==";
+  const fallback: WhiteLabelConfig = {
+    slug: fallbackSlug,
+    priceCentil: 50,
+    priceLowCentil: 35,
+    priceHighCentil: 65,
+  };
+  const result = await loupeClient.getWhiteLabelValuationConfig(fallbackSlug);
+  if (!result.response.ok) {
+    return fallback;
+  }
+  const root = asRecord(result.payload) ?? {};
+  const data = asRecord(root.data) ?? {};
+  return {
+    slug: asString(data.slug) ?? fallback.slug,
+    priceCentil: asNumber(data.priceCentil) ?? fallback.priceCentil,
+    priceLowCentil: asNumber(data.priceLowCentil) ?? fallback.priceLowCentil,
+    priceHighCentil: asNumber(data.priceHighCentil) ?? fallback.priceHighCentil,
+  };
+};
+
+const buildSaleProjectPayload = (
+  input: LoupeValuationInput,
+  address: PlaceTreeAddress,
+  config: WhiteLabelConfig
+) => {
+  const refererBase = process.env.PUBLIC_SITE_URL || "https://www.sillage-immo.com";
+  const payload: Record<string, unknown> = {
+    whiteLabelValuationConfig: config.slug,
+    priceCentil: config.priceCentil,
+    priceLowCentil: config.priceLowCentil,
+    priceHighCentil: config.priceHighCentil,
+    allowShare: true,
+    referer: `${refererBase.replace(/\/$/, "")}/estimation`,
+    addressLabel: address.addressLabel ?? input.addressLabel,
+    cityName: address.cityName ?? input.cityName,
+    cityZipCode: address.cityZipCode ?? input.cityZipCode,
+    type: mapPropertyType(input.propertyType),
+    state: "old",
+    surface: input.livingArea ?? undefined,
+    rooms:
+      typeof input.rooms === "number" && Number.isFinite(input.rooms)
+        ? String(Math.round(input.rooms))
+        : undefined,
+    floor: input.floor ?? undefined,
+  };
+
+  if (address.cadastreCode) {
+    payload.cadastreCode = address.cadastreCode;
+  }
+  return payload;
+};
+
+const normalizeSaleProjectEstimate = (
+  input: LoupeValuationInput,
+  address: PlaceTreeAddress,
+  payload: unknown
+): LoupeValuationResult => {
+  const root = asRecord(payload) ?? {};
+  const data = asRecord(root.data) ?? root;
+  return {
+    addressAnalysisId: null,
+    addressLabel: address.addressLabel ?? input.addressLabel,
+    cityName: address.cityName ?? input.cityName,
+    cityZipCode: address.cityZipCode ?? input.cityZipCode,
+    type: mapPropertyType(input.propertyType),
+    state: "old",
+    livingSpaceArea: input.livingArea ?? null,
+    rooms: input.rooms ?? null,
+    floor: input.floor ?? null,
+    valuationPrice: asNumber(data.price),
+    valuationPriceLow: asNumber(data.priceLow) ?? asNumber(data.price_low),
+    valuationPriceHigh: asNumber(data.priceHigh) ?? asNumber(data.price_high),
+  };
+};
+
+const computeViaSaleProjectEstimate = async (
+  input: LoupeValuationInput
+): Promise<LoupeValuationResult | null> => {
+  const query = [input.addressLabel, input.cityZipCode, input.cityName].filter(Boolean).join(" ");
+  const placesResult = await loupeClient.searchPlaces(query);
+  if (!placesResult.response.ok) return null;
+
+  const places = normalizePlaces(placesResult.payload);
+  const bestAddress = selectBestAddressPlace(input, places);
+  if (!bestAddress?.code) return null;
+
+  const placeTreeResult = await loupeClient.getPlaceTree(bestAddress.code, true);
+  if (!placeTreeResult.response.ok) return null;
+  const address = normalizePlaceTreeAddress(placeTreeResult.payload);
+  if (!matchesRequestedAddress(input, { ...address, addressAnalysisId: null, type: null, state: null, livingSpaceArea: null, rooms: null, floor: null, valuationPrice: null, valuationPriceLow: null, valuationPriceHigh: null })) {
+    return null;
+  }
+
+  const config = await getWhiteLabelConfig();
+  const estimatePayload = buildSaleProjectPayload(input, address, config);
+  const estimateResult = await loupeClient.estimateSaleProject(estimatePayload);
+  if (!estimateResult.response.ok) return null;
+
+  return normalizeSaleProjectEstimate(input, address, estimateResult.payload);
+};
+
+const computeViaLegacyAddressAnalysis = async (
   input: LoupeValuationInput
 ): Promise<LoupeValuationResult> => {
   const payload = {
@@ -247,8 +435,6 @@ export const computeLoupeValuation = async (
     return normalized;
   }
 
-  // Some providers compute the final valuation asynchronously.
-  // Poll longer so the first user flow returns a price more often.
   for (let attempt = 0; attempt < POLL_ATTEMPTS; attempt += 1) {
     await sleep(POLL_INTERVAL_MS);
     const next = await loupeClient.getAddressAnalysisById(id);
@@ -261,4 +447,17 @@ export const computeLoupeValuation = async (
   }
 
   return normalized;
+};
+
+export const computeLoupeValuation = async (
+  input: LoupeValuationInput
+): Promise<LoupeValuationResult> => {
+  try {
+    const result = await computeViaSaleProjectEstimate(input);
+    if (result) return result;
+  } catch {
+    // fallback on legacy endpoint below
+  }
+
+  return computeViaLegacyAddressAnalysis(input);
 };

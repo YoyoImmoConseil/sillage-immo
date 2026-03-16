@@ -7,6 +7,7 @@ type LoupeTokenCache = {
 } | null;
 
 const DEFAULT_BASE_URL = "https://api.la-loupe.immo";
+const DEFAULT_DATA_API_BASE_URL = "https://data.la-loupe.immo";
 const TOKEN_TTL_MS = 45 * 60 * 1000;
 
 let tokenCache: LoupeTokenCache = null;
@@ -69,6 +70,58 @@ const extractToken = (payload: unknown): string | null => {
 
 const authorizationCandidates = (token: string) => {
   return [`Bearer ${token}`, token];
+};
+
+const getDataApiEnv = () => {
+  const baseUrl = process.env.LOUPE_DATA_API_BASE_URL || DEFAULT_DATA_API_BASE_URL;
+  const dataApiTokenSalt =
+    process.env.LOUPE_DATA_API_TOKEN_SALT || "42eefa1386325e719c5a70712ccdfd53";
+  const dataApiUser = process.env.LOUPE_DATA_API_USER || "gp-front-app";
+  return { baseUrl, dataApiTokenSalt, dataApiUser };
+};
+
+const buildDataApiToken = () => {
+  const env = getDataApiEnv();
+  const timestampSeconds = Math.round(Date.now() / 1000);
+  const raw = `${timestampSeconds}${env.dataApiTokenSalt}`;
+  const signature = Buffer.from(raw).toString("base64").slice(0, 30);
+  return `${env.dataApiUser}.${timestampSeconds.toString(16)}.${signature}`;
+};
+
+const getWithDataApiToken = async (path: string, query?: Record<string, string | number>) => {
+  const env = getDataApiEnv();
+  const token = buildDataApiToken();
+  const url = new URL(`${env.baseUrl}${path}`);
+  if (query) {
+    for (const [key, value] of Object.entries(query)) {
+      url.searchParams.set(key, String(value));
+    }
+  }
+  const response = await fetch(url.toString(), {
+    method: "GET",
+    headers: {
+      Authorization: token,
+    },
+    cache: "no-store",
+  });
+  const payload = await safeJson(response);
+  return { response, payload };
+};
+
+const postWithDataApiToken = async (path: string, body: unknown) => {
+  const env = getDataApiEnv();
+  const token = buildDataApiToken();
+  const response = await fetch(`${env.baseUrl}${path}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: token,
+    },
+    body: JSON.stringify(body),
+    cache: "no-store",
+  });
+  const payload = await safeJson(response);
+  return { response, payload };
 };
 
 const authenticate = async () => {
@@ -204,5 +257,20 @@ export const loupeClient = {
       orderDir: "desc",
       searchString,
     });
+  },
+  getWhiteLabelValuationConfig: async (slug: string) => {
+    return getWithAuth(`/v1/white-label-valuation/${encodeURIComponent(slug)}`);
+  },
+  searchPlaces: async (query: string) => {
+    return getWithDataApiToken("/v1/places", { q: query });
+  },
+  getPlaceTree: async (code: string, isAddress = true) => {
+    return getWithDataApiToken("/v1/place/tree", {
+      code,
+      isAddress: isAddress ? 1 : 0,
+    });
+  },
+  estimateSaleProject: async (payload: unknown) => {
+    return postWithDataApiToken("/v1/sale-project/estimate", payload);
   },
 };

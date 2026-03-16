@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { loupeClient } from "@/services/valuation/loupe-client";
+import { computeLoupeValuation } from "@/services/valuation/loupe-valuation.service";
 
 type AddressAnalysisNormalized = {
   id: string | null;
@@ -321,12 +322,24 @@ const normalizeFromLoupeLead = (rawPayload: unknown): AddressAnalysisNormalized 
   };
 };
 
-const hasValuation = (value: AddressAnalysisNormalized) => {
+const hasValuation = (value: {
+  valuationPrice: number | null;
+  valuationPriceLow: number | null;
+  valuationPriceHigh: number | null;
+}) => {
   return Boolean(
     value.valuationPrice !== null ||
       value.valuationPriceLow !== null ||
       value.valuationPriceHigh !== null
   );
+};
+
+const mapSellerPropertyTypeToLoupe = (value: string | null | undefined) => {
+  const normalized = (value ?? "").trim().toLowerCase();
+  if (normalized === "appartement") return "appartement" as const;
+  if (normalized === "maison") return "maison" as const;
+  if (normalized === "villa") return "villa" as const;
+  return "autre" as const;
 };
 
 const fetchFromLoupeLeadById = async (loupeLeadId: string) => {
@@ -460,6 +473,36 @@ export const syncSellerValuationFromLoupe = async (
         source = "lead_search";
         break;
       }
+    }
+  }
+
+  if (!normalized) {
+    try {
+      const direct = await computeLoupeValuation({
+        addressLabel: lead.property_address ?? "",
+        cityName: lead.city ?? "",
+        cityZipCode: lead.postal_code ?? "",
+        propertyType: mapSellerPropertyTypeToLoupe(lead.property_type),
+      });
+      if (hasValuation(direct)) {
+        normalized = {
+          id: direct.addressAnalysisId,
+          addressLabel: direct.addressLabel,
+          cityName: direct.cityName,
+          cityZipCode: direct.cityZipCode,
+          type: direct.type,
+          state: direct.state,
+          livingSpaceArea: direct.livingSpaceArea,
+          rooms: direct.rooms,
+          floor: direct.floor,
+          valuationPrice: direct.valuationPrice,
+          valuationPriceLow: direct.valuationPriceLow,
+          valuationPriceHigh: direct.valuationPriceHigh,
+        };
+        source = "search_email";
+      }
+    } catch {
+      // Continue with legacy lookup strategies below.
     }
   }
 
