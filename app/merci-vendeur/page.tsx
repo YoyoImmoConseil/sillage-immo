@@ -78,7 +78,7 @@ export default async function MerciVendeurPage({ searchParams }: MerciVendeurPag
                     .filter(Boolean)
                     .join(" ")}
                 </p>
-                <p className="text-sm text-[#141446]">
+                <p className="sillage-editorial-text text-[#141446]">
                   {valuation.valuationPriceLow !== null || valuation.valuationPriceHigh !== null ? (
                     <>
                       Fourchette estimee:{" "}
@@ -102,7 +102,7 @@ export default async function MerciVendeurPage({ searchParams }: MerciVendeurPag
                 </p>
               </div>
             ) : null}
-            <p className="text-sm opacity-75">
+            <p className="sillage-editorial-text opacity-75">
               Un conseiller Sillage Immo vous recontacte rapidement pour cadrer la mise en vente
               et vous accompagner pas a pas jusqu&apos;a la concretisation de votre projet.
             </p>

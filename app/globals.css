@@ -48,6 +48,17 @@ label {
   font-family: var(--font-libre-baskerville), serif;
 }
 
+.sillage-editorial-text {
+  font-size: 1rem;
+  line-height: 1.65;
+}
+
+@media (min-width: 768px) {
+  .sillage-editorial-text {
+    font-size: 1.25rem;
+  }
+}
+
 .sillage-card {
   border: none;
   background: transparent;

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { formatPropertyTypeLabel } from "@/lib/properties/property-type-label";
 import { PropertyCard } from "./property-card";
 import type { PropertyBusinessType, PropertyListingSnapshot } from "@/types/domain/properties";
 
@@ -137,7 +138,7 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
             <option value="">Tous les types</option>
             {propertyTypes.map((type) => (
               <option key={type} value={type}>
-                {type}
+                {formatPropertyTypeLabel(type) ?? type}
               </option>
             ))}
           </select>

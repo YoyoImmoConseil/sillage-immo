@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AdminShell } from "@/app/components/admin-shell";
 import { requireAdminPagePermission } from "@/lib/admin/auth";
+import { formatPropertyTypeLabel } from "@/lib/properties/property-type-label";
 import { getBuyerLeadDetailForAdmin } from "@/services/buyers/buyer-lead.service";
 import { listMatchesForBuyerLead } from "@/services/buyers/buyer-matching.service";
 import { BuyerLeadForm } from "./buyer-lead-form";
@@ -89,7 +90,7 @@ export default async function BuyerLeadDetailPage({ params }: BuyerLeadDetailPag
                     <div>
                       <h3 className="font-semibold text-[#141446]">{match.title ?? "Bien sans titre"}</h3>
                       <p className="text-sm text-[#141446]/70">
-                        {match.city ?? "-"} · {match.propertyType ?? "-"} · Score {match.score}/100
+                        {match.city ?? "-"} · {formatPropertyTypeLabel(match.propertyType) ?? "-"} · Score {match.score}/100
                       </p>
                     </div>
                     <div className="flex gap-3">

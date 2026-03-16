@@ -1,6 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 import type { Metadata } from "next";
 import Link from "next/link";
+import { formatPropertyTypeLabel } from "@/lib/properties/property-type-label";
 import type { PropertyListingSnapshot } from "@/types/domain/properties";
 import { formatListingPrice } from "@/services/properties/property-listing.service";
 import { PropertyEnergyScale } from "./property-energy-scale";
@@ -266,7 +267,7 @@ export function PublicListingDetailPage({ listing }: { listing: PropertyListingS
               <dl className="grid gap-3 text-sm sm:grid-cols-2">
                 <div>
                   <dt className="opacity-65">🏠 Typologie</dt>
-                  <dd>{listing.propertyType ?? "-"}</dd>
+                  <dd>{formatPropertyTypeLabel(listing.propertyType) ?? "-"}</dd>
                 </div>
                 <div>
                   <dt className="opacity-65">📐 Surface Carrez</dt>
@@ -305,7 +306,7 @@ export function PublicListingDetailPage({ listing }: { listing: PropertyListingS
 
             <section className="rounded-2xl border border-[rgba(20,20,70,0.18)] p-6 space-y-3">
               <h2 className="sillage-section-title">Description detaillee</h2>
-              <p className="text-sm leading-7 opacity-85">
+              <p className="sillage-editorial-text opacity-85">
                 {listing.property.description ?? "Description bientot disponible."}
               </p>
             </section>

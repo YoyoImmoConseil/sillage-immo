@@ -13,7 +13,7 @@ export async function HomeTeamSection() {
         <div className="space-y-3">
           <p className="text-xs uppercase tracking-[0.16em] opacity-70">Notre equipe</p>
           <h2 className="sillage-section-title">Des conseillers identifies et joignables</h2>
-          <p className="max-w-3xl text-sm opacity-75 md:text-base">
+          <p className="sillage-editorial-text max-w-3xl opacity-75">
             Une equipe locale, visible et accessible, avec un interlocuteur clair pour chaque projet.
           </p>
         </div>
@@ -46,7 +46,7 @@ export async function HomeTeamSection() {
                     {member.email}
                   </a>
                 </div>
-                {member.bio ? <p className="text-sm leading-6 text-[#141446]/80">{member.bio}</p> : null}
+                {member.bio ? <p className="sillage-editorial-text text-[#141446]/80">{member.bio}</p> : null}
               </div>
             </article>
           ))}

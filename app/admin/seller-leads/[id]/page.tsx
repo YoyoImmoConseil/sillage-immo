@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AdminShell } from "@/app/components/admin-shell";
 import { requireAdminPagePermission } from "@/lib/admin/auth";
+import { formatPropertyTypeLabel } from "@/lib/properties/property-type-label";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import type { Database } from "@/types/db/supabase";
 import { SellerLeadStatusForm } from "./status-form";
@@ -120,7 +121,7 @@ export default async function SellerLeadDetailPage({ params }: SellerLeadDetailP
             </div>
             <div>
               <dt className="opacity-70">Type de bien</dt>
-              <dd>{lead.property_type ?? "-"}</dd>
+              <dd>{formatPropertyTypeLabel(lead.property_type) ?? "-"}</dd>
             </div>
             <div>
               <dt className="opacity-70">Adresse</dt>

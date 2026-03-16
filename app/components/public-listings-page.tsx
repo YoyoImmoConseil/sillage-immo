@@ -67,7 +67,7 @@ export async function PublicListingsPage(props: PublicListingsPageProps) {
             Catalogue Sillage Immo
           </p>
           <h1 className="sillage-section-title text-[#f4ece4]">{props.title}</h1>
-          <p className="max-w-3xl text-sm text-[#f4ece4]/82">{props.intro}</p>
+          <p className="sillage-editorial-text max-w-3xl text-[#f4ece4]/82">{props.intro}</p>
         </div>
       </section>
 

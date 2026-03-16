@@ -75,7 +75,7 @@ export function HomeCommercialAssistant() {
   return (
     <section className="sillage-card p-0 space-y-4">
       <h2 className="sillage-section-title">Assistant commercial Sillage Immo</h2>
-      <p className="text-sm opacity-75">
+      <p className="sillage-editorial-text opacity-75">
         Dites-nous votre projet. Nous vous orientons vers le parcours le plus pertinent, avec un
         accompagnement sur-mesure.
       </p>

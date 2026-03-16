@@ -1,5 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
+import { formatPropertyTypeLabel } from "@/lib/properties/property-type-label";
 import type {
   PropertyEnergySnapshot,
   PropertyListingSnapshot,
@@ -84,7 +85,7 @@ export function PropertyCard({ listing }: PropertyCardProps) {
         <div className="space-y-3 p-5 text-[#141446]">
           <div className="space-y-1">
             <p className="text-xs uppercase tracking-[0.14em] text-[#141446]/60">
-              🏠 {listing.propertyType ?? "Bien"} {listing.city ? `• ${listing.city}` : ""}
+              🏠 {formatPropertyTypeLabel(listing.propertyType) ?? "Bien"} {listing.city ? `• ${listing.city}` : ""}
             </p>
             <h2 className="text-xl font-semibold leading-tight">
               {listing.title ?? "Bien Sillage Immo"}

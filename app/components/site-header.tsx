@@ -2,12 +2,12 @@ import Link from "next/link";
 
 export function SiteHeader() {
   return (
-    <header className="bg-[#141446] text-[#f4ece4]">
-      <div className="flex min-h-[45px] w-full items-center justify-between px-6 md:px-10 xl:px-14 2xl:px-20">
-        <Link href="/" className="text-sm tracking-[0.16em] uppercase text-[#f4ece4]/90">
+    <header className="sticky top-0 z-50 bg-[#141446] text-[#f4ece4]">
+      <div className="flex min-h-[90px] w-full items-center justify-between px-6 md:px-10 xl:px-14 2xl:px-20">
+        <Link href="/" className="text-base tracking-[0.16em] uppercase text-[#f4ece4]/90 md:text-[1.05rem]">
           Accueil
         </Link>
-        <nav className="flex items-center gap-5 text-xs uppercase tracking-[0.14em] text-[#f4ece4]/90">
+        <nav className="flex items-center gap-5 text-sm uppercase tracking-[0.14em] text-[#f4ece4]/90 md:text-[0.95rem]">
           <Link href="/vente" className="hover:opacity-80 transition-opacity">
             Vente
           </Link>

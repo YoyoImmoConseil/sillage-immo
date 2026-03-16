@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AdminShell } from "@/app/components/admin-shell";
 import { requireAdminPagePermission } from "@/lib/admin/auth";
+import { formatPropertyTypeLabel } from "@/lib/properties/property-type-label";
 import { listAdminProperties } from "@/services/properties/manual-property.service";
 import type { PropertyBusinessType } from "@/types/domain/properties";
 
@@ -81,7 +82,7 @@ export default async function AdminPropertiesPage({ searchParams }: AdminPropert
                   <td className="p-3">{property.source}</td>
                   <td className="p-3">{property.city ?? "-"}</td>
                   <td className="p-3">
-                    {property.businessType} · {property.propertyType ?? "-"}
+                    {property.businessType} · {formatPropertyTypeLabel(property.propertyType) ?? "-"}
                   </td>
                   <td className="p-3">{property.isPublished ? "Publie" : "Brouillon"}</td>
                   <td className="p-3">{property.priceAmount ?? "-"}</td>
