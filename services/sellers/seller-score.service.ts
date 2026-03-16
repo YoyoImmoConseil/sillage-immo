@@ -219,7 +219,7 @@ const detectCompetitorRisk = (message: string | null) => {
     /passer par un reseau/,
     /passer par un grand groupe/,
     /franchise nationale/,
-    /orpi|laforet|century 21|era|guy hoquet|foncia|nestenn/i,
+    /\b(?:orpi|laforet|century 21|era|guy hoquet|foncia|nestenn)\b/i,
   ].some((pattern) => pattern.test(text));
 };
 

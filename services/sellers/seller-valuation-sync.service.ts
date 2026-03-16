@@ -74,6 +74,50 @@ const normalizeForMatch = (value: string | null | undefined) => {
     .trim();
 };
 
+const ADDRESS_NOISE_TOKENS = new Set([
+  "a",
+  "au",
+  "aux",
+  "bd",
+  "boulevard",
+  "chemin",
+  "de",
+  "des",
+  "du",
+  "impasse",
+  "la",
+  "le",
+  "les",
+  "lotissement",
+  "place",
+  "quartier",
+  "residence",
+  "rte",
+  "route",
+  "rue",
+  "square",
+  "villa",
+  "voie",
+  "avenue",
+  "av",
+]);
+
+const tokenizeAddress = (value: string | null | undefined) => {
+  return normalizeForMatch(value)
+    .split(" ")
+    .filter((token) => token.length > 0 && !ADDRESS_NOISE_TOKENS.has(token));
+};
+
+const extractStreetNumber = (value: string | null | undefined) => {
+  return tokenizeAddress(value).find((token) => /^\d+[a-z]?$/i.test(token)) ?? null;
+};
+
+const getSharedAddressTokenCount = (left: string | null | undefined, right: string | null | undefined) => {
+  const leftTokens = tokenizeAddress(left);
+  const rightTokens = new Set(tokenizeAddress(right));
+  return leftTokens.filter((token) => rightTokens.has(token)).length;
+};
+
 const computeAddressMatchScore = (
   expected: { address: string | null; city: string | null; postalCode: string | null },
   candidate: AddressAnalysisNormalized
@@ -95,8 +139,49 @@ const computeAddressMatchScore = (
   ) {
     score += 6;
   }
+  score += getSharedAddressTokenCount(expected.address, candidate.addressLabel) * 2;
 
   return score;
+};
+
+const isAddressMatchStrongEnough = (
+  expected: { address: string | null; city: string | null; postalCode: string | null },
+  candidate: AddressAnalysisNormalized
+) => {
+  const expectedCity = normalizeForMatch(expected.city);
+  const candidateCity = normalizeForMatch(candidate.cityName);
+  if (expectedCity && candidateCity && expectedCity !== candidateCity) {
+    return false;
+  }
+
+  const expectedPostal = normalizeForMatch(expected.postalCode);
+  const candidatePostal = normalizeForMatch(candidate.cityZipCode);
+  if (expectedPostal && candidatePostal && expectedPostal !== candidatePostal) {
+    return false;
+  }
+
+  const expectedAddress = normalizeForMatch(expected.address);
+  const candidateAddress = normalizeForMatch(candidate.addressLabel);
+  if (!expectedAddress || !candidateAddress) {
+    return Boolean(expectedCity && candidateCity && expectedPostal && candidatePostal);
+  }
+
+  if (candidateAddress.includes(expectedAddress) || expectedAddress.includes(candidateAddress)) {
+    return true;
+  }
+
+  const expectedNumber = extractStreetNumber(expected.address);
+  const candidateNumber = extractStreetNumber(candidate.addressLabel);
+  if (expectedNumber && candidateNumber && expectedNumber !== candidateNumber) {
+    return false;
+  }
+
+  const sharedTokenCount = getSharedAddressTokenCount(expected.address, candidate.addressLabel);
+  if (sharedTokenCount >= 2) {
+    return true;
+  }
+
+  return Boolean(sharedTokenCount >= 1 && expectedNumber && candidateNumber);
 };
 
 const pickAddressAnalysisId = (candidate: Record<string, unknown>): string | null => {
@@ -136,7 +221,10 @@ const normalizeAddressAnalysis = (
   };
 };
 
-const fetchBestAddressAnalysis = async (searchString: string) => {
+const fetchBestAddressAnalysis = async (
+  searchString: string,
+  expected: { address: string | null; city: string | null; postalCode: string | null }
+) => {
   const search = await loupeClient.searchAddressAnalyses(searchString);
   if (!search.response.ok) {
     throw new Error(
@@ -150,15 +238,18 @@ const fetchBestAddressAnalysis = async (searchString: string) => {
 
   const id = pickAddressAnalysisId(first);
   if (!id) {
-    return normalizeAddressAnalysis(null, first);
+    const normalized = normalizeAddressAnalysis(null, first);
+    return isAddressMatchStrongEnough(expected, normalized) ? normalized : null;
   }
 
   const detail = await loupeClient.getAddressAnalysisById(id);
   if (!detail.response.ok) {
-    return normalizeAddressAnalysis(id, first);
+    const normalized = normalizeAddressAnalysis(id, first);
+    return isAddressMatchStrongEnough(expected, normalized) ? normalized : null;
   }
 
-  return normalizeAddressAnalysis(id, detail.payload);
+  const normalized = normalizeAddressAnalysis(id, detail.payload);
+  return isAddressMatchStrongEnough(expected, normalized) ? normalized : null;
 };
 
 const normalizeFromLoupeLead = (rawPayload: unknown): AddressAnalysisNormalized => {
@@ -277,7 +368,7 @@ const fetchBestLoupeLeadBySearch = async (
   const best = scored[0];
   if (!best) return null;
   // Guardrail: avoid linking an unrelated historical lead.
-  if (best.addressMatchScore < 5) return null;
+  if (!isAddressMatchStrongEnough(expected, best.normalized)) return null;
   return best.normalized;
 };
 
@@ -332,6 +423,20 @@ export const syncSellerValuationFromLoupe = async (
         "Le lead Loupe est trouve mais valuationResult est vide. Verifiez que ce lead provient du widget et que le calcul est termine."
       );
     }
+    if (
+      !isAddressMatchStrongEnough(
+        {
+          address: lead.property_address ?? null,
+          city: lead.city ?? null,
+          postalCode: lead.postal_code ?? null,
+        },
+        byLead
+      )
+    ) {
+      throw new Error(
+        "Le lead Loupe fourni ne correspond pas suffisamment a l'adresse du bien vendeur."
+      );
+    }
     normalized = byLead;
     source = "lead_id";
   }
@@ -360,7 +465,11 @@ export const syncSellerValuationFromLoupe = async (
 
   if (!normalized) {
     for (const candidate of searchCandidates) {
-      const found = await fetchBestAddressAnalysis(candidate.query);
+      const found = await fetchBestAddressAnalysis(candidate.query, {
+        address: lead.property_address ?? null,
+        city: lead.city ?? null,
+        postalCode: lead.postal_code ?? null,
+      });
       if (found) {
         normalized = found;
         source = candidate.source;
