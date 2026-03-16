@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { processSweepBrightDelivery } from "@/services/properties/sweepbright-sync.service";
 import {
   parseSweepBrightWebhookPayload,
@@ -14,15 +14,15 @@ export const POST = async (request: Request) => {
     verifySweepBrightWebhookSignature({ rawBody, signature });
     const payload = parseSweepBrightWebhookPayload(rawBody);
     const result = await registerSweepBrightWebhookDelivery({ payload, rawBody, signature });
-    let processed = false;
 
     if (!result.duplicate) {
-      try {
-        await processSweepBrightDelivery(result.delivery.id);
-        processed = true;
-      } catch {
-        processed = false;
-      }
+      after(async () => {
+        try {
+          await processSweepBrightDelivery(result.delivery.id);
+        } catch {
+          // processing state is persisted in the delivery queue
+        }
+      });
     }
 
     return NextResponse.json({
@@ -30,7 +30,7 @@ export const POST = async (request: Request) => {
       data: {
         deliveryId: result.delivery.id,
         duplicate: result.duplicate,
-        processed,
+        accepted: true,
       },
     });
   } catch (error) {

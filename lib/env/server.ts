@@ -19,5 +19,6 @@ export const serverEnv = {
   SWEEPBRIGHT_API_VERSION: process.env.SWEEPBRIGHT_API_VERSION ?? "20241030",
   SWEEPBRIGHT_CLIENT_ID: process.env.SWEEPBRIGHT_CLIENT_ID ?? "",
   SWEEPBRIGHT_CLIENT_SECRET: process.env.SWEEPBRIGHT_CLIENT_SECRET ?? "",
+  SWEEPBRIGHT_MEDIA_BUCKET: process.env.SWEEPBRIGHT_MEDIA_BUCKET ?? "property-media-cache",
   PUBLIC_SITE_URL: process.env.PUBLIC_SITE_URL ?? "",
 } as const;

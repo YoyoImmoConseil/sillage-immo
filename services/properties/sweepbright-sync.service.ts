@@ -2,14 +2,17 @@ import "server-only";
 import { serverEnv } from "@/lib/env/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { sweepBrightClient } from "./sweepbright-client.service";
+import { cacheSweepBrightMedia } from "./sweepbright-media-cache.service";
 import type { SweepBrightEstateData } from "@/types/api/sweepbright";
 import type { Database } from "@/types/db/supabase";
 
 type WebhookDeliveryRow = Database["public"]["Tables"]["crm_webhook_deliveries"]["Row"];
 type PropertyRow = Database["public"]["Tables"]["properties"]["Row"];
 type PropertyListingRow = Database["public"]["Tables"]["property_listings"]["Row"];
+type PropertyMediaRow = Database["public"]["Tables"]["property_media"]["Row"];
 
 const SWEEPBRIGHT_SOURCE = "sweepbright";
+const ESTATE_FETCH_WINDOW_MS = 55 * 60 * 1000;
 
 const buildPublicListingUrl = (canonicalPath: string) => {
   const baseUrl = serverEnv.PUBLIC_SITE_URL.trim().replace(/\/$/, "");
@@ -17,6 +20,12 @@ const buildPublicListingUrl = (canonicalPath: string) => {
     throw new Error("PUBLIC_SITE_URL is not configured.");
   }
   return `${baseUrl}${canonicalPath}`;
+};
+
+const isDeliveryExpired = (createdAt: string) => {
+  const createdAtMs = new Date(createdAt).getTime();
+  if (!Number.isFinite(createdAtMs)) return false;
+  return Date.now() - createdAtMs > ESTATE_FETCH_WINDOW_MS;
 };
 
 const asRecord = (value: unknown): Record<string, unknown> | null => {
@@ -241,6 +250,74 @@ const mapEstateToMediaInserts = (propertyId: string, estate: SweepBrightEstateDa
   ];
 };
 
+const getPreferredMediaUrl = (media: Pick<PropertyMediaRow, "kind" | "cached_url" | "remote_url" | "ordinal">[]) => {
+  const cover = media
+    .filter((item) => item.kind === "image")
+    .sort((left, right) => left.ordinal - right.ordinal)[0];
+  return cover?.cached_url ?? cover?.remote_url ?? null;
+};
+
+const cachePropertyMediaAssets = async (input: { propertyId: string; listingId: string }) => {
+  const { data: mediaData, error: mediaError } = await supabaseAdmin
+    .from("property_media")
+    .select("*")
+    .eq("property_id", input.propertyId)
+    .order("ordinal", { ascending: true });
+
+  if (mediaError) {
+    throw new Error(mediaError.message);
+  }
+
+  const mediaRows = (mediaData ?? []) as PropertyMediaRow[];
+  for (const media of mediaRows) {
+    if (!media.remote_url) continue;
+    if (media.cached_url) continue;
+
+    try {
+      await cacheSweepBrightMedia({
+        id: media.id,
+        propertyId: media.property_id,
+        kind: media.kind,
+        remoteMediaId: media.remote_media_id,
+        remoteUrl: media.remote_url,
+        contentType: media.content_type,
+        title: media.title,
+      });
+    } catch {
+      // keep remote URL as fallback if cache fails
+    }
+  }
+
+  const { data: refreshedMediaData, error: refreshedMediaError } = await supabaseAdmin
+    .from("property_media")
+    .select("*")
+    .eq("property_id", input.propertyId)
+    .order("ordinal", { ascending: true });
+
+  if (refreshedMediaError) {
+    throw new Error(refreshedMediaError.message);
+  }
+
+  const refreshedMedia = (refreshedMediaData ?? []) as PropertyMediaRow[];
+  const preferredCoverImageUrl = getPreferredMediaUrl(refreshedMedia);
+
+  if (preferredCoverImageUrl) {
+    const { error: listingUpdateError } = await supabaseAdmin
+      .from("property_listings")
+      .update({
+        cover_image_url: preferredCoverImageUrl,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", input.listingId);
+
+    if (listingUpdateError) {
+      throw new Error(listingUpdateError.message);
+    }
+  }
+
+  return { preferredCoverImageUrl };
+};
+
 const upsertPropertyProjection = async (estate: SweepBrightEstateData) => {
   const propertyPayload = mapEstateToPropertyInsert(estate);
   const { data: propertyData, error: propertyError } = await supabaseAdmin
@@ -428,6 +505,15 @@ export const processSweepBrightDelivery = async (deliveryId: string) => {
       throw new Error("Invalid SweepBright delivery payload.");
     }
 
+    if (event !== "estate-deleted" && isDeliveryExpired(delivery.created_at)) {
+      await updateDeliveryStatus(delivery.id, {
+        status: "ignored",
+        last_error: "Delivery expired before SweepBright estate fetch could be completed.",
+        processed_at: new Date().toISOString(),
+      });
+      return { skipped: true as const, expired: true as const };
+    }
+
     if (event === "estate-deleted") {
       await markEstateDeleted(estateId);
       await updateDeliveryStatus(delivery.id, {
@@ -444,6 +530,10 @@ export const processSweepBrightDelivery = async (deliveryId: string) => {
       estateId,
       buildPublicListingUrl(projection.listing.canonical_path)
     );
+    const mediaResult = await cachePropertyMediaAssets({
+      propertyId: projection.property.id,
+      listingId: projection.listing.id,
+    });
     await updateDeliveryStatus(delivery.id, {
       status: "processed",
       processed_at: new Date().toISOString(),
@@ -456,6 +546,7 @@ export const processSweepBrightDelivery = async (deliveryId: string) => {
       propertyId: projection.property.id,
       listingId: projection.listing.id,
       canonicalPath: projection.listing.canonical_path,
+      coverImageUrl: mediaResult.preferredCoverImageUrl,
     };
   } catch (error) {
     const message =

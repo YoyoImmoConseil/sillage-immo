@@ -69,9 +69,9 @@ export function PublicListingDetailPage({ listing }: { listing: PropertyListingS
                     key={image.id}
                     className="overflow-hidden rounded-2xl border border-[rgba(20,20,70,0.18)] bg-[rgba(20,20,70,0.05)]"
                   >
-                    {image.remoteUrl ? (
+                    {image.cachedUrl || image.remoteUrl ? (
                       <img
-                        src={image.remoteUrl}
+                        src={image.cachedUrl ?? image.remoteUrl ?? undefined}
                         alt={image.description ?? listing.title ?? "Photo du bien"}
                         className="aspect-[4/3] h-full w-full object-cover"
                       />
