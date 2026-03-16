@@ -165,6 +165,30 @@ export default async function SellerLeadDetailPage({ params }: SellerLeadDetailP
               <dd>{viewModel.propertyDetailsView.isTopFloor}</dd>
             </div>
             <div>
+              <dt className="opacity-70">Terrasse</dt>
+              <dd>{viewModel.propertyDetailsView.terrace}</dd>
+            </div>
+            <div>
+              <dt className="opacity-70">Taille terrasse</dt>
+              <dd>{viewModel.propertyDetailsView.terraceArea}</dd>
+            </div>
+            <div>
+              <dt className="opacity-70">Balcon</dt>
+              <dd>{viewModel.propertyDetailsView.balcony}</dd>
+            </div>
+            <div>
+              <dt className="opacity-70">Taille balcon</dt>
+              <dd>{viewModel.propertyDetailsView.balconyArea}</dd>
+            </div>
+            <div>
+              <dt className="opacity-70">Exposition sejour</dt>
+              <dd>{viewModel.propertyDetailsView.livingExposure}</dd>
+            </div>
+            <div>
+              <dt className="opacity-70">Temporalite projet</dt>
+              <dd>{viewModel.propertyDetailsView.projectTemporality}</dd>
+            </div>
+            <div>
               <dt className="opacity-70">Diagnostics prets</dt>
               <dd>{lead.diagnostics_ready === null ? "-" : lead.diagnostics_ready ? "Oui" : "Non"}</dd>
             </div>

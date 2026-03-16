@@ -1,6 +1,7 @@
 import type {
   SellerApartmentCondition,
   SellerBuildingAge,
+  SellerLivingExposure,
   SellerPropertyType,
   SellerSeaView,
   SellerTimeline,
@@ -22,6 +23,11 @@ export type FlowForm = {
   rooms: string;
   floor: string;
   buildingTotalFloors: string;
+  terrace: "yes" | "no" | "";
+  terraceArea: string;
+  balcony: "yes" | "no" | "";
+  balconyArea: string;
+  livingExposure: SellerLivingExposure | "";
   elevator: "yes" | "no" | "";
   apartmentCondition: SellerApartmentCondition | "";
   buildingAge: SellerBuildingAge | "";
@@ -54,12 +60,17 @@ export const initialForm: FlowForm = {
   propertyAddress: "",
   city: "",
   postalCode: "",
-  timeline: "immediate",
+  timeline: "list_now",
   occupancyStatus: "owner_occupied",
   livingArea: "",
   rooms: "",
   floor: "",
   buildingTotalFloors: "",
+  terrace: "",
+  terraceArea: "",
+  balcony: "",
+  balconyArea: "",
+  livingExposure: "",
   elevator: "",
   apartmentCondition: "",
   buildingAge: "",

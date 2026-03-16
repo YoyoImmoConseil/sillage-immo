@@ -25,14 +25,18 @@ const formatStatusLabel = (status: string) => {
 
 const formatTimelineLabel = (timeline: string | null) => {
   switch (timeline) {
-    case "immediate":
-      return "Immediat";
-    case "3_months":
-      return "Sous 3 mois";
-    case "6_months":
-      return "Sous 6 mois";
-    case "future":
-      return "Projet futur";
+    case "already_listed":
+      return "Deja mis en vente";
+    case "list_now":
+      return "Mise en vente maintenant";
+    case "list_within_6_months":
+      return "Mise en vente dans les 6 mois";
+    case "self_sell_first":
+      return "Commencer sans agence";
+    case "early_reflection":
+      return "Debut de reflexion";
+    case "personal_information_only":
+      return "Information personnelle uniquement";
     default:
       return timeline ?? "-";
   }
@@ -91,6 +95,29 @@ const formatBuildingAgeLabel = (value: string | null) => {
       return "Recent (1950-1970)";
     case "moderne_1980_today":
       return "Moderne (1980 - aujourd'hui)";
+    default:
+      return value ?? "-";
+  }
+};
+
+const formatLivingExposureLabel = (value: string | null) => {
+  switch (value) {
+    case "north":
+      return "Nord";
+    case "north_east":
+      return "Nord Est";
+    case "east":
+      return "Est";
+    case "south_east":
+      return "Sud Est";
+    case "south":
+      return "Sud";
+    case "south_west":
+      return "Sud Ouest";
+    case "west":
+      return "Ouest";
+    case "north_west":
+      return "Nord Ouest";
     default:
       return value ?? "-";
   }
@@ -176,6 +203,30 @@ export const buildSellerLeadDetailViewModel = (
           ? propertyDetails.is_top_floor
             ? "Oui"
             : "Non"
+          : "-",
+      terrace:
+        typeof propertyDetails?.terrace === "boolean"
+          ? propertyDetails.terrace
+            ? "Oui"
+            : "Non"
+          : "-",
+      terraceArea:
+        typeof propertyDetails?.terrace_area === "number" ? `${propertyDetails.terrace_area} m2` : "-",
+      balcony:
+        typeof propertyDetails?.balcony === "boolean"
+          ? propertyDetails.balcony
+            ? "Oui"
+            : "Non"
+          : "-",
+      balconyArea:
+        typeof propertyDetails?.balcony_area === "number" ? `${propertyDetails.balcony_area} m2` : "-",
+      livingExposure:
+        typeof propertyDetails?.living_exposure === "string"
+          ? formatLivingExposureLabel(propertyDetails.living_exposure)
+          : "-",
+      projectTemporality:
+        typeof propertyDetails?.project_temporality === "string"
+          ? formatTimelineLabel(propertyDetails.project_temporality)
           : "-",
     },
     propertyDetailsFormInitial: {

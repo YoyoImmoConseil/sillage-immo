@@ -74,18 +74,24 @@ const computeIntent = (lead: SellerLeadForScoring, reasons: string[]) => {
   let points = 0;
   const timeline = normalize(lead.timeline);
 
-  if (timeline === "immediate") {
+  if (timeline === "already_listed") {
+    points += 28;
+    reasons.push("Intention tres forte: bien deja mis en vente.");
+  } else if (timeline === "list_now") {
     points += 25;
-    reasons.push("Intention forte: projet vendeur immediat.");
-  } else if (timeline === "3_months") {
-    points += 20;
-    reasons.push("Intention elevee: projet vendeur sous 3 mois.");
-  } else if (timeline === "6_months") {
+    reasons.push("Intention forte: mise en vente immediate.");
+  } else if (timeline === "list_within_6_months") {
     points += 14;
-    reasons.push("Intention moderee: projet vendeur sous 6 mois.");
-  } else if (timeline === "future") {
+    reasons.push("Intention moderee: mise en vente dans les 6 mois.");
+  } else if (timeline === "self_sell_first") {
+    points += 10;
+    reasons.push("Intention presente: tentative de vente en direct avant agence.");
+  } else if (timeline === "early_reflection") {
     points += 8;
-    reasons.push("Projet vendeur futur.");
+    reasons.push("Projet vendeur en phase de reflexion.");
+  } else if (timeline === "personal_information_only") {
+    points += 4;
+    reasons.push("Demande informative sans projet engage.");
   }
 
   if (lead.phone?.trim()) {
@@ -231,7 +237,7 @@ const computeNextBestAction = (
   competitorRiskDetected: boolean
 ): SellerScoreResult["nextBestAction"] => {
   const timeline = normalize(lead.timeline);
-  const fastTimeline = timeline === "immediate" || timeline === "3_months";
+  const fastTimeline = timeline === "already_listed" || timeline === "list_now";
 
   if (competitorRiskDetected) {
     return "differentiation_call_2h";

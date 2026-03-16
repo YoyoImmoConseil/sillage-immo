@@ -26,14 +26,18 @@ const formatStatusLabel = (status: string) => {
 
 const formatTimelineLabel = (timeline: string | null) => {
   switch (timeline) {
-    case "immediate":
-      return "Immediat";
-    case "3_months":
-      return "Sous 3 mois";
-    case "6_months":
-      return "Sous 6 mois";
-    case "future":
-      return "Projet futur";
+    case "already_listed":
+      return "Deja mis en vente";
+    case "list_now":
+      return "Mise en vente maintenant";
+    case "list_within_6_months":
+      return "Mise en vente dans les 6 mois";
+    case "self_sell_first":
+      return "Commencer sans agence";
+    case "early_reflection":
+      return "Debut de reflexion";
+    case "personal_information_only":
+      return "Information personnelle uniquement";
     default:
       return timeline ?? "-";
   }

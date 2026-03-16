@@ -10,6 +10,7 @@ import {
 import {
   SELLER_APARTMENT_CONDITIONS,
   SELLER_BUILDING_AGES,
+  SELLER_LIVING_EXPOSURES,
   SELLER_PROPERTY_TYPES,
   SELLER_SEA_VIEWS,
 } from "@/types/domain/sellers";
@@ -33,6 +34,19 @@ type EstimateAndCreateInput = {
   rooms?: number;
   floor?: string;
   buildingTotalFloors?: number;
+  terrace?: boolean;
+  terraceArea?: number;
+  balcony?: boolean;
+  balconyArea?: number;
+  livingExposure?:
+    | "north"
+    | "north_east"
+    | "east"
+    | "south_east"
+    | "south"
+    | "south_west"
+    | "west"
+    | "north_west";
   elevator?: boolean;
   apartmentCondition?:
     | "a_renover"
@@ -87,6 +101,11 @@ const validate = (payload: unknown): payload is EstimateAndCreateInput => {
     isOptionalNumber(input.rooms) &&
     (input.floor === undefined || typeof input.floor === "string") &&
     isOptionalNumber(input.buildingTotalFloors) &&
+    isOptionalBoolean(input.terrace) &&
+    isOptionalNumber(input.terraceArea) &&
+    isOptionalBoolean(input.balcony) &&
+    isOptionalNumber(input.balconyArea) &&
+    isAllowedString(input.livingExposure, [...SELLER_LIVING_EXPOSURES]) &&
     isAllowedString(input.buildingAge, [...SELLER_BUILDING_AGES]) &&
     isAllowedString(input.seaView, [...SELLER_SEA_VIEWS]) &&
     isOptionalBoolean(input.diagnosticsReady) &&
@@ -159,6 +178,12 @@ export const POST = async (request: Request) => {
       livingArea: input.livingArea,
       rooms: input.rooms,
       floor: input.floor,
+      terrace: input.terrace,
+      terraceArea: input.terraceArea,
+      balcony: input.balcony,
+      balconyArea: input.balconyArea,
+      livingExposure: input.livingExposure,
+      projectTemporality: input.timeline,
       message: input.message,
     });
   } catch (error) {
@@ -179,6 +204,26 @@ export const POST = async (request: Request) => {
       rooms: input.rooms ?? valuation.rooms,
       floor: input.floor ?? valuation.floor,
       buildingTotalFloors: input.buildingTotalFloors,
+      terrace: input.terrace,
+      terraceArea: input.terraceArea,
+      balcony: input.balcony,
+      balconyArea: input.balconyArea,
+      livingExposure: input.livingExposure,
+      projectTemporality: input.timeline,
+      loupeSupportedInputs: {
+        living_area: input.livingArea ?? valuation.livingSpaceArea ?? null,
+        rooms: input.rooms ?? valuation.rooms ?? null,
+        floor: input.floor ?? valuation.floor ?? null,
+        property_type: input.propertyType ?? null,
+      },
+      loupeExtraInputs: {
+        terrace: input.terrace ?? null,
+        terrace_area: input.terraceArea ?? null,
+        balcony: input.balcony ?? null,
+        balcony_area: input.balconyArea ?? null,
+        living_exposure: input.livingExposure ?? null,
+        project_temporality: input.timeline ?? null,
+      },
       elevator: input.elevator,
       apartmentCondition: input.apartmentCondition,
       buildingAge: input.buildingAge,

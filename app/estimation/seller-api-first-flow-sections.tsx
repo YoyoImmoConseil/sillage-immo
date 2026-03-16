@@ -31,13 +31,21 @@ export function SellerProjectFormSection({
   return (
     <section className="rounded-2xl border border-[rgba(20,20,70,0.2)] bg-[#f4ece4] p-6 space-y-4">
       <h2 className="sillage-section-title">Etape 1 - Votre projet et votre bien</h2>
+      <p className="text-sm opacity-75">
+        Quelques informations simples pour cadrer votre estimation et vous proposer un accompagnement
+        vraiment adapte a votre situation.
+      </p>
       <div className="grid gap-3 sm:grid-cols-2 text-sm">
+        <p className="sm:col-span-2 text-xs uppercase tracking-wide opacity-70">
+          Vos coordonnees
+        </p>
         <label>
           Nom complet *
           <input
             className="mt-1 w-full rounded border px-3 py-2"
             value={form.fullName}
             onChange={(event) => onUpdate("fullName", event.target.value)}
+            placeholder="Ex: Marie Dupont"
           />
         </label>
         <label>
@@ -47,16 +55,43 @@ export function SellerProjectFormSection({
             type="email"
             value={form.email}
             onChange={(event) => onUpdate("email", event.target.value)}
+            placeholder="Ex: marie.dupont@email.com"
           />
         </label>
         <label>
-          Telephone *
+          Telephone
           <input
             className="mt-1 w-full rounded border px-3 py-2"
             value={form.phone}
             onChange={(event) => onUpdate("phone", event.target.value)}
+            placeholder="Ex: 06 12 34 56 78"
           />
         </label>
+
+        <p className="sm:col-span-2 text-xs uppercase tracking-wide opacity-70">Votre projet</p>
+        <label className="sm:col-span-2">
+          Ou en est votre projet de vente ?
+          <select
+            className="mt-1 w-full rounded border px-3 py-2"
+            value={form.timeline}
+            onChange={(event) => onUpdate("timeline", event.target.value as FlowForm["timeline"])}
+          >
+            <option value="already_listed">J&apos;ai deja mis en vente</option>
+            <option value="list_now">Je veux mettre en vente maintenant</option>
+            <option value="list_within_6_months">Je veux mettre en vente dans les 6 mois</option>
+            <option value="self_sell_first">
+              Je veux commencer a vendre par moi-meme sans agence
+            </option>
+            <option value="early_reflection">Je commence juste a reflechir au projet</option>
+            <option value="personal_information_only">
+              J&apos;ai juste besoin de l&apos;information pour des raisons personnelles
+            </option>
+          </select>
+        </label>
+
+        <p className="sm:col-span-2 text-xs uppercase tracking-wide opacity-70">
+          Adresse et type de bien
+        </p>
         <label>
           Type de bien
           <select
@@ -88,6 +123,7 @@ export function SellerProjectFormSection({
             className="mt-1 w-full rounded border px-3 py-2"
             value={form.city}
             onChange={(event) => onUpdate("city", event.target.value)}
+            placeholder="Ex: Nice"
           />
         </label>
         <label>
@@ -96,14 +132,20 @@ export function SellerProjectFormSection({
             className="mt-1 w-full rounded border px-3 py-2"
             value={form.postalCode}
             onChange={(event) => onUpdate("postalCode", event.target.value)}
+            placeholder="Ex: 06000"
           />
         </label>
+
+        <p className="sm:col-span-2 text-xs uppercase tracking-wide opacity-70">
+          Caracteristiques du bien
+        </p>
         <label>
           Surface (m2)
           <input
             className="mt-1 w-full rounded border px-3 py-2"
             value={form.livingArea}
             onChange={(event) => onUpdate("livingArea", event.target.value)}
+            placeholder="Ex: 78"
           />
         </label>
         <label>
@@ -112,6 +154,7 @@ export function SellerProjectFormSection({
             className="mt-1 w-full rounded border px-3 py-2"
             value={form.rooms}
             onChange={(event) => onUpdate("rooms", event.target.value)}
+            placeholder="Ex: 3"
           />
         </label>
         <label>
@@ -120,6 +163,7 @@ export function SellerProjectFormSection({
             className="mt-1 w-full rounded border px-3 py-2"
             value={form.floor}
             onChange={(event) => onUpdate("floor", event.target.value)}
+            placeholder="Ex: 4"
           />
         </label>
         <label>
@@ -128,7 +172,74 @@ export function SellerProjectFormSection({
             className="mt-1 w-full rounded border px-3 py-2"
             value={form.buildingTotalFloors}
             onChange={(event) => onUpdate("buildingTotalFloors", event.target.value)}
+            placeholder="Ex: 6"
           />
+        </label>
+        <label>
+          Terrasse *
+          <select
+            className="mt-1 w-full rounded border px-3 py-2"
+            value={form.terrace}
+            onChange={(event) => onUpdate("terrace", event.target.value as FlowForm["terrace"])}
+          >
+            <option value="">Selectionner</option>
+            <option value="yes">Oui</option>
+            <option value="no">Non</option>
+          </select>
+        </label>
+        {form.terrace === "yes" ? (
+          <label>
+            Taille de la terrasse (m2)
+            <input
+              className="mt-1 w-full rounded border px-3 py-2"
+              value={form.terraceArea}
+              onChange={(event) => onUpdate("terraceArea", event.target.value)}
+              placeholder="Ex: 12"
+            />
+          </label>
+        ) : null}
+        <label>
+          Balcon *
+          <select
+            className="mt-1 w-full rounded border px-3 py-2"
+            value={form.balcony}
+            onChange={(event) => onUpdate("balcony", event.target.value as FlowForm["balcony"])}
+          >
+            <option value="">Selectionner</option>
+            <option value="yes">Oui</option>
+            <option value="no">Non</option>
+          </select>
+        </label>
+        {form.balcony === "yes" ? (
+          <label>
+            Taille du balcon (m2)
+            <input
+              className="mt-1 w-full rounded border px-3 py-2"
+              value={form.balconyArea}
+              onChange={(event) => onUpdate("balconyArea", event.target.value)}
+              placeholder="Ex: 6"
+            />
+          </label>
+        ) : null}
+        <label>
+          Exposition du sejour
+          <select
+            className="mt-1 w-full rounded border px-3 py-2"
+            value={form.livingExposure}
+            onChange={(event) =>
+              onUpdate("livingExposure", event.target.value as FlowForm["livingExposure"])
+            }
+          >
+            <option value="">Selectionner</option>
+            <option value="north">Nord</option>
+            <option value="north_east">Nord Est</option>
+            <option value="east">Est</option>
+            <option value="south_east">Sud Est</option>
+            <option value="south">Sud</option>
+            <option value="south_west">Sud Ouest</option>
+            <option value="west">Ouest</option>
+            <option value="north_west">Nord Ouest</option>
+          </select>
         </label>
         <label>
           Ascenseur *
@@ -186,19 +297,6 @@ export function SellerProjectFormSection({
             <option value="lateral">Vue mer laterale</option>
           </select>
         </label>
-        <label>
-          Delai de vente
-          <select
-            className="mt-1 w-full rounded border px-3 py-2"
-            value={form.timeline}
-            onChange={(event) => onUpdate("timeline", event.target.value as FlowForm["timeline"])}
-          >
-            <option value="immediate">Immediat</option>
-            <option value="3_months">Sous 3 mois</option>
-            <option value="6_months">Sous 6 mois</option>
-            <option value="future">Projet futur</option>
-          </select>
-        </label>
         {topFloorKnown ? (
           <p className="sm:col-span-2 text-xs opacity-70">
             Dernier etage:{" "}
@@ -208,12 +306,13 @@ export function SellerProjectFormSection({
           </p>
         ) : null}
         <label className="sm:col-span-2">
-          Message complementaire
+          Informations utiles (optionnel)
           <textarea
             className="mt-1 w-full rounded border px-3 py-2"
             rows={3}
             value={form.message}
             onChange={(event) => onUpdate("message", event.target.value)}
+            placeholder="Ex: travaux recents, contraintes de calendrier, contexte particulier..."
           />
         </label>
       </div>
@@ -226,6 +325,8 @@ export function SellerProjectFormSection({
           !form.email ||
           !form.fullName ||
           !form.propertyAddress ||
+          !form.terrace ||
+          !form.balcony ||
           !form.elevator ||
           !form.apartmentCondition
         }

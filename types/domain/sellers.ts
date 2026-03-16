@@ -4,7 +4,14 @@ export type SellerLeadStatus = (typeof SELLER_LEAD_STATUSES)[number];
 export const SELLER_PROPERTY_TYPES = ["appartement", "maison", "villa", "autre"] as const;
 export type SellerPropertyType = (typeof SELLER_PROPERTY_TYPES)[number];
 
-export const SELLER_TIMELINES = ["immediate", "3_months", "6_months", "future"] as const;
+export const SELLER_TIMELINES = [
+  "already_listed",
+  "list_now",
+  "list_within_6_months",
+  "self_sell_first",
+  "early_reflection",
+  "personal_information_only",
+] as const;
 export type SellerTimeline = (typeof SELLER_TIMELINES)[number];
 
 export const SELLER_OCCUPANCY_STATUSES = [
@@ -32,6 +39,18 @@ export type SellerBuildingAge = (typeof SELLER_BUILDING_AGES)[number];
 
 export const SELLER_SEA_VIEWS = ["none", "panoramic", "classic", "lateral"] as const;
 export type SellerSeaView = (typeof SELLER_SEA_VIEWS)[number];
+
+export const SELLER_LIVING_EXPOSURES = [
+  "north",
+  "north_east",
+  "east",
+  "south_east",
+  "south",
+  "south_west",
+  "west",
+  "north_west",
+] as const;
+export type SellerLivingExposure = (typeof SELLER_LIVING_EXPOSURES)[number];
 
 export type SellerAiInsight = {
   summary: string;
@@ -73,6 +92,26 @@ export type SellerPropertyDetailsMetadata = {
   apartment_condition?: SellerApartmentCondition | string | null;
   building_age?: SellerBuildingAge | string | null;
   sea_view?: SellerSeaView | string | null;
+  terrace?: boolean | null;
+  terrace_area?: number | null;
+  balcony?: boolean | null;
+  balcony_area?: number | null;
+  living_exposure?: SellerLivingExposure | string | null;
+  project_temporality?: string | null;
+  loupe_supported_inputs?: {
+    living_area?: number | null;
+    rooms?: number | null;
+    floor?: string | null;
+    property_type?: string | null;
+  } | null;
+  loupe_extra_inputs?: {
+    terrace?: boolean | null;
+    terrace_area?: number | null;
+    balcony?: boolean | null;
+    balcony_area?: number | null;
+    living_exposure?: SellerLivingExposure | string | null;
+    project_temporality?: string | null;
+  } | null;
   valuation_low?: number | null;
   valuation_high?: number | null;
   notes?: string | null;

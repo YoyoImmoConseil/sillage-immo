@@ -123,6 +123,14 @@ export const buildSellerPropertyDetails = (input: {
   apartmentCondition?: unknown;
   buildingAge?: unknown;
   seaView?: unknown;
+  terrace?: unknown;
+  terraceArea?: unknown;
+  balcony?: unknown;
+  balconyArea?: unknown;
+  livingExposure?: unknown;
+  projectTemporality?: unknown;
+  loupeSupportedInputs?: unknown;
+  loupeExtraInputs?: unknown;
   valuationLow?: unknown;
   valuationHigh?: unknown;
   notes?: unknown;
@@ -140,6 +148,14 @@ export const buildSellerPropertyDetails = (input: {
     apartment_condition: toStringOrNull(input.apartmentCondition),
     building_age: toStringOrNull(input.buildingAge),
     sea_view: toStringOrNull(input.seaView),
+    terrace: typeof input.terrace === "boolean" ? input.terrace : null,
+    terrace_area: toNumberOrNull(input.terraceArea),
+    balcony: typeof input.balcony === "boolean" ? input.balcony : null,
+    balcony_area: toNumberOrNull(input.balconyArea),
+    living_exposure: toStringOrNull(input.livingExposure),
+    loupe_supported_inputs: (asRecord(input.loupeSupportedInputs) as Record<string, unknown> | null) ?? null,
+    loupe_extra_inputs: (asRecord(input.loupeExtraInputs) as Record<string, unknown> | null) ?? null,
+    project_temporality: toStringOrNull(input.projectTemporality),
     valuation_low: toNumberOrNull(input.valuationLow),
     valuation_high: toNumberOrNull(input.valuationHigh),
     notes: toStringOrNull(input.notes),

@@ -8,6 +8,20 @@ export type LoupeValuationInput = {
   livingArea?: number;
   rooms?: number;
   floor?: string;
+  terrace?: boolean;
+  terraceArea?: number;
+  balcony?: boolean;
+  balconyArea?: number;
+  livingExposure?:
+    | "north"
+    | "north_east"
+    | "east"
+    | "south_east"
+    | "south"
+    | "south_west"
+    | "west"
+    | "north_west";
+  projectTemporality?: string;
   message?: string;
 };
 
@@ -73,6 +87,29 @@ const mapPropertyType = (value: LoupeValuationInput["propertyType"]) => {
     default:
       return "other";
   }
+};
+
+const buildLoupeContextNote = (input: LoupeValuationInput) => {
+  const chunks: string[] = [];
+  if (typeof input.terrace === "boolean") {
+    chunks.push(`terrasse:${input.terrace ? "oui" : "non"}`);
+  }
+  if (typeof input.terraceArea === "number") {
+    chunks.push(`terrasse_m2:${Math.round(input.terraceArea)}`);
+  }
+  if (typeof input.balcony === "boolean") {
+    chunks.push(`balcon:${input.balcony ? "oui" : "non"}`);
+  }
+  if (typeof input.balconyArea === "number") {
+    chunks.push(`balcon_m2:${Math.round(input.balconyArea)}`);
+  }
+  if (input.livingExposure) {
+    chunks.push(`exposition:${input.livingExposure}`);
+  }
+  if (input.projectTemporality) {
+    chunks.push(`temporalite:${input.projectTemporality}`);
+  }
+  return chunks.length > 0 ? chunks.join(" | ") : null;
 };
 
 const extractId = (payload: unknown) => {
@@ -397,6 +434,8 @@ const computeViaSaleProjectEstimate = async (
 const computeViaLegacyAddressAnalysis = async (
   input: LoupeValuationInput
 ): Promise<LoupeValuationResult> => {
+  const contextNote = buildLoupeContextNote(input);
+  const description = [input.message, contextNote].filter(Boolean).join(" | ");
   const payload = {
     addressLabel: input.addressLabel,
     cityName: input.cityName,
@@ -407,7 +446,7 @@ const computeViaLegacyAddressAnalysis = async (
       livingSpaceArea: input.livingArea ?? undefined,
       rooms: input.rooms ?? undefined,
       floor: input.floor ?? undefined,
-      description: input.message ?? undefined,
+      description: description || undefined,
     },
   };
 

@@ -28,7 +28,7 @@ const initialState: FormState = {
   propertyAddress: "",
   city: "",
   postalCode: "",
-  timeline: "immediate",
+  timeline: "list_now",
   occupancyStatus: "owner_occupied",
   diagnosticsReady: "no",
   diagnosticsSupportNeeded: "yes",
@@ -166,16 +166,22 @@ export function SellerEstimationForm() {
           />
         </label>
         <label className="text-sm">
-          Delai de vente souhaite
+          Temporalite du projet
           <select
             className="mt-1 w-full rounded border px-3 py-2"
             value={form.timeline}
             onChange={(event) => update("timeline", event.target.value)}
           >
-            <option value="immediate">Immediat</option>
-            <option value="3_months">Sous 3 mois</option>
-            <option value="6_months">Sous 6 mois</option>
-            <option value="future">Projet futur</option>
+            <option value="already_listed">J&apos;ai deja mis en vente</option>
+            <option value="list_now">Je veux mettre en vente maintenant</option>
+            <option value="list_within_6_months">Je veux mettre en vente dans les 6 mois</option>
+            <option value="self_sell_first">
+              Je veux commencer a vendre par moi-meme sans agence
+            </option>
+            <option value="early_reflection">Je commence juste a reflechir au projet</option>
+            <option value="personal_information_only">
+              J&apos;ai juste besoin de l&apos;information pour des raisons personnelles
+            </option>
           </select>
         </label>
       </div>
