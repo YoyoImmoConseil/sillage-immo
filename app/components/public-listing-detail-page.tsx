@@ -85,55 +85,6 @@ export function PublicListingDetailPage({ listing }: { listing: PropertyListingS
               showThumbnails={false}
             />
 
-            <section className="rounded-2xl border border-[rgba(20,20,70,0.18)] p-6 space-y-3">
-              <h2 className="sillage-section-title">Description</h2>
-              <p className="text-sm leading-7 opacity-85">
-                {listing.property.description ?? "Description bientot disponible."}
-              </p>
-            </section>
-
-            <section className="rounded-2xl border border-[rgba(20,20,70,0.18)] p-6 space-y-4">
-              <h2 className="sillage-section-title">A retenir</h2>
-              <dl className="grid gap-3 text-sm sm:grid-cols-2 xl:grid-cols-3">
-                <div>
-                  <dt className="opacity-65">🏠 Typologie</dt>
-                  <dd>{listing.propertyType ?? "-"}</dd>
-                </div>
-                <div>
-                  <dt className="opacity-65">📐 Surface Carrez</dt>
-                  <dd>
-                    {typeof listing.property.surfaces.loiCarrezArea === "number"
-                      ? `${Math.round(listing.property.surfaces.loiCarrezArea)} m2`
-                      : "-"}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="opacity-65">🛋️ Nombre de pieces</dt>
-                  <dd>{typeof listing.property.rooms.roomCount === "number" ? listing.property.rooms.roomCount : "-"}</dd>
-                </div>
-                <div>
-                  <dt className="opacity-65">🏢 Nombre de lots</dt>
-                  <dd>{typeof listing.property.condo.lotCount === "number" ? listing.property.condo.lotCount : "-"}</dd>
-                </div>
-                <div>
-                  <dt className="opacity-65">🧾 Charges annuelles</dt>
-                  <dd>
-                    {typeof listing.property.condo.annualCharges === "number"
-                      ? new Intl.NumberFormat("fr-FR", {
-                          style: "currency",
-                          currency: listing.priceCurrency || "EUR",
-                          maximumFractionDigits: 0,
-                        }).format(listing.property.condo.annualCharges)
-                      : "-"}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="opacity-65">🏙️ Ville</dt>
-                  <dd>{listing.city ?? "-"}</dd>
-                </div>
-              </dl>
-            </section>
-
             <section className="grid gap-4 lg:grid-cols-2">
               <PropertyEnergyScale
                 title="⚡ DPE"
@@ -309,6 +260,55 @@ export function PublicListingDetailPage({ listing }: { listing: PropertyListingS
                 </a>
               </section>
             ) : null}
+
+            <section className="rounded-2xl border border-[rgba(20,20,70,0.18)] p-6 space-y-4">
+              <h2 className="sillage-section-title">A retenir</h2>
+              <dl className="grid gap-3 text-sm sm:grid-cols-2">
+                <div>
+                  <dt className="opacity-65">🏠 Typologie</dt>
+                  <dd>{listing.propertyType ?? "-"}</dd>
+                </div>
+                <div>
+                  <dt className="opacity-65">📐 Surface Carrez</dt>
+                  <dd>
+                    {typeof listing.property.surfaces.loiCarrezArea === "number"
+                      ? `${Math.round(listing.property.surfaces.loiCarrezArea)} m2`
+                      : "-"}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="opacity-65">🛋️ Nombre de pieces</dt>
+                  <dd>{typeof listing.property.rooms.roomCount === "number" ? listing.property.rooms.roomCount : "-"}</dd>
+                </div>
+                <div>
+                  <dt className="opacity-65">🏢 Nombre de lots</dt>
+                  <dd>{typeof listing.property.condo.lotCount === "number" ? listing.property.condo.lotCount : "-"}</dd>
+                </div>
+                <div>
+                  <dt className="opacity-65">🧾 Charges annuelles</dt>
+                  <dd>
+                    {typeof listing.property.condo.annualCharges === "number"
+                      ? new Intl.NumberFormat("fr-FR", {
+                          style: "currency",
+                          currency: listing.priceCurrency || "EUR",
+                          maximumFractionDigits: 0,
+                        }).format(listing.property.condo.annualCharges)
+                      : "-"}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="opacity-65">🏙️ Ville</dt>
+                  <dd>{listing.city ?? "-"}</dd>
+                </div>
+              </dl>
+            </section>
+
+            <section className="rounded-2xl border border-[rgba(20,20,70,0.18)] p-6 space-y-3">
+              <h2 className="sillage-section-title">Description detaillee</h2>
+              <p className="text-sm leading-7 opacity-85">
+                {listing.property.description ?? "Description bientot disponible."}
+              </p>
+            </section>
 
             {listing.property.videoUrl ? (
               <section className="rounded-2xl border border-[rgba(20,20,70,0.18)] p-6 space-y-2">
