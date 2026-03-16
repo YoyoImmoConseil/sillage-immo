@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import { serverEnv } from "@/lib/env/server";
+import { parseAdminProfileMetadata } from "@/services/admin/admin-profile-metadata";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { linkAdminProfileToAuthUser } from "@/services/admin/admin-user.service";
@@ -45,7 +46,7 @@ const buildContext = (
 const getAdminContextByUser = async (user: User): Promise<AdminContext | null> => {
   const { data: profileData, error: profileError } = await supabaseAdmin
     .from("admin_profiles")
-    .select("id, auth_user_id, email, first_name, last_name, full_name, is_active")
+    .select("id, auth_user_id, email, first_name, last_name, full_name, is_active, metadata")
     .eq("email", user.email?.trim().toLowerCase() ?? "")
     .maybeSingle();
 
@@ -57,6 +58,8 @@ const getAdminContextByUser = async (user: User): Promise<AdminContext | null> =
     return null;
   }
 
+  const metadata = parseAdminProfileMetadata(profileData.metadata);
+
   const linkedProfile =
     profileData.auth_user_id === user.id
       ? {
@@ -67,6 +70,10 @@ const getAdminContextByUser = async (user: User): Promise<AdminContext | null> =
           lastName: profileData.last_name,
           fullName: profileData.full_name,
           isActive: profileData.is_active,
+          title: metadata.title,
+          phone: metadata.phone,
+          bio: metadata.bio,
+          avatarUrl: metadata.avatarUrl,
         }
       : await linkAdminProfileToAuthUser({
           authUserId: user.id,

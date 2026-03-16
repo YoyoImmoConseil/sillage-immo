@@ -1,7 +1,10 @@
 import { BuyerSearchForm } from "./components/buyer-search-form";
 import { HomeCommercialAssistant } from "./components/home-commercial-assistant";
+import { HomeTeamSection } from "./components/home-team-section";
 import { SillageLogo } from "./components/sillage-logo";
 import Link from "next/link";
+
+export const dynamic = "force-dynamic";
 
 const methodSteps = [
   {
@@ -38,7 +41,7 @@ const methodSteps = [
 
 const neighborhoods = ["Carre d'Or", "Mont Boron", "Cimiez", "Le Port", "Wilson", "Liberation"];
 
-export default function Home() {
+export default async function Home() {
   return (
     <main className="min-h-screen">
       <section className="bg-[#141446] text-[#f4ece4]">
@@ -211,6 +214,8 @@ export default function Home() {
           <BuyerSearchForm />
         </div>
       </section>
+
+      <HomeTeamSection />
 
       <section id="contact-expert" className="sillage-section-light">
         <div className="w-full px-6 py-10 md:px-10 md:py-14 xl:px-14 2xl:px-20 space-y-3">

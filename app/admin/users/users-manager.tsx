@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { AdminRole } from "@/types/domain/admin";
@@ -13,6 +14,10 @@ type UserItem = {
   isActive: boolean;
   role: AdminRole;
   authUserId?: string | null;
+  title?: string | null;
+  phone?: string | null;
+  bio?: string | null;
+  avatarUrl?: string | null;
 };
 
 const ROLES: AdminRole[] = ["collaborateur", "manager", "administrateur"];
@@ -175,7 +180,19 @@ export function UsersManager(props: {
           <tbody>
             {props.users.map((user) => (
               <tr key={user.id} className="border-b border-[rgba(20,20,70,0.1)] last:border-0 align-top">
-                <td className="p-3">{user.fullName ?? "-"}</td>
+                <td className="p-3">
+                  <div className="flex items-center gap-3">
+                    <div className="h-12 w-9 overflow-hidden rounded-xl bg-[#f4ece4]">
+                      {user.avatarUrl ? (
+                        <img src={user.avatarUrl} alt={user.fullName ?? user.email} className="h-full w-full object-cover" />
+                      ) : null}
+                    </div>
+                    <div>
+                      <p>{user.fullName ?? "-"}</p>
+                      {user.title ? <p className="mt-1 text-xs text-[#141446]/60">{user.title}</p> : null}
+                    </div>
+                  </div>
+                </td>
                 <td className="p-3">{user.email}</td>
                 <td className="p-3">
                   {props.canManage ? (
@@ -217,35 +234,41 @@ export function UsersManager(props: {
                   {user.authUserId ? " · Connecte" : " · En attente Google"}
                 </td>
                 <td className="p-3">
-                  {props.canManage ? (
-                    (() => {
-                      const isSelf =
-                        props.currentProfileId === user.id ||
-                        props.currentUserEmail?.trim().toLowerCase() === user.email.trim().toLowerCase();
-                      const isLastActiveAdmin = user.role === "administrateur" && user.isActive && activeAdministrators <= 1;
+                  <div className="space-y-2">
+                    <Link
+                      href={`/admin/users/${user.id}`}
+                      className="inline-block rounded border px-3 py-2 text-sm"
+                    >
+                      Ouvrir la fiche
+                    </Link>
+                    {props.canManage ? (
+                      (() => {
+                        const isSelf =
+                          props.currentProfileId === user.id ||
+                          props.currentUserEmail?.trim().toLowerCase() === user.email.trim().toLowerCase();
+                        const isLastActiveAdmin = user.role === "administrateur" && user.isActive && activeAdministrators <= 1;
 
-                      return (
-                        <>
-                          <button
-                            type="button"
-                            className="rounded border px-3 py-2 text-sm"
-                            onClick={() => updateUser(user.id, { isActive: !user.isActive })}
-                            disabled={isPending || isSelf || isLastActiveAdmin}
-                          >
-                            {user.isActive ? "Suspendre" : "Reactiver"}
-                          </button>
-                          {isSelf ? (
-                            <p className="mt-2 text-xs text-[#141446]/60">Vous ne pouvez pas suspendre votre propre acces.</p>
-                          ) : null}
-                          {isLastActiveAdmin ? (
-                            <p className="mt-2 text-xs text-[#141446]/60">Le dernier administrateur actif ne peut pas etre suspendu.</p>
-                          ) : null}
-                        </>
-                      );
-                    })()
-                  ) : (
-                    "-"
-                  )}
+                        return (
+                          <>
+                            <button
+                              type="button"
+                              className="rounded border px-3 py-2 text-sm"
+                              onClick={() => updateUser(user.id, { isActive: !user.isActive })}
+                              disabled={isPending || isSelf || isLastActiveAdmin}
+                            >
+                              {user.isActive ? "Suspendre" : "Reactiver"}
+                            </button>
+                            {isSelf ? (
+                              <p className="text-xs text-[#141446]/60">Vous ne pouvez pas suspendre votre propre acces.</p>
+                            ) : null}
+                            {isLastActiveAdmin ? (
+                              <p className="text-xs text-[#141446]/60">Le dernier administrateur actif ne peut pas etre suspendu.</p>
+                            ) : null}
+                          </>
+                        );
+                      })()
+                    ) : null}
+                  </div>
                 </td>
               </tr>
             ))}

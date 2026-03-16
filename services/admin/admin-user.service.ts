@@ -1,6 +1,11 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import type { AdminProfileSnapshot, AdminRole } from "@/types/domain/admin";
+import {
+  buildAdminProfileMetadata,
+  countWords,
+  parseAdminProfileMetadata,
+} from "@/services/admin/admin-profile-metadata";
+import { ADMIN_TEAM_TITLES, type AdminProfileSnapshot, type AdminRole, type AdminTeamTitle } from "@/types/domain/admin";
 
 type AdminProfileRow = {
   id: string;
@@ -10,6 +15,7 @@ type AdminProfileRow = {
   last_name: string | null;
   full_name: string | null;
   is_active: boolean;
+  metadata: Record<string, unknown> | null;
 };
 
 type AdminRoleRow = {
@@ -27,6 +33,10 @@ export type AdminUserListItem = {
   fullName: string | null;
   isActive: boolean;
   role: AdminRole;
+  title: AdminTeamTitle | null;
+  phone: string | null;
+  bio: string | null;
+  avatarUrl: string | null;
 };
 
 const buildFullName = (firstName?: string | null, lastName?: string | null) => {
@@ -110,7 +120,7 @@ export const listAdminUsers = async (): Promise<AdminUserListItem[]> => {
     await Promise.all([
       supabaseAdmin
         .from("admin_profiles")
-        .select("id, auth_user_id, email, first_name, last_name, full_name, is_active")
+        .select("id, auth_user_id, email, first_name, last_name, full_name, is_active, metadata")
         .order("created_at", { ascending: true }),
       supabaseAdmin
         .from("admin_role_assignments")
@@ -128,16 +138,24 @@ export const listAdminUsers = async (): Promise<AdminUserListItem[]> => {
     ((roles ?? []) as AdminRoleRow[]).map((row) => [row.admin_profile_id, row])
   );
 
-  return ((profiles ?? []) as AdminProfileRow[]).map((profile) => ({
-    id: profile.id,
-    authUserId: profile.auth_user_id,
-    email: profile.email,
-    firstName: profile.first_name,
-    lastName: profile.last_name,
-    fullName: profile.full_name,
-    isActive: profile.is_active,
-    role: (roleByProfileId.get(profile.id)?.role as AdminRole | undefined) ?? "collaborateur",
-  }));
+  return ((profiles ?? []) as AdminProfileRow[]).map((profile) => {
+    const metadata = parseAdminProfileMetadata(profile.metadata);
+
+    return {
+      id: profile.id,
+      authUserId: profile.auth_user_id,
+      email: profile.email,
+      firstName: profile.first_name,
+      lastName: profile.last_name,
+      fullName: profile.full_name,
+      isActive: profile.is_active,
+      role: (roleByProfileId.get(profile.id)?.role as AdminRole | undefined) ?? "collaborateur",
+      title: metadata.title,
+      phone: metadata.phone,
+      bio: metadata.bio,
+      avatarUrl: metadata.avatarUrl,
+    };
+  });
 };
 
 export const createAdminAuthorization = async (input: {
@@ -155,13 +173,15 @@ export const createAdminAuthorization = async (input: {
 
   const { data: existingProfile } = await supabaseAdmin
     .from("admin_profiles")
-    .select("id, auth_user_id, email, first_name, last_name, full_name, is_active")
+    .select("id, auth_user_id, email, first_name, last_name, full_name, is_active, metadata")
     .eq("email", email)
     .maybeSingle();
 
   if (existingProfile?.auth_user_id && input.authUserId && existingProfile.auth_user_id !== input.authUserId) {
     throw new Error("Cet email admin est deja rattache a un autre compte Google.");
   }
+
+  const metadata = buildAdminProfileMetadata(existingProfile?.metadata, {});
 
   const { data: profileData, error: profileError } = await supabaseAdmin
     .from("admin_profiles")
@@ -174,10 +194,7 @@ export const createAdminAuthorization = async (input: {
         last_name: lastName,
         full_name: fullName,
         is_active: true,
-        metadata: {
-          first_name: firstName,
-          last_name: lastName,
-        },
+        metadata,
       },
       { onConflict: "email" }
     )
@@ -226,7 +243,7 @@ export const linkAdminProfileToAuthUser = async (input: {
   const email = input.email.trim().toLowerCase();
   const { data: profileData, error: profileError } = await supabaseAdmin
     .from("admin_profiles")
-    .select("id, auth_user_id, email, first_name, last_name, full_name, is_active")
+    .select("id, auth_user_id, email, first_name, last_name, full_name, is_active, metadata")
     .eq("email", email)
     .maybeSingle();
 
@@ -242,6 +259,8 @@ export const linkAdminProfileToAuthUser = async (input: {
   const lastName = profileData.last_name ?? input.lastName ?? null;
   const fullName = profileData.full_name ?? input.fullName ?? buildFullName(firstName, lastName);
 
+  const metadata = buildAdminProfileMetadata(profileData.metadata, {});
+
   const { data: updatedProfile, error: updateError } = await supabaseAdmin
     .from("admin_profiles")
     .update({
@@ -251,10 +270,7 @@ export const linkAdminProfileToAuthUser = async (input: {
       last_name: lastName,
       full_name: fullName,
       is_active: true,
-      metadata: {
-        first_name: firstName,
-        last_name: lastName,
-      },
+      metadata,
       updated_at: new Date().toISOString(),
     })
     .eq("id", profileData.id)
@@ -292,7 +308,16 @@ export const linkAdminProfileToAuthUser = async (input: {
     fullName: updatedProfile.full_name,
     isActive: updatedProfile.is_active,
     role: roleData.role as AdminRole,
+    title: null,
+    phone: null,
+    bio: null,
+    avatarUrl: null,
   };
+};
+
+export const getAdminUserById = async (profileId: string): Promise<AdminUserListItem | null> => {
+  const users = await listAdminUsers();
+  return users.find((user) => user.id === profileId) ?? null;
 };
 
 export const updateAdminRole = async (input: {
@@ -382,5 +407,83 @@ export const updateAdminUserStatus = async (input: {
     input.profileId,
     input.actorProfileId ?? null,
     { isActive: input.isActive }
+  );
+};
+
+export const updateAdminUserProfile = async (input: {
+  profileId: string;
+  actorProfileId: string;
+  firstName?: string;
+  lastName?: string;
+  title?: string;
+  phone?: string;
+  bio?: string;
+  avatarUrl?: string | null;
+}) => {
+  const { data: currentProfile, error: currentProfileError } = await supabaseAdmin
+    .from("admin_profiles")
+    .select("id, first_name, last_name, metadata")
+    .eq("id", input.profileId)
+    .maybeSingle();
+
+  if (currentProfileError || !currentProfile) {
+    throw new Error(currentProfileError?.message ?? "Utilisateur introuvable.");
+  }
+
+  const currentMetadata = parseAdminProfileMetadata(currentProfile.metadata);
+  const firstName =
+    input.firstName === undefined ? currentProfile.first_name : input.firstName?.trim() || null;
+  const lastName =
+    input.lastName === undefined ? currentProfile.last_name : input.lastName?.trim() || null;
+  const rawTitle = input.title === undefined ? currentMetadata.title : input.title?.trim() || null;
+  const title =
+    rawTitle === null ? null : ADMIN_TEAM_TITLES.includes(rawTitle as AdminTeamTitle) ? (rawTitle as AdminTeamTitle) : null;
+  const phone = input.phone === undefined ? currentMetadata.phone : input.phone?.trim() || null;
+  const bio = input.bio === undefined ? currentMetadata.bio : input.bio?.trim() || null;
+  const fullName = buildFullName(firstName, lastName);
+
+  if (rawTitle !== null && title === null) {
+    throw new Error("Le titre selectionne est invalide.");
+  }
+
+  if (bio && countWords(bio) > 250) {
+    throw new Error("La presentation est limitee a 250 mots.");
+  }
+
+  const metadata = buildAdminProfileMetadata(currentProfile.metadata, {
+    title,
+    phone,
+    bio,
+    avatarUrl: input.avatarUrl === undefined ? currentMetadata.avatarUrl : input.avatarUrl,
+  });
+
+  const { error: updateError } = await supabaseAdmin
+    .from("admin_profiles")
+    .update({
+      first_name: firstName,
+      last_name: lastName,
+      full_name: fullName,
+      metadata,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", input.profileId);
+
+  if (updateError) {
+    throw new Error(updateError.message);
+  }
+
+  await auditAdminAction(
+    "admin_user_profile_updated",
+    "admin_profile",
+    input.profileId,
+    input.actorProfileId,
+    {
+      firstName,
+      lastName,
+      title,
+      phone,
+      bio,
+      avatarUrl: input.avatarUrl === undefined ? undefined : input.avatarUrl,
+    }
   );
 };

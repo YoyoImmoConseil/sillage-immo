@@ -1,5 +1,12 @@
 export type AdminRole = "collaborateur" | "manager" | "administrateur";
 
+export type AdminTeamTitle =
+  | "Directeur"
+  | "Manager"
+  | "Conseiller Senior"
+  | "Conseiller Junior"
+  | "Stagiaire";
+
 export type AdminPermission =
   | "admin.dashboard.view"
   | "admin.users.view"
@@ -24,7 +31,19 @@ export type AdminProfileSnapshot = {
   fullName: string | null;
   isActive: boolean;
   role: AdminRole;
+  title: AdminTeamTitle | null;
+  phone: string | null;
+  bio: string | null;
+  avatarUrl: string | null;
 };
+
+export const ADMIN_TEAM_TITLES: AdminTeamTitle[] = [
+  "Directeur",
+  "Manager",
+  "Conseiller Senior",
+  "Conseiller Junior",
+  "Stagiaire",
+];
 
 export const ADMIN_ROLE_LABELS: Record<AdminRole, string> = {
   collaborateur: "Collaborateur",
