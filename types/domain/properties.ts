@@ -16,6 +16,26 @@ export type PropertyMediaSnapshot = {
   expiresAt: string | null;
 };
 
+export type PropertyFeeChargeBearer = "vendor" | "buyer" | null;
+
+export type PropertyEnergySnapshot = {
+  dpeValue: number | null;
+  dpeLabel: string | null;
+  gesValue: number | null;
+  gesLabel: string | null;
+};
+
+export type PropertyCondoSnapshot = {
+  lotCount: number | null;
+  annualCharges: number | null;
+};
+
+export type PropertySaleSnapshot = {
+  feeChargeBearer: PropertyFeeChargeBearer;
+  feeAmount: number | null;
+  priceIncludesFees: boolean;
+};
+
 export type PropertySnapshot = {
   id: string;
   source: string;
@@ -44,17 +64,31 @@ export type PropertySnapshot = {
   surfaces: {
     livingArea: number | null;
     plotArea: number | null;
+    loiCarrezArea: number | null;
+    livingRoomArea: number | null;
+    terraceArea: number | null;
+    balconyArea: number | null;
   };
   rooms: {
     bedrooms: number | null;
     bathrooms: number | null;
-    rooms: number | null;
+    livingRooms: number | null;
+    roomCount: number | null;
     floor: number | null;
+    totalFloors: number | null;
+    isTopFloor: boolean | null;
   };
   amenities: {
     hasTerrace: boolean | null;
+    hasBalcony: boolean | null;
     hasElevator: boolean | null;
+    hasCellar: boolean | null;
+    seaView: string | null;
+    exposure: string | null;
   };
+  sale: PropertySaleSnapshot;
+  energy: PropertyEnergySnapshot;
+  condo: PropertyCondoSnapshot;
   media: PropertyMediaSnapshot[];
   virtualTourUrl: string | null;
   videoUrl: string | null;
@@ -79,9 +113,12 @@ export type PropertyListingSnapshot = {
   postalCode: string | null;
   propertyType: string | null;
   coverImageUrl: string | null;
-  rooms: number | null;
+  roomCount: number | null;
   bedrooms: number | null;
   livingArea: number | null;
+  loiCarrezArea: number | null;
+  annualCharges: number | null;
+  lotCount: number | null;
   floor: number | null;
   hasTerrace: boolean | null;
   hasElevator: boolean | null;

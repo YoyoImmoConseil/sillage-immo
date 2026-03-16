@@ -1,6 +1,11 @@
 /* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
-import type { PropertyListingSnapshot } from "@/types/domain/properties";
+import type {
+  PropertyEnergySnapshot,
+  PropertyListingSnapshot,
+  PropertySaleSnapshot,
+} from "@/types/domain/properties";
+import { PropertyEnergyScale } from "./property-energy-scale";
 
 type PropertyCardProps = {
   listing: Pick<
@@ -15,7 +20,14 @@ type PropertyCardProps = {
     | "priceCurrency"
     | "bedrooms"
     | "livingArea"
-  >;
+    | "loiCarrezArea"
+    | "roomCount"
+    | "annualCharges"
+    | "lotCount"
+  > & {
+    sale: PropertySaleSnapshot;
+    energy: PropertyEnergySnapshot;
+  };
 };
 
 const formatListingPrice = (input: { amount: number | null; currency: string }) => {
@@ -27,7 +39,32 @@ const formatListingPrice = (input: { amount: number | null; currency: string }) 
   }).format(input.amount);
 };
 
+const formatCompactPrice = (value: number | null, currency: string) => {
+  if (typeof value !== "number") return "Prix sur demande";
+  return new Intl.NumberFormat("fr-FR", {
+    style: "currency",
+    currency,
+    maximumFractionDigits: 0,
+  }).format(value);
+};
+
+const formatFeeMention = (input: {
+  sale: PropertySaleSnapshot;
+  currency: string;
+}) => {
+  if (input.sale.feeChargeBearer !== "buyer" || typeof input.sale.feeAmount !== "number") {
+    return null;
+  }
+
+  return `Incluant ${formatCompactPrice(input.sale.feeAmount, input.currency)} d'honoraires a la charge de l'acquereur`;
+};
+
 export function PropertyCard({ listing }: PropertyCardProps) {
+  const feeMention = formatFeeMention({
+    sale: listing.sale,
+    currency: listing.priceCurrency,
+  });
+
   return (
     <article className="overflow-hidden rounded-2xl border border-[rgba(20,20,70,0.18)] bg-[#f4ece4]">
       <Link href={listing.canonicalPath} className="block">
@@ -47,7 +84,7 @@ export function PropertyCard({ listing }: PropertyCardProps) {
         <div className="space-y-3 p-5 text-[#141446]">
           <div className="space-y-1">
             <p className="text-xs uppercase tracking-[0.14em] text-[#141446]/60">
-              {listing.propertyType ?? "Bien"} {listing.city ? `• ${listing.city}` : ""}
+              🏠 {listing.propertyType ?? "Bien"} {listing.city ? `• ${listing.city}` : ""}
             </p>
             <h2 className="text-xl font-semibold leading-tight">
               {listing.title ?? "Bien Sillage Immo"}
@@ -56,24 +93,52 @@ export function PropertyCard({ listing }: PropertyCardProps) {
               {[listing.city, listing.postalCode].filter(Boolean).join(" ")}
             </p>
           </div>
-          <div className="flex flex-wrap gap-2 text-sm text-[#141446]/75">
-            {typeof listing.bedrooms === "number" ? (
-              <span className="sillage-chip rounded-full px-3 py-1">
-                {listing.bedrooms} chambre{listing.bedrooms > 1 ? "s" : ""}
-              </span>
-            ) : null}
-            {typeof listing.livingArea === "number" ? (
-              <span className="sillage-chip rounded-full px-3 py-1">
-                {Math.round(listing.livingArea)} m2
-              </span>
-            ) : null}
+          <div className="space-y-1">
+            <p className="text-lg font-semibold">
+              💶{" "}
+              {formatListingPrice({
+                amount: listing.priceAmount,
+                currency: listing.priceCurrency,
+              })}
+            </p>
+            {feeMention ? <p className="text-xs text-[#141446]/72">{feeMention}</p> : null}
           </div>
-          <p className="text-lg font-semibold">
-            {formatListingPrice({
-              amount: listing.priceAmount,
-              currency: listing.priceCurrency,
-            })}
-          </p>
+          <div className="grid gap-2 text-sm text-[#141446]/80 sm:grid-cols-2">
+            <div className="rounded-xl bg-white/55 px-3 py-2">
+              📐 Carrez:{" "}
+              {typeof listing.loiCarrezArea === "number"
+                ? `${Math.round(listing.loiCarrezArea)} m2`
+                : "-"}
+            </div>
+            <div className="rounded-xl bg-white/55 px-3 py-2">
+              🛋️ Pieces: {typeof listing.roomCount === "number" ? listing.roomCount : "-"}
+            </div>
+            <div className="rounded-xl bg-white/55 px-3 py-2">
+              🏢 Lots: {typeof listing.lotCount === "number" ? listing.lotCount : "-"}
+            </div>
+            <div className="rounded-xl bg-white/55 px-3 py-2">
+              🧾 Charges:{" "}
+              {typeof listing.annualCharges === "number"
+                ? formatCompactPrice(listing.annualCharges, listing.priceCurrency)
+                : "-"}
+            </div>
+          </div>
+          <div className="grid gap-2 md:grid-cols-2">
+            <PropertyEnergyScale
+              title="⚡ DPE"
+              value={listing.energy.dpeValue}
+              label={listing.energy.dpeLabel}
+              unit="kWh/m2/an"
+              compact
+            />
+            <PropertyEnergyScale
+              title="🌿 GES"
+              value={listing.energy.gesValue}
+              label={listing.energy.gesLabel}
+              unit="kgCO2/m2/an"
+              compact
+            />
+          </div>
         </div>
       </Link>
     </article>

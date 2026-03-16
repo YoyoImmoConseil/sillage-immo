@@ -2,6 +2,7 @@ import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import type { Database } from "@/types/db/supabase";
 import type { PropertyBusinessType, PropertyListingSnapshot } from "@/types/domain/properties";
+import { buildPropertyDerivedFields } from "./property-presentation";
 
 type ListingRow = Database["public"]["Tables"]["property_listings"]["Row"];
 type PropertyRow = Database["public"]["Tables"]["properties"]["Row"];
@@ -18,7 +19,8 @@ const isMissingRelationError = (message: string) => {
   );
 };
 
-const mapPropertySnapshot = (property: PropertyRow, media: MediaRow[]) => {
+const mapPropertySnapshot = (property: PropertyRow, media: MediaRow[], priceAmount: number | null) => {
+  const derived = buildPropertyDerivedFields(property, priceAmount);
   return {
     id: property.id,
     source: property.source,
@@ -45,19 +47,13 @@ const mapPropertySnapshot = (property: PropertyRow, media: MediaRow[]) => {
       longitude: property.longitude,
     },
     surfaces: {
-      livingArea: property.living_area,
-      plotArea: property.plot_area,
+      ...derived.surfaces,
     },
-    rooms: {
-      bedrooms: property.bedrooms,
-      bathrooms: property.bathrooms,
-      rooms: property.rooms,
-      floor: property.floor,
-    },
-    amenities: {
-      hasTerrace: property.has_terrace,
-      hasElevator: property.has_elevator,
-    },
+    rooms: derived.rooms,
+    amenities: derived.amenities,
+    sale: derived.sale,
+    energy: derived.energy,
+    condo: derived.condo,
     media: media.map((item) => ({
       id: item.id,
       propertyId: item.property_id,
@@ -86,6 +82,7 @@ const mapListingSnapshot = (
   property: PropertyRow,
   media: MediaRow[]
 ): PropertyListingSnapshot => {
+  const derived = buildPropertyDerivedFields(property, listing.price_amount);
   return {
     id: listing.id,
     propertyId: listing.property_id,
@@ -99,9 +96,12 @@ const mapListingSnapshot = (
     postalCode: listing.postal_code,
     propertyType: listing.property_type,
     coverImageUrl: listing.cover_image_url,
-    rooms: listing.rooms,
+    roomCount: derived.rooms.roomCount,
     bedrooms: listing.bedrooms,
     livingArea: listing.living_area,
+    loiCarrezArea: derived.surfaces.loiCarrezArea,
+    annualCharges: derived.condo.annualCharges,
+    lotCount: derived.condo.lotCount,
     floor: listing.floor,
     hasTerrace: listing.has_terrace,
     hasElevator: listing.has_elevator,
@@ -109,7 +109,7 @@ const mapListingSnapshot = (
     priceCurrency: listing.price_currency,
     publishedAt: listing.published_at,
     unpublishedAt: listing.unpublished_at,
-    property: mapPropertySnapshot(property, media),
+    property: mapPropertySnapshot(property, media, listing.price_amount),
   };
 };
 
@@ -217,7 +217,11 @@ export const listPublicPropertyListings = async (input: {
     throw new Error(error.message);
   }
 
-  return (data ?? []) as ListingRow[];
+  const snapshots = await Promise.all(
+    ((data ?? []) as ListingRow[]).map(async (listing) => hydrateListingSnapshot(listing))
+  );
+
+  return snapshots.filter((listing): listing is PropertyListingSnapshot => Boolean(listing));
 };
 
 export const getPublicPropertyListingBySlug = async (slug: string) => {

@@ -2,10 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { PropertyCard } from "./property-card";
-import type { PropertyBusinessType } from "@/types/domain/properties";
-import type { Database } from "@/types/db/supabase";
-
-type ListingRow = Database["public"]["Tables"]["property_listings"]["Row"];
+import type { PropertyBusinessType, PropertyListingSnapshot } from "@/types/domain/properties";
 
 type ListingFilters = {
   city: string;
@@ -24,7 +21,7 @@ type ListingFilters = {
 
 type PublicListingsSearchProps = {
   businessType: PropertyBusinessType;
-  initialListings: ListingRow[];
+  initialListings: PropertyListingSnapshot[];
   initialPropertyTypes: string[];
   initialFilters: ListingFilters;
 };
@@ -34,7 +31,7 @@ const filterEntries = (filters: ListingFilters) =>
 
 export function PublicListingsSearch(props: PublicListingsSearchProps) {
   const [filters, setFilters] = useState<ListingFilters>(props.initialFilters);
-  const [listings, setListings] = useState<ListingRow[]>(props.initialListings);
+  const [listings, setListings] = useState<PropertyListingSnapshot[]>(props.initialListings);
   const [propertyTypes, setPropertyTypes] = useState<string[]>(props.initialPropertyTypes);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,7 +61,7 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
 
         const payload = (await response.json()) as {
           ok: boolean;
-          listings?: ListingRow[];
+          listings?: PropertyListingSnapshot[];
           propertyTypes?: string[];
           message?: string;
         };
@@ -280,16 +277,22 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
             <PropertyCard
               key={listing.id}
               listing={{
-                canonicalPath: listing.canonical_path,
+                canonicalPath: listing.canonicalPath,
                 title: listing.title,
                 city: listing.city,
-                postalCode: listing.postal_code,
-                coverImageUrl: listing.cover_image_url,
-                propertyType: listing.property_type,
-                priceAmount: listing.price_amount,
-                priceCurrency: listing.price_currency,
+                postalCode: listing.postalCode,
+                coverImageUrl: listing.coverImageUrl,
+                propertyType: listing.propertyType,
+                priceAmount: listing.priceAmount,
+                priceCurrency: listing.priceCurrency,
                 bedrooms: listing.bedrooms,
-                livingArea: listing.living_area,
+                livingArea: listing.livingArea,
+                loiCarrezArea: listing.loiCarrezArea,
+                roomCount: listing.roomCount,
+                annualCharges: listing.annualCharges,
+                lotCount: listing.lotCount,
+                sale: listing.property.sale,
+                energy: listing.property.energy,
               }}
             />
           ))}

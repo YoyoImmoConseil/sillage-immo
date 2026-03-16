@@ -139,6 +139,13 @@ const computePriceAmount = (estate: SweepBrightEstateData) => {
   return typeof estate.price?.amount === "number" ? estate.price.amount : null;
 };
 
+const computeRoomCount = (estate: SweepBrightEstateData) => {
+  const bedrooms = typeof estate.bedrooms === "number" ? estate.bedrooms : 0;
+  const livingRooms = typeof estate.living_rooms === "number" ? estate.living_rooms : 0;
+  const total = bedrooms + livingRooms;
+  return total > 0 ? total : null;
+};
+
 const buildPropertyTitle = (estate: SweepBrightEstateData) => {
   return (
     localizedText(estate.description_title) ??
@@ -199,7 +206,7 @@ const mapEstateToPropertyInsert = (estate: SweepBrightEstateData) => {
     plot_area: typeof plotArea === "number" ? plotArea : null,
     bedrooms: typeof estate.bedrooms === "number" ? estate.bedrooms : null,
     bathrooms: typeof estate.bathrooms === "number" ? estate.bathrooms : null,
-    rooms: typeof estate.living_rooms === "number" ? estate.living_rooms : null,
+    rooms: computeRoomCount(estate),
     floor,
     has_terrace: hasTerrace,
     has_elevator: hasElevator,

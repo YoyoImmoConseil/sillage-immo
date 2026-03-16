@@ -3,7 +3,7 @@ import {
   listPropertyTypesForBusinessType,
   listPublicPropertyListings,
 } from "@/services/properties/property-listing.service";
-import type { PropertyBusinessType } from "@/types/domain/properties";
+import type { PropertyBusinessType, PropertyListingSnapshot } from "@/types/domain/properties";
 
 const toNumber = (value: string | null) => {
   if (!value?.trim()) return undefined;
@@ -54,7 +54,7 @@ export async function GET(request: Request) {
 
   return NextResponse.json({
     ok: true,
-    listings,
+    listings: listings as PropertyListingSnapshot[],
     propertyTypes,
   });
 }
