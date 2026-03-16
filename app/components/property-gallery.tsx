@@ -7,13 +7,14 @@ import type { PropertyMediaSnapshot } from "@/types/domain/properties";
 type PropertyGalleryProps = {
   images: PropertyMediaSnapshot[];
   title: string;
+  showThumbnails?: boolean;
 };
 
 const getImageUrl = (image: PropertyMediaSnapshot) => {
   return image.cachedUrl ?? image.remoteUrl ?? null;
 };
 
-export function PropertyGallery({ images, title }: PropertyGalleryProps) {
+export function PropertyGallery({ images, title, showThumbnails = true }: PropertyGalleryProps) {
   const validImages = useMemo(
     () => images.filter((image) => image.kind === "image" && getImageUrl(image)),
     [images]
@@ -112,7 +113,7 @@ export function PropertyGallery({ images, title }: PropertyGalleryProps) {
           </div>
         </div>
 
-        {validImages.length > 1 ? (
+        {showThumbnails && validImages.length > 1 ? (
           <div className="grid grid-cols-4 gap-3 md:grid-cols-6">
             {validImages.map((image, index) => {
               const imageUrl = getImageUrl(image);

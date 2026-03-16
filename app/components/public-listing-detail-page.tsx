@@ -79,7 +79,11 @@ export function PublicListingDetailPage({ listing }: { listing: PropertyListingS
       <section className="bg-[#f4ece4] text-[#141446]">
         <div className="w-full px-6 py-8 md:px-10 xl:px-14 2xl:px-20 grid gap-8 lg:grid-cols-[1.6fr_0.9fr]">
           <div className="space-y-6">
-            <PropertyGallery images={gallery} title={listing.title ?? "Bien immobilier"} />
+            <PropertyGallery
+              images={gallery}
+              title={listing.title ?? "Bien immobilier"}
+              showThumbnails={false}
+            />
 
             <section className="rounded-2xl border border-[rgba(20,20,70,0.18)] p-6 space-y-3">
               <h2 className="sillage-section-title">Description</h2>
@@ -252,6 +256,28 @@ export function PublicListingDetailPage({ listing }: { listing: PropertyListingS
                 </div>
               </dl>
             </section>
+
+            {gallery.length > 1 ? (
+              <section className="rounded-2xl border border-[rgba(20,20,70,0.18)] p-6 space-y-4">
+                <h2 className="sillage-section-title">Photos du bien</h2>
+                <div className="grid gap-3 grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+                  {gallery.map((image, index) =>
+                    image.cachedUrl || image.remoteUrl ? (
+                      <div
+                        key={image.id}
+                        className="overflow-hidden rounded-xl border border-[rgba(20,20,70,0.14)] bg-white/70"
+                      >
+                        <img
+                          src={image.cachedUrl ?? image.remoteUrl ?? undefined}
+                          alt={image.description ?? `${listing.title ?? "Bien"} ${index + 1}`}
+                          className="aspect-square h-full w-full object-cover"
+                        />
+                      </div>
+                    ) : null
+                  )}
+                </div>
+              </section>
+            ) : null}
           </div>
 
           <aside className="space-y-6">
