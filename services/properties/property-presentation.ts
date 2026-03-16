@@ -179,12 +179,13 @@ export const buildPropertyCondoSnapshot = (property: PropertyRow): PropertyCondo
 export const buildPropertyDerivedFields = (property: PropertyRow, priceAmount: number | null) => {
   const rawPayload = asRecord(property.raw_payload);
   const explicitLivingRooms = asNumber(rawPayload?.living_rooms);
-  const bedrooms = property.bedrooms;
-  const roomCount =
-    property.rooms ??
-    ((bedrooms ?? 0) > 0 || (explicitLivingRooms ?? 0) > 0
-      ? (bedrooms ?? 0) + (explicitLivingRooms ?? 0)
-      : null);
+  const explicitBedrooms = asNumber(rawPayload?.bedrooms);
+  const bedrooms = explicitBedrooms ?? property.bedrooms;
+  const hasExplicitRoomInputs =
+    typeof explicitBedrooms === "number" || typeof explicitLivingRooms === "number";
+  const roomCount = hasExplicitRoomInputs
+    ? (explicitBedrooms ?? 0) + (explicitLivingRooms ?? 0)
+    : property.rooms ?? null;
   const livingRooms =
     explicitLivingRooms ??
     (typeof roomCount === "number" && typeof bedrooms === "number" && roomCount >= bedrooms
