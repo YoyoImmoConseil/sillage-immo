@@ -137,8 +137,14 @@ export function SellerApiFirstFlow() {
     setLoading(true);
     setIsEstimating(true);
     try {
+      const firstName = form.firstName.trim();
+      const lastName = form.lastName.trim();
+      const fullName = [firstName, lastName].filter(Boolean).join(" ").trim();
       const payload = {
         ...form,
+        firstName,
+        lastName,
+        fullName,
         livingArea: toOptionalNumber(form.livingArea),
         rooms: toOptionalNumber(form.rooms),
         buildingTotalFloors: toOptionalInteger(form.buildingTotalFloors),

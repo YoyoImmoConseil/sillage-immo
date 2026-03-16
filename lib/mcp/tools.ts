@@ -9,6 +9,41 @@ import { generateSellerAiInsight } from "@/services/sellers/seller-ai-insight.se
 import { getSellerLeadContextSnapshot } from "@/services/sellers/seller-context.service";
 import { getHomeAssistantContextSnapshot } from "@/services/home/home-assistant-context.service";
 
+const normalizeSellerLeadIdentityInput = (input: Record<string, unknown>): SellerLeadInput => {
+  const firstName = typeof input.firstName === "string" ? input.firstName.trim() : "";
+  const lastName = typeof input.lastName === "string" ? input.lastName.trim() : "";
+  const fullNameFromSplit = [firstName, lastName].filter(Boolean).join(" ").trim();
+  const fullNameRaw = typeof input.fullName === "string" ? input.fullName.trim() : "";
+  const fullName = fullNameRaw || fullNameFromSplit;
+  if (!fullName) {
+    throw new Error("Seller lead identity is required: provide fullName or firstName + lastName.");
+  }
+
+  const metadataPatch =
+    firstName || lastName
+      ? {
+          identity: {
+            first_name: firstName || null,
+            last_name: lastName || null,
+          },
+        }
+      : undefined;
+
+  return {
+    ...(input as SellerLeadInput),
+    fullName,
+    metadata:
+      metadataPatch && !(input as SellerLeadInput).metadata
+        ? metadataPatch
+        : metadataPatch
+          ? {
+              ...((input as SellerLeadInput).metadata ?? {}),
+              ...metadataPatch,
+            }
+          : (input as SellerLeadInput).metadata,
+  };
+};
+
 export const tools: ToolDefinition<unknown, unknown>[] = [
   {
     name: "leads.create",
@@ -87,6 +122,8 @@ export const tools: ToolDefinition<unknown, unknown>[] = [
       type: "object",
       properties: {
         fullName: { type: "string" },
+        firstName: { type: "string" },
+        lastName: { type: "string" },
         email: { type: "string" },
         phone: { type: "string" },
         propertyType: { type: "string" },
@@ -103,11 +140,11 @@ export const tools: ToolDefinition<unknown, unknown>[] = [
         message: { type: "string" },
         source: { type: "string" },
       },
-      required: ["fullName", "email"],
+      required: ["email"],
       additionalProperties: false,
     },
     handler: async (input, context) => {
-      return createSellerLead(input as SellerLeadInput, {
+      return createSellerLead(normalizeSellerLeadIdentityInput(input as Record<string, unknown>), {
         requestId: context.requestId,
         actor: context.actor,
         toolName: "seller_leads.create_or_reuse",
@@ -188,6 +225,8 @@ export const tools: ToolDefinition<unknown, unknown>[] = [
       type: "object",
       properties: {
         fullName: { type: "string" },
+        firstName: { type: "string" },
+        lastName: { type: "string" },
         email: { type: "string" },
         phone: { type: "string" },
         propertyType: { type: "string" },
@@ -204,16 +243,19 @@ export const tools: ToolDefinition<unknown, unknown>[] = [
         message: { type: "string" },
         source: { type: "string" },
       },
-      required: ["fullName", "email"],
+      required: ["email"],
       additionalProperties: false,
     },
     handler: async (input, context) => {
-      const leadResult = await createSellerLead(input as SellerLeadInput, {
+      const leadResult = await createSellerLead(
+        normalizeSellerLeadIdentityInput(input as Record<string, unknown>),
+        {
         requestId: context.requestId,
         actor: context.actor,
         toolName: "seller_leads.enrich",
         toolVersion: "1.0.0",
-      });
+        }
+      );
 
       if (leadResult.status === "failed" || leadResult.status === "duplicate_blocked") {
         return {

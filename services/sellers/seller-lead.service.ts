@@ -77,9 +77,17 @@ export const createSellerLead = async (
   const postalCode = normalizeOptional(input.postalCode);
   const dedupeStart = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   const fingerprint = computeLeadFingerprint(email, phone, propertyAddressNorm);
+  const sourceIdentity =
+    input.metadata &&
+    typeof input.metadata === "object" &&
+    input.metadata.identity &&
+    typeof input.metadata.identity === "object"
+      ? (input.metadata.identity as Record<string, unknown>)
+      : {};
   const metadata = {
     ...(input.metadata ?? {}),
     identity: {
+      ...sourceIdentity,
       fingerprint,
       dedupe_window_hours: 24,
       computed_at: new Date().toISOString(),

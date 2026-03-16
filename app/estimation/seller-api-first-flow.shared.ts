@@ -10,7 +10,8 @@ import type {
 export type Step = "form" | "verify" | "result";
 
 export type FlowForm = {
-  fullName: string;
+  firstName: string;
+  lastName: string;
   email: string;
   phone: string;
   propertyType: SellerPropertyType;
@@ -53,7 +54,8 @@ export type ValuationResult = {
 export type UpdateFlowForm = <K extends keyof FlowForm>(key: K, value: FlowForm[K]) => void;
 
 export const initialForm: FlowForm = {
-  fullName: "",
+  firstName: "",
+  lastName: "",
   email: "",
   phone: "",
   propertyType: "appartement",

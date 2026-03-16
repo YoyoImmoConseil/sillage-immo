@@ -21,7 +21,9 @@ import type {
 } from "@/types/api/seller";
 
 type EstimateAndCreateInput = {
-  fullName: string;
+  fullName?: string;
+  firstName?: string;
+  lastName?: string;
   email: string;
   phone?: string;
   propertyType: "appartement" | "maison" | "villa" | "autre";
@@ -81,11 +83,17 @@ const isRequiredAllowedString = (value: unknown, allowed: string[]) => {
   return typeof value === "string" && allowed.includes(value);
 };
 
+const hasIdentityInput = (input: Record<string, unknown>) => {
+  const hasFullName = isNonEmptyString(input.fullName);
+  const hasSplitName = isNonEmptyString(input.firstName) && isNonEmptyString(input.lastName);
+  return hasFullName || hasSplitName;
+};
+
 const validate = (payload: unknown): payload is EstimateAndCreateInput => {
   if (!payload || typeof payload !== "object") return false;
   const input = payload as Record<string, unknown>;
   return (
-    isNonEmptyString(input.fullName) &&
+    hasIdentityInput(input) &&
     isNonEmptyString(input.email) &&
     isRequiredAllowedString(input.propertyType, [...SELLER_PROPERTY_TYPES]) &&
     isNonEmptyString(input.propertyAddress) &&
@@ -157,6 +165,13 @@ export const POST = async (request: Request) => {
   }
 
   const input = body as EstimateAndCreateInput;
+  const firstName = input.firstName?.trim() || null;
+  const lastName = input.lastName?.trim() || null;
+  const fullNameFromSplit = [firstName, lastName].filter(Boolean).join(" ").trim();
+  const resolvedFullName = (input.fullName?.trim() || fullNameFromSplit).trim();
+  if (!resolvedFullName) {
+    return NextResponse.json({ ok: false, message: "Nom vendeur manquant." }, { status: 422 });
+  }
 
   try {
     await consumeSellerEmailVerificationToken(input.email, input.verificationToken);
@@ -193,6 +208,10 @@ export const POST = async (request: Request) => {
   }
 
   const metadata = {
+    identity: {
+      first_name: firstName,
+      last_name: lastName,
+    },
     valuation: {
       provider: "loupe",
       synced_at: new Date().toISOString(),
@@ -237,7 +256,7 @@ export const POST = async (request: Request) => {
   };
 
   const created = await createSellerLead({
-    fullName: input.fullName,
+    fullName: resolvedFullName,
     email: input.email,
     phone: input.phone,
     propertyType: input.propertyType,

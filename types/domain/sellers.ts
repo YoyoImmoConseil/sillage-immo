@@ -68,6 +68,8 @@ export type SellerChatMessage = {
 };
 
 export type SellerIdentityMetadata = {
+  first_name?: string | null;
+  last_name?: string | null;
   fingerprint?: string;
   dedupe_window_hours?: number;
   computed_at?: string;

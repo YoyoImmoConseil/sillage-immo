@@ -40,12 +40,21 @@ export function SellerProjectFormSection({
           Vos coordonnees
         </p>
         <label>
-          Nom complet *
+          Prenom *
           <input
             className="mt-1 w-full rounded border px-3 py-2"
-            value={form.fullName}
-            onChange={(event) => onUpdate("fullName", event.target.value)}
-            placeholder="Ex: Marie Dupont"
+            value={form.firstName}
+            onChange={(event) => onUpdate("firstName", event.target.value)}
+            placeholder="Ex: Marie"
+          />
+        </label>
+        <label>
+          Nom *
+          <input
+            className="mt-1 w-full rounded border px-3 py-2"
+            value={form.lastName}
+            onChange={(event) => onUpdate("lastName", event.target.value)}
+            placeholder="Ex: Dupont"
           />
         </label>
         <label>
@@ -323,7 +332,8 @@ export function SellerProjectFormSection({
         disabled={
           loading ||
           !form.email ||
-          !form.fullName ||
+          !form.firstName ||
+          !form.lastName ||
           !form.propertyAddress ||
           !form.terrace ||
           !form.balcony ||

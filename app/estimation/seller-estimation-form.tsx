@@ -4,7 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 type FormState = {
-  fullName: string;
+  firstName: string;
+  lastName: string;
   email: string;
   phone: string;
   propertyType: string;
@@ -21,7 +22,8 @@ type FormState = {
 };
 
 const initialState: FormState = {
-  fullName: "",
+  firstName: "",
+  lastName: "",
   email: "",
   phone: "",
   propertyType: "appartement",
@@ -53,7 +55,7 @@ export function SellerEstimationForm() {
     setError(null);
 
     const payload = {
-      fullName: form.fullName,
+      fullName: `${form.firstName} ${form.lastName}`.trim(),
       email: form.email,
       phone: form.phone || undefined,
       propertyType: form.propertyType,
@@ -96,12 +98,21 @@ export function SellerEstimationForm() {
     <form className="space-y-4" onSubmit={onSubmit}>
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="text-sm">
-          Nom complet *
+          Prenom *
           <input
             className="mt-1 w-full rounded border px-3 py-2"
             required
-            value={form.fullName}
-            onChange={(event) => update("fullName", event.target.value)}
+            value={form.firstName}
+            onChange={(event) => update("firstName", event.target.value)}
+          />
+        </label>
+        <label className="text-sm">
+          Nom *
+          <input
+            className="mt-1 w-full rounded border px-3 py-2"
+            required
+            value={form.lastName}
+            onChange={(event) => update("lastName", event.target.value)}
           />
         </label>
         <label className="text-sm">
