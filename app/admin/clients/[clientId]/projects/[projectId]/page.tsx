@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { AdminShell } from "@/app/components/admin-shell";
 import { requireAdminPagePermission, hasAdminPermission } from "@/lib/admin/auth";
 import { getClientById } from "@/services/clients/client-profile.service";
+import { getClientProjectById } from "@/services/clients/client-project.service";
 import {
   getSellerProjectDetail,
   getSellerProjectByClientProjectId,
@@ -31,6 +32,9 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
 
   const client = await getClientById(clientId);
   if (!client) notFound();
+
+  const clientProject = await getClientProjectById(projectId);
+  if (!clientProject || clientProject.client_profile_id !== clientId) notFound();
 
   const detail = await getSellerProjectDetail(projectId);
   if (!detail) notFound();
@@ -149,7 +153,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
             {detail.latestInvitation ? (
               <div>
                 <p className="text-[#141446]">
-                  Envoyee le {formatDate(detail.latestInvitation.expiresAt)} · expire le{" "}
+                  Envoyee le {formatDate(detail.latestInvitation.createdAt)} · expire le{" "}
                   {formatDate(detail.latestInvitation.expiresAt)}
                 </p>
                 {detail.latestInvitation.acceptedAt && (

@@ -1,7 +1,17 @@
 import { listPublicTeamMembers } from "@/services/home/team.service";
+import { withTimeout } from "@/lib/async/timeout";
 
 export async function HomeTeamSection() {
-  const members = await listPublicTeamMembers();
+  let members = [];
+  try {
+    members = await withTimeout(
+      listPublicTeamMembers(),
+      4000,
+      "Le chargement de l'equipe est trop lent."
+    );
+  } catch {
+    return null;
+  }
 
   if (members.length === 0) {
     return null;

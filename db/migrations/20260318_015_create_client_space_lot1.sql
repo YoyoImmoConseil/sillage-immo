@@ -135,12 +135,19 @@ alter table public.seller_project_advisor_history enable row level security;
 alter table public.client_project_events enable row level security;
 
 -- Policies: admin uses service role (bypasses RLS). These policies allow authenticated access for future client auth.
+drop policy if exists "client_profiles_authenticated" on public.client_profiles;
 create policy "client_profiles_authenticated" on public.client_profiles for all to authenticated using (true) with check (true);
+drop policy if exists "client_projects_authenticated" on public.client_projects;
 create policy "client_projects_authenticated" on public.client_projects for all to authenticated using (true) with check (true);
+drop policy if exists "seller_projects_authenticated" on public.seller_projects;
 create policy "seller_projects_authenticated" on public.seller_projects for all to authenticated using (true) with check (true);
+drop policy if exists "project_properties_authenticated" on public.project_properties;
 create policy "project_properties_authenticated" on public.project_properties for all to authenticated using (true) with check (true);
+drop policy if exists "client_project_invitations_authenticated" on public.client_project_invitations;
 create policy "client_project_invitations_authenticated" on public.client_project_invitations for all to authenticated using (true) with check (true);
+drop policy if exists "seller_project_advisor_history_authenticated" on public.seller_project_advisor_history;
 create policy "seller_project_advisor_history_authenticated" on public.seller_project_advisor_history for all to authenticated using (true) with check (true);
+drop policy if exists "client_project_events_authenticated" on public.client_project_events;
 create policy "client_project_events_authenticated" on public.client_project_events for all to authenticated using (true) with check (true);
 
 commit;

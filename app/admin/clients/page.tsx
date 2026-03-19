@@ -1,8 +1,12 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { AdminShell } from "@/app/components/admin-shell";
-import { requireAdminPagePermission } from "@/lib/admin/auth";
-import { listClients } from "@/services/clients/client-profile.service";
-import { hasAdminPermission } from "@/lib/admin/auth";
+import { getAdminPageContext, hasAdminPermission } from "@/lib/admin/auth";
+import { TimeoutError, withTimeout } from "@/lib/async/timeout";
+import {
+  listClients,
+  type ClientProfileListItem,
+} from "@/services/clients/client-profile.service";
 export const dynamic = "force-dynamic";
 
 type ClientsAdminPageProps = {
@@ -20,13 +24,66 @@ const formatAccountStatus = (item: {
 };
 
 export default async function ClientsAdminPage({ searchParams }: ClientsAdminPageProps) {
-  const context = await requireAdminPagePermission("clients.view");
   const filters = (await searchParams) ?? {};
-  const { items, total } = await listClients({
-    search: filters.search,
-    status: filters.status as "all" | "account_active" | "invite_pending" | "prospect" | undefined,
-    limit: 50,
-  });
+  let warningMessage: string | null = null;
+  let context = null;
+  try {
+    context = await withTimeout(
+      getAdminPageContext(),
+      4000,
+      "Le chargement de la session admin prend trop de temps."
+    );
+  } catch (error) {
+    warningMessage =
+      error instanceof TimeoutError
+        ? error.message
+        : "Impossible de verifier la session admin pour le moment.";
+  }
+
+  if (!context && !warningMessage) {
+    redirect("/admin/login");
+  }
+
+  if (context && !hasAdminPermission(context, "clients.view")) {
+    redirect("/admin/forbidden");
+  }
+
+  if (!context) {
+    return (
+      <main className="min-h-screen bg-[#f4ece4] px-6 py-10 md:px-10 xl:px-14 2xl:px-20">
+        <section className="mx-auto max-w-3xl rounded-3xl border border-[rgba(20,20,70,0.18)] bg-white/70 p-8">
+          <h1 className="text-3xl font-semibold text-[#141446]">Clients vendeurs</h1>
+          <p className="mt-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            {warningMessage ?? "La page est temporairement indisponible."}
+          </p>
+          <Link href="/admin/login" className="mt-4 inline-block text-sm underline text-[#141446]">
+            Retour a la connexion admin
+          </Link>
+        </section>
+      </main>
+    );
+  }
+
+  let items: ClientProfileListItem[] = [];
+  let total = 0;
+  try {
+    const result = await withTimeout(
+      listClients({
+        search: filters.search,
+        status: filters.status as "all" | "account_active" | "invite_pending" | "prospect" | undefined,
+        limit: 50,
+      }),
+      5000,
+      "Le chargement des clients est trop lent."
+    );
+    items = result.items;
+    total = result.total;
+  } catch (error) {
+    warningMessage =
+      error instanceof TimeoutError
+        ? error.message
+        : "Impossible de charger la liste clients pour le moment.";
+  }
 
   const canCreate = hasAdminPermission(context, "clients.create");
 
@@ -64,6 +121,11 @@ export default async function ClientsAdminPage({ searchParams }: ClientsAdminPag
       </div>
 
       <section className="rounded-2xl border border-[rgba(20,20,70,0.22)] bg-white/70 p-6">
+        {warningMessage ? (
+          <p className="mb-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            {warningMessage}
+          </p>
+        ) : null}
         <div className="mb-3">
           <p className="text-sm text-[#141446]/75">{total} client(s)</p>
         </div>

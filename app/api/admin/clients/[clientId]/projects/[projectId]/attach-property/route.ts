@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAdminRequestContext, hasAdminPermission } from "@/lib/admin/auth";
+import { getClientProjectById } from "@/services/clients/client-project.service";
 import { attachPropertyToSellerProject } from "@/services/clients/seller-project.service";
 
 type RouteParams = { params: Promise<{ clientId: string; projectId: string }> };
@@ -10,8 +11,13 @@ export async function POST(request: Request, { params }: RouteParams) {
     return NextResponse.json({ ok: false, message: "Acces refuse." }, { status: 403 });
   }
 
-  const { projectId } = await params;
+  const { clientId, projectId } = await params;
   let body: { propertyId?: string; isPrimary?: boolean } = {};
+  const clientProject = await getClientProjectById(projectId);
+  if (!clientProject || clientProject.client_profile_id !== clientId) {
+    return NextResponse.json({ ok: false, message: "Projet introuvable." }, { status: 404 });
+  }
+
   try {
     body = (await request.json()) as { propertyId?: string; isPrimary?: boolean };
   } catch {

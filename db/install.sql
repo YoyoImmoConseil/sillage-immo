@@ -756,13 +756,30 @@ create index if not exists idx_client_profiles_email on public.client_profiles (
 create unique index if not exists idx_client_profiles_auth_user_id_unique
   on public.client_profiles (auth_user_id) where auth_user_id is not null;
 create index if not exists idx_client_projects_client_profile on public.client_projects (client_profile_id);
+create index if not exists idx_client_projects_type_status on public.client_projects (project_type, status);
 create index if not exists idx_seller_projects_assigned_admin on public.seller_projects (assigned_admin_profile_id);
 create index if not exists idx_seller_projects_seller_lead on public.seller_projects (seller_lead_id);
+create index if not exists idx_seller_projects_project_status on public.seller_projects (project_status);
+create unique index if not exists idx_seller_projects_seller_lead_unique
+  on public.seller_projects (seller_lead_id)
+  where seller_lead_id is not null;
 create index if not exists idx_project_properties_client_project on public.project_properties (client_project_id);
 create index if not exists idx_project_properties_property on public.project_properties (property_id);
+create index if not exists idx_project_properties_unlinked on public.project_properties (unlinked_at) where unlinked_at is null;
+create unique index if not exists idx_project_properties_active_unique
+  on public.project_properties (client_project_id, property_id)
+  where unlinked_at is null;
+create unique index if not exists idx_project_properties_primary_unique
+  on public.project_properties (client_project_id)
+  where is_primary = true and unlinked_at is null;
 create index if not exists idx_client_project_invitations_project on public.client_project_invitations (client_project_id);
+create index if not exists idx_client_project_invitations_email on public.client_project_invitations (email);
 create index if not exists idx_seller_project_advisor_history_project on public.seller_project_advisor_history (seller_project_id);
 create index if not exists idx_client_project_events_project on public.client_project_events (client_project_id);
+create index if not exists idx_client_project_events_created on public.client_project_events (created_at desc);
+create unique index if not exists idx_client_profiles_email_active_unique
+  on public.client_profiles (lower(email))
+  where is_active = true;
 
 drop policy if exists "client_profiles_authenticated" on public.client_profiles;
 create policy "client_profiles_authenticated" on public.client_profiles for all to authenticated using (true) with check (true);

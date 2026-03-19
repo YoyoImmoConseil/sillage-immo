@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAdminRequestContext, hasAdminPermission } from "@/lib/admin/auth";
+import { getClientProjectById } from "@/services/clients/client-project.service";
 import {
   assignAdvisorToSellerProject,
   getSellerProjectByClientProjectId,
@@ -13,7 +14,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     return NextResponse.json({ ok: false, message: "Acces refuse." }, { status: 403 });
   }
 
-  const { projectId } = await params;
+  const { clientId, projectId } = await params;
   let body: { adminProfileId?: string; reason?: string } = {};
   try {
     body = (await request.json()) as { adminProfileId?: string; reason?: string };
@@ -23,6 +24,11 @@ export async function POST(request: Request, { params }: RouteParams) {
 
   if (!body.adminProfileId?.trim()) {
     return NextResponse.json({ ok: false, message: "adminProfileId requis." }, { status: 422 });
+  }
+
+  const clientProject = await getClientProjectById(projectId);
+  if (!clientProject || clientProject.client_profile_id !== clientId) {
+    return NextResponse.json({ ok: false, message: "Projet introuvable." }, { status: 404 });
   }
 
   const sp = await getSellerProjectByClientProjectId(projectId);

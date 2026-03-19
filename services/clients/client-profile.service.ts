@@ -131,11 +131,22 @@ export const updateClientProfile = async (
   input: UpdateClientProfileInput
 ) => {
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
-  if (input.email !== undefined) updates.email = normalizeEmail(input.email);
-  if (input.phone !== undefined) updates.phone = normalizePhone(input.phone) ?? null;
-  if (input.firstName !== undefined) updates.first_name = input.firstName?.trim() || null;
-  if (input.lastName !== undefined) updates.last_name = input.lastName?.trim() || null;
-  if (input.fullName !== undefined) updates.full_name = input.fullName?.trim() || null;
+  const nextEmail = input.email !== undefined ? normalizeEmail(input.email) : undefined;
+  const nextPhone = input.phone !== undefined ? normalizePhone(input.phone) ?? null : undefined;
+  const nextFirstName = input.firstName !== undefined ? input.firstName?.trim() || null : undefined;
+  const nextLastName = input.lastName !== undefined ? input.lastName?.trim() || null : undefined;
+  const computedFullName =
+    input.fullName !== undefined
+      ? input.fullName?.trim() || null
+      : input.firstName !== undefined || input.lastName !== undefined
+        ? [nextFirstName ?? "", nextLastName ?? ""].filter(Boolean).join(" ").trim() || null
+        : undefined;
+
+  if (nextEmail !== undefined) updates.email = nextEmail;
+  if (nextPhone !== undefined) updates.phone = nextPhone;
+  if (nextFirstName !== undefined) updates.first_name = nextFirstName;
+  if (nextLastName !== undefined) updates.last_name = nextLastName;
+  if (computedFullName !== undefined) updates.full_name = computedFullName;
 
   const { error } = await supabaseAdmin
     .from("client_profiles")
@@ -217,9 +228,16 @@ export const listClients = async (params?: {
     sellerProjectCount: countByClient[p.id] ?? 0,
     hasAcceptedInvitation: hasAcceptedByClient[p.id] ?? false,
   }));
+  const filteredItems = items.filter((item) => {
+    if (params?.status && params.status !== "all") {
+      const status =
+        item.authUserId || item.hasAcceptedInvitation ? "account_active" : "prospect";
+      if (status !== params.status) return false;
+    }
+    return true;
+  });
 
-  const total = (profiles ?? []).length;
-  return { items, total };
+  return { items: filteredItems, total: filteredItems.length };
 };
 
 export const searchClients = async (q: string, limit = 10) => {

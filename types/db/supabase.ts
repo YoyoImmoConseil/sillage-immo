@@ -1269,7 +1269,9 @@ export type Database = {
           admin_profile_id: string;
           assigned_at: string;
           unassigned_at: string | null;
+          assigned_by_admin_profile_id: string | null;
           reason: string | null;
+          metadata: Record<string, unknown>;
         };
         Insert: {
           id?: string;
@@ -1278,7 +1280,9 @@ export type Database = {
           admin_profile_id: string;
           assigned_at?: string;
           unassigned_at?: string | null;
+          assigned_by_admin_profile_id?: string | null;
           reason?: string | null;
+          metadata?: Record<string, unknown>;
         };
         Update: {
           id?: string;
@@ -1287,9 +1291,19 @@ export type Database = {
           admin_profile_id?: string;
           assigned_at?: string;
           unassigned_at?: string | null;
+          assigned_by_admin_profile_id?: string | null;
           reason?: string | null;
+          metadata?: Record<string, unknown>;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "seller_project_advisor_history_seller_project_id_fkey";
+            columns: ["seller_project_id"];
+            isOneToOne: false;
+            referencedRelation: "seller_projects";
+            referencedColumns: ["id"];
+          }
+        ];
       };
       client_project_events: {
         Row: {

@@ -56,15 +56,51 @@ export type SellerProjectDetail = {
   latestInvitation?: {
     id: string;
     email: string;
+    createdAt: string;
     expiresAt: string;
     acceptedAt: string | null;
     revokedAt: string | null;
   } | null;
 };
 
+const createAdvisorHistoryAssignment = async (input: {
+  sellerProjectId: string;
+  adminProfileId?: string | null;
+  assignedByAdminId?: string;
+  reason?: string | null;
+}) => {
+  if (!input.adminProfileId) return;
+
+  const { error } = await supabaseAdmin.from("seller_project_advisor_history").insert({
+    seller_project_id: input.sellerProjectId,
+    admin_profile_id: input.adminProfileId,
+    assigned_by_admin_profile_id: input.assignedByAdminId ?? null,
+    reason: input.reason ?? null,
+  });
+  if (error) throw error;
+};
+
+const ensureLeadIsNotAlreadyLinked = async (
+  sellerLeadId: string,
+  currentSellerProjectId?: string
+) => {
+  const { data, error } = await supabaseAdmin
+    .from("seller_projects")
+    .select("id")
+    .eq("seller_lead_id", sellerLeadId)
+    .maybeSingle();
+  if (error) throw error;
+
+  if (data && data.id !== currentSellerProjectId) {
+    throw new Error("Ce lead vendeur est deja rattache a un autre projet.");
+  }
+};
+
 export const createSellerProjectFromLead = async (
   input: CreateSellerProjectFromLeadInput
 ) => {
+  await ensureLeadIsNotAlreadyLinked(input.sellerLeadId);
+
   const { data: lead, error: leadErr } = await supabaseAdmin
     .from("seller_leads")
     .select("id, email, phone, full_name, assigned_admin_profile_id")
@@ -109,6 +145,13 @@ export const createSellerProjectFromLead = async (
     .single();
   if (spErr) throw spErr;
 
+  await createAdvisorHistoryAssignment({
+    sellerProjectId: sp.id,
+    adminProfileId: input.adminProfileId ?? lead.assigned_admin_profile_id ?? null,
+    assignedByAdminId: input.adminProfileId,
+    reason: "Creation depuis lead vendeur",
+  });
+
   await emitClientProjectEvent({
     clientProjectId: projectId,
     sellerProjectId: sp.id,
@@ -138,6 +181,13 @@ export const createSellerProjectManual = async (params: {
     .select("id")
     .single();
   if (error) throw error;
+
+  await createAdvisorHistoryAssignment({
+    sellerProjectId: sp.id,
+    adminProfileId: params.adminProfileId ?? null,
+    assignedByAdminId: params.adminProfileId,
+    reason: "Creation manuelle du projet vendeur",
+  });
 
   await emitClientProjectEvent({
     clientProjectId: params.clientProjectId,
@@ -175,33 +225,47 @@ export const createSellerProjectFromProperty = async (
     .single();
   if (spErr) throw spErr;
 
-  await supabaseAdmin.from("project_properties").insert({
-    client_project_id: projectId,
-    property_id: input.propertyId,
-    relationship_type: "seller_subject_property",
-    is_primary: true,
-    linked_by_admin_profile_id: input.adminProfileId ?? null,
-  });
+  try {
+    const { error: propertyLinkError } = await supabaseAdmin.from("project_properties").insert({
+      client_project_id: projectId,
+      property_id: input.propertyId,
+      relationship_type: "seller_subject_property",
+      is_primary: true,
+      linked_by_admin_profile_id: input.adminProfileId ?? null,
+    });
+    if (propertyLinkError) throw propertyLinkError;
 
-  await emitClientProjectEvent({
-    clientProjectId: projectId,
-    sellerProjectId: sp.id,
-    eventName: "seller_project.created_from_crm",
-    eventCategory: "project",
-    actorType: "admin",
-    actorId: input.adminProfileId ?? undefined,
-    payload: { property_id: input.propertyId },
-  });
+    await createAdvisorHistoryAssignment({
+      sellerProjectId: sp.id,
+      adminProfileId: input.adminProfileId ?? null,
+      assignedByAdminId: input.adminProfileId,
+      reason: "Creation depuis fiche bien",
+    });
 
-  await emitClientProjectEvent({
-    clientProjectId: projectId,
-    sellerProjectId: sp.id,
-    eventName: "project_property.linked",
-    eventCategory: "project",
-    actorType: "admin",
-    actorId: input.adminProfileId ?? undefined,
-    payload: { property_id: input.propertyId },
-  });
+    await emitClientProjectEvent({
+      clientProjectId: projectId,
+      sellerProjectId: sp.id,
+      eventName: "seller_project.created_from_crm",
+      eventCategory: "project",
+      actorType: "admin",
+      actorId: input.adminProfileId ?? undefined,
+      payload: { property_id: input.propertyId },
+    });
+
+    await emitClientProjectEvent({
+      clientProjectId: projectId,
+      sellerProjectId: sp.id,
+      eventName: "project_property.linked",
+      eventCategory: "project",
+      actorType: "admin",
+      actorId: input.adminProfileId ?? undefined,
+      payload: { property_id: input.propertyId },
+    });
+  } catch (error) {
+    await supabaseAdmin.from("seller_projects").delete().eq("id", sp.id);
+    await supabaseAdmin.from("client_projects").delete().eq("id", projectId);
+    throw error;
+  }
 
   return { clientProjectId: projectId, sellerProjectId: sp.id };
 };
@@ -329,7 +393,7 @@ export const getSellerProjectDetail = async (
 
   const { data: invitations } = await supabaseAdmin
     .from("client_project_invitations")
-    .select("id, email, expires_at, accepted_at, revoked_at")
+    .select("id, email, created_at, expires_at, accepted_at, revoked_at")
     .eq("client_project_id", clientProjectId)
     .order("created_at", { ascending: false })
     .limit(1);
@@ -373,6 +437,7 @@ export const getSellerProjectDetail = async (
       ? {
           id: latestInvitation.id,
           email: latestInvitation.email,
+          createdAt: latestInvitation.created_at,
           expiresAt: latestInvitation.expires_at,
           acceptedAt: latestInvitation.accepted_at,
           revokedAt: latestInvitation.revoked_at,
@@ -386,6 +451,8 @@ export const attachLeadToSellerProject = async (
   sellerLeadId: string,
   adminProfileId?: string
 ) => {
+  await ensureLeadIsNotAlreadyLinked(sellerLeadId, sellerProjectId);
+
   const { error } = await supabaseAdmin
     .from("seller_projects")
     .update({
@@ -566,17 +633,16 @@ export const assignAdvisorToSellerProject = async (
       .from("seller_project_advisor_history")
       .update({
         unassigned_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
       })
       .eq("seller_project_id", sellerProjectId)
       .eq("admin_profile_id", current.assigned_admin_profile_id)
       .is("unassigned_at", null);
   }
 
-  await supabaseAdmin.from("seller_project_advisor_history").insert({
-    seller_project_id: sellerProjectId,
-    admin_profile_id: adminProfileId,
-    assigned_by_admin_profile_id: options?.assignedByAdminId ?? null,
+  await createAdvisorHistoryAssignment({
+    sellerProjectId,
+    adminProfileId,
+    assignedByAdminId: options?.assignedByAdminId,
     reason: options?.reason ?? null,
   });
 

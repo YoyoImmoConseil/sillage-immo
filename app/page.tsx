@@ -5,8 +5,6 @@ import { HomeTeamSection } from "./components/home-team-section";
 import { SillageLogo } from "./components/sillage-logo";
 import Link from "next/link";
 
-export const dynamic = "force-dynamic";
-
 const methodSteps = [
   {
     title: "Estimation fiable et argumentee",
