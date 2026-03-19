@@ -1,0 +1,236 @@
+import "server-only";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+
+export type CreateClientProfileInput = {
+  email: string;
+  phone?: string;
+  firstName?: string;
+  lastName?: string;
+  fullName?: string;
+};
+
+export type UpdateClientProfileInput = {
+  email?: string;
+  phone?: string;
+  firstName?: string;
+  lastName?: string;
+  fullName?: string;
+};
+
+export type ClientProfileListItem = {
+  id: string;
+  email: string;
+  phone: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  fullName: string | null;
+  authUserId: string | null;
+  isActive: boolean;
+  lastLoginAt: string | null;
+  createdAt: string;
+  sellerProjectCount: number;
+  hasAcceptedInvitation: boolean;
+};
+
+export type ClientProfileDetail = ClientProfileListItem & {
+  updatedAt: string;
+};
+
+const normalizeEmail = (email: string) => email.trim().toLowerCase();
+const normalizePhone = (phone?: string) => {
+  const digits = (phone ?? "").replace(/[^\d+]/g, "").trim();
+  return digits.length > 0 ? digits : null;
+};
+
+export type ClientProfileLookup = {
+  id: string;
+  email: string;
+  phone: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  full_name: string | null;
+  auth_user_id: string | null;
+  is_active: boolean;
+};
+
+export const findClientByEmail = async (email: string): Promise<ClientProfileLookup | null> => {
+  const normalized = normalizeEmail(email);
+  const { data, error } = await supabaseAdmin
+    .from("client_profiles")
+    .select("id, email, phone, first_name, last_name, full_name, auth_user_id, is_active")
+    .eq("email", normalized)
+    .eq("is_active", true)
+    .maybeSingle();
+  if (error) throw error;
+  return data as ClientProfileLookup | null;
+};
+
+export const findClientByPhone = async (phone: string): Promise<ClientProfileLookup | null> => {
+  const normalized = normalizePhone(phone);
+  if (!normalized) return null;
+  const { data, error } = await supabaseAdmin
+    .from("client_profiles")
+    .select("id, email, phone, first_name, last_name, full_name, auth_user_id, is_active")
+    .eq("phone", normalized)
+    .eq("is_active", true)
+    .maybeSingle();
+  if (error) throw error;
+  return data as ClientProfileLookup | null;
+};
+
+export const createClientProfile = async (input: CreateClientProfileInput) => {
+  const email = normalizeEmail(input.email);
+  const existing = await findClientByEmail(email);
+  if (existing) return { status: "exists" as const, clientProfileId: existing.id };
+
+  const fullName =
+    input.fullName ??
+    ([input.firstName, input.lastName].filter(Boolean).join(" ").trim() || null);
+  const { data, error } = await supabaseAdmin
+    .from("client_profiles")
+    .insert({
+      email,
+      phone: normalizePhone(input.phone) ?? null,
+      first_name: input.firstName?.trim() || null,
+      last_name: input.lastName?.trim() || null,
+      full_name: fullName,
+    })
+    .select("id")
+    .single();
+  if (error) throw error;
+  const row = data as { id: string };
+  return { status: "created" as const, clientProfileId: row.id };
+};
+
+export type ClientProfileRow = {
+  id: string;
+  email: string;
+  phone: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  full_name: string | null;
+  auth_user_id: string | null;
+  is_active: boolean;
+  last_login_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export const getClientById = async (id: string): Promise<ClientProfileRow | null> => {
+  const { data, error } = await supabaseAdmin
+    .from("client_profiles")
+    .select("id, email, phone, first_name, last_name, full_name, auth_user_id, is_active, last_login_at, created_at, updated_at")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw error;
+  return data as ClientProfileRow | null;
+};
+
+export const updateClientProfile = async (
+  id: string,
+  input: UpdateClientProfileInput
+) => {
+  const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  if (input.email !== undefined) updates.email = normalizeEmail(input.email);
+  if (input.phone !== undefined) updates.phone = normalizePhone(input.phone) ?? null;
+  if (input.firstName !== undefined) updates.first_name = input.firstName?.trim() || null;
+  if (input.lastName !== undefined) updates.last_name = input.lastName?.trim() || null;
+  if (input.fullName !== undefined) updates.full_name = input.fullName?.trim() || null;
+
+  const { error } = await supabaseAdmin
+    .from("client_profiles")
+    .update(updates)
+    .eq("id", id);
+  if (error) throw error;
+};
+
+export const listClients = async (params?: {
+  search?: string;
+  status?: "all" | "account_active" | "invite_pending" | "prospect";
+  assignedAdminId?: string;
+  limit?: number;
+  offset?: number;
+}) => {
+  let query = supabaseAdmin
+    .from("client_profiles")
+    .select(
+      "id, email, phone, first_name, last_name, full_name, auth_user_id, is_active, last_login_at, created_at"
+    )
+    .eq("is_active", true);
+
+  if (params?.search?.trim()) {
+    const term = `%${params.search.trim()}%`;
+    query = query.or(
+      `email.ilike.${term},full_name.ilike.${term},phone.ilike.${term}`
+    );
+  }
+
+  query = query.order("created_at", { ascending: false });
+  const limit = params?.limit ?? 50;
+  const offset = params?.offset ?? 0;
+  query = query.range(offset, offset + limit - 1);
+
+  const { data: profiles, error } = await query;
+  if (error) throw error;
+
+  const ids = (profiles ?? []).map((p) => p.id);
+  if (ids.length === 0) return { items: [], total: 0 };
+
+  const { data: projectCounts } = await supabaseAdmin
+    .from("client_projects")
+    .select("client_profile_id")
+    .eq("project_type", "seller")
+    .in("client_profile_id", ids);
+
+  const countByClient = (projectCounts ?? []).reduce(
+    (acc, r) => {
+      acc[r.client_profile_id] = (acc[r.client_profile_id] ?? 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>
+  );
+
+  const { data: invitations } = await supabaseAdmin
+    .from("client_project_invitations")
+    .select("client_profile_id, accepted_at")
+    .in("client_profile_id", ids);
+
+  const hasAcceptedByClient = (invitations ?? []).reduce(
+    (acc, r) => {
+      if (r.accepted_at) acc[r.client_profile_id] = true;
+      return acc;
+    },
+    {} as Record<string, boolean>
+  );
+
+  const items: ClientProfileListItem[] = (profiles ?? []).map((p) => ({
+    id: p.id,
+    email: p.email,
+    phone: p.phone,
+    firstName: p.first_name,
+    lastName: p.last_name,
+    fullName: p.full_name,
+    authUserId: p.auth_user_id,
+    isActive: p.is_active,
+    lastLoginAt: p.last_login_at,
+    createdAt: p.created_at,
+    sellerProjectCount: countByClient[p.id] ?? 0,
+    hasAcceptedInvitation: hasAcceptedByClient[p.id] ?? false,
+  }));
+
+  const total = (profiles ?? []).length;
+  return { items, total };
+};
+
+export const searchClients = async (q: string, limit = 10) => {
+  const term = q.trim();
+  if (!term) return [];
+  const { data, error } = await supabaseAdmin
+    .from("client_profiles")
+    .select("id, email, phone, first_name, last_name, full_name")
+    .eq("is_active", true)
+    .or(`email.ilike.%${term}%,full_name.ilike.%${term}%,phone.ilike.%${term}%`)
+    .limit(limit);
+  if (error) throw error;
+  return data ?? [];
+};

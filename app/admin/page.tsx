@@ -13,6 +13,12 @@ const cards = [
     permission: "admin.users.view" as AdminPermission,
   },
   {
+    href: "/admin/clients",
+    title: "Clients vendeurs",
+    description: "Gerer les espaces client, rattacher leads et biens, affecter les conseillers et inviter les clients.",
+    permission: "clients.view" as AdminPermission,
+  },
+  {
     href: "/admin/leads",
     title: "Recherche leads",
     description: "Rechercher dans les leads vendeurs et acquereurs depuis une vue transversale.",

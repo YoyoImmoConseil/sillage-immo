@@ -20,7 +20,12 @@ export type AdminPermission =
   | "properties.publish"
   | "matching.view"
   | "matching.manage"
-  | "operations.view";
+  | "operations.view"
+  | "clients.view"
+  | "clients.create"
+  | "clients.edit"
+  | "clients.invite"
+  | "clients.assign_advisor";
 
 export type AdminProfileSnapshot = {
   id: string;
@@ -61,6 +66,8 @@ export const ADMIN_ROLE_PERMISSIONS: Record<AdminRole, AdminPermission[]> = {
     "properties.view",
     "properties.manage",
     "matching.view",
+    "clients.view",
+    "clients.assign_advisor",
   ],
   manager: [
     "admin.dashboard.view",
@@ -74,6 +81,11 @@ export const ADMIN_ROLE_PERMISSIONS: Record<AdminRole, AdminPermission[]> = {
     "matching.view",
     "matching.manage",
     "operations.view",
+    "clients.view",
+    "clients.create",
+    "clients.edit",
+    "clients.invite",
+    "clients.assign_advisor",
   ],
   administrateur: [
     "admin.dashboard.view",
@@ -89,5 +101,10 @@ export const ADMIN_ROLE_PERMISSIONS: Record<AdminRole, AdminPermission[]> = {
     "matching.view",
     "matching.manage",
     "operations.view",
+    "clients.view",
+    "clients.create",
+    "clients.edit",
+    "clients.invite",
+    "clients.assign_advisor",
   ],
 };

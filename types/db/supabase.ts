@@ -160,6 +160,7 @@ export type Database = {
           full_name: string;
           email: string;
           phone: string | null;
+          assigned_admin_profile_id: string | null;
           property_type: string | null;
           property_address: string | null;
           city: string | null;
@@ -182,6 +183,7 @@ export type Database = {
           full_name: string;
           email: string;
           phone?: string | null;
+          assigned_admin_profile_id?: string | null;
           property_type?: string | null;
           property_address?: string | null;
           city?: string | null;
@@ -204,6 +206,7 @@ export type Database = {
           full_name?: string;
           email?: string;
           phone?: string | null;
+          assigned_admin_profile_id?: string | null;
           property_type?: string | null;
           property_address?: string | null;
           city?: string | null;
@@ -1010,6 +1013,322 @@ export type Database = {
             referencedColumns: ["id"];
           }
         ];
+      };
+      client_profiles: {
+        Row: {
+          id: string;
+          created_at: string;
+          updated_at: string;
+          auth_user_id: string | null;
+          email: string;
+          phone: string | null;
+          first_name: string | null;
+          last_name: string | null;
+          full_name: string | null;
+          is_active: boolean;
+          last_login_at: string | null;
+          metadata: Record<string, unknown>;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          auth_user_id?: string | null;
+          email: string;
+          phone?: string | null;
+          first_name?: string | null;
+          last_name?: string | null;
+          full_name?: string | null;
+          is_active?: boolean;
+          last_login_at?: string | null;
+          metadata?: Record<string, unknown>;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          auth_user_id?: string | null;
+          email?: string;
+          phone?: string | null;
+          first_name?: string | null;
+          last_name?: string | null;
+          full_name?: string | null;
+          is_active?: boolean;
+          last_login_at?: string | null;
+          metadata?: Record<string, unknown>;
+        };
+        Relationships: [];
+      };
+      client_projects: {
+        Row: {
+          id: string;
+          created_at: string;
+          updated_at: string;
+          client_profile_id: string;
+          project_type: string;
+          status: string;
+          title: string | null;
+          created_from: string;
+          primary_admin_profile_id: string | null;
+          source: string | null;
+          metadata: Record<string, unknown>;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          client_profile_id: string;
+          project_type: string;
+          status?: string;
+          title?: string | null;
+          created_from: string;
+          primary_admin_profile_id?: string | null;
+          source?: string | null;
+          metadata?: Record<string, unknown>;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          client_profile_id?: string;
+          project_type?: string;
+          status?: string;
+          title?: string | null;
+          created_from?: string;
+          primary_admin_profile_id?: string | null;
+          source?: string | null;
+          metadata?: Record<string, unknown>;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "client_projects_client_profile_id_fkey";
+            columns: ["client_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "client_profiles";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      seller_projects: {
+        Row: {
+          id: string;
+          created_at: string;
+          updated_at: string;
+          client_project_id: string;
+          seller_lead_id: string | null;
+          assigned_admin_profile_id: string | null;
+          entry_channel: string;
+          project_status: string;
+          mandate_status: string;
+          latest_valuation_id: string | null;
+          metadata: Record<string, unknown>;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          client_project_id: string;
+          seller_lead_id?: string | null;
+          assigned_admin_profile_id?: string | null;
+          entry_channel: string;
+          project_status?: string;
+          mandate_status?: string;
+          latest_valuation_id?: string | null;
+          metadata?: Record<string, unknown>;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          client_project_id?: string;
+          seller_lead_id?: string | null;
+          assigned_admin_profile_id?: string | null;
+          entry_channel?: string;
+          project_status?: string;
+          mandate_status?: string;
+          latest_valuation_id?: string | null;
+          metadata?: Record<string, unknown>;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "seller_projects_client_project_id_fkey";
+            columns: ["client_project_id"];
+            isOneToOne: true;
+            referencedRelation: "client_projects";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      project_properties: {
+        Row: {
+          id: string;
+          created_at: string;
+          updated_at: string;
+          client_project_id: string;
+          property_id: string;
+          relationship_type: string;
+          is_primary: boolean;
+          linked_by_admin_profile_id: string | null;
+          unlinked_at: string | null;
+          metadata: Record<string, unknown>;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          client_project_id: string;
+          property_id: string;
+          relationship_type?: string;
+          is_primary?: boolean;
+          linked_by_admin_profile_id?: string | null;
+          unlinked_at?: string | null;
+          metadata?: Record<string, unknown>;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          client_project_id?: string;
+          property_id?: string;
+          relationship_type?: string;
+          is_primary?: boolean;
+          linked_by_admin_profile_id?: string | null;
+          unlinked_at?: string | null;
+          metadata?: Record<string, unknown>;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "project_properties_client_project_id_fkey";
+            columns: ["client_project_id"];
+            isOneToOne: false;
+            referencedRelation: "client_projects";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "project_properties_property_id_fkey";
+            columns: ["property_id"];
+            isOneToOne: false;
+            referencedRelation: "properties";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      client_project_invitations: {
+        Row: {
+          id: string;
+          created_at: string;
+          updated_at: string;
+          client_project_id: string;
+          client_profile_id: string;
+          email: string;
+          token_hash: string;
+          provider_hint: string | null;
+          expires_at: string;
+          accepted_at: string | null;
+          revoked_at: string | null;
+          created_by_admin_profile_id: string | null;
+          metadata: Record<string, unknown>;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          client_project_id: string;
+          client_profile_id: string;
+          email: string;
+          token_hash: string;
+          provider_hint?: string | null;
+          expires_at: string;
+          accepted_at?: string | null;
+          revoked_at?: string | null;
+          created_by_admin_profile_id?: string | null;
+          metadata?: Record<string, unknown>;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          client_project_id?: string;
+          client_profile_id?: string;
+          email?: string;
+          token_hash?: string;
+          provider_hint?: string | null;
+          expires_at?: string;
+          accepted_at?: string | null;
+          revoked_at?: string | null;
+          created_by_admin_profile_id?: string | null;
+          metadata?: Record<string, unknown>;
+        };
+        Relationships: [];
+      };
+      seller_project_advisor_history: {
+        Row: {
+          id: string;
+          created_at: string;
+          seller_project_id: string;
+          admin_profile_id: string;
+          assigned_at: string;
+          unassigned_at: string | null;
+          reason: string | null;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          seller_project_id: string;
+          admin_profile_id: string;
+          assigned_at?: string;
+          unassigned_at?: string | null;
+          reason?: string | null;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          seller_project_id?: string;
+          admin_profile_id?: string;
+          assigned_at?: string;
+          unassigned_at?: string | null;
+          reason?: string | null;
+        };
+        Relationships: [];
+      };
+      client_project_events: {
+        Row: {
+          id: string;
+          created_at: string;
+          client_project_id: string;
+          seller_project_id: string | null;
+          event_name: string;
+          event_category: string;
+          visible_to_client: boolean;
+          actor_type: string | null;
+          actor_id: string | null;
+          payload: Record<string, unknown>;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          client_project_id: string;
+          seller_project_id?: string | null;
+          event_name: string;
+          event_category: string;
+          visible_to_client?: boolean;
+          actor_type?: string | null;
+          actor_id?: string | null;
+          payload?: Record<string, unknown>;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          client_project_id?: string;
+          seller_project_id?: string | null;
+          event_name?: string;
+          event_category?: string;
+          visible_to_client?: boolean;
+          actor_type?: string | null;
+          actor_id?: string | null;
+          payload?: Record<string, unknown>;
+        };
+        Relationships: [];
       };
     };
     Views: Record<string, never>;

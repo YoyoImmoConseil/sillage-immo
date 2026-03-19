@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AdminShell } from "@/app/components/admin-shell";
-import { requireAdminPagePermission } from "@/lib/admin/auth";
+import { requireAdminPagePermission, hasAdminPermission } from "@/lib/admin/auth";
 import { listMatchesForProperty } from "@/services/buyers/buyer-matching.service";
 import { getAdminPropertyDetail } from "@/services/properties/manual-property.service";
 import { PropertyForm } from "../property-form";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+import { AttachPropertyToProjectButton } from "./attach-property-to-project-button";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +23,45 @@ export default async function AdminPropertyDetailPage({ params }: AdminPropertyD
   if (!detail) notFound();
 
   const matches = await listMatchesForProperty(id);
+
+  const { data: projectProps } = await supabaseAdmin
+    .from("project_properties")
+    .select("id, client_project_id")
+    .eq("property_id", id)
+    .is("unlinked_at", null);
+
+  type ProjectPropRow = { id: string; client_project_id: string };
+  const projectIds = ((projectProps ?? []) as ProjectPropRow[]).map((p) => p.client_project_id);
+  type ProjectRow = { id: string; client_profile_id: string };
+  type ProfileRow = { id: string; full_name: string | null };
+  let projectDetails: Array<{ client_project_id: string; client_profile_id: string; client_profile: { full_name: string | null } }> = [];
+  if (projectIds.length > 0) {
+    const { data: projects } = await supabaseAdmin
+      .from("client_projects")
+      .select("id, client_profile_id")
+      .in("id", projectIds);
+    const projectsTyped = (projects ?? []) as ProjectRow[];
+    const profileIds = [...new Set(projectsTyped.map((p) => p.client_profile_id))];
+    const { data: profiles } = await supabaseAdmin
+      .from("client_profiles")
+      .select("id, full_name")
+      .in("id", profileIds);
+    const profilesTyped = (profiles ?? []) as ProfileRow[];
+    const profileMap = profilesTyped.reduce(
+      (acc, p) => {
+        acc[p.id] = p;
+        return acc;
+      },
+      {} as Record<string, { full_name: string | null }>
+    );
+    projectDetails = projectsTyped.map((p) => ({
+      client_project_id: p.id,
+      client_profile_id: p.client_profile_id,
+      client_profile: profileMap[p.client_profile_id] ?? { full_name: null },
+    }));
+  }
+
+  const canEditClients = hasAdminPermission(context, "clients.edit");
 
   return (
     <AdminShell
@@ -65,6 +106,33 @@ export default async function AdminPropertyDetailPage({ params }: AdminPropertyD
             isPublished: detail.listing?.is_published ?? false,
           }}
         />
+
+        {(canEditClients || projectDetails.length > 0) && (
+          <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6">
+            <h2 className="text-xl font-semibold text-[#141446]">Projets clients</h2>
+            <div className="mt-4 space-y-3">
+              {projectDetails.length === 0 ? (
+                <p className="text-sm text-[#141446]/70">Aucun projet client rattache.</p>
+              ) : (
+                projectDetails.map((p) => (
+                  <div key={p.client_project_id} className="flex items-center justify-between rounded-2xl border border-[rgba(20,20,70,0.12)] p-4">
+                    <span className="text-[#141446]">{p.client_profile.full_name ?? "Client"}</span>
+                    <Link
+                      href={`/admin/clients/${p.client_profile_id}/projects/${p.client_project_id}`}
+                      className="text-sm underline">
+                      Ouvrir le projet
+                    </Link>
+                  </div>
+                ))
+              )}
+              {canEditClients && (
+                <div className="mt-4">
+                  <AttachPropertyToProjectButton propertyId={id} />
+                </div>
+              )}
+            </div>
+          </section>
+        )}
 
         <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6">
           <h2 className="text-xl font-semibold text-[#141446]">Acquereurs compatibles</h2>

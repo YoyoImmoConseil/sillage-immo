@@ -14,6 +14,7 @@ type AdminShellProps = {
 const NAV_ITEMS = [
   { href: "/admin", label: "Dashboard" },
   { href: "/admin/users", label: "Utilisateurs & roles", permission: "admin.users.view" as AdminPermission },
+  { href: "/admin/clients", label: "Clients vendeurs", permission: "clients.view" as AdminPermission },
   { href: "/admin/leads", label: "Recherche leads", permission: "leads.sellers.view" as AdminPermission },
   { href: "/admin/seller-leads", label: "Leads vendeurs", permission: "leads.sellers.view" as AdminPermission },
   { href: "/admin/buyer-leads", label: "Leads acquereurs", permission: "leads.buyers.view" as AdminPermission },
