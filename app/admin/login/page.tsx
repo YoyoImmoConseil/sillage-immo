@@ -1,7 +1,29 @@
 import Link from "next/link";
 import { AdminLoginForm } from "./login-form";
 
-export default function AdminLoginPage() {
+const getErrorMessage = (errorCode: string | undefined) => {
+  switch (errorCode) {
+    case "missing_code":
+      return "Le retour Google ne contenait pas le code d'authentification attendu.";
+    case "oauth_exchange_failed":
+      return "La session Google n'a pas pu etre finalisee.";
+    case "missing_user":
+      return "Le compte Google retourne n'est pas exploitable.";
+    case "oauth_start_failed":
+      return "La redirection vers Google a echoue.";
+    default:
+      return null;
+  }
+};
+
+export default async function AdminLoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const { error } = await searchParams;
+  const errorMessage = getErrorMessage(error);
+
   return (
     <main className="min-h-screen bg-[#f4ece4] px-6 py-10 md:px-10 xl:px-14 2xl:px-20">
       <section className="mx-auto max-w-xl space-y-6 rounded-3xl border border-[rgba(20,20,70,0.18)] bg-white/70 p-8">
@@ -12,6 +34,11 @@ export default function AdminLoginPage() {
             Acces reserve aux collaborateurs, managers et administrateurs via Google SSO.
           </p>
         </div>
+        {errorMessage ? (
+          <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {errorMessage}
+          </p>
+        ) : null}
         <AdminLoginForm canBootstrap />
         <Link href="/" className="inline-block text-sm underline text-[#141446]">
           Retour au site
