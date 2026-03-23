@@ -1,4 +1,3 @@
-import { headers } from "next/headers";
 import Link from "next/link";
 import { publicEnv } from "@/lib/env/public";
 import { AdminLoginForm } from "./login-form";
@@ -18,6 +17,8 @@ const getErrorMessage = (errorCode: string | undefined) => {
   }
 };
 
+const ADMIN_PREVIEW_ORIGIN = "https://sillage-immo-git-feature-client-space-v1-sillage-immo.vercel.app";
+
 export default async function AdminLoginPage({
   searchParams,
 }: {
@@ -25,13 +26,9 @@ export default async function AdminLoginPage({
 }) {
   const { error } = await searchParams;
   const errorMessage = getErrorMessage(error);
-  const requestHeaders = await headers();
-  const protocol = requestHeaders.get("x-forwarded-proto") ?? "https";
-  const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host") ?? "localhost:3000";
-  const origin = `${protocol}://${host}`;
   const googleAuthUrl = new URL("/auth/v1/authorize", publicEnv.NEXT_PUBLIC_SUPABASE_URL);
   googleAuthUrl.searchParams.set("provider", "google");
-  googleAuthUrl.searchParams.set("redirect_to", `${origin}/auth/callback?next=/admin`);
+  googleAuthUrl.searchParams.set("redirect_to", `${ADMIN_PREVIEW_ORIGIN}/auth/callback?next=/admin`);
 
   return (
     <main className="min-h-screen bg-[#f4ece4] px-6 py-10 md:px-10 xl:px-14 2xl:px-20">
