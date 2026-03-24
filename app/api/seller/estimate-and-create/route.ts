@@ -3,6 +3,7 @@ import { createSellerLead } from "@/services/sellers/seller-lead.service";
 import { buildSellerPropertyDetails } from "@/services/sellers/seller-metadata";
 import { computeLoupeValuation } from "@/services/valuation/loupe-valuation.service";
 import { consumeSellerEmailVerificationToken } from "@/services/sellers/seller-email-verification.service";
+import { createMerciVendeurAccessToken } from "@/lib/sellers/merci-vendeur-access";
 import {
   checkIdempotency,
   persistIdempotencyResponse,
@@ -293,7 +294,6 @@ export const POST = async (request: Request) => {
       message: created.reason,
       data: {
         createStatus: "duplicate_blocked",
-        sellerLeadId: created.sellerLeadId,
       },
     };
     if (idempotencyKey.trim().length > 0) {
@@ -310,7 +310,7 @@ export const POST = async (request: Request) => {
     ok: true,
     data: {
       createStatus: created.status,
-      sellerLeadId: created.sellerLeadId,
+      thankYouAccessToken: createMerciVendeurAccessToken(created.sellerLeadId),
       valuation,
     },
   };

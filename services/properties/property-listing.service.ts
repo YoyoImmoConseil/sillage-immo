@@ -1,7 +1,11 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import type { Database } from "@/types/db/supabase";
-import type { PropertyBusinessType, PropertyListingSnapshot } from "@/types/domain/properties";
+import type {
+  PropertyBusinessType,
+  PropertyListingSnapshot,
+  PublicPropertyListingSummary,
+} from "@/types/domain/properties";
 import { buildPropertyDerivedFields } from "./property-presentation";
 
 type ListingRow = Database["public"]["Tables"]["property_listings"]["Row"];
@@ -148,6 +152,28 @@ export const formatListingPrice = (input: { amount: number | null; currency: str
     maximumFractionDigits: 0,
   }).format(input.amount);
 };
+
+export const toPublicPropertyListingSummary = (
+  listing: PropertyListingSnapshot
+): PublicPropertyListingSummary => ({
+  id: listing.id,
+  canonicalPath: listing.canonicalPath,
+  title: listing.title,
+  city: listing.city,
+  postalCode: listing.postalCode,
+  coverImageUrl: listing.coverImageUrl,
+  propertyType: listing.propertyType,
+  priceAmount: listing.priceAmount,
+  priceCurrency: listing.priceCurrency,
+  bedrooms: listing.bedrooms,
+  livingArea: listing.livingArea,
+  loiCarrezArea: listing.loiCarrezArea,
+  roomCount: listing.roomCount,
+  annualCharges: listing.annualCharges,
+  lotCount: listing.lotCount,
+  sale: listing.property.sale,
+  energy: listing.property.energy,
+});
 
 export const listPublicPropertyListings = async (input: {
   businessType: PropertyBusinessType;

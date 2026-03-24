@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import {
   listPropertyTypesForBusinessType,
   listPublicPropertyListings,
+  toPublicPropertyListingSummary,
 } from "@/services/properties/property-listing.service";
-import type { PropertyBusinessType, PropertyListingSnapshot } from "@/types/domain/properties";
+import type { PropertyBusinessType } from "@/types/domain/properties";
 
 const toNumber = (value: string | null) => {
   if (!value?.trim()) return undefined;
@@ -54,7 +55,7 @@ export async function GET(request: Request) {
 
   return NextResponse.json({
     ok: true,
-    listings: listings as PropertyListingSnapshot[],
+    listings: listings.map(toPublicPropertyListingSummary),
     propertyTypes,
   });
 }

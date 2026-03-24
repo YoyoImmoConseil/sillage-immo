@@ -1,34 +1,11 @@
 /* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 import { formatPropertyTypeLabel } from "@/lib/properties/property-type-label";
-import type {
-  PropertyEnergySnapshot,
-  PropertyListingSnapshot,
-  PropertySaleSnapshot,
-} from "@/types/domain/properties";
+import type { PublicPropertyListingSummary } from "@/types/domain/properties";
 import { PropertyEnergyScale } from "./property-energy-scale";
 
 type PropertyCardProps = {
-  listing: Pick<
-    PropertyListingSnapshot,
-    | "canonicalPath"
-    | "title"
-    | "city"
-    | "postalCode"
-    | "coverImageUrl"
-    | "propertyType"
-    | "priceAmount"
-    | "priceCurrency"
-    | "bedrooms"
-    | "livingArea"
-    | "loiCarrezArea"
-    | "roomCount"
-    | "annualCharges"
-    | "lotCount"
-  > & {
-    sale: PropertySaleSnapshot;
-    energy: PropertyEnergySnapshot;
-  };
+  listing: PublicPropertyListingSummary;
 };
 
 const formatListingPrice = (input: { amount: number | null; currency: string }) => {

@@ -58,13 +58,7 @@ export function PublicListingDetailPage({ listing }: { listing: PropertyListingS
               {listing.title ?? "Bien immobilier"}
             </h1>
             <p className="text-sm text-[#f4ece4]/80">
-              {[
-                listing.property.address.formattedAddress,
-                listing.city,
-                listing.postalCode,
-              ]
-                .filter(Boolean)
-                .join(" • ")}
+              {[listing.city, listing.postalCode].filter(Boolean).join(" • ")}
             </p>
             <p className="text-2xl font-semibold">
               {formatListingPrice({

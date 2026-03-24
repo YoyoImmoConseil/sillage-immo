@@ -27,7 +27,7 @@ export function SellerApiFirstFlow() {
   const [otp, setOtp] = useState("");
   const [verificationToken, setVerificationToken] = useState<string | null>(null);
   const [previewCode, setPreviewCode] = useState<string | null>(null);
-  const [sellerLeadId, setSellerLeadId] = useState<string | null>(null);
+  const [thankYouAccessToken, setThankYouAccessToken] = useState<string | null>(null);
   const [valuation, setValuation] = useState<ValuationResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [isEstimating, setIsEstimating] = useState(false);
@@ -177,12 +177,17 @@ export function SellerApiFirstFlow() {
       });
       const data = (await response.json()) as SellerEstimateAndCreateResponse;
 
-      if (!response.ok || !data.ok || !data.data?.sellerLeadId || !data.data.valuation) {
+      if (
+        !response.ok ||
+        !data.ok ||
+        !data.data?.thankYouAccessToken ||
+        !data.data.valuation
+      ) {
         setError(getApiErrorMessage(data) ?? "Impossible de calculer votre estimation.");
         return;
       }
 
-      setSellerLeadId(data.data.sellerLeadId);
+      setThankYouAccessToken(data.data.thankYouAccessToken);
       setValuation(data.data.valuation as ValuationResult);
       setEstimateProgress(100);
       setStep("result");
@@ -225,11 +230,11 @@ export function SellerApiFirstFlow() {
         />
       ) : null}
 
-      {step === "result" && valuation && sellerLeadId ? (
+      {step === "result" && valuation && thankYouAccessToken ? (
         <SellerEstimationResultSection
           valuation={valuation}
           form={form}
-          sellerLeadId={sellerLeadId}
+          thankYouAccessToken={thankYouAccessToken}
         />
       ) : null}
 

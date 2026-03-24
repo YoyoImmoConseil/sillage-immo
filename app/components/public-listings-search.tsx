@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { formatPropertyTypeLabel } from "@/lib/properties/property-type-label";
 import { PropertyCard } from "./property-card";
-import type { PropertyBusinessType, PropertyListingSnapshot } from "@/types/domain/properties";
+import type { PropertyBusinessType, PublicPropertyListingSummary } from "@/types/domain/properties";
 
 type ListingFilters = {
   city: string;
@@ -22,7 +22,7 @@ type ListingFilters = {
 
 type PublicListingsSearchProps = {
   businessType: PropertyBusinessType;
-  initialListings: PropertyListingSnapshot[];
+  initialListings: PublicPropertyListingSummary[];
   initialPropertyTypes: string[];
   initialFilters: ListingFilters;
 };
@@ -32,7 +32,7 @@ const filterEntries = (filters: ListingFilters) =>
 
 export function PublicListingsSearch(props: PublicListingsSearchProps) {
   const [filters, setFilters] = useState<ListingFilters>(props.initialFilters);
-  const [listings, setListings] = useState<PropertyListingSnapshot[]>(props.initialListings);
+  const [listings, setListings] = useState<PublicPropertyListingSummary[]>(props.initialListings);
   const [propertyTypes, setPropertyTypes] = useState<string[]>(props.initialPropertyTypes);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -62,7 +62,7 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
 
         const payload = (await response.json()) as {
           ok: boolean;
-          listings?: PropertyListingSnapshot[];
+          listings?: PublicPropertyListingSummary[];
           propertyTypes?: string[];
           message?: string;
         };
@@ -275,27 +275,7 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
       ) : (
         <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           {listings.map((listing) => (
-            <PropertyCard
-              key={listing.id}
-              listing={{
-                canonicalPath: listing.canonicalPath,
-                title: listing.title,
-                city: listing.city,
-                postalCode: listing.postalCode,
-                coverImageUrl: listing.coverImageUrl,
-                propertyType: listing.propertyType,
-                priceAmount: listing.priceAmount,
-                priceCurrency: listing.priceCurrency,
-                bedrooms: listing.bedrooms,
-                livingArea: listing.livingArea,
-                loiCarrezArea: listing.loiCarrezArea,
-                roomCount: listing.roomCount,
-                annualCharges: listing.annualCharges,
-                lotCount: listing.lotCount,
-                sale: listing.property.sale,
-                energy: listing.property.energy,
-              }}
-            />
+            <PropertyCard key={listing.id} listing={listing} />
           ))}
         </section>
       )}

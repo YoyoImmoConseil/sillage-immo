@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
+import { readMerciVendeurAccessToken } from "@/lib/sellers/merci-vendeur-access";
 import { askSellerChat } from "@/services/sellers/seller-chat.service";
 
 type Body = {
-  sellerLeadId?: string;
+  accessToken?: string;
   message?: string;
 };
 
@@ -14,13 +15,13 @@ export const POST = async (request: Request) => {
     return NextResponse.json({ ok: false, message: "Corps JSON invalide." }, { status: 400 });
   }
 
-  const sellerLeadId = body?.sellerLeadId?.trim();
+  const access = readMerciVendeurAccessToken(body?.accessToken?.trim());
   const message = body?.message?.trim();
 
-  if (!sellerLeadId || !message) {
+  if (!access?.leadId || !message) {
     return NextResponse.json(
-      { ok: false, message: "sellerLeadId et message sont requis." },
-      { status: 422 }
+      { ok: false, message: "Acces vendeur invalide ou expire." },
+      { status: 401 }
     );
   }
 
@@ -32,7 +33,7 @@ export const POST = async (request: Request) => {
   }
 
   try {
-    const data = await askSellerChat(sellerLeadId, message);
+    const data = await askSellerChat(access.leadId, message);
     return NextResponse.json({ ok: true, data });
   } catch (error) {
     const message =
