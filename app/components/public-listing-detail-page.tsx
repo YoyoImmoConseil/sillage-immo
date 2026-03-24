@@ -2,6 +2,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { formatPropertyTypeLabel } from "@/lib/properties/property-type-label";
+import { getPublicTeamMemberByEmail } from "@/services/home/team.service";
 import type { PropertyListingSnapshot } from "@/types/domain/properties";
 import { formatListingPrice } from "@/services/properties/property-listing.service";
 import { PropertyEnergyScale } from "./property-energy-scale";
@@ -22,21 +23,25 @@ export const buildPublicListingMetadata = (listing: PropertyListingSnapshot | nu
   };
 };
 
-export function PublicListingDetailPage({ listing }: { listing: PropertyListingSnapshot }) {
+export async function PublicListingDetailPage({ listing }: { listing: PropertyListingSnapshot }) {
   const contact = listing.property.negotiator;
+  const contactEmail = typeof contact.email === "string" && contact.email.trim() ? contact.email.trim() : null;
+  const contactProfile = contactEmail ? await getPublicTeamMemberByEmail(contactEmail) : null;
   const contactFullName = [contact.first_name, contact.last_name]
     .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
     .join(" ");
-  const contactAvatarUrl = [
-    contact.avatar_url,
-    contact.avatarUrl,
-    contact.photo_url,
-    contact.photoUrl,
-    contact.picture_url,
-    contact.pictureUrl,
-    contact.image_url,
-    contact.imageUrl,
-  ].find((value): value is string => typeof value === "string" && value.trim().length > 0);
+  const contactAvatarUrl =
+    contactProfile?.avatarUrl ??
+    [
+      contact.avatar_url,
+      contact.avatarUrl,
+      contact.photo_url,
+      contact.photoUrl,
+      contact.picture_url,
+      contact.pictureUrl,
+      contact.image_url,
+      contact.imageUrl,
+    ].find((value): value is string => typeof value === "string" && value.trim().length > 0);
   const gallery = listing.property.media.filter((item) => item.kind === "image");
   const feeMention =
     listing.property.sale.feeChargeBearer === "buyer" && typeof listing.property.sale.feeAmount === "number"
@@ -243,11 +248,11 @@ export function PublicListingDetailPage({ listing }: { listing: PropertyListingS
               {contactAvatarUrl ? (
                 <img
                   src={contactAvatarUrl}
-                  alt={contactFullName || "Conseiller Sillage Immo"}
+                  alt={contactProfile?.fullName || contactFullName || "Conseiller Sillage Immo"}
                   className="h-16 w-16 rounded-lg object-cover border border-white/20"
                 />
               ) : null}
-              <p className="text-sm">{contactFullName || "Conseiller Sillage Immo"}</p>
+              <p className="text-sm">{contactProfile?.fullName || contactFullName || "Conseiller Sillage Immo"}</p>
               {typeof contact.email === "string" && contact.email.trim() ? (
                 <a className="block text-sm underline" href={`mailto:${contact.email}`}>
                   {contact.email}
