@@ -46,9 +46,13 @@ export function PublicListingDetailPage({ listing }: { listing: PropertyListingS
   return (
     <main className="min-h-screen">
       <section className="bg-[#141446] text-[#f4ece4]">
-        <div className="w-full px-6 py-8 md:px-10 xl:px-14 2xl:px-20 space-y-4">
-          <Link href={listing.businessType === "sale" ? "/vente" : "/location"} className="text-sm underline">
-            Retour au catalogue
+        <div className="w-full px-6 pb-8 pt-4 md:px-10 md:pb-8 md:pt-3 xl:px-14 2xl:px-20 space-y-3">
+          <Link
+            href={listing.businessType === "sale" ? "/vente" : "/location"}
+            className="inline-flex text-xl leading-none"
+            aria-label="Retour au catalogue"
+          >
+            ←
           </Link>
           <div className="space-y-2">
             <p className="text-xs uppercase tracking-[0.18em] text-[#f4ece4]/70">
