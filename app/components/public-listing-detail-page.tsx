@@ -252,14 +252,16 @@ export async function PublicListingDetailPage({ listing }: { listing: PropertyLi
                   className="h-24 w-24 rounded-lg object-cover border border-white/20"
                 />
               ) : null}
-              <p className="text-sm">{contactProfile?.fullName || contactFullName || "Conseiller Sillage Immo"}</p>
+              <p className="sillage-editorial-text opacity-85">
+                {contactProfile?.fullName || contactFullName || "Conseiller Sillage Immo"}
+              </p>
               {typeof contact.email === "string" && contact.email.trim() ? (
-                <a className="block text-sm underline" href={`mailto:${contact.email}`}>
+                <a className="sillage-editorial-text block opacity-85 underline" href={`mailto:${contact.email}`}>
                   {contact.email}
                 </a>
               ) : null}
               {typeof contact.phone === "string" && contact.phone.trim() ? (
-                <a className="block text-sm underline" href={`tel:${contact.phone}`}>
+                <a className="sillage-editorial-text block opacity-85 underline" href={`tel:${contact.phone}`}>
                   {contact.phone}
                 </a>
               ) : null}
