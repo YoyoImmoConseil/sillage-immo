@@ -27,6 +27,16 @@ export function PublicListingDetailPage({ listing }: { listing: PropertyListingS
   const contactFullName = [contact.first_name, contact.last_name]
     .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
     .join(" ");
+  const contactAvatarUrl = [
+    contact.avatar_url,
+    contact.avatarUrl,
+    contact.photo_url,
+    contact.photoUrl,
+    contact.picture_url,
+    contact.pictureUrl,
+    contact.image_url,
+    contact.imageUrl,
+  ].find((value): value is string => typeof value === "string" && value.trim().length > 0);
   const gallery = listing.property.media.filter((item) => item.kind === "image");
   const feeMention =
     listing.property.sale.feeChargeBearer === "buyer" && typeof listing.property.sale.feeAmount === "number"
@@ -55,9 +65,6 @@ export function PublicListingDetailPage({ listing }: { listing: PropertyListingS
             ←
           </Link>
           <div className="space-y-2">
-            <p className="text-xs uppercase tracking-[0.18em] text-[#f4ece4]/70">
-              {listing.businessType === "sale" ? "Bien en vente" : "Bien en location"}
-            </p>
             <h1 className="sillage-section-title text-[#f4ece4]">
               {listing.title ?? "Bien immobilier"}
             </h1>
@@ -233,6 +240,13 @@ export function PublicListingDetailPage({ listing }: { listing: PropertyListingS
           <aside className="space-y-6">
             <section className="rounded-2xl bg-[#141446] p-6 text-[#f4ece4] space-y-3">
               <h2 className="sillage-section-title text-[#f4ece4]">Interlocuteur Sillage</h2>
+              {contactAvatarUrl ? (
+                <img
+                  src={contactAvatarUrl}
+                  alt={contactFullName || "Conseiller Sillage Immo"}
+                  className="h-16 w-16 rounded-lg object-cover border border-white/20"
+                />
+              ) : null}
               <p className="text-sm">{contactFullName || "Conseiller Sillage Immo"}</p>
               {typeof contact.email === "string" && contact.email.trim() ? (
                 <a className="block text-sm underline" href={`mailto:${contact.email}`}>
