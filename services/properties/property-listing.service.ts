@@ -189,7 +189,7 @@ export const listPublicPropertyListings = async (input: {
   maxFloor?: number;
   terrace?: boolean;
   elevator?: boolean;
-}) => {
+}): Promise<PropertyListingSnapshot[]> => {
   let query = supabaseAdmin
     .from("property_listings")
     .select("*")
@@ -238,7 +238,7 @@ export const listPublicPropertyListings = async (input: {
   const { data, error } = await query;
   if (error) {
     if (isMissingRelationError(error.message)) {
-      return [] as ListingRow[];
+      return [];
     }
     throw new Error(error.message);
   }
