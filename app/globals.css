@@ -22,6 +22,29 @@ body {
   font-family: var(--font-hk-grotesk), var(--font-open-sans), Arial, Helvetica, sans-serif;
 }
 
+a,
+button {
+  transition:
+    color 140ms ease,
+    background-color 140ms ease,
+    box-shadow 140ms ease,
+    opacity 140ms ease,
+    transform 140ms ease;
+}
+
+a:not(.sillage-btn):not(.sillage-btn-secondary),
+button:not(.sillage-btn):not(.sillage-btn-secondary) {
+  border-radius: 0.35rem;
+}
+
+a:not(.sillage-btn):not(.sillage-btn-secondary):hover,
+a:not(.sillage-btn):not(.sillage-btn-secondary):focus-visible,
+button:not(.sillage-btn):not(.sillage-btn-secondary):hover,
+button:not(.sillage-btn):not(.sillage-btn-secondary):focus-visible {
+  background-color: color-mix(in srgb, currentColor 10%, transparent);
+  box-shadow: 0 0 0 0.3rem color-mix(in srgb, currentColor 8%, transparent);
+}
+
 h1 {
   font-family: var(--font-montagna), var(--font-libre-baskerville), serif;
 }
@@ -68,18 +91,24 @@ label {
 .sillage-btn {
   background: var(--sillage-blue);
   color: var(--sillage-beige);
-  transition: opacity 120ms ease, transform 120ms ease;
 }
 
-.sillage-btn:hover {
+.sillage-btn:hover,
+.sillage-btn:focus-visible {
   opacity: 0.94;
   transform: translateY(-1px);
+  box-shadow: 0 0 0 0.3rem rgba(244, 236, 228, 0.18);
 }
 
 .sillage-btn-secondary {
   border: 1px solid var(--sillage-blue);
   color: var(--sillage-blue);
   background: rgba(20, 20, 70, 0.04);
+}
+
+.sillage-btn-secondary:hover,
+.sillage-btn-secondary:focus-visible {
+  box-shadow: 0 0 0 0.3rem rgba(20, 20, 70, 0.08);
 }
 
 .sillage-chip {
