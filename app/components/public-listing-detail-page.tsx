@@ -249,7 +249,7 @@ export async function PublicListingDetailPage({ listing }: { listing: PropertyLi
                 <img
                   src={contactAvatarUrl}
                   alt={contactProfile?.fullName || contactFullName || "Conseiller Sillage Immo"}
-                  className="h-16 w-16 rounded-lg object-cover border border-white/20"
+                  className="h-24 w-24 rounded-lg object-cover border border-white/20"
                 />
               ) : null}
               <p className="text-sm">{contactProfile?.fullName || contactFullName || "Conseiller Sillage Immo"}</p>
