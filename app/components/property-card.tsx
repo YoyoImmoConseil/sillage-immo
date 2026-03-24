@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 import { formatPropertyTypeLabel } from "@/lib/properties/property-type-label";
-import type { PublicPropertyListingSummary } from "@/types/domain/properties";
+import type { PropertySaleSnapshot, PublicPropertyListingSummary } from "@/types/domain/properties";
 import { PropertyEnergyScale } from "./property-energy-scale";
 
 type PropertyCardProps = {
