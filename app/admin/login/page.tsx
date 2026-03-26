@@ -1,14 +1,7 @@
 import { Suspense } from "react";
-import { publicEnv } from "@/lib/env/public";
 import { AdminLoginPageContent } from "./login-page-content";
 
-const ADMIN_PREVIEW_ORIGIN = "https://sillage-immo-git-feature-client-space-v1-sillage-immo.vercel.app";
-
 export default function AdminLoginPage() {
-  const googleAuthUrl = new URL("/auth/v1/authorize", publicEnv.NEXT_PUBLIC_SUPABASE_URL);
-  googleAuthUrl.searchParams.set("provider", "google");
-  googleAuthUrl.searchParams.set("redirect_to", `${ADMIN_PREVIEW_ORIGIN}/auth/callback?next=/admin`);
-
   return (
     <Suspense
       fallback={
@@ -19,7 +12,7 @@ export default function AdminLoginPage() {
         </main>
       }
     >
-      <AdminLoginPageContent googleAuthHref={googleAuthUrl.toString()} />
+      <AdminLoginPageContent googleAuthHref="/api/admin/auth/google?next=/admin" />
     </Suspense>
   );
 }
