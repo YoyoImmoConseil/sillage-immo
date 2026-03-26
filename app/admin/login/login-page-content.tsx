@@ -10,6 +10,8 @@ const getErrorMessage = (errorCode: string | null) => {
       return "Le retour Google ne contenait pas le code d'authentification attendu.";
     case "oauth_exchange_failed":
       return "La session Google n'a pas pu etre finalisee.";
+    case "oauth_callback_timeout":
+      return "La finalisation de la connexion Google a pris trop de temps. Reessaie dans quelques secondes.";
     case "missing_user":
       return "Le compte Google retourne n'est pas exploitable.";
     case "oauth_start_failed":

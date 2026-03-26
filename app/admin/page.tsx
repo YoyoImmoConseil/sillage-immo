@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { AdminShell } from "@/app/components/admin-shell";
-import { hasAdminPermission, requireAdminPagePermission } from "@/lib/admin/auth";
+import { getAdminPageContext, hasAdminPermission } from "@/lib/admin/auth";
+import { TimeoutError, withTimeout } from "@/lib/async/timeout";
 import type { AdminPermission } from "@/types/domain/admin";
 
 export const dynamic = "force-dynamic";
@@ -39,7 +41,46 @@ const cards = [
 ];
 
 export default async function AdminDashboardPage() {
-  const context = await requireAdminPagePermission("admin.dashboard.view");
+  let warningMessage: string | null = null;
+  let context = null;
+
+  try {
+    context = await withTimeout(
+      getAdminPageContext(),
+      4000,
+      "Le chargement de la session admin prend trop de temps."
+    );
+  } catch (error) {
+    warningMessage =
+      error instanceof TimeoutError
+        ? error.message
+        : "Impossible de verifier la session admin pour le moment.";
+  }
+
+  if (!context && !warningMessage) {
+    redirect("/admin/login");
+  }
+
+  if (context && !hasAdminPermission(context, "admin.dashboard.view")) {
+    redirect("/admin/forbidden");
+  }
+
+  if (!context) {
+    return (
+      <main className="min-h-screen bg-[#f4ece4] px-6 py-10 md:px-10 xl:px-14 2xl:px-20">
+        <section className="mx-auto max-w-3xl rounded-3xl border border-[rgba(20,20,70,0.18)] bg-white/70 p-8">
+          <h1 className="text-3xl font-semibold text-[#141446]">Dashboard admin</h1>
+          <p className="mt-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            {warningMessage ?? "La page est temporairement indisponible."}
+          </p>
+          <Link href="/admin/login" className="mt-4 inline-block text-sm underline text-[#141446]">
+            Retour a la connexion admin
+          </Link>
+        </section>
+      </main>
+    );
+  }
+
   const visibleCards = cards.filter((card) => hasAdminPermission(context, card.permission));
 
   return (
