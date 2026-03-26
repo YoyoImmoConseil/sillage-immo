@@ -126,6 +126,87 @@ export const getClientById = async (id: string): Promise<ClientProfileRow | null
   return data as ClientProfileRow | null;
 };
 
+export const getClientByAuthUserId = async (
+  authUserId: string
+): Promise<ClientProfileRow | null> => {
+  const { data, error } = await supabaseAdmin
+    .from("client_profiles")
+    .select("id, email, phone, first_name, last_name, full_name, auth_user_id, is_active, last_login_at, created_at, updated_at")
+    .eq("auth_user_id", authUserId)
+    .eq("is_active", true)
+    .maybeSingle();
+  if (error) throw error;
+  return data as ClientProfileRow | null;
+};
+
+export const linkClientProfileToAuthUser = async (input: {
+  clientProfileId: string;
+  authUserId: string;
+  email: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  fullName?: string | null;
+}) => {
+  const email = normalizeEmail(input.email);
+  const current = await getClientById(input.clientProfileId);
+  if (!current || !current.is_active) {
+    return null;
+  }
+
+  if (normalizeEmail(current.email) !== email) {
+    return null;
+  }
+
+  if (current.auth_user_id && current.auth_user_id !== input.authUserId) {
+    return null;
+  }
+
+  const existingLinkedProfile = await getClientByAuthUserId(input.authUserId);
+  if (existingLinkedProfile && existingLinkedProfile.id !== input.clientProfileId) {
+    return null;
+  }
+
+  const firstName = current.first_name ?? input.firstName ?? null;
+  const lastName = current.last_name ?? input.lastName ?? null;
+  const fallbackFullName =
+    [firstName, lastName].filter(Boolean).join(" ").trim() || null;
+  const fullName =
+    current.full_name ?? input.fullName ?? fallbackFullName;
+
+  const { data, error } = await supabaseAdmin
+    .from("client_profiles")
+    .update({
+      auth_user_id: input.authUserId,
+      email,
+      first_name: firstName,
+      last_name: lastName,
+      full_name: fullName,
+      last_login_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", current.id)
+    .select("id, email, phone, first_name, last_name, full_name, auth_user_id, is_active, last_login_at, created_at, updated_at")
+    .single();
+
+  if (error || !data) {
+    throw new Error(error?.message ?? "Impossible de rattacher le compte client.");
+  }
+
+  return data as ClientProfileRow;
+};
+
+export const touchClientProfileLastLogin = async (clientProfileId: string) => {
+  const { error } = await supabaseAdmin
+    .from("client_profiles")
+    .update({
+      last_login_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", clientProfileId);
+
+  if (error) throw error;
+};
+
 export const updateClientProfile = async (
   id: string,
   input: UpdateClientProfileInput
