@@ -12,7 +12,7 @@ export default function AdminLoginPage() {
         </main>
       }
     >
-      <AdminLoginPageContent googleAuthHref="/api/admin/auth/google?next=/admin" />
+      <AdminLoginPageContent />
     </Suspense>
   );
 }

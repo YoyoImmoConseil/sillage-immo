@@ -19,7 +19,7 @@ const getErrorMessage = (errorCode: string | null) => {
   }
 };
 
-export function AdminLoginPageContent({ googleAuthHref }: { googleAuthHref: string }) {
+export function AdminLoginPageContent() {
   const searchParams = useSearchParams();
   const errorMessage = getErrorMessage(searchParams.get("error"));
 
@@ -38,7 +38,7 @@ export function AdminLoginPageContent({ googleAuthHref }: { googleAuthHref: stri
             {errorMessage}
           </p>
         ) : null}
-        <AdminLoginForm canBootstrap googleAuthHref={googleAuthHref} />
+        <AdminLoginForm canBootstrap />
         <Link href="/" className="inline-block text-sm underline text-[#141446]">
           Retour au site
         </Link>
