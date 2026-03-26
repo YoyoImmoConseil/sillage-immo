@@ -13,9 +13,9 @@ export function AdminLoginForm({
         Connecte-toi avec Google en utilisant une adresse deja autorisee dans le back-office.
       </div>
       <div className="flex flex-wrap items-center gap-3">
-        <Link href={googleAuthHref} className="sillage-btn rounded px-4 py-2 text-sm disabled:opacity-60">
+        <a href={googleAuthHref} className="sillage-btn rounded px-4 py-2 text-sm disabled:opacity-60">
           Continuer avec Google
-        </Link>
+        </a>
         {canBootstrap ? (
           <Link href="/admin/bootstrap" className="text-sm underline">
             Creer le premier administrateur
