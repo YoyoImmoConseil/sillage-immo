@@ -29,12 +29,18 @@ export function AuthCallbackPageContent() {
 
   useEffect(() => {
     let isActive = true;
+    const nextPath = getSafeNextPath(searchParams.get("next"));
+
+    const redirectWithUser = (email?: string | null) => {
+      if (!isActive) {
+        return;
+      }
+      setStep(`Session validee${email ? ` pour ${email}` : ""}. Redirection vers l'administration...`);
+      window.location.replace(nextPath);
+    };
 
     const finalizeGoogleSignIn = async () => {
-      const code = searchParams.get("code");
-      const nextPath = getSafeNextPath(searchParams.get("next"));
-
-      if (!code) {
+      if (!searchParams.get("code")) {
         window.location.replace("/admin/login?error=missing_code");
         return;
       }
@@ -42,46 +48,46 @@ export function AuthCallbackPageContent() {
       try {
         const supabase = createSupabaseBrowserClient();
         if (isActive) {
-          setStep("Echange du code Google avec Supabase...");
+          setStep("Finalisation automatique de la session Google...");
         }
-        const { error: exchangeError } = await withTimeout(
-          supabase.auth.exchangeCodeForSession(code),
-          10000
-        );
 
-        if (exchangeError) {
-          if (isActive) {
-            setError(`Echec Supabase: ${exchangeError.message}`);
+        const {
+          data: { subscription },
+        } = supabase.auth.onAuthStateChange((event, session) => {
+          if ((event === "SIGNED_IN" || event === "TOKEN_REFRESHED") && session?.user) {
+            redirectWithUser(session.user.email ?? null);
           }
-          return;
-        }
+        });
 
         if (isActive) {
           setStep("Verification de la session...");
         }
+
+        // The browser client already handles PKCE code exchange on callback pages.
+        await withTimeout(new Promise((resolve) => window.setTimeout(resolve, 1200)), 3000);
+
         const {
           data: { user },
           error: userError,
         } = await withTimeout(supabase.auth.getUser(), 10000);
 
+        subscription.unsubscribe();
+
         if (userError) {
           if (isActive) {
-            setError(`Session creee mais utilisateur introuvable: ${userError.message}`);
+            setError(`Echec Supabase: ${userError.message}`);
           }
           return;
         }
 
-        if (!user?.email) {
+        if (!user) {
           if (isActive) {
-            setError("Session creee mais aucun email utilisateur n'a ete retourne.");
+            setError("Aucune session Google n'a ete creee apres le retour de Google.");
           }
           return;
         }
 
-        if (isActive) {
-          setStep(`Session validee pour ${user.email}. Redirection vers l'administration...`);
-        }
-        window.location.replace(nextPath);
+        redirectWithUser(user.email ?? null);
       } catch (cause) {
         if (!isActive) {
           return;
