@@ -39,8 +39,30 @@ export function AuthCallbackPageContent() {
       window.location.replace(nextPath);
     };
 
+    const readSession = async () => {
+      const supabase = createSupabaseBrowserClient();
+      const {
+        data: { session },
+        error: sessionError,
+      } = await withTimeout(supabase.auth.getSession(), 5000);
+
+      if (sessionError) {
+        throw sessionError;
+      }
+
+      return session;
+    };
+
     const finalizeGoogleSignIn = async () => {
-      if (!searchParams.get("code")) {
+      const code = searchParams.get("code");
+      const errorDescription = searchParams.get("error_description");
+
+      if (errorDescription) {
+        setError(errorDescription);
+        return;
+      }
+
+      if (!code) {
         window.location.replace("/admin/login?error=missing_code");
         return;
       }
@@ -63,31 +85,20 @@ export function AuthCallbackPageContent() {
           setStep("Verification de la session...");
         }
 
-        // The browser client already handles PKCE code exchange on callback pages.
-        await withTimeout(new Promise((resolve) => window.setTimeout(resolve, 1200)), 3000);
+        for (let attempt = 0; attempt < 8; attempt += 1) {
+          const session = await readSession();
+          if (session?.user) {
+            subscription.unsubscribe();
+            redirectWithUser(session.user.email ?? null);
+            return;
+          }
 
-        const {
-          data: { user },
-          error: userError,
-        } = await withTimeout(supabase.auth.getUser(), 10000);
+          await withTimeout(new Promise((resolve) => window.setTimeout(resolve, 400)), 1000);
+        }
 
         subscription.unsubscribe();
 
-        if (userError) {
-          if (isActive) {
-            setError(`Echec Supabase: ${userError.message}`);
-          }
-          return;
-        }
-
-        if (!user) {
-          if (isActive) {
-            setError("Aucune session Google n'a ete creee apres le retour de Google.");
-          }
-          return;
-        }
-
-        redirectWithUser(user.email ?? null);
+        setError("Aucune session Google n'a ete creee apres le retour de Google.");
       } catch (cause) {
         if (!isActive) {
           return;
