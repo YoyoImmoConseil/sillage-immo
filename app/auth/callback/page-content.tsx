@@ -25,6 +25,7 @@ const withTimeout = async <T,>(promise: Promise<T>, timeoutMs: number) => {
 export function AuthCallbackPageContent() {
   const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
+  const [step, setStep] = useState("Preparation de la connexion...");
 
   useEffect(() => {
     let isActive = true;
@@ -40,23 +41,54 @@ export function AuthCallbackPageContent() {
 
       try {
         const supabase = createSupabaseBrowserClient();
+        if (isActive) {
+          setStep("Echange du code Google avec Supabase...");
+        }
         const { error: exchangeError } = await withTimeout(
           supabase.auth.exchangeCodeForSession(code),
           10000
         );
 
         if (exchangeError) {
-          window.location.replace("/admin/login?error=oauth_exchange_failed");
+          if (isActive) {
+            setError(`Echec Supabase: ${exchangeError.message}`);
+          }
           return;
         }
 
+        if (isActive) {
+          setStep("Verification de la session...");
+        }
+        const {
+          data: { user },
+          error: userError,
+        } = await withTimeout(supabase.auth.getUser(), 10000);
+
+        if (userError) {
+          if (isActive) {
+            setError(`Session creee mais utilisateur introuvable: ${userError.message}`);
+          }
+          return;
+        }
+
+        if (!user?.email) {
+          if (isActive) {
+            setError("Session creee mais aucun email utilisateur n'a ete retourne.");
+          }
+          return;
+        }
+
+        if (isActive) {
+          setStep(`Session validee pour ${user.email}. Redirection vers l'administration...`);
+        }
         window.location.replace(nextPath);
-      } catch {
+      } catch (cause) {
         if (!isActive) {
           return;
         }
 
-        setError("La finalisation de la connexion Google a echoue.");
+        const message = cause instanceof Error ? cause.message : "Erreur inconnue.";
+        setError(`La finalisation de la connexion Google a echoue: ${message}`);
       }
     };
 
@@ -71,7 +103,7 @@ export function AuthCallbackPageContent() {
     <main className="min-h-screen bg-[#f4ece4] px-6 py-10 md:px-10 xl:px-14 2xl:px-20">
       <section className="mx-auto max-w-xl space-y-4 rounded-3xl border border-[rgba(20,20,70,0.18)] bg-white/70 p-8">
         <h1 className="text-2xl font-semibold text-[#141446]">Connexion Google</h1>
-        <p className="text-sm text-[#141446]/75">Finalisation de la session back-office...</p>
+        <p className="text-sm text-[#141446]/75">{step}</p>
         {error ? (
           <>
             <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -81,7 +113,9 @@ export function AuthCallbackPageContent() {
               Retour a la connexion admin
             </Link>
           </>
-        ) : null}
+        ) : (
+          <p className="text-xs text-[#141446]/60">URL attendue ensuite: {getSafeNextPath(searchParams.get("next"))}</p>
+        )}
       </section>
     </main>
   );

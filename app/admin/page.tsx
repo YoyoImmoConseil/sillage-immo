@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { AdminShell } from "@/app/components/admin-shell";
 import { getAdminPageContext, hasAdminPermission } from "@/lib/admin/auth";
 import { TimeoutError, withTimeout } from "@/lib/async/timeout";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { AdminPermission } from "@/types/domain/admin";
 
 export const dynamic = "force-dynamic";
@@ -58,6 +59,23 @@ export default async function AdminDashboardPage() {
   }
 
   if (!context && !warningMessage) {
+    try {
+      const supabase = await createSupabaseServerClient();
+      const {
+        data: { user },
+      } = await withTimeout(
+        supabase.auth.getUser(),
+        4000,
+        "La verification de la session Google prend trop de temps."
+      );
+
+      if (user) {
+        redirect("/admin/forbidden");
+      }
+    } catch {
+      redirect("/admin/login");
+    }
+
     redirect("/admin/login");
   }
 
