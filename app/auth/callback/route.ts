@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { createServerClient } from "@supabase/ssr";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { TimeoutError, withTimeout } from "@/lib/async/timeout";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { publicEnv } from "@/lib/env/public";
 import { linkAdminProfileToAuthUser } from "@/services/admin/admin-user.service";
+import type { Database } from "@/types/db/supabase";
 
 const getSafeNextPath = (value: string | null) => {
   if (!value || !value.startsWith("/")) {
@@ -15,18 +19,43 @@ export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const nextPath = getSafeNextPath(requestUrl.searchParams.get("next"));
   const code = requestUrl.searchParams.get("code");
+  const cookieStore = await cookies();
+  const responseCookies: Array<{
+    name: string;
+    value: string;
+    options: Parameters<NextResponse["cookies"]["set"]>[2];
+  }> = [];
   const redirectToLogin = (error: string) => {
     const loginUrl = new URL("/admin/login", requestUrl.origin);
     loginUrl.searchParams.set("error", error);
-    return NextResponse.redirect(loginUrl);
+    const response = NextResponse.redirect(loginUrl);
+    responseCookies.forEach(({ name, value, options }) => {
+      response.cookies.set(name, value, options);
+    });
+    return response;
   };
+  const buildSupabaseClient = (): SupabaseClient<Database> =>
+    createServerClient<Database>(
+      publicEnv.NEXT_PUBLIC_SUPABASE_URL,
+      publicEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll();
+          },
+          setAll(cookiesToSet) {
+            responseCookies.splice(0, responseCookies.length, ...cookiesToSet);
+          },
+        },
+      }
+    );
 
   if (!code) {
     return redirectToLogin("missing_code");
   }
 
   try {
-    const supabase = await createSupabaseServerClient();
+    const supabase = buildSupabaseClient();
     const { error: exchangeError } = await withTimeout(
       supabase.auth.exchangeCodeForSession(code),
       5000,
@@ -64,10 +93,18 @@ export async function GET(request: Request) {
 
     if (!profile) {
       await supabase.auth.signOut();
-      return NextResponse.redirect(new URL("/admin/forbidden", requestUrl.origin));
+      const response = NextResponse.redirect(new URL("/admin/forbidden", requestUrl.origin));
+      responseCookies.forEach(({ name, value, options }) => {
+        response.cookies.set(name, value, options);
+      });
+      return response;
     }
 
-    return NextResponse.redirect(new URL(nextPath, requestUrl.origin));
+    const response = NextResponse.redirect(new URL(nextPath, requestUrl.origin));
+    responseCookies.forEach(({ name, value, options }) => {
+      response.cookies.set(name, value, options);
+    });
+    return response;
   } catch (error) {
     if (error instanceof TimeoutError) {
       return redirectToLogin("oauth_callback_timeout");
