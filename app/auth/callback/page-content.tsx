@@ -30,6 +30,7 @@ export function AuthCallbackPageContent() {
   useEffect(() => {
     let isActive = true;
     const nextPath = getSafeNextPath(searchParams.get("next"));
+    const runId = `admin-callback-${Date.now()}`;
 
     const redirectWithUser = (email?: string | null) => {
       if (!isActive) {
@@ -44,6 +45,23 @@ export function AuthCallbackPageContent() {
         setStep("Synchronisation de la session serveur...");
       }
 
+      // #region agent log
+      fetch("http://127.0.0.1:7695/ingest/34db18ce-fe4a-4a99-91a2-c9c0aaded505", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "cada68" },
+        body: JSON.stringify({
+          sessionId: "cada68",
+          runId,
+          hypothesisId: "H1",
+          location: "app/auth/callback/page-content.tsx:syncServerSession",
+          message: "Starting server session sync",
+          data: {
+            hasAccessToken: Boolean(accessToken),
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
       const response = await withTimeout(
         fetch("/api/admin/auth/session", {
           method: "POST",
@@ -57,6 +75,24 @@ export function AuthCallbackPageContent() {
         7000
       );
 
+      // #region agent log
+      fetch("http://127.0.0.1:7695/ingest/34db18ce-fe4a-4a99-91a2-c9c0aaded505", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "cada68" },
+        body: JSON.stringify({
+          sessionId: "cada68",
+          runId,
+          hypothesisId: "H1",
+          location: "app/auth/callback/page-content.tsx:syncServerSession",
+          message: "Server session sync completed",
+          data: {
+            status: response.status,
+            ok: response.ok,
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
       if (!response.ok) {
         const payload = (await response.json()) as { message?: string };
         throw new Error(payload.message ?? "Synchronisation serveur impossible.");
@@ -80,6 +116,25 @@ export function AuthCallbackPageContent() {
     const finalizeGoogleSignIn = async () => {
       const code = searchParams.get("code");
       const errorDescription = searchParams.get("error_description");
+      // #region agent log
+      fetch("http://127.0.0.1:7695/ingest/34db18ce-fe4a-4a99-91a2-c9c0aaded505", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "cada68" },
+        body: JSON.stringify({
+          sessionId: "cada68",
+          runId,
+          hypothesisId: "H3",
+          location: "app/auth/callback/page-content.tsx:finalizeGoogleSignIn",
+          message: "Entered admin auth callback page",
+          data: {
+            hasCode: Boolean(code),
+            hasErrorDescription: Boolean(errorDescription),
+            nextPath,
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
 
       if (errorDescription) {
         setError(errorDescription);
@@ -100,6 +155,25 @@ export function AuthCallbackPageContent() {
         const {
           data: { subscription },
         } = supabase.auth.onAuthStateChange((event, session) => {
+          // #region agent log
+          fetch("http://127.0.0.1:7695/ingest/34db18ce-fe4a-4a99-91a2-c9c0aaded505", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "cada68" },
+            body: JSON.stringify({
+              sessionId: "cada68",
+              runId,
+              hypothesisId: "H3",
+              location: "app/auth/callback/page-content.tsx:onAuthStateChange",
+              message: "Observed auth state change during callback",
+              data: {
+                event,
+                hasUser: Boolean(session?.user),
+                hasAccessToken: Boolean(session?.access_token),
+              },
+              timestamp: Date.now(),
+            }),
+          }).catch(() => {});
+          // #endregion
           if ((event === "SIGNED_IN" || event === "TOKEN_REFRESHED") && session?.user) {
             void (async () => {
               try {
@@ -120,6 +194,25 @@ export function AuthCallbackPageContent() {
 
         for (let attempt = 0; attempt < 8; attempt += 1) {
           const session = await readSession();
+          // #region agent log
+          fetch("http://127.0.0.1:7695/ingest/34db18ce-fe4a-4a99-91a2-c9c0aaded505", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "cada68" },
+            body: JSON.stringify({
+              sessionId: "cada68",
+              runId,
+              hypothesisId: "H3",
+              location: "app/auth/callback/page-content.tsx:readSessionLoop",
+              message: "Polled browser session during callback",
+              data: {
+                attempt,
+                hasUser: Boolean(session?.user),
+                hasAccessToken: Boolean(session?.access_token),
+              },
+              timestamp: Date.now(),
+            }),
+          }).catch(() => {});
+          // #endregion
           if (session?.user) {
             subscription.unsubscribe();
             await syncServerSession(session.access_token);

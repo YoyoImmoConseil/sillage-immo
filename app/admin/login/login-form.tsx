@@ -19,6 +19,24 @@ export function AdminLoginForm({
       try {
         const supabase = createAdminOAuthBrowserClient();
         const redirectTo = `${window.location.origin}/auth/callback?next=/admin`;
+        // #region agent log
+        fetch("http://127.0.0.1:7695/ingest/34db18ce-fe4a-4a99-91a2-c9c0aaded505", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "cada68" },
+          body: JSON.stringify({
+            sessionId: "cada68",
+            runId: `admin-login-${Date.now()}`,
+            hypothesisId: "H3",
+            location: "app/admin/login/login-form.tsx:signInWithGoogle",
+            message: "Starting Google OAuth from admin login",
+            data: {
+              origin: window.location.origin,
+              redirectPath: "/auth/callback?next=/admin",
+            },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+        // #endregion
         const { error: signInError } = await supabase.auth.signInWithOAuth({
           provider: "google",
           options: { redirectTo },
