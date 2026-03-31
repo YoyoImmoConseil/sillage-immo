@@ -15,6 +15,9 @@ export function AdminSignOutButton() {
       try {
         const supabase = createSupabaseBrowserClient();
         await supabase.auth.signOut();
+        await fetch("/api/admin/auth/logout", {
+          method: "POST",
+        });
         router.push("/admin/login");
         router.refresh();
       } catch {

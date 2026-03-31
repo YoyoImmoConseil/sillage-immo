@@ -39,7 +39,7 @@ export function AuthCallbackPageContent() {
       window.location.replace(nextPath);
     };
 
-    const syncServerSession = async (accessToken: string, refreshToken: string) => {
+    const syncServerSession = async (accessToken: string) => {
       if (isActive) {
         setStep("Synchronisation de la session serveur...");
       }
@@ -52,7 +52,6 @@ export function AuthCallbackPageContent() {
           },
           body: JSON.stringify({
             accessToken,
-            refreshToken,
           }),
         }),
         7000
@@ -104,7 +103,7 @@ export function AuthCallbackPageContent() {
           if ((event === "SIGNED_IN" || event === "TOKEN_REFRESHED") && session?.user) {
             void (async () => {
               try {
-                await syncServerSession(session.access_token, session.refresh_token);
+                await syncServerSession(session.access_token);
                 redirectWithUser(session.user.email ?? null);
               } catch (cause) {
                 if (!isActive) return;
@@ -123,7 +122,7 @@ export function AuthCallbackPageContent() {
           const session = await readSession();
           if (session?.user) {
             subscription.unsubscribe();
-            await syncServerSession(session.access_token, session.refresh_token);
+            await syncServerSession(session.access_token);
             redirectWithUser(session.user.email ?? null);
             return;
           }

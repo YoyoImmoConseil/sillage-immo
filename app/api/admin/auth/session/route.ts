@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerClient } from "@supabase/ssr";
-import type { Database } from "@/types/db/supabase";
 import { withTimeout } from "@/lib/async/timeout";
-import { publicEnv } from "@/lib/env/public";
+import { ADMIN_ACCESS_TOKEN_COOKIE } from "@/lib/admin/session";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
 type Body = {
   accessToken?: string;
-  refreshToken?: string;
 };
 
 export async function POST(request: NextRequest) {
@@ -18,40 +16,34 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, message: "Payload JSON invalide." }, { status: 400 });
   }
 
-  if (!body.accessToken || !body.refreshToken) {
-    return NextResponse.json({ ok: false, message: "Tokens de session manquants." }, { status: 400 });
+  if (!body.accessToken) {
+    return NextResponse.json({ ok: false, message: "Token de session manquant." }, { status: 400 });
+  }
+
+  const {
+    data: { user },
+    error,
+  } = await withTimeout(
+    supabaseAdmin.auth.getUser(body.accessToken),
+    5000,
+    "La validation du token admin a expire."
+  );
+
+  if (error || !user?.email) {
+    return NextResponse.json(
+      { ok: false, message: error?.message ?? "Token admin invalide." },
+      { status: 400 }
+    );
   }
 
   const response = NextResponse.json({ ok: true });
-  const supabase = createServerClient<Database>(
-    publicEnv.NEXT_PUBLIC_SUPABASE_URL,
-    publicEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            response.cookies.set(name, value, options);
-          });
-        },
-      },
-    }
-  );
-
-  const { error } = await withTimeout(
-    supabase.auth.setSession({
-      access_token: body.accessToken,
-      refresh_token: body.refreshToken,
-    }),
-    5000,
-    "La synchronisation de session avec Supabase a expire."
-  );
-
-  if (error) {
-    return NextResponse.json({ ok: false, message: error.message }, { status: 400 });
-  }
+  response.cookies.set(ADMIN_ACCESS_TOKEN_COOKIE, body.accessToken, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 8,
+  });
 
   return response;
 }
