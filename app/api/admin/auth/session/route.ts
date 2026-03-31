@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import type { Database } from "@/types/db/supabase";
+import { withTimeout } from "@/lib/async/timeout";
 import { publicEnv } from "@/lib/env/public";
 
 type Body = {
@@ -39,10 +40,14 @@ export async function POST(request: NextRequest) {
     }
   );
 
-  const { error } = await supabase.auth.setSession({
-    access_token: body.accessToken,
-    refresh_token: body.refreshToken,
-  });
+  const { error } = await withTimeout(
+    supabase.auth.setSession({
+      access_token: body.accessToken,
+      refresh_token: body.refreshToken,
+    }),
+    5000,
+    "La synchronisation de session avec Supabase a expire."
+  );
 
   if (error) {
     return NextResponse.json({ ok: false, message: error.message }, { status: 400 });

@@ -40,16 +40,23 @@ export function AuthCallbackPageContent() {
     };
 
     const syncServerSession = async (accessToken: string, refreshToken: string) => {
-      const response = await fetch("/api/admin/auth/session", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          accessToken,
-          refreshToken,
+      if (isActive) {
+        setStep("Synchronisation de la session serveur...");
+      }
+
+      const response = await withTimeout(
+        fetch("/api/admin/auth/session", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            accessToken,
+            refreshToken,
+          }),
         }),
-      });
+        7000
+      );
 
       if (!response.ok) {
         const payload = (await response.json()) as { message?: string };
