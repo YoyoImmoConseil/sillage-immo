@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { createAdminOAuthBrowserClient } from "@/lib/supabase/admin-oauth-browser";
 
 const getSafeNextPath = (value: string | null) => {
   if (!value || !value.startsWith("/")) {
@@ -39,8 +39,26 @@ export function AuthCallbackPageContent() {
       window.location.replace(nextPath);
     };
 
+    const syncServerSession = async (accessToken: string, refreshToken: string) => {
+      const response = await fetch("/api/admin/auth/session", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          accessToken,
+          refreshToken,
+        }),
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json()) as { message?: string };
+        throw new Error(payload.message ?? "Synchronisation serveur impossible.");
+      }
+    };
+
     const readSession = async () => {
-      const supabase = createSupabaseBrowserClient();
+      const supabase = createAdminOAuthBrowserClient();
       const {
         data: { session },
         error: sessionError,
@@ -68,7 +86,7 @@ export function AuthCallbackPageContent() {
       }
 
       try {
-        const supabase = createSupabaseBrowserClient();
+        const supabase = createAdminOAuthBrowserClient();
         if (isActive) {
           setStep("Finalisation automatique de la session Google...");
         }
@@ -77,7 +95,16 @@ export function AuthCallbackPageContent() {
           data: { subscription },
         } = supabase.auth.onAuthStateChange((event, session) => {
           if ((event === "SIGNED_IN" || event === "TOKEN_REFRESHED") && session?.user) {
-            redirectWithUser(session.user.email ?? null);
+            void (async () => {
+              try {
+                await syncServerSession(session.access_token, session.refresh_token);
+                redirectWithUser(session.user.email ?? null);
+              } catch (cause) {
+                if (!isActive) return;
+                const message = cause instanceof Error ? cause.message : "Erreur inconnue.";
+                setError(`Impossible de synchroniser la session serveur: ${message}`);
+              }
+            })();
           }
         });
 
@@ -89,6 +116,7 @@ export function AuthCallbackPageContent() {
           const session = await readSession();
           if (session?.user) {
             subscription.unsubscribe();
+            await syncServerSession(session.access_token, session.refresh_token);
             redirectWithUser(session.user.email ?? null);
             return;
           }

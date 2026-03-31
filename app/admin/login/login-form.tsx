@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, useTransition } from "react";
-import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { createAdminOAuthBrowserClient } from "@/lib/supabase/admin-oauth-browser";
 
 export function AdminLoginForm({
   canBootstrap,
@@ -17,7 +17,7 @@ export function AdminLoginForm({
 
     startTransition(async () => {
       try {
-        const supabase = createSupabaseBrowserClient();
+        const supabase = createAdminOAuthBrowserClient();
         const redirectTo = `${window.location.origin}/auth/callback?next=/admin`;
         const { error: signInError } = await supabase.auth.signInWithOAuth({
           provider: "google",
