@@ -45,6 +45,24 @@ const buildContext = (
 });
 
 const getAdminContextByUser = async (user: User): Promise<AdminContext | null> => {
+  // #region agent log
+  fetch("http://127.0.0.1:7695/ingest/34db18ce-fe4a-4a99-91a2-c9c0aaded505", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "cada68" },
+    body: JSON.stringify({
+      sessionId: "cada68",
+      runId: `admin-context-${Date.now()}`,
+      hypothesisId: "H11",
+      location: "lib/admin/auth.ts:getAdminContextByUser",
+      message: "Looking up admin context by Supabase user",
+      data: {
+        hasUserId: Boolean(user.id),
+        hasEmail: Boolean(user.email),
+      },
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion
   const { data: profileData, error: profileError } = await supabaseAdmin
     .from("admin_profiles")
     .select("id, auth_user_id, email, first_name, last_name, full_name, is_active, metadata")
@@ -52,10 +70,47 @@ const getAdminContextByUser = async (user: User): Promise<AdminContext | null> =
     .maybeSingle();
 
   if (profileError || !profileData || !profileData.is_active || !user.email) {
+    // #region agent log
+    fetch("http://127.0.0.1:7695/ingest/34db18ce-fe4a-4a99-91a2-c9c0aaded505", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "cada68" },
+      body: JSON.stringify({
+        sessionId: "cada68",
+        runId: `admin-context-${Date.now()}`,
+        hypothesisId: "H11",
+        location: "lib/admin/auth.ts:getAdminContextByUser",
+        message: "Admin profile lookup failed or inactive",
+        data: {
+          hasProfileData: Boolean(profileData),
+          hasProfileError: Boolean(profileError),
+          profileIsActive: profileData?.is_active ?? null,
+          hasUserEmail: Boolean(user.email),
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
     return null;
   }
 
   if (profileData.auth_user_id && profileData.auth_user_id !== user.id) {
+    // #region agent log
+    fetch("http://127.0.0.1:7695/ingest/34db18ce-fe4a-4a99-91a2-c9c0aaded505", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "cada68" },
+      body: JSON.stringify({
+        sessionId: "cada68",
+        runId: `admin-context-${Date.now()}`,
+        hypothesisId: "H11",
+        location: "lib/admin/auth.ts:getAdminContextByUser",
+        message: "Admin profile auth_user_id mismatch",
+        data: {
+          hasProfileAuthUserId: Boolean(profileData.auth_user_id),
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
     return null;
   }
 
@@ -85,6 +140,24 @@ const getAdminContextByUser = async (user: User): Promise<AdminContext | null> =
         });
 
   if (!linkedProfile?.isActive) {
+    // #region agent log
+    fetch("http://127.0.0.1:7695/ingest/34db18ce-fe4a-4a99-91a2-c9c0aaded505", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "cada68" },
+      body: JSON.stringify({
+        sessionId: "cada68",
+        runId: `admin-context-${Date.now()}`,
+        hypothesisId: "H11",
+        location: "lib/admin/auth.ts:getAdminContextByUser",
+        message: "Linked admin profile missing or inactive",
+        data: {
+          hasLinkedProfile: Boolean(linkedProfile),
+          linkedProfileIsActive: linkedProfile?.isActive ?? null,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
     return null;
   }
 
@@ -95,6 +168,25 @@ const getAdminContextByUser = async (user: User): Promise<AdminContext | null> =
     .maybeSingle();
 
   if (roleError || !roleData?.is_active) {
+    // #region agent log
+    fetch("http://127.0.0.1:7695/ingest/34db18ce-fe4a-4a99-91a2-c9c0aaded505", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "cada68" },
+      body: JSON.stringify({
+        sessionId: "cada68",
+        runId: `admin-context-${Date.now()}`,
+        hypothesisId: "H12",
+        location: "lib/admin/auth.ts:getAdminContextByUser",
+        message: "Admin role lookup failed or inactive",
+        data: {
+          hasRoleData: Boolean(roleData),
+          hasRoleError: Boolean(roleError),
+          roleIsActive: roleData?.is_active ?? null,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
     return null;
   }
 
@@ -103,6 +195,25 @@ const getAdminContextByUser = async (user: User): Promise<AdminContext | null> =
     ...linkedProfile,
     role,
   };
+
+  // #region agent log
+  fetch("http://127.0.0.1:7695/ingest/34db18ce-fe4a-4a99-91a2-c9c0aaded505", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "cada68" },
+    body: JSON.stringify({
+      sessionId: "cada68",
+      runId: `admin-context-${Date.now()}`,
+      hypothesisId: "H12",
+      location: "lib/admin/auth.ts:getAdminContextByUser",
+      message: "Admin context resolved successfully",
+      data: {
+        role,
+        hasProfileId: Boolean(profile.id),
+      },
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion
 
   return buildContext("session", role, profile);
 };

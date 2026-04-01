@@ -4,7 +4,7 @@ import { getClientProjectById } from "@/services/clients/client-project.service"
 import { getSellerProjectDetail } from "@/services/clients/seller-project.service";
 import { getProjectEvents } from "@/services/clients/client-project-invitation.service";
 
-type RouteParams = { params: Promise<{ clientId: string; projectId: string }> };
+type RouteParams = { params: Promise<{ id: string; projectId: string }> };
 
 export async function GET(request: Request, { params }: RouteParams) {
   const context = await getAdminRequestContext(request);
@@ -12,7 +12,7 @@ export async function GET(request: Request, { params }: RouteParams) {
     return NextResponse.json({ ok: false, message: "Acces refuse." }, { status: 403 });
   }
 
-  const { clientId, projectId } = await params;
+  const { id: clientId, projectId } = await params;
   try {
     const clientProject = await getClientProjectById(projectId);
     if (!clientProject || clientProject.client_profile_id !== clientId) {

@@ -21,14 +21,14 @@ import { AssignAdvisorForm } from "./assign-advisor-form";
 export const dynamic = "force-dynamic";
 
 type ProjectDetailPageProps = {
-  params: Promise<{ clientId: string; projectId: string }>;
+  params: Promise<{ id: string; projectId: string }>;
 };
 
 const formatDate = (value: string) => new Date(value).toLocaleString("fr-FR");
 
 export default async function ProjectDetailPage({ params }: ProjectDetailPageProps) {
   const context = await requireAdminPagePermission("clients.view");
-  const { clientId, projectId } = await params;
+  const { id: clientId, projectId } = await params;
 
   const client = await getClientById(clientId);
   if (!client) notFound();
@@ -80,7 +80,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
                   </Link>
                   {detail.sellerLead.estimated_price && (
                     <span className="ml-2 text-[#141446]/70">
-                      Estimation: {detail.sellerLead.estimated_price.toLocaleString("fr-FR")} €
+                      Estimation: {detail.sellerLead.estimated_price.toLocaleString("fr-FR")} EUR
                     </span>
                   )}
                 </p>

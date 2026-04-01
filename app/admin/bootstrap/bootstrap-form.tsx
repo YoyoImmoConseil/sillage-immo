@@ -37,7 +37,10 @@ export function AdminBootstrapForm() {
         }
 
         const supabase = createAdminOAuthBrowserClient();
-        const redirectTo = `${window.location.origin}/auth/callback?next=/admin`;
+        const redirectTo = `${window.location.origin}/auth/callback`;
+        try {
+          window.sessionStorage.setItem("admin-auth-next", "/admin");
+        } catch {}
         const { error: signInError } = await supabase.auth.signInWithOAuth({
           provider: "google",
           options: { redirectTo },

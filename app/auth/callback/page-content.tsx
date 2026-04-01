@@ -29,7 +29,16 @@ export function AuthCallbackPageContent() {
 
   useEffect(() => {
     let isActive = true;
-    const nextPath = getSafeNextPath(searchParams.get("next"));
+    const nextPath = getSafeNextPath(
+      searchParams.get("next") ??
+        (() => {
+          try {
+            return window.sessionStorage.getItem("admin-auth-next");
+          } catch {
+            return null;
+          }
+        })()
+    );
     const runId = `admin-callback-${Date.now()}`;
 
     const redirectWithUser = (email?: string | null) => {
@@ -130,6 +139,7 @@ export function AuthCallbackPageContent() {
             hasCode: Boolean(code),
             hasErrorDescription: Boolean(errorDescription),
             nextPath,
+            rawNextQuery: searchParams.get("next"),
           },
           timestamp: Date.now(),
         }),

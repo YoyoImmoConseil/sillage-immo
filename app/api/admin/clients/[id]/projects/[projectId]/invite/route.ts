@@ -4,7 +4,7 @@ import { createInvitation } from "@/services/clients/client-project-invitation.s
 import { getClientById } from "@/services/clients/client-profile.service";
 import { getClientProjectById } from "@/services/clients/client-project.service";
 
-type RouteParams = { params: Promise<{ clientId: string; projectId: string }> };
+type RouteParams = { params: Promise<{ id: string; projectId: string }> };
 
 export async function POST(request: Request, { params }: RouteParams) {
   const context = await getAdminRequestContext(request);
@@ -12,7 +12,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     return NextResponse.json({ ok: false, message: "Acces refuse." }, { status: 403 });
   }
 
-  const { clientId, projectId } = await params;
+  const { id: clientId, projectId } = await params;
   const client = await getClientById(clientId);
   if (!client) {
     return NextResponse.json({ ok: false, message: "Client introuvable." }, { status: 404 });

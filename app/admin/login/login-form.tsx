@@ -18,7 +18,10 @@ export function AdminLoginForm({
     startTransition(async () => {
       try {
         const supabase = createAdminOAuthBrowserClient();
-        const redirectTo = `${window.location.origin}/auth/callback?next=/admin`;
+        const redirectTo = `${window.location.origin}/auth/callback`;
+        try {
+          window.sessionStorage.setItem("admin-auth-next", "/admin");
+        } catch {}
         // #region agent log
         fetch("http://127.0.0.1:7695/ingest/34db18ce-fe4a-4a99-91a2-c9c0aaded505", {
           method: "POST",
@@ -31,16 +34,37 @@ export function AdminLoginForm({
             message: "Starting Google OAuth from admin login",
             data: {
               origin: window.location.origin,
-              redirectPath: "/auth/callback?next=/admin",
+              redirectPath: "/auth/callback",
             },
             timestamp: Date.now(),
           }),
         }).catch(() => {});
         // #endregion
-        const { error: signInError } = await supabase.auth.signInWithOAuth({
+        const { data, error: signInError } = await supabase.auth.signInWithOAuth({
           provider: "google",
           options: { redirectTo },
         });
+        // #region agent log
+        fetch("http://127.0.0.1:7695/ingest/34db18ce-fe4a-4a99-91a2-c9c0aaded505", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "cada68" },
+          body: JSON.stringify({
+            sessionId: "cada68",
+            runId: `admin-login-${Date.now()}`,
+            hypothesisId: "H9",
+            location: "app/admin/login/login-form.tsx:signInWithGoogle",
+            message: "OAuth URL returned by Supabase client",
+            data: {
+              hasError: Boolean(signInError),
+              hasUrl: Boolean(data?.url),
+              urlPrefix: typeof data?.url === "string" ? data.url.slice(0, 200) : null,
+              containsLocalRedirect:
+                typeof data?.url === "string" ? data.url.includes(encodeURIComponent(redirectTo)) : false,
+            },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+        // #endregion
 
         if (signInError) {
           setError(signInError.message);

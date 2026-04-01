@@ -11,7 +11,7 @@ import {
 } from "@/services/clients/seller-project.service";
 import { getClientById } from "@/services/clients/client-profile.service";
 
-type RouteParams = { params: Promise<{ clientId: string }> };
+type RouteParams = { params: Promise<{ id: string }> };
 
 export async function GET(request: Request, { params }: RouteParams) {
   const context = await getAdminRequestContext(request);
@@ -19,7 +19,7 @@ export async function GET(request: Request, { params }: RouteParams) {
     return NextResponse.json({ ok: false, message: "Acces refuse." }, { status: 403 });
   }
 
-  const { clientId } = await params;
+  const { id: clientId } = await params;
   try {
     const projects = await getClientProjectsByClientId(clientId);
     return NextResponse.json({ ok: true, projects });
@@ -37,7 +37,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     return NextResponse.json({ ok: false, message: "Acces refuse." }, { status: 403 });
   }
 
-  const { clientId } = await params;
+  const { id: clientId } = await params;
   const client = await getClientById(clientId);
   if (!client) {
     return NextResponse.json({ ok: false, message: "Client introuvable." }, { status: 404 });

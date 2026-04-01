@@ -3,7 +3,7 @@ import { getAdminRequestContext, hasAdminPermission } from "@/lib/admin/auth";
 import { getClientProjectById } from "@/services/clients/client-project.service";
 import { attachPropertyToSellerProject } from "@/services/clients/seller-project.service";
 
-type RouteParams = { params: Promise<{ clientId: string; projectId: string }> };
+type RouteParams = { params: Promise<{ id: string; projectId: string }> };
 
 export async function POST(request: Request, { params }: RouteParams) {
   const context = await getAdminRequestContext(request);
@@ -11,7 +11,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     return NextResponse.json({ ok: false, message: "Acces refuse." }, { status: 403 });
   }
 
-  const { clientId, projectId } = await params;
+  const { id: clientId, projectId } = await params;
   let body: { propertyId?: string; isPrimary?: boolean } = {};
   const clientProject = await getClientProjectById(projectId);
   if (!clientProject || clientProject.client_profile_id !== clientId) {

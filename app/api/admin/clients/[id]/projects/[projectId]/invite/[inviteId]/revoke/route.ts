@@ -3,7 +3,7 @@ import { getAdminRequestContext, hasAdminPermission } from "@/lib/admin/auth";
 import { revokeInvitation } from "@/services/clients/client-project-invitation.service";
 
 type RouteParams = {
-  params: Promise<{ clientId: string; projectId: string; inviteId: string }>;
+  params: Promise<{ id: string; projectId: string; inviteId: string }>;
 };
 
 export async function POST(request: Request, { params }: RouteParams) {
