@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { AdminPageMountLogger } from "@/app/admin/admin-page-mount-logger";
 import { AdminShell } from "@/app/components/admin-shell";
 import { getAdminPageContext, hasAdminPermission } from "@/lib/admin/auth";
 import { TimeoutError, withTimeout } from "@/lib/async/timeout";
@@ -60,23 +59,6 @@ export default async function AdminDashboardPage() {
   }
 
   if (!context && !warningMessage) {
-    // #region agent log
-    fetch("http://127.0.0.1:7695/ingest/34db18ce-fe4a-4a99-91a2-c9c0aaded505", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "cada68" },
-      body: JSON.stringify({
-        sessionId: "cada68",
-        runId: `admin-page-${Date.now()}`,
-        hypothesisId: "H12",
-        location: "app/admin/page.tsx:AdminDashboardPage",
-        message: "No admin context resolved on dashboard page",
-        data: {
-          hasWarningMessage: Boolean(warningMessage),
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
     try {
       const supabase = await createSupabaseServerClient();
       const {
@@ -88,23 +70,6 @@ export default async function AdminDashboardPage() {
       );
 
       if (user) {
-        // #region agent log
-        fetch("http://127.0.0.1:7695/ingest/34db18ce-fe4a-4a99-91a2-c9c0aaded505", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "cada68" },
-          body: JSON.stringify({
-            sessionId: "cada68",
-            runId: `admin-page-${Date.now()}`,
-            hypothesisId: "H12",
-            location: "app/admin/page.tsx:AdminDashboardPage",
-            message: "Supabase session exists but admin context is missing",
-            data: {
-              hasUser: true,
-            },
-            timestamp: Date.now(),
-          }),
-        }).catch(() => {});
-        // #endregion
         redirect("/admin/forbidden");
       }
     } catch {
@@ -115,43 +80,8 @@ export default async function AdminDashboardPage() {
   }
 
   if (context && !hasAdminPermission(context, "admin.dashboard.view")) {
-    // #region agent log
-    fetch("http://127.0.0.1:7695/ingest/34db18ce-fe4a-4a99-91a2-c9c0aaded505", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "cada68" },
-      body: JSON.stringify({
-        sessionId: "cada68",
-        runId: `admin-page-${Date.now()}`,
-        hypothesisId: "H12",
-        location: "app/admin/page.tsx:AdminDashboardPage",
-        message: "Admin context exists without dashboard permission",
-        data: {
-          role: context.role,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
     redirect("/admin/forbidden");
   }
-
-  // #region agent log
-  fetch("http://127.0.0.1:7695/ingest/34db18ce-fe4a-4a99-91a2-c9c0aaded505", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "cada68" },
-    body: JSON.stringify({
-      sessionId: "cada68",
-      runId: `admin-page-${Date.now()}`,
-      hypothesisId: "H12",
-      location: "app/admin/page.tsx:AdminDashboardPage",
-      message: "Admin dashboard page rendered with context",
-      data: {
-        role: context?.role ?? null,
-      },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  // #endregion
 
   if (!context) {
     return (
@@ -178,7 +108,6 @@ export default async function AdminDashboardPage() {
       role={context.role}
       profileName={context.profile?.fullName ?? context.profile?.email ?? "Mode admin"}
     >
-      <AdminPageMountLogger page="admin-dashboard" data={{ role: context.role }} />
       <section className="grid gap-4 md:grid-cols-2">
         {visibleCards.map((card) => (
           <Link
