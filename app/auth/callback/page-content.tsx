@@ -45,6 +45,25 @@ export function AuthCallbackPageContent() {
       if (!isActive) {
         return;
       }
+      // #region agent log
+      fetch("http://127.0.0.1:7695/ingest/34db18ce-fe4a-4a99-91a2-c9c0aaded505", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "cada68" },
+        body: JSON.stringify({
+          sessionId: "cada68",
+          runId,
+          hypothesisId: "H14",
+          location: "app/auth/callback/page-content.tsx:redirectWithUser",
+          message: "Redirecting browser from callback to next admin page",
+          data: {
+            email: email ?? null,
+            nextPath,
+            href: window.location.href,
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
       setStep(`Session validee${email ? ` pour ${email}` : ""}. Redirection vers l'administration...`);
       window.location.replace(nextPath);
     };

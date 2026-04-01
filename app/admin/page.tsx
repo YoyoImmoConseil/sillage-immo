@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { AdminPageMountLogger } from "@/app/admin/admin-page-mount-logger";
 import { AdminShell } from "@/app/components/admin-shell";
 import { getAdminPageContext, hasAdminPermission } from "@/lib/admin/auth";
 import { TimeoutError, withTimeout } from "@/lib/async/timeout";
@@ -177,6 +178,7 @@ export default async function AdminDashboardPage() {
       role={context.role}
       profileName={context.profile?.fullName ?? context.profile?.email ?? "Mode admin"}
     >
+      <AdminPageMountLogger page="admin-dashboard" data={{ role: context.role }} />
       <section className="grid gap-4 md:grid-cols-2">
         {visibleCards.map((card) => (
           <Link

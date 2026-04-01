@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { AdminLoginForm } from "./login-form";
@@ -24,6 +25,28 @@ const getErrorMessage = (errorCode: string | null) => {
 export function AdminLoginPageContent() {
   const searchParams = useSearchParams();
   const errorMessage = getErrorMessage(searchParams.get("error"));
+
+  useEffect(() => {
+    // #region agent log
+    fetch("http://127.0.0.1:7695/ingest/34db18ce-fe4a-4a99-91a2-c9c0aaded505", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "cada68" },
+      body: JSON.stringify({
+        sessionId: "cada68",
+        runId: `admin-login-page-${Date.now()}`,
+        hypothesisId: "H14",
+        location: "app/admin/login/login-page-content.tsx:useEffect",
+        message: "Mounted admin login page in browser",
+        data: {
+          errorCode: searchParams.get("error"),
+          hasErrorMessage: Boolean(errorMessage),
+          href: window.location.href,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+  }, [errorMessage, searchParams]);
 
   return (
     <main className="min-h-screen bg-[#f4ece4] px-6 py-10 md:px-10 xl:px-14 2xl:px-20">
