@@ -434,12 +434,20 @@ type SellerEstimationResultSectionProps = {
   valuation: ValuationResult;
   form: FlowForm;
   sellerLeadId: string;
+  portalAccessEmail: string | null;
+  portalAccessStatus: "idle" | "sending" | "sent" | "error";
+  portalAccessMessage: string | null;
+  onResendPortalAccess?: () => void;
 };
 
 export function SellerEstimationResultSection({
   valuation,
   form,
   sellerLeadId,
+  portalAccessEmail,
+  portalAccessStatus,
+  portalAccessMessage,
+  onResendPortalAccess,
 }: SellerEstimationResultSectionProps) {
   const router = useRouter();
 
@@ -497,6 +505,29 @@ export function SellerEstimationResultSection({
           plan de commercialisation sur-mesure.
         </p>
       </div>
+      {portalAccessStatus !== "idle" || portalAccessMessage ? (
+        <div className="rounded-xl border border-[rgba(20,20,70,0.22)] bg-[rgba(244,236,228,0.9)] p-4 space-y-2">
+          <p className="text-sm font-medium">Acces a votre espace client</p>
+          {portalAccessMessage ? <p className="text-sm opacity-80">{portalAccessMessage}</p> : null}
+          {portalAccessStatus === "sent" && portalAccessEmail ? (
+            <p className="text-xs opacity-70">
+              Ouvrez le lien recu par email pour activer ou retrouver votre espace client vendeur.
+            </p>
+          ) : null}
+          {portalAccessStatus === "sending" ? (
+            <p className="text-xs opacity-70">Envoi du lien en cours...</p>
+          ) : null}
+          {portalAccessStatus === "error" && onResendPortalAccess ? (
+            <button
+              type="button"
+              className="rounded border border-[#141446]/20 px-4 py-2 text-sm text-[#141446]"
+              onClick={onResendPortalAccess}
+            >
+              Renvoyer mon lien d&apos;acces
+            </button>
+          ) : null}
+        </div>
+      ) : null}
       <SellerResultChat sellerLeadId={sellerLeadId} />
       <button
         type="button"

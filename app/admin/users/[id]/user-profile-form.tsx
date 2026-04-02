@@ -17,6 +17,7 @@ type UserProfile = {
   phone: string | null;
   bio: string | null;
   avatarUrl: string | null;
+  bookingUrl: string | null;
 };
 
 const countWords = (value: string) =>
@@ -54,6 +55,7 @@ export function UserProfileForm({ user, canManage }: { user: UserProfile; canMan
   const [phone, setPhone] = useState(user.phone ?? "");
   const [bio, setBio] = useState(user.bio ?? "");
   const [avatarUrl, setAvatarUrl] = useState(user.avatarUrl);
+  const [bookingUrl, setBookingUrl] = useState(user.bookingUrl ?? "");
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -70,7 +72,7 @@ export function UserProfileForm({ user, canManage }: { user: UserProfile; canMan
         const response = await fetch(`/api/admin/users/${user.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ firstName, lastName, title, phone, bio }),
+          body: JSON.stringify({ firstName, lastName, title, phone, bio, bookingUrl }),
         });
         const payload = (await response.json()) as { ok?: boolean; message?: string };
         if (!response.ok || !payload.ok) {
@@ -213,6 +215,16 @@ export function UserProfileForm({ user, canManage }: { user: UserProfile; canMan
                 value={phone}
                 disabled={!canManage || isPending}
                 onChange={(event) => setPhone(event.target.value)}
+              />
+            </label>
+            <label className="text-sm text-[#141446]">
+              <span className="mb-2 block font-medium">Lien de prise de rendez-vous</span>
+              <input
+                className="w-full rounded border px-3 py-2"
+                placeholder="https://..."
+                value={bookingUrl}
+                disabled={!canManage || isPending}
+                onChange={(event) => setBookingUrl(event.target.value)}
               />
             </label>
             <label className="text-sm text-[#141446] md:col-span-2">

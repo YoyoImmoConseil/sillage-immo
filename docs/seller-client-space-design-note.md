@@ -15,7 +15,12 @@ It is intentionally design-first:
   - seller lead funnel, scoring, Loupe valuation, AI chat
   - admin-side client/project/seller-project model
   - SweepBright property sync and media ingestion
-- The current repo does not yet contain a real public seller portal.
+- The current repo now contains a first seller portal slice:
+  - `app/espace-client/login`
+  - `app/espace-client/invitation`
+  - `app/espace-client`
+  - `app/espace-client/projets/[projectId]`
+  - seller auth linking via `app/espace-client/auth/confirm/route.ts`
 
 ## Baseline inventory
 
@@ -38,15 +43,42 @@ It is intentionally design-first:
   - `services/properties/sweepbright-sync.service.ts`
   - `services/properties/sweepbright-media-cache.service.ts`
 
-### Confirmed missing product surfaces
-- No `app/espace-client/**` routes are present.
-- Invitations point to `/espace-client/invitation?token=...`, but no acceptance flow exists.
-- The auth callback is admin-only:
-  - `app/auth/callback/route.ts`
+### Confirmed missing or incomplete product surfaces
+- The seller portal exists, but still needs phase-1 hardening on admin invitation operations and seller session UX.
+- Invitations now point to `/espace-client/invitation?token=...` and the acceptance flow exists through `app/espace-client/auth/confirm/route.ts`.
+- The seller auth flow is now separated from the admin Google callback.
 - No seller document vault exists.
 - No real appointment scheduling integration exists.
 - No shared seller news/content module exists.
 - No MyNotary integration exists in the codebase.
+
+## Current implementation status
+
+### Already implemented in code
+- Seller login by email magic link:
+  - `app/espace-client/login/page.tsx`
+  - `app/espace-client/_components/seller-magic-link-form.tsx`
+- Invitation redemption:
+  - `app/espace-client/invitation/page.tsx`
+  - `services/clients/client-project-invitation.service.ts`
+- Seller portal guard and current-session resolution:
+  - `lib/client-space/auth.ts`
+- Seller dashboard shell and project page:
+  - `app/espace-client/page.tsx`
+  - `app/espace-client/projets/[projectId]/page.tsx`
+- Seller portal read model:
+  - `services/clients/seller-portal.service.ts`
+- Admin project operations for seller portal rollout:
+  - `app/admin/clients/[id]/projects/[projectId]/invite-button.tsx`
+  - `app/admin/clients/[id]/projects/[projectId]/assign-advisor-form.tsx`
+  - `app/admin/seller-leads/[id]/create-client-space-button.tsx`
+
+### Still to harden in phase 1
+- invitation UX in admin without relying on hidden API knowledge
+- advisor contact and booking-link visibility in admin
+- richer seller landing page when several projects are linked
+- seller session comfort (notably sign-out and clearer navigation)
+- explicit documentation of the chosen portal access model
 
 ## Product goals
 The seller client space must:
@@ -209,10 +241,17 @@ Conclusion:
 ## Security model
 
 ### Current risk
-The current client-space RLS is not portal-safe:
-- policies in `db/migrations/20260318_015_create_client_space_lot1.sql` allow `authenticated` users with `using (true)` and `with check (true)`
-- invitation creation exists, but invitation redemption does not
-- `app/auth/callback/route.ts` only links admin accounts
+The original lot-1 client-space rollout was not portal-safe:
+- `db/migrations/20260318_015_create_client_space_lot1.sql` originally allowed blanket `authenticated` access
+- the first invitation concept existed before the public seller auth flow was complete
+- admin and seller auth concerns were initially mixed
+
+The repo now contains a hardening migration:
+- `db/migrations/20260326_017_secure_client_space_portal_rls.sql`
+
+Phase 1 should still be treated as BFF-first in practice:
+- portal reads already happen through server-side services backed by `supabaseAdmin`
+- seller-facing pages should continue to rely on guarded server reads even though row-scoped select policies now exist
 
 ### Target model
 - admin access continues through service-role-backed server code
@@ -268,10 +307,14 @@ Principles:
 ### Phase 1: seller portal access core
 - invitation redemption flow
 - seller auth linking
-- portal-safe RLS or BFF-only reads
+- portal-safe RLS and BFF-backed reads
 - seller dashboard shell
 - advisor contact card
 - latest valuation block
+
+Current state:
+- most of this phase already exists in code
+- the remaining work is phase-1 hardening, not greenfield delivery
 
 ### Phase 2: pre-mandate value loop
 - valuation history
@@ -303,9 +346,8 @@ Principles:
 - admin client/project management screens as internal tooling
 
 ### Discard or rewrite
-- blanket client-space RLS
-- the current invitation flow as a public access mechanism
-- any assumption that the admin auth callback can serve clients
+- blanket client-space RLS from the first lot-1 migration
+- any admin-only auth callback assumption for seller access
 - any portal design that depends on unverified SweepBright KPIs
 - any portal design that depends on Loupe comparables before docs confirm them
 
@@ -337,7 +379,8 @@ The current `staging` work should not be hard-reset blindly.
 
 A better path is:
 - keep the reusable domain and integration foundations
-- explicitly discard the unsafe or incomplete portal pieces
-- restart the seller client space as a fresh implementation track on top of audited foundations
+- treat the existing seller portal slice as audited inventory already worth preserving
+- explicitly harden the remaining incomplete admin and seller UX pieces
+- restart only the unresolved parts of the seller client space as a fresh implementation track on top of audited foundations
 
 This gives a cleaner result than rewriting everything from zero, while still avoiding the trap of trying to ship the current portal scaffolding as-is.

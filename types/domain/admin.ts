@@ -40,6 +40,7 @@ export type AdminProfileSnapshot = {
   phone: string | null;
   bio: string | null;
   avatarUrl: string | null;
+  bookingUrl: string | null;
 };
 
 export const ADMIN_TEAM_TITLES: AdminTeamTitle[] = [

@@ -25,6 +25,11 @@ export type SellerPortalProjectSummary = {
   projectStatus: string | null;
   mandateStatus: string | null;
   propertyCount: number;
+  primaryPropertyAddress: string | null;
+  advisorName: string | null;
+  latestValuationPrice: number | null;
+  latestValuationSyncedAt: string | null;
+  hasAppointmentLink: boolean;
 };
 
 export type SellerPortalValuationSummary = {
@@ -42,6 +47,7 @@ export type SellerPortalAdvisorSummary = {
   fullName: string | null;
   email: string;
   phone: string | null;
+  bookingUrl: string | null;
 };
 
 export type SellerPortalPropertySummary = {
@@ -85,15 +91,134 @@ export const getSellerPortalClientByAuthUserId = async (authUserId: string) => {
 export const listSellerPortalProjects = async (
   clientProfileId: string
 ): Promise<SellerPortalProjectSummary[]> => {
-  const projects = await getClientProjectsByClientId(clientProfileId);
+  const projects = await getClientProjectsByClientId(clientProfileId, {
+    projectTypes: ["seller"],
+  });
+  const sellerLeadIds = projects
+    .map((project) => project.sellerProject?.sellerLeadId)
+    .filter((value): value is string => Boolean(value));
+  const advisorIds = projects
+    .map((project) => project.sellerProject?.assignedAdminProfileId)
+    .filter((value): value is string => Boolean(value));
+  const projectIds = projects.map((project) => project.id);
+
+  const [{ data: leads }, { data: advisors }, { data: projectProperties }] =
+    await Promise.all([
+      sellerLeadIds.length > 0
+        ? supabaseAdmin.from("seller_leads").select("id, estimated_price, metadata").in("id", sellerLeadIds)
+        : Promise.resolve({ data: [] as Array<{ id: string; estimated_price: number | null; metadata: unknown }> }),
+      advisorIds.length > 0
+        ? supabaseAdmin.from("admin_profiles").select("id, first_name, last_name, full_name, email, metadata").in("id", advisorIds)
+        : Promise.resolve({
+            data: [] as Array<{
+              id: string;
+              first_name: string | null;
+              last_name: string | null;
+              full_name: string | null;
+              email: string;
+              metadata: unknown;
+            }>,
+          }),
+      projectIds.length > 0
+        ? supabaseAdmin
+            .from("project_properties")
+            .select("client_project_id, property_id, is_primary")
+            .in("client_project_id", projectIds)
+            .is("unlinked_at", null)
+        : Promise.resolve({ data: [] as Array<{ client_project_id: string; property_id: string; is_primary: boolean }> }),
+    ]);
+
+  const propertyLinks = (projectProperties ?? []) as Array<{
+    client_project_id: string;
+    property_id: string;
+    is_primary: boolean;
+  }>;
+  const propertyIds = Array.from(new Set(propertyLinks.map((link) => link.property_id)));
+  const propertyRows =
+    propertyIds.length > 0
+      ? (
+          await supabaseAdmin
+            .from("properties")
+            .select("id, formatted_address, appointment_service_url")
+            .in("id", propertyIds)
+        ).data ?? []
+      : [];
+
+  const leadById = new Map(
+    ((leads ?? []) as Array<{ id: string; estimated_price: number | null; metadata: unknown }>).map((lead) => [
+      lead.id,
+      lead,
+    ])
+  );
+  const advisorById = new Map(
+    (
+      (advisors ?? []) as Array<{
+        id: string;
+        first_name: string | null;
+        last_name: string | null;
+        full_name: string | null;
+        email: string;
+        metadata: unknown;
+      }>
+    ).map((advisor) => [advisor.id, advisor])
+  );
+  const propertyById = new Map(
+    (
+      propertyRows as Array<{
+        id: string;
+        formatted_address: string | null;
+        appointment_service_url: string | null;
+      }>
+    ).map((property) => [property.id, property])
+  );
+  const primaryPropertyByProjectId = new Map<string, { formattedAddress: string | null; appointmentServiceUrl: string | null }>();
+
+  for (const link of propertyLinks) {
+    const property = propertyById.get(link.property_id);
+    if (!property) continue;
+    const current = primaryPropertyByProjectId.get(link.client_project_id);
+    if (!current || link.is_primary) {
+      primaryPropertyByProjectId.set(link.client_project_id, {
+        formattedAddress: property.formatted_address,
+        appointmentServiceUrl: property.appointment_service_url,
+      });
+    }
+  }
 
   return projects.map((project) => ({
+    advisorName: (() => {
+      const advisorId = project.sellerProject?.assignedAdminProfileId;
+      if (!advisorId) return null;
+      const advisor = advisorById.get(advisorId);
+      if (!advisor) return null;
+      const fallbackName =
+        [advisor.first_name, advisor.last_name].filter(Boolean).join(" ").trim() || advisor.email;
+      return advisor.full_name ?? fallbackName;
+    })(),
+    hasAppointmentLink: (() => {
+      const advisorId = project.sellerProject?.assignedAdminProfileId;
+      const advisor = advisorId ? advisorById.get(advisorId) : null;
+      const advisorMetadata = advisor ? parseAdminProfileMetadata(advisor.metadata) : null;
+      return Boolean(advisorMetadata?.bookingUrl || primaryPropertyByProjectId.get(project.id)?.appointmentServiceUrl);
+    })(),
     id: project.id,
     title: project.title,
     createdAt: project.createdAt,
     projectStatus: project.sellerProject?.projectStatus ?? null,
     mandateStatus: project.sellerProject?.mandateStatus ?? null,
     propertyCount: project.propertyCount,
+    primaryPropertyAddress: primaryPropertyByProjectId.get(project.id)?.formattedAddress ?? null,
+    latestValuationPrice: (() => {
+      const sellerLeadId = project.sellerProject?.sellerLeadId;
+      if (!sellerLeadId) return null;
+      return leadById.get(sellerLeadId)?.estimated_price ?? null;
+    })(),
+    latestValuationSyncedAt: (() => {
+      const sellerLeadId = project.sellerProject?.sellerLeadId;
+      if (!sellerLeadId) return null;
+      const lead = leadById.get(sellerLeadId);
+      return lead ? getSellerMetadataSections(lead.metadata).valuation?.synced_at ?? null : null;
+    })(),
   }));
 };
 
@@ -156,6 +281,7 @@ export const getSellerPortalProjectDetail = async (input: {
         fullName: adminProfile.full_name,
         email: adminProfile.email,
         phone: metadata.phone,
+        bookingUrl: metadata.bookingUrl,
       };
     }
   }

@@ -37,6 +37,7 @@ export type AdminUserListItem = {
   phone: string | null;
   bio: string | null;
   avatarUrl: string | null;
+  bookingUrl: string | null;
 };
 
 const buildFullName = (firstName?: string | null, lastName?: string | null) => {
@@ -154,6 +155,7 @@ export const listAdminUsers = async (): Promise<AdminUserListItem[]> => {
       phone: metadata.phone,
       bio: metadata.bio,
       avatarUrl: metadata.avatarUrl,
+      bookingUrl: metadata.bookingUrl,
     };
   });
 };
@@ -312,6 +314,7 @@ export const linkAdminProfileToAuthUser = async (input: {
     phone: null,
     bio: null,
     avatarUrl: null,
+    bookingUrl: null,
   };
 };
 
@@ -419,6 +422,7 @@ export const updateAdminUserProfile = async (input: {
   phone?: string;
   bio?: string;
   avatarUrl?: string | null;
+  bookingUrl?: string;
 }) => {
   const { data: currentProfile, error: currentProfileError } = await supabaseAdmin
     .from("admin_profiles")
@@ -440,6 +444,8 @@ export const updateAdminUserProfile = async (input: {
     rawTitle === null ? null : ADMIN_TEAM_TITLES.includes(rawTitle as AdminTeamTitle) ? (rawTitle as AdminTeamTitle) : null;
   const phone = input.phone === undefined ? currentMetadata.phone : input.phone?.trim() || null;
   const bio = input.bio === undefined ? currentMetadata.bio : input.bio?.trim() || null;
+  const bookingUrl =
+    input.bookingUrl === undefined ? currentMetadata.bookingUrl : input.bookingUrl?.trim() || null;
   const fullName = buildFullName(firstName, lastName);
 
   if (rawTitle !== null && title === null) {
@@ -450,11 +456,23 @@ export const updateAdminUserProfile = async (input: {
     throw new Error("La presentation est limitee a 250 mots.");
   }
 
+  if (bookingUrl) {
+    try {
+      const parsedUrl = new URL(bookingUrl);
+      if (!["http:", "https:"].includes(parsedUrl.protocol)) {
+        throw new Error("protocol");
+      }
+    } catch {
+      throw new Error("Le lien de prise de rendez-vous doit etre une URL http(s) valide.");
+    }
+  }
+
   const metadata = buildAdminProfileMetadata(currentProfile.metadata, {
     title,
     phone,
     bio,
     avatarUrl: input.avatarUrl === undefined ? currentMetadata.avatarUrl : input.avatarUrl,
+    bookingUrl,
   });
 
   const { error: updateError } = await supabaseAdmin
@@ -484,6 +502,7 @@ export const updateAdminUserProfile = async (input: {
       phone,
       bio,
       avatarUrl: input.avatarUrl === undefined ? undefined : input.avatarUrl,
+      bookingUrl,
     }
   );
 };

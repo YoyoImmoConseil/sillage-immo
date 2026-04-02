@@ -9,10 +9,7 @@ import {
   getSellerProjectByClientProjectId,
 } from "@/services/clients/seller-project.service";
 import { getProjectEvents } from "@/services/clients/client-project-invitation.service";
-import {
-  SELLER_PROJECT_STATUS_LABELS,
-  MANDATE_STATUS_LABELS,
-} from "@/types/domain/client";
+import { SELLER_PROJECT_STATUS_LABELS } from "@/types/domain/client";
 import { formatPropertyTypeLabel } from "@/lib/properties/property-type-label";
 import { SellerProjectActions } from "./seller-project-actions";
 import { InviteButton } from "./invite-button";
@@ -25,6 +22,17 @@ type ProjectDetailPageProps = {
 };
 
 const formatDate = (value: string) => new Date(value).toLocaleString("fr-FR");
+
+const formatInvitationStatus = (input: {
+  acceptedAt: string | null;
+  revokedAt: string | null;
+  expiresAt: string;
+}) => {
+  if (input.revokedAt) return "Revoquee";
+  if (input.acceptedAt) return "Acceptee";
+  if (new Date(input.expiresAt).getTime() < Date.now()) return "Expiree";
+  return "En attente";
+};
 
 export default async function ProjectDetailPage({ params }: ProjectDetailPageProps) {
   const context = await requireAdminPagePermission("clients.view");
@@ -130,8 +138,38 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
         <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6">
           <h2 className="text-xl font-semibold text-[#141446]">Conseiller</h2>
           <div className="mt-4">
-            {detail.assignedAdminProfileId ? (
-              <p className="text-[#141446]">Conseiller affecte (ID: {detail.assignedAdminProfileId})</p>
+            {detail.assignedAdvisor ? (
+              <div className="space-y-1 text-[#141446]">
+                {(() => {
+                  const advisorName =
+                    detail.assignedAdvisor.fullName ??
+                    ([detail.assignedAdvisor.firstName, detail.assignedAdvisor.lastName]
+                      .filter(Boolean)
+                      .join(" ")
+                      .trim() || detail.assignedAdvisor.email);
+
+                  return <p className="font-medium">{advisorName}</p>;
+                })()}
+                <p className="text-sm">
+                  <a href={`mailto:${detail.assignedAdvisor.email}`} className="underline">
+                    {detail.assignedAdvisor.email}
+                  </a>
+                </p>
+                <p className="text-sm">{detail.assignedAdvisor.phone ?? "Telephone non renseigne"}</p>
+                <p className="text-sm text-[#141446]/75">
+                  Rendez-vous : {detail.assignedAdvisor.bookingUrl ? "lien configure" : "non configure"}
+                </p>
+                {detail.assignedAdvisor.bookingUrl ? (
+                  <a
+                    href={detail.assignedAdvisor.bookingUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-sm underline"
+                  >
+                    Ouvrir le lien de reservation
+                  </a>
+                ) : null}
+              </div>
             ) : (
               <p className="text-[#141446]/70">Aucun conseiller affecte</p>
             )}
@@ -141,7 +179,6 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
               <AssignAdvisorForm
                 clientId={clientId}
                 projectId={projectId}
-                sellerProjectId={sellerProjectRow.id}
               />
             </div>
           )}
@@ -156,6 +193,14 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
                   Envoyee le {formatDate(detail.latestInvitation.createdAt)} · expire le{" "}
                   {formatDate(detail.latestInvitation.expiresAt)}
                 </p>
+                <p className="text-sm text-[#141446]/75">
+                  Statut :{" "}
+                  {formatInvitationStatus({
+                    acceptedAt: detail.latestInvitation.acceptedAt,
+                    revokedAt: detail.latestInvitation.revokedAt,
+                    expiresAt: detail.latestInvitation.expiresAt,
+                  })}
+                </p>
                 {detail.latestInvitation.acceptedAt && (
                   <p className="text-green-700">Acceptee le {formatDate(detail.latestInvitation.acceptedAt)}</p>
                 )}
@@ -169,7 +214,11 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
           </div>
           {canInvite && (
             <div className="mt-4">
-              <InviteButton clientId={clientId} projectId={projectId} />
+              <InviteButton
+                clientId={clientId}
+                projectId={projectId}
+                latestInvitation={detail.latestInvitation}
+              />
             </div>
           )}
         </section>

@@ -1,17 +1,17 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import type { ClientProjectCreatedFrom } from "@/types/domain/client";
+import type { ClientProjectCreatedFrom, ClientProjectType } from "@/types/domain/client";
 
 export type CreateClientProjectInput = {
   clientProfileId: string;
-  projectType: "seller";
+  projectType: ClientProjectType;
   title?: string;
   createdFrom: ClientProjectCreatedFrom;
   primaryAdminProfileId?: string;
   source?: string;
 };
 
-export type ClientProjectWithSeller = {
+export type ClientProjectRecord = {
   id: string;
   clientProfileId: string;
   projectType: string;
@@ -31,6 +31,12 @@ export type ClientProjectWithSeller = {
   propertyCount: number;
 };
 
+export type ClientProjectWithSeller = ClientProjectRecord;
+
+type GetClientProjectsOptions = {
+  projectTypes?: ClientProjectType[];
+};
+
 export const createClientProject = async (input: CreateClientProjectInput) => {
   const { data, error } = await supabaseAdmin
     .from("client_projects")
@@ -48,13 +54,22 @@ export const createClientProject = async (input: CreateClientProjectInput) => {
   return data.id;
 };
 
-export const getClientProjectsByClientId = async (clientProfileId: string) => {
-  const { data: projects, error } = await supabaseAdmin
+export const getClientProjectsByClientId = async (
+  clientProfileId: string,
+  options?: GetClientProjectsOptions
+) => {
+  const projectTypes = options?.projectTypes ?? ["seller"];
+  let query = supabaseAdmin
     .from("client_projects")
     .select("*")
     .eq("client_profile_id", clientProfileId)
-    .eq("project_type", "seller")
     .order("created_at", { ascending: false });
+
+  if (projectTypes.length) {
+    query = query.in("project_type", projectTypes);
+  }
+
+  const { data: projects, error } = await query;
   if (error) throw error;
 
   const rows = (projects ?? []) as Array<{

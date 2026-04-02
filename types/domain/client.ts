@@ -1,5 +1,5 @@
 export type ClientProjectType = "seller" | "buyer" | "rental" | "wealth";
-export type ClientProjectCreatedFrom = "seller_lead" | "crm_property" | "admin_manual";
+export type ClientProjectCreatedFrom = "seller_lead" | "buyer_lead" | "crm_property" | "admin_manual";
 export type SellerProjectEntryChannel = "sillage_tunnel" | "crm_direct" | "admin_created";
 export type SellerProjectStatus =
   | "estimation_realisee"
@@ -37,4 +37,15 @@ export const MANDATE_STATUS_LABELS: Record<MandateStatus, string> = {
   draft: "Brouillon",
   signed: "Signé",
   terminated: "Résilié",
+};
+
+export const CLIENT_PROJECT_TYPE_LABELS: Record<ClientProjectType, string> = {
+  seller: "Vente",
+  buyer: "Achat",
+  rental: "Location",
+  wealth: "Patrimoine",
+};
+
+export const isClientProjectType = (value: string): value is ClientProjectType => {
+  return value === "seller" || value === "buyer" || value === "rental" || value === "wealth";
 };

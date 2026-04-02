@@ -3,6 +3,8 @@
 ## Objective
 Deliver the first production-grade seller portal slice that is useful before mandate, secure by design, and independent from unverified third-party capabilities.
 
+This backlog now tracks the hardening of an already implemented core slice, not a greenfield build.
+
 Phase 1 must ship:
 - secure seller access
 - invitation redemption
@@ -16,6 +18,24 @@ Phase 1 must not depend on:
 - SweepBright visit or visit-comment KPIs
 - Loupe comparables as a mandatory feature
 - WhatsApp-specific flows
+
+## Current status in code
+
+### Already present
+- `/espace-client/invitation`
+- `/espace-client/login`
+- `/espace-client`
+- `/espace-client/projets/[projectId]`
+- seller auth callback via `app/espace-client/auth/confirm/route.ts`
+- seller portal reads via `services/clients/seller-portal.service.ts`
+- admin invitation creation and advisor assignment from the project detail page
+
+### Remaining phase-1 hardening
+- resend/copy/revoke invitation from admin without manual API inspection
+- cleaner advisor contact and booking visibility in admin
+- better seller landing page when multiple projects exist
+- seller sign-out and session comfort
+- explicit confirmation of the access model used in phase 1
 
 ## Phase 1 perimeter
 
@@ -204,6 +224,9 @@ Definition of done:
 - a valid invite can produce a linked seller account
 - a non-invited seller cannot read portal data
 
+Status:
+- implemented in the current portal slice
+
 ### Slice B: dashboard shell
 - `/espace-client`
 - current project summary
@@ -213,6 +236,9 @@ Definition of done:
 Definition of done:
 - first login lands on a useful page
 - no placeholder-only dashboard
+
+Status:
+- implemented, with UX hardening still useful for multi-project accounts
 
 ### Slice C: project overview
 - `/espace-client/projets/[projectId]`
@@ -224,6 +250,9 @@ Definition of done:
 Definition of done:
 - seller can understand the state of their project and how to contact Sillage
 
+Status:
+- implemented, with appointment/contact polish still open
+
 ### Slice D: admin finishing work
 - resend/copy invitation
 - advisor contact display
@@ -231,6 +260,9 @@ Definition of done:
 
 Definition of done:
 - admin can operate the new portal flow without DevTools or manual DB work
+
+Status:
+- still the main remaining phase-1 gap
 
 ## Reuse map
 
@@ -253,17 +285,16 @@ Definition of done:
 - any admin-only auth logic for seller access
 
 ## Blockers
-- final provider strategy for seller auth
-- decision on whether phase 1 uses strict RLS immediately or a BFF-first approach
-- confirmation of where advisor booking URLs are stored
+- advisor booking URLs must be stored and exposed consistently
+- stricter portal-safe RLS is available in repo, but the phase-1 runtime model should remain documented as BFF-first reads
 
 ## Recommendation
-Start implementation with Slice A immediately.
+Continue from the current seller portal slice by finishing Slice D and the remaining UX hardening.
 
-This is the highest-leverage move because it unlocks the portal without depending on:
+This is the highest-leverage move because it makes the existing portal operational without reopening out-of-scope topics:
 - MyNotary
 - seller document upload
 - advanced CRM KPIs
 - recurring automation
 
-Once Slice A is stable, Slice B and Slice C can be delivered incrementally with low product risk.
+Once this hardening is complete, phase 2 can focus on valuation history, reactivation loops, and richer engagement.

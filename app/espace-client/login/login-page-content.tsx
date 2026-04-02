@@ -25,9 +25,9 @@ export function SellerLoginPageContent() {
   return (
     <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-8">
       <div className="space-y-2">
-        <h2 className="text-2xl font-semibold text-[#141446]">Connexion vendeur</h2>
+        <h2 className="text-2xl font-semibold text-[#141446]">Connexion a votre espace client</h2>
         <p className="text-sm text-[#141446]/75">
-          Saisissez l'adresse email rattachee a votre espace client pour recevoir un lien de connexion.
+          Saisissez l&apos;adresse email rattachee a votre espace client pour recevoir un lien de connexion.
         </p>
       </div>
 

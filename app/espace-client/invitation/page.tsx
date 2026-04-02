@@ -42,9 +42,9 @@ export default async function SellerInvitationPage({
   return (
     <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-8">
       <div className="space-y-2">
-        <h2 className="text-2xl font-semibold text-[#141446]">Invitation a votre espace vendeur</h2>
+        <h2 className="text-2xl font-semibold text-[#141446]">Invitation a votre espace client</h2>
         <p className="text-sm text-[#141446]/75">
-          Finalisez votre acces avec le meme email que celui utilise pour recevoir l'invitation.
+          Finalisez votre acces avec le meme email que celui utilise pour recevoir l&apos;invitation.
         </p>
       </div>
 
@@ -56,9 +56,9 @@ export default async function SellerInvitationPage({
 
       {!token || !invitation ? (
         <div className="mt-6 space-y-3">
-          <p className="text-sm text-[#141446]/75">Aucune invitation valide n'a ete trouvee.</p>
+          <p className="text-sm text-[#141446]/75">Aucune invitation valide n&apos;a ete trouvee.</p>
           <Link href="/espace-client/login" className="text-sm underline text-[#141446]">
-            Aller vers la connexion vendeur
+            Aller vers la connexion client
           </Link>
         </div>
       ) : invitation.status === "revoked" ? (
@@ -67,13 +67,13 @@ export default async function SellerInvitationPage({
         </p>
       ) : invitation.status === "expired" ? (
         <p className="mt-6 text-sm text-[#141446]/75">
-          Cette invitation a expire. Contactez Sillage Immo pour qu'une nouvelle invitation vous soit
+          Cette invitation a expire. Contactez Sillage Immo pour qu&apos;une nouvelle invitation vous soit
           envoyee.
         </p>
       ) : invitation.status === "accepted" ? (
         <div className="mt-6 space-y-4">
           <p className="text-sm text-[#141446]/75">
-            Cette invitation a deja ete activee pour l'adresse <strong>{invitation.email}</strong>.
+            Cette invitation a deja ete activee pour l&apos;adresse <strong>{invitation.email}</strong>.
           </p>
           <SellerMagicLinkForm
             defaultEmail={invitation.email}

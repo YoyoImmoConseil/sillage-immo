@@ -1,10 +1,12 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { parseAdminProfileMetadata } from "@/services/admin/admin-profile-metadata";
+import { createInvitation } from "./client-project-invitation.service";
 import {
   createClientProject,
   emitClientProjectEvent,
 } from "./client-project.service";
-import { createClientProfile } from "./client-profile.service";
+import { createClientProfile, getClientById } from "./client-profile.service";
 import type { SellerProjectEntryChannel } from "@/types/domain/client";
 
 export type CreateSellerProjectFromLeadInput = {
@@ -18,6 +20,18 @@ export type CreateSellerProjectFromPropertyInput = {
   adminProfileId?: string;
 };
 
+export type SellerPortalAccessProvision = {
+  sellerProjectId: string;
+  clientProjectId: string;
+  clientProfileId: string;
+  portalAccess: {
+    mode: "invite" | "login";
+    email: string;
+    nextPath: string;
+    inviteToken: string | null;
+  };
+};
+
 export type SellerProjectDetail = {
   id: string;
   clientProjectId: string;
@@ -27,6 +41,15 @@ export type SellerProjectDetail = {
   projectStatus: string;
   mandateStatus: string;
   createdAt: string;
+  assignedAdvisor?: {
+    id: string;
+    firstName: string | null;
+    lastName: string | null;
+    fullName: string | null;
+    email: string;
+    phone: string | null;
+    bookingUrl: string | null;
+  } | null;
   sellerLead?: {
     id: string;
     full_name: string;
@@ -293,6 +316,85 @@ export const getSellerProjectByClientProjectId = async (
   return data as SellerProjectRow | null;
 };
 
+export const getSellerProjectByLeadId = async (
+  sellerLeadId: string
+): Promise<{ id: string; client_project_id: string } | null> => {
+  const { data, error } = await supabaseAdmin
+    .from("seller_projects")
+    .select("id, client_project_id")
+    .eq("seller_lead_id", sellerLeadId)
+    .maybeSingle();
+  if (error) throw error;
+  return data as { id: string; client_project_id: string } | null;
+};
+
+export const ensureSellerPortalAccessFromLead = async (
+  sellerLeadId: string
+): Promise<SellerPortalAccessProvision> => {
+  const existingSellerProject = await getSellerProjectByLeadId(sellerLeadId);
+
+  let sellerProjectId: string;
+  let clientProjectId: string;
+  let clientProfileId: string;
+
+  if (existingSellerProject) {
+    sellerProjectId = existingSellerProject.id;
+    clientProjectId = existingSellerProject.client_project_id;
+    const { data: clientProject, error } = await supabaseAdmin
+      .from("client_projects")
+      .select("client_profile_id")
+      .eq("id", clientProjectId)
+      .single();
+    if (error || !clientProject?.client_profile_id) {
+      throw new Error(error?.message ?? "Projet client introuvable.");
+    }
+    clientProfileId = clientProject.client_profile_id;
+  } else {
+    const created = await createSellerProjectFromLead({ sellerLeadId });
+    sellerProjectId = created.sellerProjectId;
+    clientProjectId = created.clientProjectId;
+    clientProfileId = created.clientProfileId;
+  }
+
+  const clientProfile = await getClientById(clientProfileId);
+  if (!clientProfile) {
+    throw new Error("Client introuvable pour l'espace vendeur.");
+  }
+
+  if (clientProfile.auth_user_id) {
+    return {
+      sellerProjectId,
+      clientProjectId,
+      clientProfileId,
+      portalAccess: {
+        mode: "login",
+        email: clientProfile.email,
+        nextPath: "/espace-client",
+        inviteToken: null,
+      },
+    };
+  }
+
+  const invitation = await createInvitation({
+    clientProjectId,
+    clientProfileId,
+    email: clientProfile.email,
+    providerHint: "email",
+  });
+
+  return {
+    sellerProjectId,
+    clientProjectId,
+    clientProfileId,
+    portalAccess: {
+      mode: "invite",
+      email: clientProfile.email,
+      nextPath: "/espace-client",
+      inviteToken: invitation.token,
+    },
+  };
+};
+
 type SellerProjectDetailRow = {
   id: string;
   seller_lead_id: string | null;
@@ -336,6 +438,27 @@ export const getSellerProjectDetail = async (
       .eq("id", sp.seller_lead_id)
       .maybeSingle();
     sellerLead = lead;
+  }
+
+  let assignedAdvisor: SellerProjectDetail["assignedAdvisor"] = null;
+  if (sp.assigned_admin_profile_id) {
+    const { data: advisorProfile } = await supabaseAdmin
+      .from("admin_profiles")
+      .select("id, first_name, last_name, full_name, email, metadata")
+      .eq("id", sp.assigned_admin_profile_id)
+      .maybeSingle();
+    if (advisorProfile) {
+      const metadata = parseAdminProfileMetadata(advisorProfile.metadata);
+      assignedAdvisor = {
+        id: advisorProfile.id,
+        firstName: advisorProfile.first_name,
+        lastName: advisorProfile.last_name,
+        fullName: advisorProfile.full_name,
+        email: advisorProfile.email,
+        phone: metadata.phone,
+        bookingUrl: metadata.bookingUrl,
+      };
+    }
   }
 
   const { data: props } = await supabaseAdmin
@@ -408,6 +531,7 @@ export const getSellerProjectDetail = async (
     projectStatus: sp.project_status,
     mandateStatus: sp.mandate_status,
     createdAt: sp.created_at,
+    assignedAdvisor,
     sellerLead: sellerLead
       ? {
           id: sellerLead.id,

@@ -2,9 +2,9 @@ import "server-only";
 
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getSellerPortalClientByAuthUserId } from "@/services/clients/seller-portal.service";
+import { getClientPortalContextByAuthUserId } from "@/services/clients/client-portal.service";
 
-export type SellerPageContext = {
+export type ClientSpacePageContext = {
   authUserId: string;
   email: string;
   clientProfile: {
@@ -17,7 +17,7 @@ export type SellerPageContext = {
   };
 };
 
-export const getSellerPageContext = async (): Promise<SellerPageContext | null> => {
+export const getClientSpacePageContext = async (): Promise<ClientSpacePageContext | null> => {
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -27,7 +27,7 @@ export const getSellerPageContext = async (): Promise<SellerPageContext | null> 
     return null;
   }
 
-  const clientProfile = await getSellerPortalClientByAuthUserId(user.id);
+  const clientProfile = await getClientPortalContextByAuthUserId(user.id);
   if (!clientProfile) {
     return null;
   }
@@ -38,19 +38,23 @@ export const getSellerPageContext = async (): Promise<SellerPageContext | null> 
     clientProfile: {
       id: clientProfile.id,
       email: clientProfile.email,
-      firstName: clientProfile.first_name,
-      lastName: clientProfile.last_name,
-      fullName: clientProfile.full_name,
-      lastLoginAt: clientProfile.last_login_at,
+      firstName: clientProfile.firstName,
+      lastName: clientProfile.lastName,
+      fullName: clientProfile.fullName,
+      lastLoginAt: clientProfile.lastLoginAt,
     },
   };
 };
 
-export const requireSellerPageContext = async () => {
-  const context = await getSellerPageContext();
+export const requireClientSpacePageContext = async () => {
+  const context = await getClientSpacePageContext();
   if (!context) {
     redirect("/espace-client/login");
   }
 
   return context;
 };
+
+export type SellerPageContext = ClientSpacePageContext;
+export const getSellerPageContext = getClientSpacePageContext;
+export const requireSellerPageContext = requireClientSpacePageContext;

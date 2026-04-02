@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireSellerPageContext } from "@/lib/client-space/auth";
-import { getSellerPortalProjectDetail } from "@/services/clients/seller-portal.service";
+import { requireClientSpacePageContext } from "@/lib/client-space/auth";
+import { getClientPortalProjectDetail } from "@/services/clients/client-portal.service";
+import type { SellerPortalProjectDetail } from "@/services/clients/seller-portal.service";
 import { MANDATE_STATUS_LABELS, SELLER_PROJECT_STATUS_LABELS } from "@/types/domain/client";
 import { formatPropertyTypeLabel } from "@/lib/properties/property-type-label";
 
@@ -11,19 +12,9 @@ type SellerProjectPageProps = {
 
 const formatDate = (value: string) => new Date(value).toLocaleString("fr-FR");
 
-export default async function SellerProjectPage({ params }: SellerProjectPageProps) {
-  const context = await requireSellerPageContext();
-  const { projectId } = await params;
-  const detail = await getSellerPortalProjectDetail({
-    authUserId: context.authUserId,
-    projectId,
-  });
-
-  if (!detail) {
-    notFound();
-  }
-
+function SellerProjectDetailView({ detail }: { detail: SellerPortalProjectDetail }) {
   const appointmentUrl =
+    detail.advisor?.bookingUrl ??
     detail.properties.find((property) => property.isPrimary && property.appointmentServiceUrl)
       ?.appointmentServiceUrl ??
     detail.properties.find((property) => property.appointmentServiceUrl)?.appointmentServiceUrl ??
@@ -110,7 +101,7 @@ export default async function SellerProjectPage({ params }: SellerProjectPagePro
               </div>
             ) : (
               <p className="mt-4 text-sm text-[#141446]/75">
-                Aucune estimation detaillee n'est encore disponible.
+                Aucune estimation detaillee n&apos;est encore disponible.
               </p>
             )}
           </section>
@@ -118,7 +109,7 @@ export default async function SellerProjectPage({ params }: SellerProjectPagePro
           <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-8">
             <h3 className="text-xl font-semibold text-[#141446]">Bien rattache</h3>
             {detail.properties.length === 0 ? (
-              <p className="mt-4 text-sm text-[#141446]/75">Aucun bien n'est encore rattache a ce projet.</p>
+              <p className="mt-4 text-sm text-[#141446]/75">Aucun bien n&apos;est encore rattache a ce projet.</p>
             ) : (
               <div className="mt-4 space-y-3">
                 {detail.properties.map((property) => (
@@ -175,7 +166,7 @@ export default async function SellerProjectPage({ params }: SellerProjectPagePro
               </div>
             ) : (
               <p className="mt-4 text-sm text-[#141446]/75">
-                Aucun conseiller n'est encore affecte. Notre equipe reviendra vers vous.
+                Aucun conseiller n&apos;est encore affecte. Notre equipe reviendra vers vous.
               </p>
             )}
           </section>
@@ -199,12 +190,70 @@ export default async function SellerProjectPage({ params }: SellerProjectPagePro
                 </a>
               ) : (
                 <a href="mailto:contact@sillage-immo.com" className="block underline">
-                  Contacter l'equipe Sillage Immo
+                  Contacter l&apos;equipe Sillage Immo
                 </a>
               )}
             </div>
           </section>
         </div>
+      </section>
+    </div>
+  );
+}
+
+export default async function SellerProjectPage({ params }: SellerProjectPageProps) {
+  const context = await requireClientSpacePageContext();
+  const { projectId } = await params;
+  const detail = await getClientPortalProjectDetail({
+    authUserId: context.authUserId,
+    projectId,
+  });
+
+  if (!detail) {
+    notFound();
+  }
+
+  if (detail.kind === "seller") {
+    return <SellerProjectDetailView detail={detail.detail} />;
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap gap-4">
+        <Link href="/espace-client" className="text-sm underline text-[#141446]">
+          Retour a mes projets
+        </Link>
+      </div>
+
+      <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-8">
+        <p className="text-xs uppercase tracking-[0.18em] text-[#141446]/60">
+          {detail.kind === "buyer" ? "Projet acquereur" : detail.detail.projectTypeLabel}
+        </p>
+        <h2 className="mt-2 text-2xl font-semibold text-[#141446]">
+          {detail.detail.title ??
+            (detail.kind === "buyer" ? "Projet acquereur" : "Projet client")}
+        </h2>
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <div className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-4">
+            <p className="text-xs uppercase text-[#141446]/60">Statut projet</p>
+            <p className="mt-2 text-[#141446]">{detail.detail.status}</p>
+          </div>
+          <div className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-4">
+            <p className="text-xs uppercase text-[#141446]/60">Creation</p>
+            <p className="mt-2 text-[#141446]">
+              {formatDate(detail.detail.createdAt)}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-8">
+        <h3 className="text-xl font-semibold text-[#141446]">Projet en preparation</h3>
+        <p className="mt-4 text-sm text-[#141446]/75">{detail.detail.message}</p>
+        <p className="mt-3 text-sm text-[#141446]/70">
+          Votre compte peut deja accueillir plusieurs projets. Le detail de ce parcours sera active dans un
+          prochain lot sans changer votre mode de connexion.
+        </p>
       </section>
     </div>
   );

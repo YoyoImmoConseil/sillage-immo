@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createSellerLead } from "@/services/sellers/seller-lead.service";
+import { ensureSellerPortalAccessFromLead } from "@/services/clients/seller-project.service";
 import { buildSellerPropertyDetails } from "@/services/sellers/seller-metadata";
 import { computeLoupeValuation } from "@/services/valuation/loupe-valuation.service";
 import { consumeSellerEmailVerificationToken } from "@/services/sellers/seller-email-verification.service";
@@ -16,7 +17,6 @@ import {
 } from "@/types/domain/sellers";
 import type {
   SellerApiErrorResponse,
-  SellerEstimateAndCreateDuplicateResponse,
   SellerEstimateAndCreateSuccessResponse,
 } from "@/types/api/seller";
 
@@ -286,32 +286,24 @@ export const POST = async (request: Request) => {
     return NextResponse.json(payload, { status: 500 });
   }
 
-  if (created.status === "duplicate_blocked") {
-    const payload: SellerEstimateAndCreateDuplicateResponse = {
-      ok: false,
-      code: "duplicate_blocked",
-      message: created.reason,
-      data: {
-        createStatus: "duplicate_blocked",
-        sellerLeadId: created.sellerLeadId,
-      },
-    };
-    if (idempotencyKey.trim().length > 0) {
-      try {
-        await persistIdempotencyResponse("seller.estimate_and_create", idempotencyKey, 409, payload);
-      } catch {
-        // no-op
-      }
-    }
-    return NextResponse.json(payload, { status: 409 });
+  const sellerLeadId = created.sellerLeadId;
+  const createStatus = created.status === "duplicate_blocked" ? "reused" : created.status;
+
+  let portalAccess = null;
+  try {
+    const provisionedPortal = await ensureSellerPortalAccessFromLead(sellerLeadId);
+    portalAccess = provisionedPortal.portalAccess;
+  } catch {
+    portalAccess = null;
   }
 
   const payload: SellerEstimateAndCreateSuccessResponse = {
     ok: true,
     data: {
-      createStatus: created.status,
-      sellerLeadId: created.sellerLeadId,
+      createStatus,
+      sellerLeadId,
       valuation,
+      portalAccess,
     },
   };
 

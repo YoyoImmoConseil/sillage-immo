@@ -75,6 +75,7 @@ const getAdminContextByUser = async (user: User): Promise<AdminContext | null> =
           phone: metadata.phone,
           bio: metadata.bio,
           avatarUrl: metadata.avatarUrl,
+          bookingUrl: metadata.bookingUrl,
         }
       : await linkAdminProfileToAuthUser({
           authUserId: user.id,

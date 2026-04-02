@@ -6,15 +6,21 @@ import { useRouter } from "next/navigation";
 type AssignAdvisorFormProps = {
   clientId: string;
   projectId: string;
-  sellerProjectId: string;
 };
 
-type AdminProfile = { id: string; first_name: string | null; last_name: string | null; email: string };
+type AdminProfile = {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  full_name?: string | null;
+  email: string;
+  phone?: string | null;
+  bookingUrl?: string | null;
+};
 
 export function AssignAdvisorForm({
   clientId,
   projectId,
-  sellerProjectId,
 }: AssignAdvisorFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -56,7 +62,7 @@ export function AssignAdvisorForm({
         <option value="">Selectionner un conseiller</option>
         {admins.map((a) => (
           <option key={a.id} value={a.id}>
-            {[a.first_name, a.last_name].filter(Boolean).join(" ") || a.email}
+            {a.full_name || [a.first_name, a.last_name].filter(Boolean).join(" ") || a.email}
           </option>
         ))}
       </select>
