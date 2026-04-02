@@ -125,8 +125,10 @@ const mapSellerProjectSummary = (
     ? `Conseiller : ${sellerProject.advisorName}`
     : "Conseiller : affectation en cours",
   nextAction: sellerProject.hasAppointmentLink
-    ? "Prise de rendez-vous disponible"
-    : "Contact email et telephone disponibles",
+    ? "Ouvrir le projet pour reserver un rendez-vous"
+    : sellerProject.advisorName
+      ? "Ouvrir le projet pour contacter votre conseiller"
+      : "Ouvrir le projet pour suivre l'affectation de votre conseiller",
   seller: sellerProject,
   buyer: null,
 });

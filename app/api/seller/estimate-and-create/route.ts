@@ -269,6 +269,7 @@ export const POST = async (request: Request) => {
     diagnosticsSupportNeeded: input.diagnosticsSupportNeeded,
     syndicDocsReady: input.syndicDocsReady,
     syndicSupportNeeded: input.syndicSupportNeeded,
+    estimatedPrice: valuation.valuationPrice ?? valuation.valuationPriceLow ?? valuation.valuationPriceHigh ?? undefined,
     message: input.message,
     source: "website_estimation_api_first",
     metadata,
