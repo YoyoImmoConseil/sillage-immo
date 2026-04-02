@@ -1,7 +1,27 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
+
+type PreparedLoginSuccess = {
+  ok: true;
+  data: {
+    email: string;
+    mode: "login" | "invite";
+    nextPath: string;
+    inviteToken: string | null;
+    source:
+      | "linked_client_profile"
+      | "existing_client_project"
+      | "seller_lead_backfill_created"
+      | "seller_lead_backfill_existing";
+  };
+};
+
+type PreparedLoginFailure = {
+  ok: false;
+  message?: string;
+};
 
 type SellerMagicLinkFormProps = {
   defaultEmail?: string;
@@ -25,17 +45,6 @@ export function SellerMagicLinkForm({
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const redirectTo = useMemo(() => {
-    if (typeof window === "undefined") return "";
-
-    const url = new URL("/espace-client/auth/confirm", window.location.origin);
-    url.searchParams.set("next", nextPath);
-    if (inviteToken) {
-      url.searchParams.set("inviteToken", inviteToken);
-    }
-    return url.toString();
-  }, [inviteToken, nextPath]);
-
   const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
@@ -50,6 +59,52 @@ export function SellerMagicLinkForm({
           return;
         }
 
+        let prepared: PreparedLoginSuccess | PreparedLoginFailure;
+        if (inviteToken) {
+          prepared = {
+            ok: true,
+            data: {
+              email: normalizedEmail,
+              mode: "invite",
+              nextPath,
+              inviteToken,
+              source: "existing_client_project",
+            },
+          };
+        } else {
+          const prepareResponse = await fetch("/api/espace-client/prepare-login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: normalizedEmail,
+              nextPath,
+            }),
+          });
+
+          prepared = (await prepareResponse.json()) as PreparedLoginSuccess | PreparedLoginFailure;
+          if (!prepareResponse.ok && !prepared.ok) {
+            setError(prepared.message ?? "Aucun espace client n'est disponible pour cette adresse email.");
+            return;
+          }
+        }
+
+        if (!prepared.ok) {
+          setError(prepared.message ?? "Aucun espace client n'est disponible pour cette adresse email.");
+          return;
+        }
+
+        const effectiveInviteToken = inviteToken ?? prepared.data.inviteToken ?? null;
+        const redirectTo = (() => {
+          if (typeof window === "undefined") return "";
+
+          const url = new URL("/espace-client/auth/confirm", window.location.origin);
+          url.searchParams.set("next", prepared.data.nextPath);
+          if (effectiveInviteToken) {
+            url.searchParams.set("inviteToken", effectiveInviteToken);
+          }
+          return url.toString();
+        })();
+
         const { error: signInError } = await supabase.auth.signInWithOtp({
           email: normalizedEmail,
           options: {
@@ -63,7 +118,12 @@ export function SellerMagicLinkForm({
           return;
         }
 
-        setFeedback(successMessage);
+        setFeedback(
+          prepared.data.source === "seller_lead_backfill_created" ||
+            prepared.data.source === "seller_lead_backfill_existing"
+            ? "Votre espace client vient d'etre prepare. Un lien de connexion a ete envoye a votre adresse email."
+            : successMessage
+        );
       } catch {
         setError("Impossible d'envoyer le lien de connexion.");
       }
