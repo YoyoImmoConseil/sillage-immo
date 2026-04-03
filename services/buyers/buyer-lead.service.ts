@@ -1,8 +1,14 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import type { Database } from "@/types/db/supabase";
+import {
+  ensureContactIdentity,
+  normalizeEmail,
+  normalizePhone,
+} from "@/services/contacts/contact-identity.service";
 import type { BuyerLeadSnapshot, BuyerSearchProfileSnapshot } from "@/types/domain/buyers";
 import type { PropertyBusinessType } from "@/types/domain/properties";
+import { ensureBuyerProjectFromLead } from "@/services/clients/buyer-project.service";
 
 type BuyerLeadRow = Database["public"]["Tables"]["buyer_leads"]["Row"];
 type BuyerSearchProfileRow = Database["public"]["Tables"]["buyer_search_profiles"]["Row"];
@@ -80,13 +86,28 @@ export const createBuyerLeadFromWebsite = async (input: {
   phone?: string;
   searchDetails: string;
 }) => {
+  const email = normalizeEmail(input.email);
+  if (!email) {
+    throw new Error("Email acquereur invalide.");
+  }
+  const phone = normalizePhone(input.phone);
+  const contactIdentity = await ensureContactIdentity({
+    email,
+    phone,
+    fullName: input.fullName,
+    metadata: {
+      source: "buyer_lead",
+      capture_kind: "buyer_lead",
+    },
+  });
   const { data: leadData, error: leadError } = await supabaseAdmin
     .from("buyer_leads")
     .insert({
       full_name: input.fullName.trim(),
-      email: input.email.trim().toLowerCase(),
-      phone: input.phone?.trim() || null,
+      email,
+      phone,
       source: "website_home_buyer_assistant",
+      contact_identity_id: contactIdentity?.id ?? null,
       notes: input.searchDetails.trim(),
       metadata: {
         raw_search_details: input.searchDetails.trim(),
@@ -117,13 +138,17 @@ export const createBuyerLeadFromWebsite = async (input: {
     throw new Error(searchProfileError?.message ?? "Impossible de creer le profil de recherche.");
   }
 
+  await ensureBuyerProjectFromLead({
+    buyerLeadId: lead.id,
+  });
+
   await supabaseAdmin.from("audit_log").insert({
     actor_type: "anonymous",
     action: "buyer_lead_created",
     entity_type: "buyer_lead",
     entity_id: lead.id,
     data: {
-      email: input.email.trim().toLowerCase(),
+      email,
       source: "website_home_buyer_assistant",
     },
   });

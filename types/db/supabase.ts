@@ -160,6 +160,7 @@ export type Database = {
           full_name: string;
           email: string;
           phone: string | null;
+          contact_identity_id: string | null;
           assigned_admin_profile_id: string | null;
           property_type: string | null;
           property_address: string | null;
@@ -183,6 +184,7 @@ export type Database = {
           full_name: string;
           email: string;
           phone?: string | null;
+          contact_identity_id?: string | null;
           assigned_admin_profile_id?: string | null;
           property_type?: string | null;
           property_address?: string | null;
@@ -206,6 +208,7 @@ export type Database = {
           full_name?: string;
           email?: string;
           phone?: string | null;
+          contact_identity_id?: string | null;
           assigned_admin_profile_id?: string | null;
           property_type?: string | null;
           property_address?: string | null;
@@ -223,7 +226,15 @@ export type Database = {
           status?: string;
           metadata?: Record<string, unknown>;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "seller_leads_contact_identity_id_fkey";
+            columns: ["contact_identity_id"];
+            isOneToOne: false;
+            referencedRelation: "contact_identities";
+            referencedColumns: ["id"];
+          }
+        ];
       };
       seller_scoring_events: {
         Row: {
@@ -299,6 +310,48 @@ export type Database = {
           verified_at?: string | null;
           consumed_at?: string | null;
           attempts?: number;
+        };
+        Relationships: [];
+      };
+      contact_identities: {
+        Row: {
+          id: string;
+          created_at: string;
+          updated_at: string;
+          email: string | null;
+          normalized_email: string | null;
+          phone: string | null;
+          normalized_phone: string | null;
+          first_name: string | null;
+          last_name: string | null;
+          full_name: string | null;
+          metadata: Record<string, unknown>;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          email?: string | null;
+          normalized_email?: string | null;
+          phone?: string | null;
+          normalized_phone?: string | null;
+          first_name?: string | null;
+          last_name?: string | null;
+          full_name?: string | null;
+          metadata?: Record<string, unknown>;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          email?: string | null;
+          normalized_email?: string | null;
+          phone?: string | null;
+          normalized_phone?: string | null;
+          first_name?: string | null;
+          last_name?: string | null;
+          full_name?: string | null;
+          metadata?: Record<string, unknown>;
         };
         Relationships: [];
       };
@@ -806,6 +859,7 @@ export type Database = {
           full_name: string;
           email: string;
           phone: string | null;
+          contact_identity_id: string | null;
           source: string | null;
           status: string;
           timeline: string | null;
@@ -822,6 +876,7 @@ export type Database = {
           full_name: string;
           email: string;
           phone?: string | null;
+          contact_identity_id?: string | null;
           source?: string | null;
           status?: string;
           timeline?: string | null;
@@ -838,6 +893,7 @@ export type Database = {
           full_name?: string;
           email?: string;
           phone?: string | null;
+          contact_identity_id?: string | null;
           source?: string | null;
           status?: string;
           timeline?: string | null;
@@ -854,6 +910,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "admin_profiles";
             referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "buyer_leads_contact_identity_id_fkey";
+            columns: ["contact_identity_id"];
+            isOneToOne: false;
+            referencedRelation: "contact_identities";
+            referencedColumns: ["id"];
           }
         ];
       };
@@ -863,6 +926,7 @@ export type Database = {
           created_at: string;
           updated_at: string;
           buyer_lead_id: string;
+          client_project_id: string | null;
           business_type: string;
           status: string;
           location_text: string | null;
@@ -886,6 +950,7 @@ export type Database = {
           created_at?: string;
           updated_at?: string;
           buyer_lead_id: string;
+          client_project_id?: string | null;
           business_type?: string;
           status?: string;
           location_text?: string | null;
@@ -909,6 +974,7 @@ export type Database = {
           created_at?: string;
           updated_at?: string;
           buyer_lead_id?: string;
+          client_project_id?: string | null;
           business_type?: string;
           status?: string;
           location_text?: string | null;
@@ -933,6 +999,13 @@ export type Database = {
             columns: ["buyer_lead_id"];
             isOneToOne: false;
             referencedRelation: "buyer_leads";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "buyer_search_profiles_client_project_id_fkey";
+            columns: ["client_project_id"];
+            isOneToOne: false;
+            referencedRelation: "client_projects";
             referencedColumns: ["id"];
           }
         ];
@@ -1026,6 +1099,7 @@ export type Database = {
           last_name: string | null;
           full_name: string | null;
           is_active: boolean;
+          contact_identity_id: string | null;
           last_login_at: string | null;
           metadata: Record<string, unknown>;
         };
@@ -1040,6 +1114,7 @@ export type Database = {
           last_name?: string | null;
           full_name?: string | null;
           is_active?: boolean;
+          contact_identity_id?: string | null;
           last_login_at?: string | null;
           metadata?: Record<string, unknown>;
         };
@@ -1054,10 +1129,19 @@ export type Database = {
           last_name?: string | null;
           full_name?: string | null;
           is_active?: boolean;
+          contact_identity_id?: string | null;
           last_login_at?: string | null;
           metadata?: Record<string, unknown>;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "client_profiles_contact_identity_id_fkey";
+            columns: ["contact_identity_id"];
+            isOneToOne: false;
+            referencedRelation: "contact_identities";
+            referencedColumns: ["id"];
+          }
+        ];
       };
       client_projects: {
         Row: {
@@ -1109,6 +1193,58 @@ export type Database = {
           }
         ];
       };
+      buyer_projects: {
+        Row: {
+          id: string;
+          created_at: string;
+          updated_at: string;
+          client_project_id: string;
+          buyer_lead_id: string | null;
+          active_search_profile_id: string | null;
+          metadata: Record<string, unknown>;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          client_project_id: string;
+          buyer_lead_id?: string | null;
+          active_search_profile_id?: string | null;
+          metadata?: Record<string, unknown>;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          client_project_id?: string;
+          buyer_lead_id?: string | null;
+          active_search_profile_id?: string | null;
+          metadata?: Record<string, unknown>;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "buyer_projects_client_project_id_fkey";
+            columns: ["client_project_id"];
+            isOneToOne: true;
+            referencedRelation: "client_projects";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "buyer_projects_buyer_lead_id_fkey";
+            columns: ["buyer_lead_id"];
+            isOneToOne: true;
+            referencedRelation: "buyer_leads";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "buyer_projects_active_search_profile_id_fkey";
+            columns: ["active_search_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "buyer_search_profiles";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       seller_projects: {
         Row: {
           id: string;
@@ -1155,6 +1291,118 @@ export type Database = {
             columns: ["client_project_id"];
             isOneToOne: true;
             referencedRelation: "client_projects";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "seller_projects_latest_valuation_id_fkey";
+            columns: ["latest_valuation_id"];
+            isOneToOne: false;
+            referencedRelation: "valuations";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      valuations: {
+        Row: {
+          id: string;
+          created_at: string;
+          updated_at: string;
+          client_project_id: string | null;
+          seller_project_id: string | null;
+          seller_lead_id: string | null;
+          property_id: string | null;
+          contact_identity_id: string | null;
+          source: string;
+          source_ref: string | null;
+          provider: string | null;
+          valuation_kind: string;
+          status: string;
+          estimated_price: number | null;
+          valuation_low: number | null;
+          valuation_high: number | null;
+          currency: string;
+          valuated_at: string;
+          raw_payload: Record<string, unknown>;
+          metadata: Record<string, unknown>;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          client_project_id?: string | null;
+          seller_project_id?: string | null;
+          seller_lead_id?: string | null;
+          property_id?: string | null;
+          contact_identity_id?: string | null;
+          source: string;
+          source_ref?: string | null;
+          provider?: string | null;
+          valuation_kind?: string;
+          status?: string;
+          estimated_price?: number | null;
+          valuation_low?: number | null;
+          valuation_high?: number | null;
+          currency?: string;
+          valuated_at?: string;
+          raw_payload?: Record<string, unknown>;
+          metadata?: Record<string, unknown>;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          client_project_id?: string | null;
+          seller_project_id?: string | null;
+          seller_lead_id?: string | null;
+          property_id?: string | null;
+          contact_identity_id?: string | null;
+          source?: string;
+          source_ref?: string | null;
+          provider?: string | null;
+          valuation_kind?: string;
+          status?: string;
+          estimated_price?: number | null;
+          valuation_low?: number | null;
+          valuation_high?: number | null;
+          currency?: string;
+          valuated_at?: string;
+          raw_payload?: Record<string, unknown>;
+          metadata?: Record<string, unknown>;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "valuations_client_project_id_fkey";
+            columns: ["client_project_id"];
+            isOneToOne: false;
+            referencedRelation: "client_projects";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "valuations_seller_project_id_fkey";
+            columns: ["seller_project_id"];
+            isOneToOne: false;
+            referencedRelation: "seller_projects";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "valuations_seller_lead_id_fkey";
+            columns: ["seller_lead_id"];
+            isOneToOne: false;
+            referencedRelation: "seller_leads";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "valuations_property_id_fkey";
+            columns: ["property_id"];
+            isOneToOne: false;
+            referencedRelation: "properties";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "valuations_contact_identity_id_fkey";
+            columns: ["contact_identity_id"];
+            isOneToOne: false;
+            referencedRelation: "contact_identities";
             referencedColumns: ["id"];
           }
         ];

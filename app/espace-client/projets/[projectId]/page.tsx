@@ -248,11 +248,50 @@ export default async function SellerProjectPage({ params }: SellerProjectPagePro
       </section>
 
       <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-8">
-        <h3 className="text-xl font-semibold text-[#141446]">Projet en preparation</h3>
+        <h3 className="text-xl font-semibold text-[#141446]">
+          {detail.kind === "buyer" ? "Recherche rattachee" : "Projet en preparation"}
+        </h3>
         <p className="mt-4 text-sm text-[#141446]/75">{detail.detail.message}</p>
+        {detail.kind === "buyer" ? (
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <div className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-4">
+              <p className="text-xs uppercase text-[#141446]/60">Zone de recherche</p>
+              <p className="mt-2 text-[#141446]">
+                {detail.detail.locationLabel ?? "Zone en cours de qualification"}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-4">
+              <p className="text-xs uppercase text-[#141446]/60">Budget</p>
+              <p className="mt-2 text-[#141446]">
+                {detail.detail.budgetLabel ?? "Budget a preciser"}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-4">
+              <p className="text-xs uppercase text-[#141446]/60">Statut recherche</p>
+              <p className="mt-2 text-[#141446]">
+                {detail.detail.searchStatus ?? "Recherche en cours de qualification"}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-4">
+              <p className="text-xs uppercase text-[#141446]/60">Financement</p>
+              <p className="mt-2 text-[#141446]">
+                {detail.detail.financingStatus ?? "Situation non renseignee"}
+              </p>
+            </div>
+          </div>
+        ) : null}
+        {detail.kind === "buyer" && (detail.detail.propertyTypes.length > 0 || detail.detail.roomsMin || detail.detail.livingAreaMin) ? (
+          <p className="mt-4 text-sm text-[#141446]/70">
+            {detail.detail.propertyTypes.length > 0
+              ? `Types recherches : ${detail.detail.propertyTypes.join(", ")}`
+              : "Types de biens a preciser"}
+            {detail.detail.roomsMin ? ` · ${detail.detail.roomsMin} piece(s) min.` : ""}
+            {detail.detail.livingAreaMin ? ` · ${detail.detail.livingAreaMin} m² min.` : ""}
+          </p>
+        ) : null}
         <p className="mt-3 text-sm text-[#141446]/70">
-          Votre compte peut deja accueillir plusieurs projets. Le detail de ce parcours sera active dans un
-          prochain lot sans changer votre mode de connexion.
+          Votre compte peut deja accueillir plusieurs projets. Le detail de ce parcours continuera a
+          s&apos;enrichir sans changer votre mode de connexion.
         </p>
       </section>
     </div>

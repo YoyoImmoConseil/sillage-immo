@@ -1,5 +1,6 @@
 export type ClientProjectType = "seller" | "buyer" | "rental" | "wealth";
 export type ClientProjectCreatedFrom = "seller_lead" | "buyer_lead" | "crm_property" | "admin_manual";
+export type ClientProjectStatus = "active" | "on_hold" | "closed" | "archived";
 export type SellerProjectEntryChannel = "sillage_tunnel" | "crm_direct" | "admin_created";
 export type SellerProjectStatus =
   | "estimation_realisee"
@@ -18,6 +19,39 @@ export type ProjectPropertyRelationshipType =
   | "rental_managed_property"
   | "buyer_target_property"
   | "archived_relation";
+
+export const CLIENT_PROJECT_STATUSES = ["active", "on_hold", "closed", "archived"] as const;
+export const CLIENT_PROJECT_TYPES = ["seller", "buyer", "rental", "wealth"] as const;
+export const CLIENT_PROJECT_CREATED_FROM_VALUES = [
+  "seller_lead",
+  "buyer_lead",
+  "crm_property",
+  "admin_manual",
+] as const;
+export const SELLER_PROJECT_ENTRY_CHANNELS = [
+  "sillage_tunnel",
+  "crm_direct",
+  "admin_created",
+] as const;
+export const SELLER_PROJECT_STATUSES = [
+  "estimation_realisee",
+  "a_contacter",
+  "rdv_estimation_planifie",
+  "estimation_physique_realisee",
+  "mandat_en_preparation",
+  "mandat_signe",
+  "bien_en_commercialisation",
+  "bien_sous_offre",
+  "bien_vendu",
+  "projet_suspendu",
+] as const;
+export const MANDATE_STATUSES = ["none", "draft", "signed", "terminated"] as const;
+export const PROJECT_PROPERTY_RELATIONSHIP_TYPES = [
+  "seller_subject_property",
+  "rental_managed_property",
+  "buyer_target_property",
+  "archived_relation",
+] as const;
 
 export const SELLER_PROJECT_STATUS_LABELS: Record<SellerProjectStatus, string> = {
   estimation_realisee: "Estimation réalisée",

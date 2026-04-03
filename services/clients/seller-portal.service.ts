@@ -8,6 +8,7 @@ import {
 } from "./client-profile.service";
 import { getClientProjectsByClientId, getClientProjectById } from "./client-project.service";
 import { getSellerMetadataSections } from "@/services/sellers/seller-metadata";
+import { getLatestValuationForSellerProject } from "@/services/valuation/valuation-record.service";
 
 export type SellerPortalClient = {
   id: string;
@@ -128,9 +129,12 @@ export const listSellerPortalProjects = async (
   const advisorIds = projects
     .map((project) => project.sellerProject?.assignedAdminProfileId)
     .filter((value): value is string => Boolean(value));
+  const sellerProjectIds = projects
+    .map((project) => project.sellerProject?.id)
+    .filter((value): value is string => Boolean(value));
   const projectIds = projects.map((project) => project.id);
 
-  const [{ data: leads }, { data: advisors }, { data: projectProperties }] =
+  const [{ data: leads }, { data: advisors }, { data: projectProperties }, { data: valuationRows }] =
     await Promise.all([
       sellerLeadIds.length > 0
         ? supabaseAdmin
@@ -166,6 +170,23 @@ export const listSellerPortalProjects = async (
             .in("client_project_id", projectIds)
             .is("unlinked_at", null)
         : Promise.resolve({ data: [] as Array<{ client_project_id: string; property_id: string; is_primary: boolean }> }),
+      sellerProjectIds.length > 0
+        ? supabaseAdmin
+            .from("valuations")
+            .select("seller_project_id, seller_lead_id, estimated_price, valuation_low, valuation_high, provider, valuated_at")
+            .in("seller_project_id", sellerProjectIds)
+            .order("valuated_at", { ascending: false })
+        : Promise.resolve({
+            data: [] as Array<{
+              seller_project_id: string | null;
+              seller_lead_id: string | null;
+              estimated_price: number | null;
+              valuation_low: number | null;
+              valuation_high: number | null;
+              provider: string | null;
+              valuated_at: string;
+            }>,
+          }),
     ]);
 
   const propertyLinks = (projectProperties ?? []) as Array<{
@@ -218,6 +239,32 @@ export const listSellerPortalProjects = async (
     ).map((property) => [property.id, property])
   );
   const primaryPropertyByProjectId = new Map<string, { formattedAddress: string | null; appointmentServiceUrl: string | null }>();
+  const latestValuationBySellerProjectId = new Map<
+    string,
+    {
+      estimated_price: number | null;
+      valuation_low: number | null;
+      valuation_high: number | null;
+      provider: string | null;
+      valuated_at: string;
+    }
+  >();
+
+  for (const valuation of
+    (valuationRows ?? []) as Array<{
+      seller_project_id: string | null;
+      seller_lead_id: string | null;
+      estimated_price: number | null;
+      valuation_low: number | null;
+      valuation_high: number | null;
+      provider: string | null;
+      valuated_at: string;
+    }>) {
+    if (!valuation.seller_project_id || latestValuationBySellerProjectId.has(valuation.seller_project_id)) {
+      continue;
+    }
+    latestValuationBySellerProjectId.set(valuation.seller_project_id, valuation);
+  }
 
   for (const link of propertyLinks) {
     const property = propertyById.get(link.property_id);
@@ -262,12 +309,24 @@ export const listSellerPortalProjects = async (
       return lead ? formatLeadAddress(lead) : null;
     })(),
     latestValuationPrice: (() => {
+      const sellerProjectId = project.sellerProject?.id;
+      if (sellerProjectId) {
+        const valuation = latestValuationBySellerProjectId.get(sellerProjectId);
+        if (valuation) {
+          return valuation.estimated_price ?? valuation.valuation_low ?? valuation.valuation_high ?? null;
+        }
+      }
       const sellerLeadId = project.sellerProject?.sellerLeadId;
       if (!sellerLeadId) return null;
       const lead = leadById.get(sellerLeadId);
       return lead ? resolveLeadValuation(lead) : null;
     })(),
     latestValuationSyncedAt: (() => {
+      const sellerProjectId = project.sellerProject?.id;
+      if (sellerProjectId) {
+        const valuation = latestValuationBySellerProjectId.get(sellerProjectId);
+        if (valuation) return valuation.valuated_at;
+      }
       const sellerLeadId = project.sellerProject?.sellerLeadId;
       if (!sellerLeadId) return null;
       const lead = leadById.get(sellerLeadId);
@@ -299,7 +358,19 @@ export const getSellerPortalProjectDetail = async (input: {
     .maybeSingle();
 
   let valuation: SellerPortalValuationSummary | null = null;
-  if (sellerProject?.seller_lead_id) {
+  const latestValuation = await getLatestValuationForSellerProject({
+    sellerProjectId: sellerProject?.id ?? null,
+    sellerLeadId: sellerProject?.seller_lead_id ?? null,
+  });
+  if (latestValuation) {
+    valuation = {
+      estimatedPrice: latestValuation.estimated_price,
+      valuationLow: latestValuation.valuation_low,
+      valuationHigh: latestValuation.valuation_high,
+      provider: latestValuation.provider,
+      syncedAt: latestValuation.valuated_at,
+    };
+  } else if (sellerProject?.seller_lead_id) {
     const { data: lead } = await supabaseAdmin
       .from("seller_leads")
       .select("estimated_price, metadata")

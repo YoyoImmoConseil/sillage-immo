@@ -1,6 +1,7 @@
 import type { PropertyBusinessType } from "./properties";
 
 export type BuyerLeadStatus = "new" | "qualified" | "active_search" | "visit" | "won" | "lost";
+export type BuyerSearchProfileStatus = "active" | "paused" | "closed";
 
 export type BuyerLeadSnapshot = {
   id: string;

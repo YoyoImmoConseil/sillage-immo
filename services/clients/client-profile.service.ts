@@ -1,5 +1,10 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import {
+  ensureContactIdentity,
+  normalizeEmail,
+  normalizePhone,
+} from "@/services/contacts/contact-identity.service";
 
 export type CreateClientProfileInput = {
   email: string;
@@ -36,12 +41,6 @@ export type ClientProfileDetail = ClientProfileListItem & {
   updatedAt: string;
 };
 
-const normalizeEmail = (email: string) => email.trim().toLowerCase();
-const normalizePhone = (phone?: string) => {
-  const digits = (phone ?? "").replace(/[^\d+]/g, "").trim();
-  return digits.length > 0 ? digits : null;
-};
-
 export type ClientProfileLookup = {
   id: string;
   email: string;
@@ -51,13 +50,15 @@ export type ClientProfileLookup = {
   full_name: string | null;
   auth_user_id: string | null;
   is_active: boolean;
+  contact_identity_id: string | null;
 };
 
 export const findClientByEmail = async (email: string): Promise<ClientProfileLookup | null> => {
   const normalized = normalizeEmail(email);
+  if (!normalized) return null;
   const { data, error } = await supabaseAdmin
     .from("client_profiles")
-    .select("id, email, phone, first_name, last_name, full_name, auth_user_id, is_active")
+    .select("id, email, phone, first_name, last_name, full_name, auth_user_id, is_active, contact_identity_id")
     .eq("email", normalized)
     .eq("is_active", true)
     .maybeSingle();
@@ -70,7 +71,7 @@ export const findClientByPhone = async (phone: string): Promise<ClientProfileLoo
   if (!normalized) return null;
   const { data, error } = await supabaseAdmin
     .from("client_profiles")
-    .select("id, email, phone, first_name, last_name, full_name, auth_user_id, is_active")
+    .select("id, email, phone, first_name, last_name, full_name, auth_user_id, is_active, contact_identity_id")
     .eq("phone", normalized)
     .eq("is_active", true)
     .maybeSingle();
@@ -80,8 +81,31 @@ export const findClientByPhone = async (phone: string): Promise<ClientProfileLoo
 
 export const createClientProfile = async (input: CreateClientProfileInput) => {
   const email = normalizeEmail(input.email);
+  if (!email) throw new Error("Email client invalide.");
   const existing = await findClientByEmail(email);
-  if (existing) return { status: "exists" as const, clientProfileId: existing.id };
+  const contactIdentity = await ensureContactIdentity({
+    email,
+    phone: input.phone ?? null,
+    firstName: input.firstName ?? null,
+    lastName: input.lastName ?? null,
+    fullName: input.fullName ?? null,
+    metadata: {
+      source: "client_profile",
+    },
+  });
+  if (existing) {
+    if (!existing.contact_identity_id && contactIdentity) {
+      const { error: linkError } = await supabaseAdmin
+        .from("client_profiles")
+        .update({
+          contact_identity_id: contactIdentity.id,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", existing.id);
+      if (linkError) throw linkError;
+    }
+    return { status: "exists" as const, clientProfileId: existing.id };
+  }
 
   const fullName =
     input.fullName ??
@@ -94,6 +118,7 @@ export const createClientProfile = async (input: CreateClientProfileInput) => {
       first_name: input.firstName?.trim() || null,
       last_name: input.lastName?.trim() || null,
       full_name: fullName,
+      contact_identity_id: contactIdentity?.id ?? null,
     })
     .select("id")
     .single();
@@ -111,6 +136,7 @@ export type ClientProfileRow = {
   full_name: string | null;
   auth_user_id: string | null;
   is_active: boolean;
+  contact_identity_id: string | null;
   last_login_at: string | null;
   created_at: string;
   updated_at: string;
@@ -119,7 +145,7 @@ export type ClientProfileRow = {
 export const getClientById = async (id: string): Promise<ClientProfileRow | null> => {
   const { data, error } = await supabaseAdmin
     .from("client_profiles")
-    .select("id, email, phone, first_name, last_name, full_name, auth_user_id, is_active, last_login_at, created_at, updated_at")
+    .select("id, email, phone, first_name, last_name, full_name, auth_user_id, is_active, contact_identity_id, last_login_at, created_at, updated_at")
     .eq("id", id)
     .maybeSingle();
   if (error) throw error;
@@ -131,7 +157,7 @@ export const getClientByAuthUserId = async (
 ): Promise<ClientProfileRow | null> => {
   const { data, error } = await supabaseAdmin
     .from("client_profiles")
-    .select("id, email, phone, first_name, last_name, full_name, auth_user_id, is_active, last_login_at, created_at, updated_at")
+    .select("id, email, phone, first_name, last_name, full_name, auth_user_id, is_active, contact_identity_id, last_login_at, created_at, updated_at")
     .eq("auth_user_id", authUserId)
     .eq("is_active", true)
     .maybeSingle();
@@ -148,6 +174,7 @@ export const linkClientProfileToAuthUser = async (input: {
   fullName?: string | null;
 }) => {
   const email = normalizeEmail(input.email);
+  if (!email) return null;
   const current = await getClientById(input.clientProfileId);
   if (!current || !current.is_active) {
     return null;
@@ -172,11 +199,23 @@ export const linkClientProfileToAuthUser = async (input: {
     [firstName, lastName].filter(Boolean).join(" ").trim() || null;
   const fullName =
     current.full_name ?? input.fullName ?? fallbackFullName;
+  const contactIdentity = await ensureContactIdentity({
+    email,
+    phone: current.phone,
+    firstName,
+    lastName,
+    fullName,
+    metadata: {
+      source: "client_profile_auth_link",
+      client_profile_id: current.id,
+    },
+  });
 
   const { data, error } = await supabaseAdmin
     .from("client_profiles")
     .update({
       auth_user_id: input.authUserId,
+      contact_identity_id: contactIdentity?.id ?? current.contact_identity_id ?? null,
       email,
       first_name: firstName,
       last_name: lastName,
@@ -185,7 +224,7 @@ export const linkClientProfileToAuthUser = async (input: {
       updated_at: new Date().toISOString(),
     })
     .eq("id", current.id)
-    .select("id, email, phone, first_name, last_name, full_name, auth_user_id, is_active, last_login_at, created_at, updated_at")
+    .select("id, email, phone, first_name, last_name, full_name, auth_user_id, is_active, contact_identity_id, last_login_at, created_at, updated_at")
     .single();
 
   if (error || !data) {
@@ -212,6 +251,8 @@ export const updateClientProfile = async (
   input: UpdateClientProfileInput
 ) => {
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  const current = await getClientById(id);
+  if (!current) throw new Error("Client introuvable.");
   const nextEmail = input.email !== undefined ? normalizeEmail(input.email) : undefined;
   const nextPhone = input.phone !== undefined ? normalizePhone(input.phone) ?? null : undefined;
   const nextFirstName = input.firstName !== undefined ? input.firstName?.trim() || null : undefined;
@@ -222,12 +263,24 @@ export const updateClientProfile = async (
       : input.firstName !== undefined || input.lastName !== undefined
         ? [nextFirstName ?? "", nextLastName ?? ""].filter(Boolean).join(" ").trim() || null
         : undefined;
+  const contactIdentity = await ensureContactIdentity({
+    email: nextEmail ?? current.email,
+    phone: nextPhone ?? current.phone,
+    firstName: nextFirstName ?? current.first_name,
+    lastName: nextLastName ?? current.last_name,
+    fullName: computedFullName ?? current.full_name,
+    metadata: {
+      source: "client_profile_update",
+      client_profile_id: id,
+    },
+  });
 
   if (nextEmail !== undefined) updates.email = nextEmail;
   if (nextPhone !== undefined) updates.phone = nextPhone;
   if (nextFirstName !== undefined) updates.first_name = nextFirstName;
   if (nextLastName !== undefined) updates.last_name = nextLastName;
   if (computedFullName !== undefined) updates.full_name = computedFullName;
+  if (contactIdentity) updates.contact_identity_id = contactIdentity.id;
 
   const { error } = await supabaseAdmin
     .from("client_profiles")

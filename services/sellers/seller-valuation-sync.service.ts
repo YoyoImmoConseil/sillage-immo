@@ -1,4 +1,8 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { emitClientProjectEvent } from "@/services/clients/client-project.service";
+import { getSellerProjectByLeadId } from "@/services/clients/seller-project.service";
+import { ensureEstimationProperty } from "@/services/properties/estimation-property.service";
+import { createValuationRecord } from "@/services/valuation/valuation-record.service";
 import { loupeClient } from "@/services/valuation/loupe-client";
 import { computeLoupeValuation } from "@/services/valuation/loupe-valuation.service";
 
@@ -572,6 +576,47 @@ export const syncSellerValuationFromLoupe = async (
 
   if (updateError) {
     throw new Error(updateError.message);
+  }
+
+  const sellerProject = await getSellerProjectByLeadId(sellerLeadId);
+  const ensuredProperty = await ensureEstimationProperty({
+    sellerLeadId,
+    clientProjectId: sellerProject?.client_project_id ?? null,
+  });
+  const valuationRecord = await createValuationRecord({
+    clientProjectId: sellerProject?.client_project_id ?? null,
+    sellerProjectId: sellerProject?.id ?? null,
+    sellerLeadId,
+    propertyId: ensuredProperty.propertyId,
+    source: "loupe_sync",
+    sourceRef: `${sellerLeadId}:${Date.now()}`,
+    provider: "loupe",
+    valuationKind: "seller_estimation",
+    estimatedPrice: normalized.valuationPrice,
+    valuationLow: normalized.valuationPriceLow,
+    valuationHigh: normalized.valuationPriceHigh,
+    valuatedAt: new Date().toISOString(),
+    rawPayload: normalized as unknown as Record<string, unknown>,
+    metadata: {
+      source,
+      synchronized_from: "seller_valuation_sync",
+    },
+  });
+  if (sellerProject?.client_project_id && sellerProject.id) {
+    await emitClientProjectEvent({
+      clientProjectId: sellerProject.client_project_id,
+      sellerProjectId: sellerProject.id,
+      eventName: "valuation.recorded",
+      eventCategory: "valuation",
+      actorType: "system",
+      payload: {
+        valuation_id: valuationRecord.id,
+        property_id: ensuredProperty.propertyId,
+        seller_lead_id: sellerLeadId,
+        provider: "loupe",
+        source,
+      },
+    });
   }
 
   return {

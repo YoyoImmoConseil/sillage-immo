@@ -1,6 +1,11 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { sanitizeAuditInput } from "@/lib/audit/sanitize";
 import { emitDomainEvent } from "@/lib/events/domain-events";
+import {
+  ensureContactIdentity,
+  normalizeEmail,
+  normalizePhone,
+} from "@/services/contacts/contact-identity.service";
 import { scoreSellerLead } from "./seller-score.service";
 import { createHash } from "crypto";
 
@@ -43,14 +48,80 @@ export type CreateSellerLeadResult =
     }
   | { status: "failed"; reason: string };
 
+export const hydrateSellerLeadFromCapture = async (input: {
+  sellerLeadId: string;
+  fullName?: string;
+  email: string;
+  phone?: string;
+  propertyType?: string;
+  propertyAddress?: string;
+  city?: string;
+  postalCode?: string;
+  timeline?: string;
+  occupancyStatus?: string;
+  estimatedPrice?: number | null;
+  diagnosticsReady?: boolean;
+  diagnosticsSupportNeeded?: boolean;
+  syndicDocsReady?: boolean;
+  syndicSupportNeeded?: boolean;
+  message?: string;
+  metadata?: Record<string, unknown>;
+}) => {
+  const email = normalizeEmail(input.email);
+  if (!email) throw new Error("Email vendeur invalide.");
+  const phone = normalizePhone(input.phone);
+  const existingIdentity = await ensureContactIdentity({
+    email,
+    phone,
+    fullName: input.fullName ?? null,
+    metadata: {
+      source: "seller_lead_capture_refresh",
+      seller_lead_id: input.sellerLeadId,
+    },
+  });
+  const { data: currentLead, error: currentLeadError } = await supabaseAdmin
+    .from("seller_leads")
+    .select("metadata")
+    .eq("id", input.sellerLeadId)
+    .single();
+  if (currentLeadError) throw currentLeadError;
+
+  const nextMetadata = {
+    ...(currentLead?.metadata && typeof currentLead.metadata === "object"
+      ? (currentLead.metadata as Record<string, unknown>)
+      : {}),
+    ...(input.metadata ?? {}),
+  };
+
+  const { error } = await supabaseAdmin
+    .from("seller_leads")
+    .update({
+      full_name: input.fullName?.trim() || undefined,
+      email,
+      phone,
+      contact_identity_id: existingIdentity?.id ?? null,
+      property_type: normalizeOptional(input.propertyType),
+      property_address: normalizeOptional(input.propertyAddress),
+      city: normalizeOptional(input.city),
+      postal_code: normalizeOptional(input.postalCode),
+      timeline: normalizeOptional(input.timeline),
+      occupancy_status: normalizeOptional(input.occupancyStatus),
+      estimated_price:
+        typeof input.estimatedPrice === "number" ? Math.round(input.estimatedPrice) : null,
+      diagnostics_ready: input.diagnosticsReady ?? null,
+      diagnostics_support_needed: input.diagnosticsSupportNeeded ?? null,
+      syndic_docs_ready: input.syndicDocsReady ?? null,
+      syndic_support_needed: input.syndicSupportNeeded ?? null,
+      message: normalizeOptional(input.message),
+      metadata: nextMetadata,
+    })
+    .eq("id", input.sellerLeadId);
+  if (error) throw error;
+};
+
 const normalizeOptional = (value?: string) => {
   const normalized = value?.trim();
   return normalized ? normalized : null;
-};
-
-const normalizePhone = (value?: string) => {
-  const digits = (value ?? "").replace(/[^\d+]/g, "").trim();
-  return digits.length > 0 ? digits : null;
 };
 
 const normalizeAddress = (value?: string) => {
@@ -71,7 +142,13 @@ export const createSellerLead = async (
   input: SellerLeadInput,
   meta?: SellerLeadExecutionMeta
 ): Promise<CreateSellerLeadResult> => {
-  const email = input.email.trim().toLowerCase();
+  const email = normalizeEmail(input.email);
+  if (!email) {
+    return {
+      status: "failed",
+      reason: "Email vendeur invalide.",
+    };
+  }
   const phone = normalizePhone(input.phone);
   const propertyAddressNorm = normalizeAddress(input.propertyAddress);
   const postalCode = normalizeOptional(input.postalCode);
@@ -93,6 +170,15 @@ export const createSellerLead = async (
       computed_at: new Date().toISOString(),
     },
   };
+  const contactIdentity = await ensureContactIdentity({
+    email,
+    phone,
+    fullName: input.fullName,
+    metadata: {
+      source: input.source ?? "seller_lead",
+      capture_kind: "seller_lead",
+    },
+  });
 
   const { data: recentLeads, error: dedupeError } = await supabaseAdmin
     .from("seller_leads")
@@ -182,6 +268,7 @@ export const createSellerLead = async (
       full_name: input.fullName.trim(),
       email,
       phone,
+      contact_identity_id: contactIdentity?.id ?? null,
       property_type: normalizeOptional(input.propertyType),
       property_address: normalizeOptional(input.propertyAddress),
       city: normalizeOptional(input.city),

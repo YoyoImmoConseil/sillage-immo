@@ -1,6 +1,8 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { parseAdminProfileMetadata } from "@/services/admin/admin-profile-metadata";
+import { splitFullName } from "@/services/contacts/contact-identity.service";
+import { ensureEstimationProperty } from "@/services/properties/estimation-property.service";
 import { createInvitation } from "./client-project-invitation.service";
 import {
   createClientProject,
@@ -131,9 +133,7 @@ export const createSellerProjectFromLead = async (
     .single();
   if (leadErr || !lead) throw new Error("Lead vendeur introuvable");
 
-  const parts = (lead.full_name ?? "").trim().split(/\s+/);
-  const firstName = parts[0] ?? null;
-  const lastName = parts.slice(1).join(" ") || null;
+  const { firstName, lastName } = splitFullName(lead.full_name);
 
   const result = await createClientProfile({
     email: lead.email,
@@ -183,6 +183,12 @@ export const createSellerProjectFromLead = async (
     actorType: "admin",
     actorId: input.adminProfileId ?? undefined,
     payload: { seller_lead_id: input.sellerLeadId },
+  });
+
+  await ensureEstimationProperty({
+    sellerLeadId: input.sellerLeadId,
+    clientProjectId: projectId,
+    linkedByAdminProfileId: input.adminProfileId ?? lead.assigned_admin_profile_id ?? null,
   });
 
   return { clientProjectId: projectId, sellerProjectId: sp.id, clientProfileId: clientProfileIdResolved };

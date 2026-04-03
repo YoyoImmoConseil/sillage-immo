@@ -9,6 +9,7 @@ import {
 import {
   buildBuyerPortalProjectPlaceholderDetail,
   buildBuyerPortalProjectSummary,
+  listBuyerPortalProjectBridge,
   type BuyerPortalProjectPlaceholderDetail,
   type BuyerPortalProjectSummary,
 } from "./buyer-project-bridge.service";
@@ -134,10 +135,11 @@ const mapSellerProjectSummary = (
 });
 
 const mapNonSellerProjectSummary = (
-  project: ClientProjectRecord
+  project: ClientProjectRecord,
+  buyerBridge?: BuyerPortalProjectSummary | null
 ): ClientPortalProjectSummary => {
   if (project.projectType === "buyer") {
-    const buyerSummary = buildBuyerPortalProjectSummary(project);
+    const buyerSummary = buyerBridge ?? buildBuyerPortalProjectSummary(project, null);
     return {
       id: project.id,
       href: `/espace-client/projets/${project.id}`,
@@ -182,10 +184,19 @@ export const listClientPortalProjects = async (
   });
   const sellerProjects = await listSellerPortalProjects(clientProfileId);
   const sellerProjectById = new Map(sellerProjects.map((project) => [project.id, project]));
+  const buyerProjectIds = projects
+    .filter((project) => project.projectType === "buyer")
+    .map((project) => project.id);
+  const buyerBridgeByProjectId = await listBuyerPortalProjectBridge(buyerProjectIds);
 
   return projects.map((project) => {
     const sellerProject = sellerProjectById.get(project.id);
-    return sellerProject ? mapSellerProjectSummary(sellerProject) : mapNonSellerProjectSummary(project);
+    if (sellerProject) return mapSellerProjectSummary(sellerProject);
+    const buyerBridge =
+      project.projectType === "buyer"
+        ? buildBuyerPortalProjectSummary(project, buyerBridgeByProjectId.get(project.id) ?? null)
+        : null;
+    return mapNonSellerProjectSummary(project, buyerBridge);
   });
 };
 
@@ -238,10 +249,14 @@ export const getClientPortalProjectDetail = async (input: {
   }
 
   if (project.project_type === "buyer") {
+    const buyerBridgeByProjectId = await listBuyerPortalProjectBridge([project.id]);
     return {
       kind: "buyer",
       projectType: "buyer",
-      detail: buildBuyerPortalProjectPlaceholderDetail(baseProject),
+      detail: buildBuyerPortalProjectPlaceholderDetail(
+        baseProject,
+        buyerBridgeByProjectId.get(project.id) ?? null
+      ),
     };
   }
 
