@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 type Props = {
-  sellerLeadId: string;
+  accessToken: string;
 };
 
 type UiMessage = {
@@ -11,7 +11,7 @@ type UiMessage = {
   text: string;
 };
 
-export function SellerResultChat({ sellerLeadId }: Props) {
+export function SellerResultChat({ accessToken }: Props) {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +37,7 @@ export function SellerResultChat({ sellerLeadId }: Props) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          sellerLeadId,
+          accessToken,
           message: trimmed,
         }),
       });

@@ -433,7 +433,7 @@ export function SellerEmailVerificationSection({
 type SellerEstimationResultSectionProps = {
   valuation: ValuationResult;
   form: FlowForm;
-  sellerLeadId: string;
+  thankYouAccessToken: string;
   portalAccessEmail: string | null;
   portalAccessStatus: "idle" | "sending" | "sent" | "error";
   portalAccessMessage: string | null;
@@ -443,7 +443,7 @@ type SellerEstimationResultSectionProps = {
 export function SellerEstimationResultSection({
   valuation,
   form,
-  sellerLeadId,
+  thankYouAccessToken,
   portalAccessEmail,
   portalAccessStatus,
   portalAccessMessage,
@@ -528,11 +528,13 @@ export function SellerEstimationResultSection({
           ) : null}
         </div>
       ) : null}
-      <SellerResultChat sellerLeadId={sellerLeadId} />
+      <SellerResultChat accessToken={thankYouAccessToken} />
       <button
         type="button"
         className="sillage-btn rounded px-4 py-2 text-sm"
-        onClick={() => router.push(`/merci-vendeur?leadId=${encodeURIComponent(sellerLeadId)}`)}
+        onClick={() =>
+          router.push(`/merci-vendeur?access=${encodeURIComponent(thankYouAccessToken)}`)
+        }
       >
         Finaliser et etre rappele par un conseiller
       </button>

@@ -80,13 +80,19 @@ export function SellerEstimationForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const data = (await response.json()) as { ok?: boolean; sellerLeadId?: string; message?: string };
-      if (!response.ok || !data.ok || !data.sellerLeadId) {
+      const data = (await response.json()) as {
+        ok?: boolean;
+        message?: string;
+        data?: {
+          thankYouAccessToken?: string;
+        };
+      };
+      if (!response.ok || !data.ok || !data.data?.thankYouAccessToken) {
         setError(data.message ?? "Impossible d'enregistrer votre demande pour le moment.");
         return;
       }
 
-      router.push(`/merci-vendeur?leadId=${encodeURIComponent(data.sellerLeadId)}`);
+      router.push(`/merci-vendeur?access=${encodeURIComponent(data.data.thankYouAccessToken)}`);
     } catch {
       setError("Une erreur reseau est survenue. Merci de reessayer.");
     } finally {

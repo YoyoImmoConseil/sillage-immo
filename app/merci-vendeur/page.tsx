@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { readMerciVendeurAccessToken } from "@/lib/sellers/merci-vendeur-access";
 import { getSellerMetadataSections } from "@/services/sellers/seller-metadata";
 
 type MerciVendeurPageProps = {
-  searchParams: Promise<{ leadId?: string }>;
+  searchParams: Promise<{ access?: string; leadId?: string }>;
 };
 
 const formatEur = (value: number) =>
@@ -15,7 +16,7 @@ const formatEur = (value: number) =>
 
 export default async function MerciVendeurPage({ searchParams }: MerciVendeurPageProps) {
   const params = await searchParams;
-  const leadId = params.leadId ?? null;
+  const access = readMerciVendeurAccessToken(params.access ?? null);
   let valuation: {
     addressLabel: string | null;
     cityName: string | null;
@@ -25,11 +26,11 @@ export default async function MerciVendeurPage({ searchParams }: MerciVendeurPag
     valuationPriceHigh: number | null;
   } | null = null;
 
-  if (leadId) {
+  if (access?.leadId) {
     const { data } = await supabaseAdmin
       .from("seller_leads")
       .select("property_address, city, postal_code, metadata")
-      .eq("id", leadId)
+      .eq("id", access.leadId)
       .maybeSingle();
 
     if (data?.metadata) {
@@ -106,11 +107,6 @@ export default async function MerciVendeurPage({ searchParams }: MerciVendeurPag
               Un conseiller Sillage Immo vous recontacte rapidement pour cadrer la mise en vente
               et vous accompagner pas a pas jusqu&apos;a la concretisation de votre projet.
             </p>
-            {leadId ? (
-              <p className="text-xs opacity-60">
-                Reference interne: <code>{leadId}</code>
-              </p>
-            ) : null}
             <Link className="sillage-btn inline-block rounded px-4 py-2" href="/estimation">
               Revenir au parcours vendeur
             </Link>

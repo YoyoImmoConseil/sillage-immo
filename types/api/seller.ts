@@ -43,7 +43,7 @@ export type SellerEstimateAndCreateSuccessResponse = {
   ok: true;
   data: {
     createStatus: "created" | "reused";
-    sellerLeadId: string;
+    thankYouAccessToken: string;
     valuation: SellerEstimateValuationData;
     portalAccess: SellerPortalAccessData | null;
   };
@@ -55,7 +55,6 @@ export type SellerEstimateAndCreateDuplicateResponse = {
   message: string;
   data: {
     createStatus: "duplicate_blocked";
-    sellerLeadId: string;
   };
 };
 
@@ -63,7 +62,7 @@ export type SellerLeadCreateSuccessResponse = {
   ok: true;
   data: {
     createStatus: "created" | "reused";
-    sellerLeadId: string;
+    thankYouAccessToken: string;
     auditLogged: boolean;
     duplicateDetected: boolean;
   };
@@ -75,7 +74,6 @@ export type SellerLeadCreateDuplicateResponse = {
   message: string;
   data: {
     createStatus: "duplicate_blocked";
-    sellerLeadId: string;
     auditLogged: boolean;
     duplicateDetected: true;
   };

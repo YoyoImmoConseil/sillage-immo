@@ -10,6 +10,7 @@ import { ensureEstimationProperty } from "@/services/properties/estimation-prope
 import { createValuationRecord } from "@/services/valuation/valuation-record.service";
 import { computeLoupeValuation } from "@/services/valuation/loupe-valuation.service";
 import { consumeSellerEmailVerificationToken } from "@/services/sellers/seller-email-verification.service";
+import { createMerciVendeurAccessToken } from "@/lib/sellers/merci-vendeur-access";
 import {
   checkIdempotency,
   persistIdempotencyResponse,
@@ -387,7 +388,7 @@ export const POST = async (request: Request) => {
     ok: true,
     data: {
       createStatus,
-      sellerLeadId,
+      thankYouAccessToken: createMerciVendeurAccessToken(created.sellerLeadId),
       valuation,
       portalAccess,
     },

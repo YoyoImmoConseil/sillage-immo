@@ -1,9 +1,10 @@
 import {
   listPropertyTypesForBusinessType,
   listPublicPropertyListings,
+  toPublicPropertyListingSummary,
 } from "@/services/properties/property-listing.service";
 import { PublicListingsSearch } from "./public-listings-search";
-import type { PropertyBusinessType, PropertyListingSnapshot } from "@/types/domain/properties";
+import type { PropertyBusinessType } from "@/types/domain/properties";
 
 type ListingSearchParams = {
   city?: string;
@@ -75,7 +76,7 @@ export async function PublicListingsPage(props: PublicListingsPageProps) {
         <div className="w-full px-6 py-8 md:px-10 xl:px-14 2xl:px-20 space-y-8">
           <PublicListingsSearch
             businessType={props.businessType}
-            initialListings={listings as PropertyListingSnapshot[]}
+            initialListings={listings.map(toPublicPropertyListingSummary)}
             initialPropertyTypes={propertyTypes}
             initialFilters={{
               city: props.searchParams.city ?? "",

@@ -3,6 +3,7 @@ import {
   createSellerLead,
   type SellerLeadInput,
 } from "@/services/sellers/seller-lead.service";
+import { createMerciVendeurAccessToken } from "@/lib/sellers/merci-vendeur-access";
 import type {
   SellerApiErrorResponse,
   SellerLeadCreateDuplicateResponse,
@@ -80,7 +81,6 @@ export const POST = async (request: Request) => {
       message: result.reason,
       data: {
         createStatus: "duplicate_blocked",
-        sellerLeadId: result.sellerLeadId,
         auditLogged: result.auditLogged,
         duplicateDetected: true,
       },
@@ -92,7 +92,7 @@ export const POST = async (request: Request) => {
     ok: true,
     data: {
       createStatus: result.status,
-      sellerLeadId: result.sellerLeadId,
+      thankYouAccessToken: createMerciVendeurAccessToken(result.sellerLeadId),
       auditLogged: result.auditLogged,
       duplicateDetected: result.status === "reused",
     },

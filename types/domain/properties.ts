@@ -128,3 +128,23 @@ export type PropertyListingSnapshot = {
   unpublishedAt: string | null;
   property: PropertySnapshot;
 };
+
+export type PublicPropertyListingSummary = {
+  id: string;
+  canonicalPath: string;
+  title: string | null;
+  city: string | null;
+  postalCode: string | null;
+  coverImageUrl: string | null;
+  propertyType: string | null;
+  priceAmount: number | null;
+  priceCurrency: string;
+  bedrooms: number | null;
+  livingArea: number | null;
+  loiCarrezArea: number | null;
+  roomCount: number | null;
+  annualCharges: number | null;
+  lotCount: number | null;
+  sale: PropertySaleSnapshot;
+  energy: PropertyEnergySnapshot;
+};

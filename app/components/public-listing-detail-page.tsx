@@ -2,6 +2,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { formatPropertyTypeLabel } from "@/lib/properties/property-type-label";
+import { getPublicTeamMemberByEmail } from "@/services/home/team.service";
 import type { PropertyListingSnapshot } from "@/types/domain/properties";
 import { formatListingPrice } from "@/services/properties/property-listing.service";
 import { PropertyEnergyScale } from "./property-energy-scale";
@@ -22,11 +23,25 @@ export const buildPublicListingMetadata = (listing: PropertyListingSnapshot | nu
   };
 };
 
-export function PublicListingDetailPage({ listing }: { listing: PropertyListingSnapshot }) {
+export async function PublicListingDetailPage({ listing }: { listing: PropertyListingSnapshot }) {
   const contact = listing.property.negotiator;
+  const contactEmail = typeof contact.email === "string" && contact.email.trim() ? contact.email.trim() : null;
+  const contactProfile = contactEmail ? await getPublicTeamMemberByEmail(contactEmail) : null;
   const contactFullName = [contact.first_name, contact.last_name]
     .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
     .join(" ");
+  const contactAvatarUrl =
+    contactProfile?.avatarUrl ??
+    [
+      contact.avatar_url,
+      contact.avatarUrl,
+      contact.photo_url,
+      contact.photoUrl,
+      contact.picture_url,
+      contact.pictureUrl,
+      contact.image_url,
+      contact.imageUrl,
+    ].find((value): value is string => typeof value === "string" && value.trim().length > 0);
   const gallery = listing.property.media.filter((item) => item.kind === "image");
   const feeMention =
     listing.property.sale.feeChargeBearer === "buyer" && typeof listing.property.sale.feeAmount === "number"
@@ -46,25 +61,20 @@ export function PublicListingDetailPage({ listing }: { listing: PropertyListingS
   return (
     <main className="min-h-screen">
       <section className="bg-[#141446] text-[#f4ece4]">
-        <div className="w-full px-6 py-8 md:px-10 xl:px-14 2xl:px-20 space-y-4">
-          <Link href={listing.businessType === "sale" ? "/vente" : "/location"} className="text-sm underline">
-            Retour au catalogue
+        <div className="w-full px-6 pb-8 pt-4 md:px-10 md:pb-8 md:pt-3 xl:px-14 2xl:px-20 space-y-3">
+          <Link
+            href={listing.businessType === "sale" ? "/vente" : "/location"}
+            className="inline-flex text-xl leading-none"
+            aria-label="Retour au catalogue"
+          >
+            ←
           </Link>
           <div className="space-y-2">
-            <p className="text-xs uppercase tracking-[0.18em] text-[#f4ece4]/70">
-              {listing.businessType === "sale" ? "Bien en vente" : "Bien en location"}
-            </p>
             <h1 className="sillage-section-title text-[#f4ece4]">
               {listing.title ?? "Bien immobilier"}
             </h1>
             <p className="text-sm text-[#f4ece4]/80">
-              {[
-                listing.property.address.formattedAddress,
-                listing.city,
-                listing.postalCode,
-              ]
-                .filter(Boolean)
-                .join(" • ")}
+              {[listing.city, listing.postalCode].filter(Boolean).join(" • ")}
             </p>
             <p className="text-2xl font-semibold">
               {formatListingPrice({
@@ -235,14 +245,23 @@ export function PublicListingDetailPage({ listing }: { listing: PropertyListingS
           <aside className="space-y-6">
             <section className="rounded-2xl bg-[#141446] p-6 text-[#f4ece4] space-y-3">
               <h2 className="sillage-section-title text-[#f4ece4]">Interlocuteur Sillage</h2>
-              <p className="text-sm">{contactFullName || "Conseiller Sillage Immo"}</p>
+              {contactAvatarUrl ? (
+                <img
+                  src={contactAvatarUrl}
+                  alt={contactProfile?.fullName || contactFullName || "Conseiller Sillage Immo"}
+                  className="h-24 w-24 rounded-lg object-cover border border-white/20"
+                />
+              ) : null}
+              <p className="sillage-editorial-text opacity-85">
+                {contactProfile?.fullName || contactFullName || "Conseiller Sillage Immo"}
+              </p>
               {typeof contact.email === "string" && contact.email.trim() ? (
-                <a className="block text-sm underline" href={`mailto:${contact.email}`}>
+                <a className="sillage-editorial-text block opacity-85 underline" href={`mailto:${contact.email}`}>
                   {contact.email}
                 </a>
               ) : null}
               {typeof contact.phone === "string" && contact.phone.trim() ? (
-                <a className="block text-sm underline" href={`tel:${contact.phone}`}>
+                <a className="sillage-editorial-text block opacity-85 underline" href={`tel:${contact.phone}`}>
                   {contact.phone}
                 </a>
               ) : null}
