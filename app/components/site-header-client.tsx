@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { useState } from "react";
 
 const navItems = [
   { href: "/vente", label: "Vente" },
@@ -10,17 +9,14 @@ const navItems = [
   { href: "/estimation", label: "Estimation" },
 ] as const;
 
+const clientSpaceItem = { href: "/espace-client/login", label: "Mon Espace Sillage" } as const;
+
 type SiteHeaderClientProps = {
   isMobileOs: boolean;
 };
 
 export function SiteHeaderClient({ isMobileOs }: SiteHeaderClientProps) {
-  const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
-
-  useEffect(() => {
-    setIsOpen(false);
-  }, [pathname]);
 
   return (
     <header className="sticky top-0 z-50 bg-[#141446] text-[#f4ece4]">
@@ -61,6 +57,13 @@ export function SiteHeaderClient({ isMobileOs }: SiteHeaderClientProps) {
                       {item.label}
                     </Link>
                   ))}
+                  <Link
+                    href={clientSpaceItem.href}
+                    className="rounded-xl border border-white/16 px-3 py-2"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    {clientSpaceItem.label}
+                  </Link>
                   <a
                     href="tel:+33423450485"
                     className="rounded-xl px-3 py-2"
@@ -79,6 +82,12 @@ export function SiteHeaderClient({ isMobileOs }: SiteHeaderClientProps) {
                 {item.label}
               </Link>
             ))}
+            <Link
+              href={clientSpaceItem.href}
+              className="rounded border border-white/16 px-3 py-2 text-[#f4ece4] transition-opacity hover:opacity-80"
+            >
+              {clientSpaceItem.label}
+            </Link>
             <a href="tel:+33423450485" className="hover:opacity-80 transition-opacity">
               Conseiller
             </a>
