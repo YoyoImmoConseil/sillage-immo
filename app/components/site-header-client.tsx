@@ -64,13 +64,6 @@ export function SiteHeaderClient({ isMobileOs }: SiteHeaderClientProps) {
                   >
                     {clientSpaceItem.label}
                   </Link>
-                  <a
-                    href="tel:+33423450485"
-                    className="rounded-xl px-3 py-2"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    Conseiller
-                  </a>
                 </div>
               </nav>
             ) : null}
@@ -88,9 +81,6 @@ export function SiteHeaderClient({ isMobileOs }: SiteHeaderClientProps) {
             >
               {clientSpaceItem.label}
             </Link>
-            <a href="tel:+33423450485" className="hover:opacity-80 transition-opacity">
-              Conseiller
-            </a>
           </nav>
         )}
       </div>
