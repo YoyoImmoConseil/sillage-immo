@@ -96,6 +96,20 @@ create table if not exists public.seller_email_verifications (
   attempts int2 not null default 0
 );
 
+create table if not exists public.contact_identities (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  email text,
+  normalized_email text,
+  phone text,
+  normalized_phone text,
+  first_name text,
+  last_name text,
+  full_name text,
+  metadata jsonb not null default '{}'::jsonb
+);
+
 create table if not exists public.domain_events (
   id uuid primary key default gen_random_uuid(),
   created_at timestamptz not null default now(),
@@ -316,6 +330,149 @@ create table if not exists public.buyer_property_matches (
 alter table public.seller_leads
   add column if not exists assigned_admin_profile_id uuid references public.admin_profiles(id) on delete set null;
 
+-- Lot 1: Espace client vendeur
+create table if not exists public.client_profiles (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  auth_user_id uuid,
+  email text not null,
+  phone text,
+  first_name text,
+  last_name text,
+  full_name text,
+  is_active boolean not null default true,
+  last_login_at timestamptz,
+  metadata jsonb not null default '{}'::jsonb
+);
+
+create table if not exists public.client_projects (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  client_profile_id uuid not null references public.client_profiles(id) on delete cascade,
+  project_type text not null,
+  status text not null default 'active',
+  title text,
+  created_from text not null,
+  primary_admin_profile_id uuid references public.admin_profiles(id) on delete set null,
+  source text,
+  metadata jsonb not null default '{}'::jsonb
+);
+
+create table if not exists public.seller_projects (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  client_project_id uuid not null unique references public.client_projects(id) on delete cascade,
+  seller_lead_id uuid references public.seller_leads(id) on delete set null,
+  assigned_admin_profile_id uuid references public.admin_profiles(id) on delete set null,
+  entry_channel text not null,
+  project_status text not null default 'estimation_realisee',
+  mandate_status text not null default 'none',
+  latest_valuation_id uuid,
+  metadata jsonb not null default '{}'::jsonb
+);
+
+create table if not exists public.project_properties (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  client_project_id uuid not null references public.client_projects(id) on delete cascade,
+  property_id uuid not null references public.properties(id) on delete cascade,
+  relationship_type text not null default 'seller_subject_property',
+  is_primary boolean not null default false,
+  linked_by_admin_profile_id uuid references public.admin_profiles(id) on delete set null,
+  unlinked_at timestamptz,
+  metadata jsonb not null default '{}'::jsonb
+);
+
+create table if not exists public.client_project_invitations (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  client_project_id uuid not null references public.client_projects(id) on delete cascade,
+  client_profile_id uuid not null references public.client_profiles(id) on delete cascade,
+  email text not null,
+  token_hash text not null,
+  provider_hint text,
+  expires_at timestamptz not null,
+  accepted_at timestamptz,
+  revoked_at timestamptz,
+  created_by_admin_profile_id uuid references public.admin_profiles(id) on delete set null,
+  metadata jsonb not null default '{}'::jsonb
+);
+
+create table if not exists public.seller_project_advisor_history (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  seller_project_id uuid not null references public.seller_projects(id) on delete cascade,
+  admin_profile_id uuid not null references public.admin_profiles(id) on delete cascade,
+  assigned_at timestamptz not null default now(),
+  unassigned_at timestamptz,
+  assigned_by_admin_profile_id uuid references public.admin_profiles(id) on delete set null,
+  reason text,
+  metadata jsonb not null default '{}'::jsonb
+);
+
+create table if not exists public.client_project_events (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  client_project_id uuid not null references public.client_projects(id) on delete cascade,
+  seller_project_id uuid references public.seller_projects(id) on delete set null,
+  event_name text not null,
+  event_category text not null,
+  visible_to_client boolean not null default true,
+  actor_type text,
+  actor_id uuid,
+  payload jsonb not null default '{}'::jsonb
+);
+
+alter table public.seller_leads
+  add column if not exists contact_identity_id uuid references public.contact_identities(id) on delete set null;
+
+alter table public.buyer_leads
+  add column if not exists contact_identity_id uuid references public.contact_identities(id) on delete set null;
+
+alter table public.client_profiles
+  add column if not exists contact_identity_id uuid references public.contact_identities(id) on delete set null;
+
+alter table public.buyer_search_profiles
+  add column if not exists client_project_id uuid references public.client_projects(id) on delete set null;
+
+create table if not exists public.buyer_projects (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  client_project_id uuid not null unique references public.client_projects(id) on delete cascade,
+  buyer_lead_id uuid unique references public.buyer_leads(id) on delete set null,
+  active_search_profile_id uuid references public.buyer_search_profiles(id) on delete set null,
+  metadata jsonb not null default '{}'::jsonb
+);
+
+create table if not exists public.valuations (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  client_project_id uuid references public.client_projects(id) on delete set null,
+  seller_project_id uuid references public.seller_projects(id) on delete set null,
+  seller_lead_id uuid references public.seller_leads(id) on delete set null,
+  property_id uuid references public.properties(id) on delete set null,
+  contact_identity_id uuid references public.contact_identities(id) on delete set null,
+  source text not null,
+  source_ref text,
+  provider text,
+  valuation_kind text not null default 'seller_estimation',
+  status text not null default 'completed',
+  estimated_price integer,
+  valuation_low integer,
+  valuation_high integer,
+  currency text not null default 'EUR',
+  valuated_at timestamptz not null default now(),
+  raw_payload jsonb not null default '{}'::jsonb,
+  metadata jsonb not null default '{}'::jsonb
+);
+
 do $$
 begin
   if not exists (
@@ -525,6 +682,162 @@ begin
       add constraint chk_property_media_metadata_object
       check (jsonb_typeof(metadata) = 'object');
   end if;
+
+  if not exists (
+    select 1 from pg_constraint where conname = 'seller_projects_latest_valuation_id_fkey'
+  ) then
+    alter table public.seller_projects
+      add constraint seller_projects_latest_valuation_id_fkey
+      foreign key (latest_valuation_id) references public.valuations(id) on delete set null;
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint where conname = 'chk_contact_identities_metadata_object'
+  ) then
+    alter table public.contact_identities
+      add constraint chk_contact_identities_metadata_object
+      check (jsonb_typeof(metadata) = 'object');
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint where conname = 'chk_client_projects_project_type_values'
+  ) then
+    alter table public.client_projects
+      add constraint chk_client_projects_project_type_values
+      check (project_type in ('seller', 'buyer', 'rental', 'wealth'));
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint where conname = 'chk_client_projects_status_values'
+  ) then
+    alter table public.client_projects
+      add constraint chk_client_projects_status_values
+      check (status in ('active', 'on_hold', 'closed', 'archived'));
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint where conname = 'chk_client_projects_created_from_values'
+  ) then
+    alter table public.client_projects
+      add constraint chk_client_projects_created_from_values
+      check (created_from in ('seller_lead', 'buyer_lead', 'crm_property', 'admin_manual'));
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint where conname = 'chk_seller_leads_status_values'
+  ) then
+    alter table public.seller_leads
+      add constraint chk_seller_leads_status_values
+      check (status in ('new', 'to_call', 'qualified', 'closed'));
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint where conname = 'chk_buyer_leads_status_values'
+  ) then
+    alter table public.buyer_leads
+      add constraint chk_buyer_leads_status_values
+      check (status in ('new', 'qualified', 'active_search', 'visit', 'won', 'lost'));
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint where conname = 'chk_buyer_search_profiles_status_values'
+  ) then
+    alter table public.buyer_search_profiles
+      add constraint chk_buyer_search_profiles_status_values
+      check (status in ('active', 'paused', 'closed'));
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint where conname = 'chk_seller_projects_entry_channel_values'
+  ) then
+    alter table public.seller_projects
+      add constraint chk_seller_projects_entry_channel_values
+      check (entry_channel in ('sillage_tunnel', 'crm_direct', 'admin_created'));
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint where conname = 'chk_seller_projects_project_status_values'
+  ) then
+    alter table public.seller_projects
+      add constraint chk_seller_projects_project_status_values
+      check (
+        project_status in (
+          'estimation_realisee',
+          'a_contacter',
+          'rdv_estimation_planifie',
+          'estimation_physique_realisee',
+          'mandat_en_preparation',
+          'mandat_signe',
+          'bien_en_commercialisation',
+          'bien_sous_offre',
+          'bien_vendu',
+          'projet_suspendu'
+        )
+      );
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint where conname = 'chk_seller_projects_mandate_status_values'
+  ) then
+    alter table public.seller_projects
+      add constraint chk_seller_projects_mandate_status_values
+      check (mandate_status in ('none', 'draft', 'signed', 'terminated'));
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint where conname = 'chk_project_properties_relationship_values'
+  ) then
+    alter table public.project_properties
+      add constraint chk_project_properties_relationship_values
+      check (
+        relationship_type in (
+          'seller_subject_property',
+          'rental_managed_property',
+          'buyer_target_property',
+          'archived_relation'
+        )
+      );
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint where conname = 'chk_buyer_projects_metadata_object'
+  ) then
+    alter table public.buyer_projects
+      add constraint chk_buyer_projects_metadata_object
+      check (jsonb_typeof(metadata) = 'object');
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint where conname = 'chk_valuations_kind_values'
+  ) then
+    alter table public.valuations
+      add constraint chk_valuations_kind_values
+      check (valuation_kind in ('seller_estimation', 'seller_sync', 'admin_review', 'manual'));
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint where conname = 'chk_valuations_status_values'
+  ) then
+    alter table public.valuations
+      add constraint chk_valuations_status_values
+      check (status in ('draft', 'completed', 'superseded', 'cancelled'));
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint where conname = 'chk_valuations_raw_payload_object'
+  ) then
+    alter table public.valuations
+      add constraint chk_valuations_raw_payload_object
+      check (jsonb_typeof(raw_payload) = 'object');
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint where conname = 'chk_valuations_metadata_object'
+  ) then
+    alter table public.valuations
+      add constraint chk_valuations_metadata_object
+      check (jsonb_typeof(metadata) = 'object');
+  end if;
 end
 $$;
 
@@ -535,6 +848,7 @@ alter table public.zone_catalog enable row level security;
 alter table public.seller_leads enable row level security;
 alter table public.seller_scoring_events enable row level security;
 alter table public.seller_email_verifications enable row level security;
+alter table public.contact_identities enable row level security;
 alter table public.domain_events enable row level security;
 alter table public.api_idempotency_keys enable row level security;
 alter table public.crm_webhook_deliveries enable row level security;
@@ -546,6 +860,15 @@ alter table public.admin_role_assignments enable row level security;
 alter table public.buyer_leads enable row level security;
 alter table public.buyer_search_profiles enable row level security;
 alter table public.buyer_property_matches enable row level security;
+alter table public.client_profiles enable row level security;
+alter table public.client_projects enable row level security;
+alter table public.buyer_projects enable row level security;
+alter table public.seller_projects enable row level security;
+alter table public.project_properties enable row level security;
+alter table public.client_project_invitations enable row level security;
+alter table public.seller_project_advisor_history enable row level security;
+alter table public.client_project_events enable row level security;
+alter table public.valuations enable row level security;
 
 create index if not exists idx_audit_log_mcp_request_id
 on public.audit_log ((data->>'request_id'));
@@ -641,11 +964,148 @@ on public.buyer_search_profiles using gin (cities);
 create index if not exists idx_buyer_search_profiles_property_types
 on public.buyer_search_profiles using gin (property_types);
 
+create index if not exists idx_buyer_search_profiles_client_project
+on public.buyer_search_profiles (client_project_id);
+
 create index if not exists idx_buyer_property_matches_buyer
 on public.buyer_property_matches (buyer_lead_id, score desc);
 
 create index if not exists idx_buyer_property_matches_property
 on public.buyer_property_matches (property_id, score desc);
+
+create index if not exists idx_client_profiles_email on public.client_profiles (email);
+create unique index if not exists idx_client_profiles_auth_user_id_unique
+  on public.client_profiles (auth_user_id) where auth_user_id is not null;
+create unique index if not exists idx_contact_identities_normalized_email_unique
+  on public.contact_identities (normalized_email)
+  where normalized_email is not null;
+create unique index if not exists idx_contact_identities_normalized_phone_unique
+  on public.contact_identities (normalized_phone)
+  where normalized_phone is not null;
+create index if not exists idx_seller_leads_contact_identity
+  on public.seller_leads (contact_identity_id);
+create index if not exists idx_buyer_leads_contact_identity
+  on public.buyer_leads (contact_identity_id);
+create index if not exists idx_client_profiles_contact_identity
+  on public.client_profiles (contact_identity_id);
+create index if not exists idx_client_projects_client_profile on public.client_projects (client_profile_id);
+create index if not exists idx_client_projects_type_status on public.client_projects (project_type, status);
+create index if not exists idx_buyer_projects_buyer_lead on public.buyer_projects (buyer_lead_id);
+create index if not exists idx_buyer_projects_active_search_profile on public.buyer_projects (active_search_profile_id);
+create index if not exists idx_seller_projects_assigned_admin on public.seller_projects (assigned_admin_profile_id);
+create index if not exists idx_seller_projects_seller_lead on public.seller_projects (seller_lead_id);
+create index if not exists idx_seller_projects_project_status on public.seller_projects (project_status);
+create unique index if not exists idx_seller_projects_seller_lead_unique
+  on public.seller_projects (seller_lead_id)
+  where seller_lead_id is not null;
+create index if not exists idx_project_properties_client_project on public.project_properties (client_project_id);
+create index if not exists idx_project_properties_property on public.project_properties (property_id);
+create index if not exists idx_project_properties_unlinked on public.project_properties (unlinked_at) where unlinked_at is null;
+create unique index if not exists idx_project_properties_active_unique
+  on public.project_properties (client_project_id, property_id)
+  where unlinked_at is null;
+create unique index if not exists idx_project_properties_primary_unique
+  on public.project_properties (client_project_id)
+  where is_primary = true and unlinked_at is null;
+create index if not exists idx_client_project_invitations_project on public.client_project_invitations (client_project_id);
+create index if not exists idx_client_project_invitations_email on public.client_project_invitations (email);
+create index if not exists idx_seller_project_advisor_history_project on public.seller_project_advisor_history (seller_project_id);
+create index if not exists idx_client_project_events_project on public.client_project_events (client_project_id);
+create index if not exists idx_client_project_events_created on public.client_project_events (created_at desc);
+create index if not exists idx_valuations_client_project on public.valuations (client_project_id, valuated_at desc);
+create index if not exists idx_valuations_seller_project on public.valuations (seller_project_id, valuated_at desc);
+create index if not exists idx_valuations_seller_lead on public.valuations (seller_lead_id, valuated_at desc);
+create index if not exists idx_valuations_property on public.valuations (property_id, valuated_at desc);
+create index if not exists idx_valuations_contact_identity on public.valuations (contact_identity_id, valuated_at desc);
+create unique index if not exists idx_client_profiles_email_active_unique
+  on public.client_profiles (lower(email))
+  where is_active = true;
+
+drop policy if exists "client_profiles_authenticated" on public.client_profiles;
+drop policy if exists "client_profiles_self_select" on public.client_profiles;
+create policy "client_profiles_self_select"
+  on public.client_profiles
+  for select
+  to authenticated
+  using (auth_user_id = auth.uid());
+drop policy if exists "client_projects_authenticated" on public.client_projects;
+drop policy if exists "client_projects_self_select" on public.client_projects;
+create policy "client_projects_self_select"
+  on public.client_projects
+  for select
+  to authenticated
+  using (
+    exists (
+      select 1
+      from public.client_profiles cp
+      where cp.id = client_projects.client_profile_id
+        and cp.auth_user_id = auth.uid()
+    )
+  );
+drop policy if exists "seller_projects_authenticated" on public.seller_projects;
+drop policy if exists "seller_projects_self_select" on public.seller_projects;
+create policy "seller_projects_self_select"
+  on public.seller_projects
+  for select
+  to authenticated
+  using (
+    exists (
+      select 1
+      from public.client_projects cproj
+      join public.client_profiles cp on cp.id = cproj.client_profile_id
+      where cproj.id = seller_projects.client_project_id
+        and cp.auth_user_id = auth.uid()
+    )
+  );
+drop policy if exists "project_properties_authenticated" on public.project_properties;
+drop policy if exists "project_properties_self_select" on public.project_properties;
+create policy "project_properties_self_select"
+  on public.project_properties
+  for select
+  to authenticated
+  using (
+    unlinked_at is null
+    and exists (
+      select 1
+      from public.client_projects cproj
+      join public.client_profiles cp on cp.id = cproj.client_profile_id
+      where cproj.id = project_properties.client_project_id
+        and cp.auth_user_id = auth.uid()
+    )
+  );
+drop policy if exists "client_project_invitations_authenticated" on public.client_project_invitations;
+drop policy if exists "seller_project_advisor_history_authenticated" on public.seller_project_advisor_history;
+drop policy if exists "seller_project_advisor_history_self_select" on public.seller_project_advisor_history;
+create policy "seller_project_advisor_history_self_select"
+  on public.seller_project_advisor_history
+  for select
+  to authenticated
+  using (
+    exists (
+      select 1
+      from public.seller_projects sp
+      join public.client_projects cproj on cproj.id = sp.client_project_id
+      join public.client_profiles cp on cp.id = cproj.client_profile_id
+      where sp.id = seller_project_advisor_history.seller_project_id
+        and cp.auth_user_id = auth.uid()
+    )
+  );
+drop policy if exists "client_project_events_authenticated" on public.client_project_events;
+drop policy if exists "client_project_events_self_select" on public.client_project_events;
+create policy "client_project_events_self_select"
+  on public.client_project_events
+  for select
+  to authenticated
+  using (
+    visible_to_client = true
+    and exists (
+      select 1
+      from public.client_projects cproj
+      join public.client_profiles cp on cp.id = cproj.client_profile_id
+      where cproj.id = client_project_events.client_project_id
+        and cp.auth_user_id = auth.uid()
+    )
+  );
 
 drop policy if exists "leads_insert_public" on public.leads;
 create policy "leads_insert_public"

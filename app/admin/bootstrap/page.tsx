@@ -1,16 +1,7 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { getAdminUserCount } from "@/services/admin/admin-user.service";
 import { AdminBootstrapForm } from "./bootstrap-form";
 
-export const dynamic = "force-dynamic";
-
-export default async function AdminBootstrapPage() {
-  const adminUserCount = await getAdminUserCount();
-  if (adminUserCount > 0) {
-    redirect("/admin/login");
-  }
-
+export default function AdminBootstrapPage() {
   return (
     <main className="min-h-screen bg-[#f4ece4] px-6 py-10 md:px-10 xl:px-14 2xl:px-20">
       <section className="mx-auto max-w-xl space-y-6 rounded-3xl border border-[rgba(20,20,70,0.18)] bg-white/70 p-8">

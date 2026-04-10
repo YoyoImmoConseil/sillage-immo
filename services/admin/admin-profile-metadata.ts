@@ -7,6 +7,7 @@ export type AdminProfileMetadata = {
   phone: string | null;
   bio: string | null;
   avatarUrl: string | null;
+  bookingUrl: string | null;
 };
 
 const asRecord = (value: unknown): Record<string, unknown> | null => {
@@ -37,6 +38,7 @@ export const parseAdminProfileMetadata = (value: unknown): AdminProfileMetadata 
     phone: toStringOrNull(metadata?.phone),
     bio: toStringOrNull(metadata?.bio),
     avatarUrl: toStringOrNull(metadata?.avatar_url),
+    bookingUrl: toStringOrNull(metadata?.booking_url),
   };
 };
 
@@ -51,5 +53,6 @@ export const buildAdminProfileMetadata = (
     ...(patch.phone !== undefined ? { phone: patch.phone } : {}),
     ...(patch.bio !== undefined ? { bio: patch.bio } : {}),
     ...(patch.avatarUrl !== undefined ? { avatar_url: patch.avatarUrl } : {}),
+    ...(patch.bookingUrl !== undefined ? { booking_url: patch.bookingUrl } : {}),
   };
 };

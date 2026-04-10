@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AdminShell } from "@/app/components/admin-shell";
-import { requireAdminPagePermission } from "@/lib/admin/auth";
+import { requireAdminPagePermission, hasAdminPermission } from "@/lib/admin/auth";
 import { formatPropertyTypeLabel } from "@/lib/properties/property-type-label";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import type { Database } from "@/types/db/supabase";
@@ -10,6 +10,7 @@ import { SellerLeadScoreCard } from "./score-card";
 import { PropertyDetailsForm } from "./property-details-form";
 import { ValuationSyncCard } from "./valuation-sync-card";
 import { buildSellerLeadDetailViewModel } from "./seller-lead-detail-view-model";
+import { CreateClientSpaceButton } from "./create-client-space-button";
 
 export const dynamic = "force-dynamic";
 
@@ -62,6 +63,25 @@ export default async function SellerLeadDetailPage({ params }: SellerLeadDetailP
   if (!lead) notFound();
   const viewModel = buildSellerLeadDetailViewModel(lead, latestScoreEvent);
 
+  const { data: sellerProjectData } = await supabaseAdmin
+    .from("seller_projects")
+    .select("id, client_project_id")
+    .eq("seller_lead_id", lead.id)
+    .maybeSingle();
+  const sellerProject = sellerProjectData as { id: string; client_project_id: string } | null;
+
+  let clientProfileId: string | null = null;
+  if (sellerProject) {
+    const { data: cp } = await supabaseAdmin
+      .from("client_projects")
+      .select("client_profile_id")
+      .eq("id", sellerProject.client_project_id)
+      .single();
+    clientProfileId = (cp as { client_profile_id?: string } | null)?.client_profile_id ?? null;
+  }
+
+  const canCreateClient = hasAdminPermission(context, "clients.create");
+
   return (
     <AdminShell
       title={lead.full_name}
@@ -87,6 +107,24 @@ export default async function SellerLeadDetailPage({ params }: SellerLeadDetailP
             Cree le {formatDate(lead.created_at)} - {lead.email}
           </p>
         </section>
+
+        {canCreateClient && (
+          <section className="rounded-2xl border border-[rgba(20,20,70,0.22)] bg-white/70 p-6">
+            <h2 className="sillage-section-title">Espace client</h2>
+            {sellerProject && clientProfileId ? (
+              <p className="mt-4">
+                <Link
+                  href={`/admin/clients/${clientProfileId}/projects/${sellerProject.client_project_id}`}
+                  className="sillage-btn inline-block rounded px-4 py-2 text-sm"
+                >
+                  Ouvrir l&apos;espace client vendeur
+                </Link>
+              </p>
+            ) : (
+              <CreateClientSpaceButton sellerLeadId={lead.id} />
+            )}
+          </section>
+        )}
 
         <section className="rounded-2xl border border-[rgba(20,20,70,0.22)] p-6 space-y-4">
           <h2 className="sillage-section-title">Pilotage commercial</h2>

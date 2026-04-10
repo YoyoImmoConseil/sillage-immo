@@ -32,12 +32,20 @@ export type SellerEstimateValuationData = {
   livingSpaceArea: number | null;
 };
 
+export type SellerPortalAccessData = {
+  mode: "invite" | "login";
+  email: string;
+  nextPath: string;
+  inviteToken: string | null;
+};
+
 export type SellerEstimateAndCreateSuccessResponse = {
   ok: true;
   data: {
     createStatus: "created" | "reused";
     thankYouAccessToken: string;
     valuation: SellerEstimateValuationData;
+    portalAccess: SellerPortalAccessData | null;
   };
 };
 

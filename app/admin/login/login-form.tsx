@@ -2,9 +2,13 @@
 
 import Link from "next/link";
 import { useState, useTransition } from "react";
-import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { createAdminOAuthBrowserClient } from "@/lib/supabase/admin-oauth-browser";
 
-export function AdminLoginForm({ canBootstrap }: { canBootstrap: boolean }) {
+export function AdminLoginForm({
+  canBootstrap,
+}: {
+  canBootstrap: boolean;
+}) {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -13,8 +17,11 @@ export function AdminLoginForm({ canBootstrap }: { canBootstrap: boolean }) {
 
     startTransition(async () => {
       try {
-        const supabase = createSupabaseBrowserClient();
-        const redirectTo = `${window.location.origin}/auth/callback?next=/admin`;
+        const supabase = createAdminOAuthBrowserClient();
+        const redirectTo = `${window.location.origin}/auth/callback`;
+        try {
+          window.sessionStorage.setItem("admin-auth-next", "/admin");
+        } catch {}
         const { error: signInError } = await supabase.auth.signInWithOAuth({
           provider: "google",
           options: { redirectTo },

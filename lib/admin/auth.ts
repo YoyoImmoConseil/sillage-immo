@@ -1,7 +1,8 @@
 import "server-only";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
+import { ADMIN_ACCESS_TOKEN_COOKIE } from "@/lib/admin/session";
 import { serverEnv } from "@/lib/env/server";
 import { parseAdminProfileMetadata } from "@/services/admin/admin-profile-metadata";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -74,6 +75,7 @@ const getAdminContextByUser = async (user: User): Promise<AdminContext | null> =
           phone: metadata.phone,
           bio: metadata.bio,
           avatarUrl: metadata.avatarUrl,
+          bookingUrl: metadata.bookingUrl,
         }
       : await linkAdminProfileToAuthUser({
           authUserId: user.id,
@@ -111,6 +113,20 @@ export const getAdminRequestContext = async (request: Request): Promise<AdminCon
     return buildContext("secret", "administrateur", null);
   }
 
+  const accessToken = request.headers.get("cookie")?.match(
+    new RegExp(`(?:^|; )${ADMIN_ACCESS_TOKEN_COOKIE}=([^;]+)`)
+  )?.[1];
+
+  if (accessToken) {
+    const {
+      data: { user },
+    } = await supabaseAdmin.auth.getUser(decodeURIComponent(accessToken));
+
+    if (user) {
+      return getAdminContextByUser(user);
+    }
+  }
+
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -124,6 +140,19 @@ export const getAdminPageContext = async (): Promise<AdminContext | null> => {
   const requestHeaders = await headers();
   if (isAdminHeaders(requestHeaders)) {
     return buildContext("secret", "administrateur", null);
+  }
+
+  const cookieStore = await cookies();
+  const accessToken = cookieStore.get(ADMIN_ACCESS_TOKEN_COOKIE)?.value;
+
+  if (accessToken) {
+    const {
+      data: { user },
+    } = await supabaseAdmin.auth.getUser(accessToken);
+
+    if (user) {
+      return getAdminContextByUser(user);
+    }
   }
 
   const supabase = await createSupabaseServerClient();

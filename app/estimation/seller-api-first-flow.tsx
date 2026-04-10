@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import type {
   SellerEstimateAndCreateResponse,
+  SellerPortalAccessData,
   SellerSendOtpResponse,
   SellerVerifyOtpResponse,
 } from "@/types/api/seller";
@@ -29,6 +31,11 @@ export function SellerApiFirstFlow() {
   const [previewCode, setPreviewCode] = useState<string | null>(null);
   const [thankYouAccessToken, setThankYouAccessToken] = useState<string | null>(null);
   const [valuation, setValuation] = useState<ValuationResult | null>(null);
+  const [portalAccess, setPortalAccess] = useState<SellerPortalAccessData | null>(null);
+  const [portalAccessStatus, setPortalAccessStatus] = useState<
+    "idle" | "sending" | "sent" | "error"
+  >("idle");
+  const [portalAccessMessage, setPortalAccessMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [isEstimating, setIsEstimating] = useState(false);
   const [estimateProgress, setEstimateProgress] = useState(0);
@@ -127,6 +134,45 @@ export function SellerApiFirstFlow() {
     }
   };
 
+  const sendPortalMagicLink = async (access: SellerPortalAccessData) => {
+    setPortalAccessStatus("sending");
+    setPortalAccessMessage("Nous envoyons votre lien d'acces a l'espace client.");
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const redirectUrl = new URL("/espace-client/auth/confirm", window.location.origin);
+      redirectUrl.searchParams.set("next", access.nextPath);
+      if (access.inviteToken) {
+        redirectUrl.searchParams.set("inviteToken", access.inviteToken);
+      }
+
+      const { error: signInError } = await supabase.auth.signInWithOtp({
+        email: access.email,
+        options: {
+          shouldCreateUser: true,
+          emailRedirectTo: redirectUrl.toString(),
+        },
+      });
+
+      if (signInError) {
+        setPortalAccessStatus("error");
+        setPortalAccessMessage(
+          "Votre estimation est prete, mais nous n'avons pas pu envoyer automatiquement le lien d'acces."
+        );
+        return;
+      }
+
+      setPortalAccessStatus("sent");
+      setPortalAccessMessage(
+        `Un lien d'acces a votre espace client vient d'etre envoye a ${access.email}.`
+      );
+    } catch {
+      setPortalAccessStatus("error");
+      setPortalAccessMessage(
+        "Votre estimation est prete, mais l'envoi automatique du lien d'acces a echoue."
+      );
+    }
+  };
+
   const estimateAndCreate = async () => {
     if (!verificationToken) {
       setError("Email non verifie. Merci de valider le code.");
@@ -136,6 +182,9 @@ export function SellerApiFirstFlow() {
     setError(null);
     setLoading(true);
     setIsEstimating(true);
+    setPortalAccess(null);
+    setPortalAccessStatus("idle");
+    setPortalAccessMessage(null);
     try {
       const firstName = form.firstName.trim();
       const lastName = form.lastName.trim();
@@ -189,8 +238,12 @@ export function SellerApiFirstFlow() {
 
       setThankYouAccessToken(data.data.thankYouAccessToken);
       setValuation(data.data.valuation as ValuationResult);
+      setPortalAccess(data.data.portalAccess ?? null);
       setEstimateProgress(100);
       setStep("result");
+      if (data.data.portalAccess) {
+        void sendPortalMagicLink(data.data.portalAccess);
+      }
     } catch {
       setError("Erreur reseau pendant le calcul d'estimation.");
     } finally {
@@ -235,6 +288,12 @@ export function SellerApiFirstFlow() {
           valuation={valuation}
           form={form}
           thankYouAccessToken={thankYouAccessToken}
+          portalAccessEmail={portalAccess?.email ?? null}
+          portalAccessStatus={portalAccessStatus}
+          portalAccessMessage={portalAccessMessage}
+          onResendPortalAccess={
+            portalAccess ? () => void sendPortalMagicLink(portalAccess) : undefined
+          }
         />
       ) : null}
 

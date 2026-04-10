@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
-import { createSellerLead } from "@/services/sellers/seller-lead.service";
+import {
+  createSellerLead,
+  hydrateSellerLeadFromCapture,
+} from "@/services/sellers/seller-lead.service";
+import { emitClientProjectEvent } from "@/services/clients/client-project.service";
+import { ensureSellerPortalAccessFromLead } from "@/services/clients/seller-project.service";
 import { buildSellerPropertyDetails } from "@/services/sellers/seller-metadata";
+import { ensureEstimationProperty } from "@/services/properties/estimation-property.service";
+import { createValuationRecord } from "@/services/valuation/valuation-record.service";
 import { computeLoupeValuation } from "@/services/valuation/loupe-valuation.service";
 import { consumeSellerEmailVerificationToken } from "@/services/sellers/seller-email-verification.service";
 import { createMerciVendeurAccessToken } from "@/lib/sellers/merci-vendeur-access";
@@ -17,7 +24,6 @@ import {
 } from "@/types/domain/sellers";
 import type {
   SellerApiErrorResponse,
-  SellerEstimateAndCreateDuplicateResponse,
   SellerEstimateAndCreateSuccessResponse,
 } from "@/types/api/seller";
 
@@ -270,6 +276,7 @@ export const POST = async (request: Request) => {
     diagnosticsSupportNeeded: input.diagnosticsSupportNeeded,
     syndicDocsReady: input.syndicDocsReady,
     syndicSupportNeeded: input.syndicSupportNeeded,
+    estimatedPrice: valuation.valuationPrice ?? valuation.valuationPriceLow ?? valuation.valuationPriceHigh ?? undefined,
     message: input.message,
     source: "website_estimation_api_first",
     metadata,
@@ -287,31 +294,103 @@ export const POST = async (request: Request) => {
     return NextResponse.json(payload, { status: 500 });
   }
 
-  if (created.status === "duplicate_blocked") {
-    const payload: SellerEstimateAndCreateDuplicateResponse = {
-      ok: false,
-      code: "duplicate_blocked",
-      message: created.reason,
-      data: {
-        createStatus: "duplicate_blocked",
+  const sellerLeadId = created.sellerLeadId;
+  const createStatus = created.status === "duplicate_blocked" ? "reused" : created.status;
+  await hydrateSellerLeadFromCapture({
+    sellerLeadId,
+    fullName: resolvedFullName,
+    email: input.email,
+    phone: input.phone,
+    propertyType: input.propertyType,
+    propertyAddress: input.propertyAddress,
+    city: input.city,
+    postalCode: input.postalCode,
+    timeline: input.timeline,
+    occupancyStatus: input.occupancyStatus,
+    estimatedPrice:
+      valuation.valuationPrice ?? valuation.valuationPriceLow ?? valuation.valuationPriceHigh ?? null,
+    diagnosticsReady: input.diagnosticsReady,
+    diagnosticsSupportNeeded: input.diagnosticsSupportNeeded,
+    syndicDocsReady: input.syndicDocsReady,
+    syndicSupportNeeded: input.syndicSupportNeeded,
+    message: input.message,
+    metadata,
+  });
+
+  let portalAccess = null;
+  let provisionedPortal:
+    | Awaited<ReturnType<typeof ensureSellerPortalAccessFromLead>>
+    | null = null;
+  try {
+    provisionedPortal = await ensureSellerPortalAccessFromLead(sellerLeadId);
+    portalAccess = provisionedPortal.portalAccess;
+  } catch {
+    portalAccess = null;
+  }
+
+  try {
+    const ensuredProperty = await ensureEstimationProperty({
+      sellerLeadId,
+      clientProjectId: provisionedPortal?.clientProjectId ?? null,
+    });
+
+    const valuationRecord = await createValuationRecord({
+      clientProjectId: provisionedPortal?.clientProjectId ?? null,
+      sellerProjectId: provisionedPortal?.sellerProjectId ?? null,
+      sellerLeadId,
+      propertyId: ensuredProperty.propertyId,
+      source: "seller_estimation_api_first",
+      sourceRef: `${sellerLeadId}:${Date.now()}`,
+      provider: "loupe",
+      valuationKind: "seller_estimation",
+      estimatedPrice: valuation.valuationPrice,
+      valuationLow: valuation.valuationPriceLow,
+      valuationHigh: valuation.valuationPriceHigh,
+      valuatedAt: new Date().toISOString(),
+      rawPayload: valuation as unknown as Record<string, unknown>,
+      metadata: {
+        source: "direct_form",
+        verification_token_consumed: true,
       },
-    };
-    if (idempotencyKey.trim().length > 0) {
-      try {
-        await persistIdempotencyResponse("seller.estimate_and_create", idempotencyKey, 409, payload);
-      } catch {
-        // no-op
-      }
+    });
+
+    if (provisionedPortal?.clientProjectId) {
+      await emitClientProjectEvent({
+        clientProjectId: provisionedPortal.clientProjectId,
+        sellerProjectId: provisionedPortal.sellerProjectId,
+        eventName: "project_property.linked_from_estimation",
+        eventCategory: "property",
+        actorType: "system",
+        payload: {
+          property_id: ensuredProperty.propertyId,
+          seller_lead_id: sellerLeadId,
+        },
+      });
+      await emitClientProjectEvent({
+        clientProjectId: provisionedPortal.clientProjectId,
+        sellerProjectId: provisionedPortal.sellerProjectId,
+        eventName: "valuation.recorded",
+        eventCategory: "valuation",
+        actorType: "system",
+        payload: {
+          valuation_id: valuationRecord.id,
+          property_id: ensuredProperty.propertyId,
+          seller_lead_id: sellerLeadId,
+          provider: "loupe",
+        },
+      });
     }
-    return NextResponse.json(payload, { status: 409 });
+  } catch {
+    // no-op: first-class valuation storage is best effort while the lead creation remains the primary contract
   }
 
   const payload: SellerEstimateAndCreateSuccessResponse = {
     ok: true,
     data: {
-      createStatus: created.status,
+      createStatus,
       thankYouAccessToken: createMerciVendeurAccessToken(created.sellerLeadId),
       valuation,
+      portalAccess,
     },
   };
 

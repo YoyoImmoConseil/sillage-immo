@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { createAdminOAuthBrowserClient } from "@/lib/supabase/admin-oauth-browser";
 
 export function AdminBootstrapForm() {
   const [firstName, setFirstName] = useState("");
@@ -36,8 +36,11 @@ export function AdminBootstrapForm() {
           return;
         }
 
-        const supabase = createSupabaseBrowserClient();
-        const redirectTo = `${window.location.origin}/auth/callback?next=/admin`;
+        const supabase = createAdminOAuthBrowserClient();
+        const redirectTo = `${window.location.origin}/auth/callback`;
+        try {
+          window.sessionStorage.setItem("admin-auth-next", "/admin");
+        } catch {}
         const { error: signInError } = await supabase.auth.signInWithOAuth({
           provider: "google",
           options: { redirectTo },

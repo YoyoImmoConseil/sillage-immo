@@ -13,6 +13,7 @@ type PatchBody = {
   phone?: string;
   bio?: string;
   avatarUrl?: string | null;
+  bookingUrl?: string;
 };
 
 export async function GET(request: Request, { params }: RouteParams) {
@@ -68,6 +69,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       phone: body?.phone,
       bio: body?.bio,
       avatarUrl: body?.avatarUrl,
+      bookingUrl: body?.bookingUrl,
     });
 
     return NextResponse.json({ ok: true });

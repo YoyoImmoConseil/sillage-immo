@@ -12,7 +12,9 @@ const generateOtp = () => String(randomInt(100000, 999999));
 
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
 
-export const startSellerEmailVerification = async (email: string) => {
+export const startSellerEmailVerification = async (
+  email: string
+) => {
   const normalizedEmail = normalizeEmail(email);
   const code = generateOtp();
   const codeHash = hashValue(code);
