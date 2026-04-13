@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import type {
   SellerEstimateAndCreateResponse,
   SellerPortalAccessData,
@@ -138,25 +137,24 @@ export function SellerApiFirstFlow() {
     setPortalAccessStatus("sending");
     setPortalAccessMessage("Nous envoyons votre lien d'acces a l'espace client.");
     try {
-      const supabase = createSupabaseBrowserClient();
-      const redirectUrl = new URL("/espace-client/auth/confirm", window.location.origin);
-      redirectUrl.searchParams.set("next", access.nextPath);
-      if (access.inviteToken) {
-        redirectUrl.searchParams.set("inviteToken", access.inviteToken);
-      }
-
-      const { error: signInError } = await supabase.auth.signInWithOtp({
-        email: access.email,
-        options: {
-          shouldCreateUser: true,
-          emailRedirectTo: redirectUrl.toString(),
+      const response = await fetch("/api/espace-client/send-magic-link", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
+        body: JSON.stringify({
+          email: access.email,
+          nextPath: access.nextPath,
+          inviteToken: access.inviteToken,
+        }),
       });
+      const data = (await response.json()) as { ok: boolean; message?: string };
 
-      if (signInError) {
+      if (!response.ok || !data.ok) {
         setPortalAccessStatus("error");
         setPortalAccessMessage(
-          "Votre estimation est prete, mais nous n'avons pas pu envoyer automatiquement le lien d'acces."
+          data.message ??
+            "Votre estimation est prete, mais nous n'avons pas pu envoyer automatiquement le lien d'acces."
         );
         return;
       }
