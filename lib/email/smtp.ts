@@ -2,6 +2,13 @@ import "server-only";
 import nodemailer from "nodemailer";
 import { Resend } from "resend";
 
+type EmailPayload = {
+  to: string;
+  subject: string;
+  text: string;
+  html: string;
+};
+
 const isSmtpConfigured = () => {
   return Boolean(
     process.env.SMTP_HOST &&
@@ -40,7 +47,7 @@ const getFromEmail = () => {
   return fromEmail?.trim() || null;
 };
 
-const buildOtpEmailPayload = (email: string, code: string) => {
+const buildOtpEmailPayload = (email: string, code: string): EmailPayload => {
   return {
     to: email,
     subject: "Code de verification Sillage Immo",
@@ -49,7 +56,46 @@ const buildOtpEmailPayload = (email: string, code: string) => {
   };
 };
 
-const sendWithResend = async (email: string, code: string) => {
+const buildPortalAccessEmailPayload = (
+  email: string,
+  accessLink: string,
+  context: "invite" | "login"
+): EmailPayload => {
+  const subject =
+    context === "invite"
+      ? "Activez votre espace client Sillage Immo"
+      : "Votre lien de connexion Sillage Immo";
+  const intro =
+    context === "invite"
+      ? "Votre espace client Sillage Immo est pret. Cliquez sur le bouton ci-dessous pour l'activer."
+      : "Cliquez sur le bouton ci-dessous pour vous connecter a votre espace client Sillage Immo.";
+
+  return {
+    to: email,
+    subject,
+    text: `${intro}\n\n${accessLink}\n\nCe lien est personnel et expire automatiquement.`,
+    html: `
+      <div style="font-family:Arial,sans-serif;line-height:1.5;color:#141446;">
+        <p>Bonjour,</p>
+        <p>${intro}</p>
+        <p style="margin:24px 0;">
+          <a
+            href="${accessLink}"
+            style="display:inline-block;padding:12px 20px;background:#141446;color:#f4ece4;text-decoration:none;border-radius:8px;font-weight:600;"
+          >
+            Acceder a mon espace client
+          </a>
+        </p>
+        <p>Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :</p>
+        <p><a href="${accessLink}">${accessLink}</a></p>
+        <p style="color:#5b5b78;font-size:13px;">Ce lien est personnel et expire automatiquement.</p>
+        <p>L'equipe Sillage Immo</p>
+      </div>
+    `,
+  };
+};
+
+const sendWithResend = async (payload: EmailPayload) => {
   if (!isResendConfigured()) {
     return { sent: false as const, reason: "resend_not_configured" as const };
   }
@@ -60,7 +106,6 @@ const sendWithResend = async (email: string, code: string) => {
   }
 
   const resend = new Resend(process.env.RESEND_API_KEY);
-  const payload = buildOtpEmailPayload(email, code);
   const { error } = await resend.emails.send({
     from: `${getFromName()} <${fromEmail}>`,
     ...payload,
@@ -74,8 +119,9 @@ const sendWithResend = async (email: string, code: string) => {
 };
 
 export const sendOtpEmail = async (email: string, code: string) => {
+  const payload = buildOtpEmailPayload(email, code);
   if (isResendConfigured()) {
-    return sendWithResend(email, code);
+    return sendWithResend(payload);
   }
 
   const transporter = getTransporter();
@@ -88,7 +134,34 @@ export const sendOtpEmail = async (email: string, code: string) => {
     return { sent: false as const, reason: "email_from_not_configured" as const };
   }
 
-  const payload = buildOtpEmailPayload(email, code);
+  await transporter.sendMail({
+    from: `${getFromName()} <${fromEmail}>`,
+    ...payload,
+  });
+
+  return { sent: true as const, provider: "smtp" as const };
+};
+
+export const sendClientPortalAccessEmail = async (input: {
+  email: string;
+  accessLink: string;
+  context: "invite" | "login";
+}) => {
+  const payload = buildPortalAccessEmailPayload(input.email, input.accessLink, input.context);
+
+  if (isResendConfigured()) {
+    return sendWithResend(payload);
+  }
+
+  const transporter = getTransporter();
+  if (!transporter) {
+    return { sent: false as const, reason: "email_not_configured" as const };
+  }
+
+  const fromEmail = getFromEmail();
+  if (!fromEmail) {
+    return { sent: false as const, reason: "email_from_not_configured" as const };
+  }
 
   await transporter.sendMail({
     from: `${getFromName()} <${fromEmail}>`,
