@@ -269,7 +269,7 @@ export function SellerApiFirstFlow() {
         onSendOtp={() => void sendOtp()}
       />
 
-      {step !== "form" ? (
+      {step === "verify" ? (
         <SellerEmailVerificationSection
           otp={otp}
           loading={loading}
