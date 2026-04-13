@@ -35,6 +35,27 @@ export async function GET(request: Request) {
   const inviteToken = requestUrl.searchParams.get("inviteToken");
   const otpType = getSafeOtpType(requestUrl.searchParams.get("type")) ?? "email";
 
+  // #region agent log
+  fetch("http://127.0.0.1:7760/ingest/34db18ce-fe4a-4a99-91a2-c9c0aaded505", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "cada68" },
+    body: JSON.stringify({
+      sessionId: "cada68",
+      runId: "pre-fix",
+      hypothesisId: "H3",
+      location: "app/espace-client/auth/confirm/route.ts:37",
+      message: "portal auth confirm request received",
+      data: {
+        hasTokenHash: Boolean(tokenHash),
+        hasInviteToken: Boolean(inviteToken),
+        otpType,
+        nextPath,
+      },
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion
+
   const redirectToLogin = (error: string) => {
     const loginUrl = new URL("/espace-client/login", requestUrl.origin);
     loginUrl.searchParams.set("error", error);
@@ -51,6 +72,24 @@ export async function GET(request: Request) {
   };
 
   if (!tokenHash) {
+    // #region agent log
+    fetch("http://127.0.0.1:7760/ingest/34db18ce-fe4a-4a99-91a2-c9c0aaded505", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "cada68" },
+      body: JSON.stringify({
+        sessionId: "cada68",
+        runId: "pre-fix",
+        hypothesisId: "H1",
+        location: "app/espace-client/auth/confirm/route.ts:60",
+        message: "portal auth confirm missing token hash",
+        data: {
+          hasInviteToken: Boolean(inviteToken),
+          otpType,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
     return inviteToken ? redirectToInvitation("missing_token_hash") : redirectToLogin("missing_token_hash");
   }
 
