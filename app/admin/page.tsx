@@ -11,32 +11,32 @@ export const dynamic = "force-dynamic";
 const cards = [
   {
     href: "/admin/users",
-    title: "Utilisateurs & roles",
-    description: "Inviter un membre, activer/desactiver un acces et attribuer les roles.",
+    title: "Utilisateurs & rôles",
+    description: "Inviter un membre, activer/désactiver un accès et attribuer les rôles.",
     permission: "admin.users.view" as AdminPermission,
   },
   {
     href: "/admin/clients",
     title: "Clients vendeurs",
-    description: "Gerer les espaces client, rattacher leads et biens, affecter les conseillers et inviter les clients.",
+    description: "Gérer les espaces client, rattacher leads et biens, affecter les conseillers et inviter les clients.",
     permission: "clients.view" as AdminPermission,
   },
   {
     href: "/admin/leads",
     title: "Recherche leads",
-    description: "Rechercher dans les leads vendeurs et acquereurs depuis une vue transversale.",
+    description: "Rechercher dans les leads vendeurs et acquéreurs depuis une vue transversale.",
     permission: "leads.sellers.view" as AdminPermission,
   },
   {
     href: "/admin/properties",
     title: "Biens",
-    description: "Piloter les biens manuels et consulter les biens synchronises depuis SweepBright.",
+    description: "Piloter les biens manuels et consulter les biens synchronisés depuis SweepBright.",
     permission: "properties.view" as AdminPermission,
   },
   {
     href: "/admin/buyer-leads",
-    title: "Matching acquereurs",
-    description: "Enrichir les criteres et recalculer les rapprochements acquereur ↔ biens.",
+    title: "Matching acquéreurs",
+    description: "Enrichir les critères et recalculer les rapprochements acquéreur ↔ biens.",
     permission: "leads.buyers.view" as AdminPermission,
   },
 ];
@@ -55,7 +55,7 @@ export default async function AdminDashboardPage() {
     warningMessage =
       error instanceof TimeoutError
         ? error.message
-        : "Impossible de verifier la session admin pour le moment.";
+        : "Impossible de vérifier la session admin pour le moment.";
   }
 
   if (!context && !warningMessage) {
@@ -66,7 +66,7 @@ export default async function AdminDashboardPage() {
       } = await withTimeout(
         supabase.auth.getUser(),
         4000,
-        "La verification de la session Google prend trop de temps."
+        "La vérification de la session Google prend trop de temps."
       );
 
       if (user) {
@@ -92,7 +92,7 @@ export default async function AdminDashboardPage() {
             {warningMessage ?? "La page est temporairement indisponible."}
           </p>
           <Link href="/admin/login" className="mt-4 inline-block text-sm underline text-[#141446]">
-            Retour a la connexion admin
+            Retour à la connexion admin
           </Link>
         </section>
       </main>
@@ -104,7 +104,7 @@ export default async function AdminDashboardPage() {
   return (
     <AdminShell
       title="Dashboard admin"
-      description="Point d'entree du back-office RBAC Sillage Immo."
+      description="Point d'entrée du back-office RBAC Sillage Immo."
       role={context.role}
       profileName={context.profile?.fullName ?? context.profile?.email ?? "Mode admin"}
     >

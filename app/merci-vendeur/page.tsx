@@ -65,7 +65,7 @@ export default async function MerciVendeurPage({ searchParams }: MerciVendeurPag
     <main className="min-h-screen">
       <section className="bg-[#141446] text-[#f4ece4]">
         <div className="w-full px-6 py-12 md:px-10 xl:px-14 2xl:px-20">
-          <h1 className="text-2xl font-semibold">Merci, votre demande est bien enregistree.</h1>
+          <h1 className="text-2xl font-semibold">Merci, votre demande est bien enregistrée.</h1>
         </div>
       </section>
       <section className="bg-[#f4ece4]">
@@ -82,7 +82,7 @@ export default async function MerciVendeurPage({ searchParams }: MerciVendeurPag
                 <p className="sillage-editorial-text text-[#141446]">
                   {valuation.valuationPriceLow !== null || valuation.valuationPriceHigh !== null ? (
                     <>
-                      Fourchette estimee:{" "}
+                      Fourchette estimée :{" "}
                       <strong>
                         {valuation.valuationPriceLow !== null
                           ? formatEur(valuation.valuationPriceLow)
@@ -95,17 +95,17 @@ export default async function MerciVendeurPage({ searchParams }: MerciVendeurPag
                     </>
                   ) : valuation.valuationPrice !== null ? (
                     <>
-                      Valeur estimee indicative: <strong>{formatEur(valuation.valuationPrice)}</strong>
+                      Valeur estimée indicative : <strong>{formatEur(valuation.valuationPrice)}</strong>
                     </>
                   ) : (
-                    "Votre estimation automatique est en cours de finalisation. Un conseiller Sillage Immo vous partage tres rapidement une fourchette fiable et contextualisee."
+                    "Votre estimation automatique est en cours de finalisation. Un conseiller Sillage Immo vous partage très rapidement une fourchette fiable et contextualisée."
                   )}
                 </p>
               </div>
             ) : null}
             <p className="sillage-editorial-text opacity-75">
               Un conseiller Sillage Immo vous recontacte rapidement pour cadrer la mise en vente
-              et vous accompagner pas a pas jusqu&apos;a la concretisation de votre projet.
+              et vous accompagner pas à pas jusqu&apos;à la concrétisation de votre projet.
             </p>
             <Link className="sillage-btn inline-block rounded px-4 py-2" href="/estimation">
               Revenir au parcours vendeur

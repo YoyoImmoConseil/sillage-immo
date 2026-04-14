@@ -18,7 +18,7 @@ export function SellerResultChat({ accessToken }: Props) {
   const [chat, setChat] = useState<UiMessage[]>([
     {
       role: "assistant",
-      text: "Je peux repondre a vos questions sur la vente, les diagnostics, les delais et l'accompagnement Sillage Immo.",
+      text: "Je peux répondre à vos questions sur la vente, les diagnostics, les délais et l'accompagnement Sillage Immo.",
     },
   ]);
   const [needsHuman, setNeedsHuman] = useState(false);
@@ -47,13 +47,13 @@ export function SellerResultChat({ accessToken }: Props) {
         data?: { answer?: string; escalateToHuman?: boolean };
       };
       if (!response.ok || !data.ok || !data.data?.answer) {
-        setError(data.message ?? "Reponse temporairement indisponible.");
+        setError(data.message ?? "Réponse temporairement indisponible.");
         return;
       }
       setChat((prev) => [...prev, { role: "assistant", text: data.data?.answer ?? "" }]);
       setNeedsHuman(Boolean(data.data?.escalateToHuman));
     } catch {
-      setError("Erreur reseau, merci de reessayer.");
+      setError("Erreur réseau, merci de réessayer.");
     } finally {
       setLoading(false);
     }
@@ -82,7 +82,7 @@ export function SellerResultChat({ accessToken }: Props) {
       <div className="flex gap-2">
         <input
           className="flex-1 rounded border px-3 py-2 text-sm"
-          placeholder="Ex: quels diagnostics dois-je preparer ?"
+          placeholder="Ex : quels diagnostics dois-je préparer ?"
           value={message}
           onChange={(event) => setMessage(event.target.value)}
           onKeyDown={(event) => {
@@ -105,7 +105,7 @@ export function SellerResultChat({ accessToken }: Props) {
 
       {needsHuman ? (
         <p className="text-xs text-amber-700">
-          Sujet sensible detecte: nous vous recommandons un rappel humain prioritaire.
+          Sujet sensible détecté : nous vous recommandons un rappel humain prioritaire.
         </p>
       ) : null}
       {error ? <p className="text-xs text-red-700">{error}</p> : null}

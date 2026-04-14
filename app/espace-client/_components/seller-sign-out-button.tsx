@@ -31,7 +31,7 @@ export function SellerSignOutButton() {
         disabled={isPending}
         className="rounded border border-[#141446]/20 px-3 py-2 text-sm text-[#141446] disabled:opacity-60"
       >
-        {isPending ? "Deconnexion..." : "Se deconnecter"}
+        {isPending ? "Déconnexion..." : "Se déconnecter"}
       </button>
       {error ? <span className="text-xs text-red-700">{error}</span> : null}
     </div>

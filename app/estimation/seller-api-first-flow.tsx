@@ -127,7 +127,7 @@ export function SellerApiFirstFlow() {
       }
       setVerificationToken(data.data.verificationToken);
     } catch {
-      setError("Erreur reseau pendant la verification du code.");
+      setError("Erreur réseau pendant la vérification du code.");
     } finally {
       setLoading(false);
     }
@@ -135,7 +135,7 @@ export function SellerApiFirstFlow() {
 
   const sendPortalMagicLink = async (access: SellerPortalAccessData) => {
     setPortalAccessStatus("sending");
-    setPortalAccessMessage("Nous envoyons votre lien d'acces a l'espace client.");
+    setPortalAccessMessage("Nous envoyons votre lien d'accès à l'espace client.");
     try {
       const response = await fetch("/api/espace-client/send-magic-link", {
         method: "POST",
@@ -154,26 +154,26 @@ export function SellerApiFirstFlow() {
         setPortalAccessStatus("error");
         setPortalAccessMessage(
           data.message ??
-            "Votre estimation est prete, mais nous n'avons pas pu envoyer automatiquement le lien d'acces."
+            "Votre estimation est prête, mais nous n'avons pas pu envoyer automatiquement le lien d'accès."
         );
         return;
       }
 
       setPortalAccessStatus("sent");
       setPortalAccessMessage(
-        `Un lien d'acces a votre espace client vient d'etre envoye a ${access.email}.`
+        `Un lien d'accès à votre espace client vient d'être envoyé à ${access.email}.`
       );
     } catch {
       setPortalAccessStatus("error");
       setPortalAccessMessage(
-        "Votre estimation est prete, mais l'envoi automatique du lien d'acces a echoue."
+        "Votre estimation est prête, mais l'envoi automatique du lien d'accès a échoué."
       );
     }
   };
 
   const estimateAndCreate = async () => {
     if (!verificationToken) {
-      setError("Email non verifie. Merci de valider le code.");
+      setError("Email non vérifié. Merci de valider le code.");
       return;
     }
 
@@ -255,8 +255,8 @@ export function SellerApiFirstFlow() {
       <section className="rounded-2xl bg-[#141446] p-6 text-[#f4ece4] space-y-4">
         <h1 className="text-2xl font-semibold">Estimation vendeur Sillage Immo</h1>
         <p className="text-sm opacity-75">
-          Un parcours clair, guide et securise: vous renseignez votre bien une fois, nous
-          verifions votre email, puis nous produisons votre estimation pour cadrer la suite.
+          Un parcours clair, guidé et sécurisé : vous renseignez votre bien une fois, nous
+          vérifions votre email, puis nous produisons votre estimation pour cadrer la suite.
         </p>
       </section>
 

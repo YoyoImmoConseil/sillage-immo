@@ -91,7 +91,7 @@ export function PropertyForm({ mode, propertyId, initial, source }: PropertyForm
           return;
         }
 
-        setMessage("Bien enregistre.");
+        setMessage("Bien enregistré.");
         router.refresh();
       } catch {
         setError("Enregistrement impossible.");
@@ -111,7 +111,7 @@ export function PropertyForm({ mode, propertyId, initial, source }: PropertyForm
           setError(payload.message ?? "Matching impossible.");
           return;
         }
-        setMessage(`${payload.count ?? 0} rapprochement(s) recalcules.`);
+        setMessage(`${payload.count ?? 0} rapprochement(s) recalculés.`);
         router.refresh();
       } catch {
         setError("Matching impossible.");
@@ -126,10 +126,10 @@ export function PropertyForm({ mode, propertyId, initial, source }: PropertyForm
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-semibold text-[#141446]">
-            {mode === "create" ? "Nouveau bien manuel" : "Edition du bien"}
+            {mode === "create" ? "Nouveau bien manuel" : "Édition du bien"}
           </h2>
           <p className="text-sm text-[#141446]/70">
-            Source: {source}. {isReadOnly ? "Le contenu SweepBright reste en lecture seule." : "Edition locale autorisee."}
+            Source : {source}. {isReadOnly ? "Le contenu SweepBright reste en lecture seule." : "Édition locale autorisée."}
           </p>
         </div>
       </div>
@@ -167,7 +167,7 @@ export function PropertyForm({ mode, propertyId, initial, source }: PropertyForm
           <input className="mt-1 w-full rounded border px-3 py-2" value={form.livingArea} onChange={(event) => patch("livingArea", event.target.value)} disabled={isReadOnly} />
         </label>
         <label className="text-sm">
-          Pieces
+          Pièces
           <input className="mt-1 w-full rounded border px-3 py-2" value={form.rooms} onChange={(event) => patch("rooms", event.target.value)} disabled={isReadOnly} />
         </label>
         <label className="text-sm">
@@ -175,13 +175,13 @@ export function PropertyForm({ mode, propertyId, initial, source }: PropertyForm
           <input className="mt-1 w-full rounded border px-3 py-2" value={form.bedrooms} onChange={(event) => patch("bedrooms", event.target.value)} disabled={isReadOnly} />
         </label>
         <label className="text-sm">
-          Etage
+          Étage
           <input className="mt-1 w-full rounded border px-3 py-2" value={form.floor} onChange={(event) => patch("floor", event.target.value)} disabled={isReadOnly} />
         </label>
         <label className="text-sm">
           Terrasse
           <select className="mt-1 w-full rounded border px-3 py-2" value={form.hasTerrace} onChange={(event) => patch("hasTerrace", event.target.value)} disabled={isReadOnly}>
-            <option value="">Indifferent</option>
+            <option value="">Indifférent</option>
             <option value="true">Oui</option>
             <option value="false">Non</option>
           </select>
@@ -189,7 +189,7 @@ export function PropertyForm({ mode, propertyId, initial, source }: PropertyForm
         <label className="text-sm">
           Ascenseur
           <select className="mt-1 w-full rounded border px-3 py-2" value={form.hasElevator} onChange={(event) => patch("hasElevator", event.target.value)} disabled={isReadOnly}>
-            <option value="">Indifferent</option>
+            <option value="">Indifférent</option>
             <option value="true">Oui</option>
             <option value="false">Non</option>
           </select>

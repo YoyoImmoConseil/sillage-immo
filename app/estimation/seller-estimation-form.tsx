@@ -94,7 +94,7 @@ export function SellerEstimationForm() {
 
       router.push(`/merci-vendeur?access=${encodeURIComponent(data.data.thankYouAccessToken)}`);
     } catch {
-      setError("Une erreur reseau est survenue. Merci de reessayer.");
+      setError("Une erreur réseau est survenue. Merci de réessayer.");
     } finally {
       setSubmitting(false);
     }
@@ -104,7 +104,7 @@ export function SellerEstimationForm() {
     <form className="space-y-4" onSubmit={onSubmit}>
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="text-sm">
-          Prenom *
+          Prénom *
           <input
             className="mt-1 w-full rounded border px-3 py-2"
             required
@@ -132,7 +132,7 @@ export function SellerEstimationForm() {
           />
         </label>
         <label className="text-sm">
-          Telephone
+          Téléphone
           <input
             className="mt-1 w-full rounded border px-3 py-2"
             value={form.phone}
@@ -183,19 +183,19 @@ export function SellerEstimationForm() {
           />
         </label>
         <label className="text-sm">
-          Temporalite du projet
+          Temporalité du projet
           <select
             className="mt-1 w-full rounded border px-3 py-2"
             value={form.timeline}
             onChange={(event) => update("timeline", event.target.value)}
           >
-            <option value="already_listed">J&apos;ai deja mis en vente</option>
+            <option value="already_listed">J&apos;ai déjà mis en vente</option>
             <option value="list_now">Je veux mettre en vente maintenant</option>
             <option value="list_within_6_months">Je veux mettre en vente dans les 6 mois</option>
             <option value="self_sell_first">
-              Je veux commencer a vendre par moi-meme sans agence
+              Je veux commencer à vendre par moi-même sans agence
             </option>
-            <option value="early_reflection">Je commence juste a reflechir au projet</option>
+            <option value="early_reflection">Je commence juste à réfléchir au projet</option>
             <option value="personal_information_only">
               J&apos;ai juste besoin de l&apos;information pour des raisons personnelles
             </option>
@@ -211,8 +211,8 @@ export function SellerEstimationForm() {
             value={form.occupancyStatus}
             onChange={(event) => update("occupancyStatus", event.target.value)}
           >
-            <option value="owner_occupied">Proprietaire occupant</option>
-            <option value="tenant_occupied">Bien loue</option>
+            <option value="owner_occupied">Propriétaire occupant</option>
+            <option value="tenant_occupied">Bien loué</option>
             <option value="vacant">Bien vacant</option>
           </select>
         </label>
@@ -220,7 +220,7 @@ export function SellerEstimationForm() {
 
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="text-sm">
-          Diagnostics techniques deja faits ?
+          Diagnostics techniques déjà faits ?
           <select
             className="mt-1 w-full rounded border px-3 py-2"
             value={form.diagnosticsReady}
@@ -249,7 +249,7 @@ export function SellerEstimationForm() {
 
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="text-sm">
-          Documents syndic deja compiles ?
+          Documents syndic déjà compilés ?
           <select
             className="mt-1 w-full rounded border px-3 py-2"
             value={form.syndicDocsReady}
@@ -277,7 +277,7 @@ export function SellerEstimationForm() {
       </div>
 
       <label className="text-sm block">
-        Message complementaire
+        Message complémentaire
         <textarea
           className="mt-1 w-full rounded border px-3 py-2"
           rows={4}

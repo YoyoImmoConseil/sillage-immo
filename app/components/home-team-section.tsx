@@ -7,7 +7,7 @@ export async function HomeTeamSection() {
     members = await withTimeout(
       listPublicTeamMembers(),
       4000,
-      "Le chargement de l'equipe est trop lent."
+      "Le chargement de l'équipe est trop lent."
     );
   } catch {
     return null;
@@ -21,10 +21,10 @@ export async function HomeTeamSection() {
     <section className="sillage-section-light">
       <div className="w-full px-6 py-10 md:px-10 md:py-14 xl:px-14 2xl:px-20 space-y-6">
         <div className="space-y-3">
-          <p className="text-xs uppercase tracking-[0.16em] opacity-70">Notre equipe</p>
-          <h2 className="sillage-section-title">Des conseillers identifies et joignables</h2>
+          <p className="text-xs uppercase tracking-[0.16em] opacity-70">Notre équipe</p>
+          <h2 className="sillage-section-title">Des conseillers identifiés et joignables</h2>
           <p className="sillage-editorial-text max-w-3xl opacity-75">
-            Une equipe locale, visible et accessible, avec un interlocuteur clair pour chaque projet.
+            Une équipe locale, visible et accessible, avec un interlocuteur clair pour chaque projet.
           </p>
         </div>
 
@@ -36,7 +36,7 @@ export async function HomeTeamSection() {
                   <img src={member.avatarUrl} alt={member.fullName} className="h-full w-full object-cover" />
                 ) : (
                   <div className="flex h-full items-center justify-center px-6 text-center text-sm text-[#141446]/55">
-                    Portrait a venir
+                    Portrait à venir
                   </div>
                 )}
               </div>

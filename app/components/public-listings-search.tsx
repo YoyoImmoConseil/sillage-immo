@@ -165,7 +165,7 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
         </label>
 
         <label className="text-sm">
-          Nb pieces min
+          Nb de pièces min
           <input
             className="mt-1 w-full rounded border px-3 py-2"
             value={filters.minRooms}
@@ -175,7 +175,7 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
           />
         </label>
         <label className="text-sm">
-          Nb pieces max
+          Nb de pièces max
           <input
             className="mt-1 w-full rounded border px-3 py-2"
             value={filters.maxRooms}
@@ -185,7 +185,7 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
           />
         </label>
         <label className="text-sm">
-          Surface min (m2)
+          Surface min (m²)
           <input
             className="mt-1 w-full rounded border px-3 py-2"
             value={filters.minSurface}
@@ -195,7 +195,7 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
           />
         </label>
         <label className="text-sm">
-          Surface max (m2)
+          Surface max (m²)
           <input
             className="mt-1 w-full rounded border px-3 py-2"
             value={filters.maxSurface}
@@ -206,7 +206,7 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
         </label>
 
         <label className="text-sm">
-          Etage min
+          Étage min
           <input
             className="mt-1 w-full rounded border px-3 py-2"
             value={filters.minFloor}
@@ -216,7 +216,7 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
           />
         </label>
         <label className="text-sm">
-          Etage max
+          Étage max
           <input
             className="mt-1 w-full rounded border px-3 py-2"
             value={filters.maxFloor}
@@ -232,7 +232,7 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
             value={filters.terrace}
             onChange={(event) => onFilterChange("terrace", event.target.value)}
           >
-            <option value="">Indifferent</option>
+            <option value="">Indifférent</option>
             <option value="true">Oui</option>
             <option value="false">Non</option>
           </select>
@@ -244,7 +244,7 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
             value={filters.elevator}
             onChange={(event) => onFilterChange("elevator", event.target.value)}
           >
-            <option value="">Indifferent</option>
+            <option value="">Indifférent</option>
             <option value="true">Oui</option>
             <option value="false">Non</option>
           </select>
@@ -252,9 +252,9 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
 
         <div className="md:col-span-4 flex flex-wrap items-center gap-3">
           <button type="button" className="sillage-btn rounded px-4 py-2 text-sm" onClick={resetFilters}>
-            Reinitialiser
+            Réinitialiser
           </button>
-          {isLoading ? <p className="text-sm opacity-70">Mise a jour des resultats...</p> : null}
+          {isLoading ? <p className="text-sm opacity-70">Mise à jour des résultats...</p> : null}
           {error ? <p className="text-sm text-red-700">{error}</p> : null}
         </div>
       </div>
@@ -267,7 +267,7 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
 
       {listings.length === 0 ? (
         <section className="rounded-2xl border border-[rgba(20,20,70,0.18)] p-6">
-          <h2 className="text-xl font-semibold">Aucun bien ne correspond a ces criteres</h2>
+          <h2 className="text-xl font-semibold">Aucun bien ne correspond à ces critères</h2>
           <p className="mt-2 max-w-2xl text-sm opacity-75">
             Ajustez vos filtres ou contactez Sillage Immo pour nous partager votre recherche.
           </p>

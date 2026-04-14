@@ -85,7 +85,7 @@ export default async function SellerLeadDetailPage({ params }: SellerLeadDetailP
   return (
     <AdminShell
       title={lead.full_name}
-      description={`Cree le ${formatDate(lead.created_at)} · ${lead.email}`}
+      description={`Créé le ${formatDate(lead.created_at)} · ${lead.email}`}
       role={context.role}
       profileName={context.profile?.fullName ?? context.profile?.email ?? "Mode admin"}
     >
@@ -96,7 +96,7 @@ export default async function SellerLeadDetailPage({ params }: SellerLeadDetailP
               className="inline-block rounded border border-[#f4ece4] px-3 py-1 text-sm"
               href="/admin/seller-leads"
             >
-              Retour a la liste
+              Retour à la liste
             </Link>
             <Link className="inline-block rounded border border-[#f4ece4] px-3 py-1 text-sm" href="/">
               Accueil
@@ -104,7 +104,7 @@ export default async function SellerLeadDetailPage({ params }: SellerLeadDetailP
           </div>
           <h1 className="text-2xl font-semibold">{lead.full_name}</h1>
           <p className="text-sm text-[#f4ece4]/75">
-            Cree le {formatDate(lead.created_at)} - {lead.email}
+            Créé le {formatDate(lead.created_at)} - {lead.email}
           </p>
         </section>
 
@@ -129,7 +129,7 @@ export default async function SellerLeadDetailPage({ params }: SellerLeadDetailP
         <section className="rounded-2xl border border-[rgba(20,20,70,0.22)] p-6 space-y-4">
           <h2 className="sillage-section-title">Pilotage commercial</h2>
           <p className="text-sm opacity-70">
-            Statut actuel: {viewModel.statusLabel}
+            Statut actuel : {viewModel.statusLabel}
           </p>
           <SellerLeadStatusForm sellerLeadId={lead.id} initialStatus={lead.status} />
         </section>
@@ -154,7 +154,7 @@ export default async function SellerLeadDetailPage({ params }: SellerLeadDetailP
           <h2 className="sillage-section-title">Informations vendeur</h2>
           <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
             <div>
-              <dt className="opacity-70">Telephone</dt>
+              <dt className="opacity-70">Téléphone</dt>
               <dd>{lead.phone ?? "-"}</dd>
             </div>
             <div>
@@ -172,7 +172,7 @@ export default async function SellerLeadDetailPage({ params }: SellerLeadDetailP
               </dd>
             </div>
             <div>
-              <dt className="opacity-70">Delai de vente</dt>
+              <dt className="opacity-70">Délai de vente</dt>
               <dd>{viewModel.timelineLabel}</dd>
             </div>
             <div>
@@ -184,11 +184,11 @@ export default async function SellerLeadDetailPage({ params }: SellerLeadDetailP
               <dd>{viewModel.propertyDetailsView.elevator}</dd>
             </div>
             <div>
-              <dt className="opacity-70">Etat appartement</dt>
+              <dt className="opacity-70">État appartement</dt>
               <dd>{viewModel.propertyDetailsView.apartmentCondition}</dd>
             </div>
             <div>
-              <dt className="opacity-70">Age immeuble</dt>
+              <dt className="opacity-70">Âge immeuble</dt>
               <dd>{viewModel.propertyDetailsView.buildingAge}</dd>
             </div>
             <div>
@@ -196,11 +196,11 @@ export default async function SellerLeadDetailPage({ params }: SellerLeadDetailP
               <dd>{viewModel.propertyDetailsView.seaView}</dd>
             </div>
             <div>
-              <dt className="opacity-70">Nombre d&apos;etages immeuble</dt>
+              <dt className="opacity-70">Nombre d&apos;étages immeuble</dt>
               <dd>{viewModel.propertyDetailsView.buildingTotalFloors}</dd>
             </div>
             <div>
-              <dt className="opacity-70">Dernier etage</dt>
+              <dt className="opacity-70">Dernier étage</dt>
               <dd>{viewModel.propertyDetailsView.isTopFloor}</dd>
             </div>
             <div>
@@ -220,15 +220,15 @@ export default async function SellerLeadDetailPage({ params }: SellerLeadDetailP
               <dd>{viewModel.propertyDetailsView.balconyArea}</dd>
             </div>
             <div>
-              <dt className="opacity-70">Exposition sejour</dt>
+              <dt className="opacity-70">Exposition séjour</dt>
               <dd>{viewModel.propertyDetailsView.livingExposure}</dd>
             </div>
             <div>
-              <dt className="opacity-70">Temporalite projet</dt>
+              <dt className="opacity-70">Temporalité projet</dt>
               <dd>{viewModel.propertyDetailsView.projectTemporality}</dd>
             </div>
             <div>
-              <dt className="opacity-70">Diagnostics prets</dt>
+              <dt className="opacity-70">Diagnostics prêts</dt>
               <dd>{lead.diagnostics_ready === null ? "-" : lead.diagnostics_ready ? "Oui" : "Non"}</dd>
             </div>
             <div>
@@ -242,7 +242,7 @@ export default async function SellerLeadDetailPage({ params }: SellerLeadDetailP
               </dd>
             </div>
             <div>
-              <dt className="opacity-70">Documents syndic prets</dt>
+              <dt className="opacity-70">Documents syndic prêts</dt>
               <dd>{lead.syndic_docs_ready === null ? "-" : lead.syndic_docs_ready ? "Oui" : "Non"}</dd>
             </div>
             <div>

@@ -13,11 +13,11 @@ type AdminShellProps = {
 
 const NAV_ITEMS = [
   { href: "/admin", label: "Dashboard" },
-  { href: "/admin/users", label: "Utilisateurs & roles", permission: "admin.users.view" as AdminPermission },
+  { href: "/admin/users", label: "Utilisateurs & rôles", permission: "admin.users.view" as AdminPermission },
   { href: "/admin/clients", label: "Clients vendeurs", permission: "clients.view" as AdminPermission },
   { href: "/admin/leads", label: "Recherche leads", permission: "leads.sellers.view" as AdminPermission },
   { href: "/admin/seller-leads", label: "Leads vendeurs", permission: "leads.sellers.view" as AdminPermission },
-  { href: "/admin/buyer-leads", label: "Leads acquereurs", permission: "leads.buyers.view" as AdminPermission },
+  { href: "/admin/buyer-leads", label: "Leads acquéreurs", permission: "leads.buyers.view" as AdminPermission },
   { href: "/admin/properties", label: "Biens", permission: "properties.view" as AdminPermission },
   { href: "/admin/sweepbright-sync", label: "Sync SweepBright", permission: "operations.view" as AdminPermission },
 ];
@@ -38,7 +38,7 @@ export function AdminShell({ title, description, role, profileName, children }: 
             </div>
             <div className="space-y-2 text-right">
               <p className="text-sm text-[#f4ece4]/78">
-                {profileName ?? "Acces admin"} · {ADMIN_ROLE_LABELS[role]}
+                {profileName ?? "Accès admin"} · {ADMIN_ROLE_LABELS[role]}
               </p>
               <div className="flex justify-end">
                 <AdminSignOutButton />

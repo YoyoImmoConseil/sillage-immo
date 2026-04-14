@@ -60,7 +60,7 @@ export function AdminBootstrapForm() {
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="grid gap-4 md:grid-cols-2">
         <label className="block text-sm">
-          Prenom
+          Prénom
           <input
             className="mt-1 w-full rounded border px-3 py-2"
             value={firstName}
@@ -89,7 +89,7 @@ export function AdminBootstrapForm() {
         />
       </label>
       <label className="block text-sm">
-        Cle de bootstrap admin
+        Clé de bootstrap admin
         <input
           className="mt-1 w-full rounded border px-3 py-2"
           type="password"
@@ -99,10 +99,10 @@ export function AdminBootstrapForm() {
         />
       </label>
       <p className="text-sm text-[#141446]/70">
-        Cette adresse email sera autorisee comme premier administrateur, puis connectee via Google.
+        Cette adresse email sera autorisée comme premier administrateur, puis connectée via Google.
       </p>
       <button className="sillage-btn rounded px-4 py-2 text-sm disabled:opacity-60" disabled={isPending}>
-        {isPending ? "Preparation..." : "Autoriser puis continuer avec Google"}
+        {isPending ? "Préparation..." : "Autoriser puis continuer avec Google"}
       </button>
       {error ? <p className="text-sm text-red-700">{error}</p> : null}
     </form>

@@ -38,7 +38,7 @@ export default async function ClientDetailPage({ params }: ClientDetailPageProps
 
       <div className="space-y-6">
         <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6">
-          <h2 className="text-xl font-semibold text-[#141446]">Identite</h2>
+          <h2 className="text-xl font-semibold text-[#141446]">Identité</h2>
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             <div>
               <p className="text-xs uppercase text-[#141446]/60">Nom</p>
@@ -49,15 +49,15 @@ export default async function ClientDetailPage({ params }: ClientDetailPageProps
               <p className="text-[#141446]">{client.email}</p>
             </div>
             <div>
-              <p className="text-xs uppercase text-[#141446]/60">Telephone</p>
+              <p className="text-xs uppercase text-[#141446]/60">Téléphone</p>
               <p className="text-[#141446]">{client.phone ?? "-"}</p>
             </div>
             <div>
               <p className="text-xs uppercase text-[#141446]/60">Statut compte</p>
-              <p className="text-[#141446]">{client.auth_user_id ? "Compte active" : "Prospect"}</p>
+              <p className="text-[#141446]">{client.auth_user_id ? "Compte activé" : "Prospect"}</p>
             </div>
             <div>
-              <p className="text-xs uppercase text-[#141446]/60">Derniere connexion</p>
+              <p className="text-xs uppercase text-[#141446]/60">Dernière connexion</p>
               <p className="text-[#141446]">{client.last_login_at ? formatDate(client.last_login_at) : "-"}</p>
             </div>
           </div>
@@ -84,7 +84,7 @@ export default async function ClientDetailPage({ params }: ClientDetailPageProps
                 href={`/admin/clients/${id}/projects/new`}
                 className="sillage-btn rounded px-4 py-2 text-sm"
               >
-                Creer un projet vendeur
+                Créer un projet vendeur
               </Link>
             )}
           </div>

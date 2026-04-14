@@ -40,12 +40,12 @@ export function SellerLeadStatusForm({ sellerLeadId, initialStatus }: StatusForm
         });
         const data = (await response.json()) as { ok?: boolean; message?: string };
         if (!response.ok || !data.ok) {
-          setError(data.message ?? "Impossible de mettre a jour le statut.");
+          setError(data.message ?? "Impossible de mettre à jour le statut.");
           return;
         }
         router.refresh();
       } catch {
-        setError("Erreur reseau pendant la mise a jour du statut.");
+        setError("Erreur réseau pendant la mise à jour du statut.");
       }
     });
   };
@@ -71,7 +71,7 @@ export function SellerLeadStatusForm({ sellerLeadId, initialStatus }: StatusForm
           type="submit"
           disabled={isPending}
         >
-          {isPending ? "Mise a jour..." : "Mettre a jour le statut"}
+          {isPending ? "Mise à jour..." : "Mettre à jour le statut"}
         </button>
       </div>
       {error ? <p className="text-sm text-red-700">{error}</p> : null}

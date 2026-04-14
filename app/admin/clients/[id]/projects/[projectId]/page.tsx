@@ -28,9 +28,9 @@ const formatInvitationStatus = (input: {
   revokedAt: string | null;
   expiresAt: string;
 }) => {
-  if (input.revokedAt) return "Revoquee";
-  if (input.acceptedAt) return "Acceptee";
-  if (new Date(input.expiresAt).getTime() < Date.now()) return "Expiree";
+  if (input.revokedAt) return "Révoquée";
+  if (input.acceptedAt) return "Acceptée";
+  if (new Date(input.expiresAt).getTime() < Date.now()) return "Expirée";
   return "En attente";
 };
 
@@ -88,18 +88,18 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
                   </Link>
                   {detail.sellerLead.estimated_price && (
                     <span className="ml-2 text-[#141446]/70">
-                      Estimation: {detail.sellerLead.estimated_price.toLocaleString("fr-FR")} EUR
+                      Estimation : {detail.sellerLead.estimated_price.toLocaleString("fr-FR")} EUR
                     </span>
                   )}
                 </p>
               ) : (
-                <p className="text-[#141446]/70">Aucun lead rattache</p>
+                <p className="text-[#141446]/70">Aucun lead rattaché</p>
               )}
             </div>
             <div>
               <p className="text-xs uppercase text-[#141446]/60">Biens</p>
               {detail.properties.length === 0 ? (
-                <p className="text-[#141446]/70">Aucun bien rattache</p>
+                <p className="text-[#141446]/70">Aucun bien rattaché</p>
               ) : (
                 <ul className="space-y-2">
                   {detail.properties.map((pp) => (
@@ -155,9 +155,9 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
                     {detail.assignedAdvisor.email}
                   </a>
                 </p>
-                <p className="text-sm">{detail.assignedAdvisor.phone ?? "Telephone non renseigne"}</p>
+                <p className="text-sm">{detail.assignedAdvisor.phone ?? "Téléphone non renseigné"}</p>
                 <p className="text-sm text-[#141446]/75">
-                  Rendez-vous : {detail.assignedAdvisor.bookingUrl ? "lien configure" : "non configure"}
+                  Rendez-vous : {detail.assignedAdvisor.bookingUrl ? "lien configuré" : "non configuré"}
                 </p>
                 {detail.assignedAdvisor.bookingUrl ? (
                   <a
@@ -166,12 +166,12 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
                     rel="noreferrer"
                     className="text-sm underline"
                   >
-                    Ouvrir le lien de reservation
+                    Ouvrir le lien de réservation
                   </a>
                 ) : null}
               </div>
             ) : (
-              <p className="text-[#141446]/70">Aucun conseiller affecte</p>
+              <p className="text-[#141446]/70">Aucun conseiller affecté</p>
             )}
           </div>
           {canAssignAdvisor && sellerProjectRow && (
@@ -190,7 +190,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
             {detail.latestInvitation ? (
               <div>
                 <p className="text-[#141446]">
-                  Envoyee le {formatDate(detail.latestInvitation.createdAt)} · expire le{" "}
+                  Envoyée le {formatDate(detail.latestInvitation.createdAt)} · expire le{" "}
                   {formatDate(detail.latestInvitation.expiresAt)}
                 </p>
                 <p className="text-sm text-[#141446]/75">
@@ -202,14 +202,14 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
                   })}
                 </p>
                 {detail.latestInvitation.acceptedAt && (
-                  <p className="text-green-700">Acceptee le {formatDate(detail.latestInvitation.acceptedAt)}</p>
+                  <p className="text-green-700">Acceptée le {formatDate(detail.latestInvitation.acceptedAt)}</p>
                 )}
                 {detail.latestInvitation.revokedAt && (
-                  <p className="text-red-700">Revoquee</p>
+                  <p className="text-red-700">Révoquée</p>
                 )}
               </div>
             ) : (
-              <p className="text-[#141446]/70">Aucune invitation envoyee</p>
+              <p className="text-[#141446]/70">Aucune invitation envoyée</p>
             )}
           </div>
           {canInvite && (
@@ -227,7 +227,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
           <h2 className="text-xl font-semibold text-[#141446]">Timeline</h2>
           <div className="mt-4 space-y-2">
             {events.length === 0 ? (
-              <p className="text-sm text-[#141446]/70">Aucun evenement</p>
+              <p className="text-sm text-[#141446]/70">Aucun événement</p>
             ) : (
               events.map((ev) => (
                 <div key={ev.id} className="flex gap-3 text-sm">
