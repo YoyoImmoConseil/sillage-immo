@@ -9,7 +9,7 @@ import {
 const formatDate = (value: string) => new Date(value).toLocaleDateString("fr-FR");
 
 const formatPrice = (value: number | null) =>
-  typeof value === "number" ? `${value.toLocaleString("fr-FR")} EUR` : "Aucune estimation detaillee";
+  typeof value === "number" ? `${value.toLocaleString("fr-FR")} EUR` : "Aucune estimation détaillée";
 
 export default async function SellerPortalHomePage() {
   const context = await requireClientSpacePageContext();
@@ -24,12 +24,12 @@ export default async function SellerPortalHomePage() {
           Bonjour {context.clientProfile.firstName ?? context.clientProfile.fullName ?? "et bienvenue"}
         </h2>
         <p className="mt-2 text-sm text-[#141446]/75">
-          Retrouvez ici tous vos projets rattaches a Sillage Immo, leurs prochaines etapes et vos points de
+          Retrouvez ici tous vos projets rattachés à Sillage Immo, leurs prochaines étapes et vos points de
           contact.
         </p>
         <div className="mt-6 grid gap-4 md:grid-cols-3">
           <div className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-4">
-            <p className="text-xs uppercase text-[#141446]/60">Projets rattaches</p>
+            <p className="text-xs uppercase text-[#141446]/60">Projets rattachés</p>
             <p className="mt-2 text-2xl font-semibold text-[#141446]">{projects.length}</p>
           </div>
           <div className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-4">
@@ -37,17 +37,17 @@ export default async function SellerPortalHomePage() {
             <p className="mt-2 text-sm text-[#141446]">
               {context.clientProfile.lastLoginAt
                 ? formatDate(context.clientProfile.lastLoginAt)
-                : "Premiere connexion"}
+                : "Première connexion"}
             </p>
           </div>
           <div className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-4">
-            <p className="text-xs uppercase text-[#141446]/60">Prochaine etape</p>
+            <p className="text-xs uppercase text-[#141446]/60">Prochaine étape</p>
             <p className="mt-2 text-sm text-[#141446]">
               {sellerProjects.some((project) => project.seller?.hasAppointmentLink)
-                ? "Un rendez-vous peut etre reserve en ligne."
+                ? "Un rendez-vous peut être réservé en ligne."
                 : projects.length > 0
-                  ? "Consultez vos projets pour voir la prochaine action recommandee."
-                  : "Votre espace client est pret a accueillir vos prochains projets."}
+                  ? "Consultez vos projets pour voir la prochaine action recommandée."
+                  : "Votre espace client est prêt à accueillir vos prochains projets."}
             </p>
           </div>
         </div>
@@ -57,7 +57,7 @@ export default async function SellerPortalHomePage() {
         <h2 className="text-xl font-semibold text-[#141446]">Vos projets</h2>
         {projects.length === 0 ? (
           <p className="mt-4 text-sm text-[#141446]/75">
-            Aucun projet n&apos;est encore rattache a votre compte.
+            Aucun projet n&apos;est encore rattaché à votre compte.
           </p>
         ) : (
           <div className="mt-4 space-y-6">
@@ -107,7 +107,7 @@ export default async function SellerPortalHomePage() {
                       ) : null}
                       {project.seller?.latestValuationSyncedAt ? (
                         <p className="mt-1 text-xs text-[#141446]/60">
-                          Mise a jour le {formatDate(project.seller.latestValuationSyncedAt)}
+                          Mise à jour le {formatDate(project.seller.latestValuationSyncedAt)}
                         </p>
                       ) : null}
                     </Link>

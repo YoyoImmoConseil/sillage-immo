@@ -66,7 +66,7 @@ export default async function AdminPropertyDetailPage({ params }: AdminPropertyD
   return (
     <AdminShell
       title={detail.property.title ?? "Bien"}
-      description="Gestion du bien et vue inverse des rapprochements acquereurs."
+      description="Gestion du bien et vue inverse des rapprochements acquéreurs."
       role={context.role}
       profileName={context.profile?.fullName ?? context.profile?.email ?? "Mode admin"}
     >
@@ -112,7 +112,7 @@ export default async function AdminPropertyDetailPage({ params }: AdminPropertyD
             <h2 className="text-xl font-semibold text-[#141446]">Projets clients</h2>
             <div className="mt-4 space-y-3">
               {projectDetails.length === 0 ? (
-                <p className="text-sm text-[#141446]/70">Aucun projet client rattache.</p>
+                <p className="text-sm text-[#141446]/70">Aucun projet client rattaché.</p>
               ) : (
                 projectDetails.map((p) => (
                   <div key={p.client_project_id} className="flex items-center justify-between rounded-2xl border border-[rgba(20,20,70,0.12)] p-4">
@@ -135,11 +135,11 @@ export default async function AdminPropertyDetailPage({ params }: AdminPropertyD
         )}
 
         <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6">
-          <h2 className="text-xl font-semibold text-[#141446]">Acquereurs compatibles</h2>
+          <h2 className="text-xl font-semibold text-[#141446]">Acquéreurs compatibles</h2>
           <div className="mt-4 space-y-3">
             {matches.length === 0 ? (
               <p className="text-sm opacity-70">
-                Aucun rapprochement calcule pour ce bien.
+                Aucun rapprochement calculé pour ce bien.
               </p>
             ) : (
               matches.map((match) => (
@@ -152,7 +152,7 @@ export default async function AdminPropertyDetailPage({ params }: AdminPropertyD
                       </p>
                     </div>
                     <Link href={`/admin/buyer-leads/${match.buyerLeadId}`} className="text-sm underline">
-                      Ouvrir la fiche acquereur
+                      Ouvrir la fiche acquéreur
                     </Link>
                   </div>
                 </article>

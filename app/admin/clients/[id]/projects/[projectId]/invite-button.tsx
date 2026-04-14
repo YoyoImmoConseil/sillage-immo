@@ -54,7 +54,7 @@ export function InviteButton({ clientId, projectId, latestInvitation }: InviteBu
       }
 
       setInviteLink(`${window.location.origin}${data.inviteLink}`);
-      setResult("Invitation creee. Vous pouvez copier le lien ou recharger la page pour voir le nouvel etat.");
+      setResult("Invitation créée. Vous pouvez copier le lien ou recharger la page pour voir le nouvel état.");
       router.refresh();
     } finally {
       setLoading(false);
@@ -65,7 +65,7 @@ export function InviteButton({ clientId, projectId, latestInvitation }: InviteBu
     if (!inviteLink) return;
     try {
       await navigator.clipboard.writeText(inviteLink);
-      setResult("Lien d'invitation copie.");
+      setResult("Lien d'invitation copié.");
       setError(null);
     } catch {
       setError("Copie impossible depuis ce navigateur.");
@@ -84,11 +84,11 @@ export function InviteButton({ clientId, projectId, latestInvitation }: InviteBu
       );
       const data = (await res.json()) as { ok?: boolean; message?: string };
       if (!res.ok || !data.ok) {
-        setError(data.message ?? "Revocation impossible.");
+        setError(data.message ?? "Révocation impossible.");
         return;
       }
       setInviteLink(null);
-      setResult("Invitation revoquee.");
+      setResult("Invitation révoquée.");
       router.refresh();
     } finally {
       setRevoking(false);
@@ -100,19 +100,19 @@ export function InviteButton({ clientId, projectId, latestInvitation }: InviteBu
       {latestInvitation ? (
         <div className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-4 text-sm text-[#141446]">
           <p>
-            Invitation adressee a <strong>{latestInvitation.email}</strong>
+            Invitation adressée à <strong>{latestInvitation.email}</strong>
           </p>
           <p className="mt-1 text-[#141446]/75">
-            Creee le {formatDate(latestInvitation.createdAt)} · expire le {formatDate(latestInvitation.expiresAt)}
+            Créée le {formatDate(latestInvitation.createdAt)} · expire le {formatDate(latestInvitation.expiresAt)}
           </p>
           <p className="mt-1 text-[#141446]/75">
             Statut :{" "}
             {invitationStatus === "acceptee"
-              ? "Acceptee"
+              ? "Acceptée"
               : invitationStatus === "revoquee"
-                ? "Revoquee"
+                ? "Révoquée"
                 : invitationStatus === "expiree"
-                  ? "Expiree"
+                  ? "Expirée"
                   : "En attente"}
           </p>
           {latestInvitation.acceptedAt ? (
@@ -120,7 +120,7 @@ export function InviteButton({ clientId, projectId, latestInvitation }: InviteBu
           ) : null}
         </div>
       ) : (
-        <p className="text-sm text-[#141446]/70">Aucune invitation envoyee pour ce projet.</p>
+        <p className="text-sm text-[#141446]/70">Aucune invitation envoyée pour ce projet.</p>
       )}
 
       <div className="flex flex-wrap gap-2">
@@ -147,7 +147,7 @@ export function InviteButton({ clientId, projectId, latestInvitation }: InviteBu
             disabled={revoking}
             className="rounded border border-red-200 px-4 py-2 text-sm text-red-700 disabled:opacity-50"
           >
-            {revoking ? "Revocation..." : "Revoquer l'invitation"}
+            {revoking ? "Révocation..." : "Révoquer l'invitation"}
           </button>
         ) : null}
       </div>

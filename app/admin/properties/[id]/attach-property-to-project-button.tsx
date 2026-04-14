@@ -58,14 +58,14 @@ export function AttachPropertyToProjectButton({ propertyId }: AttachPropertyToPr
         onClick={() => setExpanded(true)}
         className="sillage-btn rounded px-4 py-2 text-sm"
       >
-        Rattacher a un projet vendeur
+        Rattacher à un projet vendeur
       </button>
     );
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3 rounded-xl border border-[rgba(20,20,70,0.12)] p-4">
-      <p className="text-sm font-medium text-[#141446]">Creer un client et rattacher ce bien</p>
+      <p className="text-sm font-medium text-[#141446]">Créer un client et rattacher ce bien</p>
       <input
         className="w-full rounded border px-3 py-2 text-sm"
         type="email"
@@ -78,7 +78,7 @@ export function AttachPropertyToProjectButton({ propertyId }: AttachPropertyToPr
         className="w-full rounded border px-3 py-2 text-sm"
         value={firstName}
         onChange={(e) => setFirstName(e.target.value)}
-        placeholder="Prenom"
+        placeholder="Prénom"
       />
       <input
         className="w-full rounded border px-3 py-2 text-sm"
@@ -92,7 +92,7 @@ export function AttachPropertyToProjectButton({ propertyId }: AttachPropertyToPr
           disabled={loading}
           className="sillage-btn rounded px-4 py-2 text-sm disabled:opacity-50"
         >
-          {loading ? "Creation..." : "Creer et rattacher"}
+          {loading ? "Création..." : "Créer et rattacher"}
         </button>
         <button
           type="button"

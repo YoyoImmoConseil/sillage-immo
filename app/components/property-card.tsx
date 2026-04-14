@@ -34,7 +34,7 @@ const formatFeeMention = (input: {
     return null;
   }
 
-  return `Incluant ${formatCompactPrice(input.sale.feeAmount, input.currency)} d'honoraires a la charge de l'acquereur`;
+  return `Incluant ${formatCompactPrice(input.sale.feeAmount, input.currency)} d'honoraires à la charge de l'acquéreur`;
 };
 
 export function PropertyCard({ listing }: PropertyCardProps) {
@@ -55,7 +55,7 @@ export function PropertyCard({ listing }: PropertyCardProps) {
             />
           ) : (
             <div className="flex h-full items-center justify-center text-sm text-[#141446]/65">
-              Photo a venir
+              Photo à venir
             </div>
           )}
         </div>
@@ -85,11 +85,11 @@ export function PropertyCard({ listing }: PropertyCardProps) {
             <div className="rounded-xl bg-white/55 px-3 py-2">
               📐 Carrez:{" "}
               {typeof listing.loiCarrezArea === "number"
-                ? `${Math.round(listing.loiCarrezArea)} m2`
+                ? `${Math.round(listing.loiCarrezArea)} m²`
                 : "-"}
             </div>
             <div className="rounded-xl bg-white/55 px-3 py-2">
-              🛋️ Pieces: {typeof listing.roomCount === "number" ? listing.roomCount : "-"}
+              🛋️ Pièces: {typeof listing.roomCount === "number" ? listing.roomCount : "-"}
             </div>
             <div className="rounded-xl bg-white/55 px-3 py-2">
               🏢 Lots: {typeof listing.lotCount === "number" ? listing.lotCount : "-"}
@@ -106,14 +106,14 @@ export function PropertyCard({ listing }: PropertyCardProps) {
               title="⚡ DPE"
               value={listing.energy.dpeValue}
               label={listing.energy.dpeLabel}
-              unit="kWh/m2/an"
+              unit="kWh/m²/an"
               compact
             />
             <PropertyEnergyScale
               title="🌿 GES"
               value={listing.energy.gesValue}
               label={listing.energy.gesLabel}
-              unit="kgCO2/m2/an"
+              unit="kgCO₂/m²/an"
               compact
             />
           </div>

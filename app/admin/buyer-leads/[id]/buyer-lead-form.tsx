@@ -92,7 +92,7 @@ export function BuyerLeadForm({ buyerLeadId, initial }: BuyerLeadFormProps) {
           setError(payload.message ?? "Enregistrement impossible.");
           return;
         }
-        setMessage("Criteres enregistres.");
+        setMessage("Critères enregistrés.");
         router.refresh();
       } catch {
         setError("Enregistrement impossible.");
@@ -113,7 +113,7 @@ export function BuyerLeadForm({ buyerLeadId, initial }: BuyerLeadFormProps) {
           setError(payload.message ?? "Matching impossible.");
           return;
         }
-        setMessage(`${payload.count ?? 0} rapprochement(s) recalcules.`);
+        setMessage(`${payload.count ?? 0} rapprochement(s) recalculés.`);
         router.refresh();
       } catch {
         setError("Matching impossible.");
@@ -123,7 +123,7 @@ export function BuyerLeadForm({ buyerLeadId, initial }: BuyerLeadFormProps) {
 
   return (
     <section className="space-y-4 rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6">
-      <h2 className="text-xl font-semibold text-[#141446]">Fiche acquereur</h2>
+      <h2 className="text-xl font-semibold text-[#141446]">Fiche acquéreur</h2>
 
       <div className="grid gap-3 md:grid-cols-3">
         <label className="text-sm">
@@ -135,7 +135,7 @@ export function BuyerLeadForm({ buyerLeadId, initial }: BuyerLeadFormProps) {
           <input className="mt-1 w-full rounded border px-3 py-2" value={form.email} onChange={(event) => patch("email", event.target.value)} />
         </label>
         <label className="text-sm">
-          Telephone
+          Téléphone
           <input className="mt-1 w-full rounded border px-3 py-2" value={form.phone} onChange={(event) => patch("phone", event.target.value)} />
         </label>
         <label className="text-sm">
@@ -150,7 +150,7 @@ export function BuyerLeadForm({ buyerLeadId, initial }: BuyerLeadFormProps) {
           </select>
         </label>
         <label className="text-sm">
-          Delai
+          Délai
           <input className="mt-1 w-full rounded border px-3 py-2" value={form.timeline} onChange={(event) => patch("timeline", event.target.value)} />
         </label>
         <label className="text-sm">
@@ -158,7 +158,7 @@ export function BuyerLeadForm({ buyerLeadId, initial }: BuyerLeadFormProps) {
           <input className="mt-1 w-full rounded border px-3 py-2" value={form.financingStatus} onChange={(event) => patch("financingStatus", event.target.value)} />
         </label>
         <label className="text-sm">
-          Canal prefere
+          Canal préféré
           <input className="mt-1 w-full rounded border px-3 py-2" value={form.preferredContactChannel} onChange={(event) => patch("preferredContactChannel", event.target.value)} />
         </label>
         <label className="text-sm">
@@ -176,7 +176,7 @@ export function BuyerLeadForm({ buyerLeadId, initial }: BuyerLeadFormProps) {
 
       <div className="grid gap-3 md:grid-cols-3">
         <label className="text-sm">
-          Villes ciblees
+          Villes ciblées
           <input className="mt-1 w-full rounded border px-3 py-2" value={form.cities} onChange={(event) => patch("cities", event.target.value)} placeholder="Nice, Villefranche-sur-Mer" />
         </label>
         <label className="text-sm">
@@ -188,17 +188,17 @@ export function BuyerLeadForm({ buyerLeadId, initial }: BuyerLeadFormProps) {
       <div className="grid gap-3 md:grid-cols-4">
         <label className="text-sm">Budget min<input className="mt-1 w-full rounded border px-3 py-2" value={form.budgetMin} onChange={(event) => patch("budgetMin", event.target.value)} /></label>
         <label className="text-sm">Budget max<input className="mt-1 w-full rounded border px-3 py-2" value={form.budgetMax} onChange={(event) => patch("budgetMax", event.target.value)} /></label>
-        <label className="text-sm">Pieces min<input className="mt-1 w-full rounded border px-3 py-2" value={form.roomsMin} onChange={(event) => patch("roomsMin", event.target.value)} /></label>
-        <label className="text-sm">Pieces max<input className="mt-1 w-full rounded border px-3 py-2" value={form.roomsMax} onChange={(event) => patch("roomsMax", event.target.value)} /></label>
+        <label className="text-sm">Pièces min<input className="mt-1 w-full rounded border px-3 py-2" value={form.roomsMin} onChange={(event) => patch("roomsMin", event.target.value)} /></label>
+        <label className="text-sm">Pièces max<input className="mt-1 w-full rounded border px-3 py-2" value={form.roomsMax} onChange={(event) => patch("roomsMax", event.target.value)} /></label>
         <label className="text-sm">Chambres min<input className="mt-1 w-full rounded border px-3 py-2" value={form.bedroomsMin} onChange={(event) => patch("bedroomsMin", event.target.value)} /></label>
         <label className="text-sm">Surface min<input className="mt-1 w-full rounded border px-3 py-2" value={form.livingAreaMin} onChange={(event) => patch("livingAreaMin", event.target.value)} /></label>
         <label className="text-sm">Surface max<input className="mt-1 w-full rounded border px-3 py-2" value={form.livingAreaMax} onChange={(event) => patch("livingAreaMax", event.target.value)} /></label>
-        <label className="text-sm">Etage min<input className="mt-1 w-full rounded border px-3 py-2" value={form.floorMin} onChange={(event) => patch("floorMin", event.target.value)} /></label>
-        <label className="text-sm">Etage max<input className="mt-1 w-full rounded border px-3 py-2" value={form.floorMax} onChange={(event) => patch("floorMax", event.target.value)} /></label>
+        <label className="text-sm">Étage min<input className="mt-1 w-full rounded border px-3 py-2" value={form.floorMin} onChange={(event) => patch("floorMin", event.target.value)} /></label>
+        <label className="text-sm">Étage max<input className="mt-1 w-full rounded border px-3 py-2" value={form.floorMax} onChange={(event) => patch("floorMax", event.target.value)} /></label>
         <label className="text-sm">
           Terrasse
           <select className="mt-1 w-full rounded border px-3 py-2" value={form.requiresTerrace} onChange={(event) => patch("requiresTerrace", event.target.value)}>
-            <option value="">Indifferent</option>
+            <option value="">Indifférent</option>
             <option value="true">Oui</option>
             <option value="false">Non</option>
           </select>
@@ -206,7 +206,7 @@ export function BuyerLeadForm({ buyerLeadId, initial }: BuyerLeadFormProps) {
         <label className="text-sm">
           Ascenseur
           <select className="mt-1 w-full rounded border px-3 py-2" value={form.requiresElevator} onChange={(event) => patch("requiresElevator", event.target.value)}>
-            <option value="">Indifferent</option>
+            <option value="">Indifférent</option>
             <option value="true">Oui</option>
             <option value="false">Non</option>
           </select>

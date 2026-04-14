@@ -19,7 +19,7 @@ export const buildPublicListingMetadata = (listing: PropertyListingSnapshot | nu
     title: `${listing.title ?? "Bien immobilier"} | Sillage Immo`,
     description:
       listing.property.description?.slice(0, 160) ??
-      "Consultez le detail de ce bien immobilier propose par Sillage Immo.",
+      "Consultez le détail de ce bien immobilier proposé par Sillage Immo.",
   };
 };
 
@@ -49,7 +49,7 @@ export async function PublicListingDetailPage({ listing }: { listing: PropertyLi
           style: "currency",
           currency: listing.priceCurrency || "EUR",
           maximumFractionDigits: 0,
-        }).format(listing.property.sale.feeAmount)} d'honoraires a la charge de l'acquereur`
+        }).format(listing.property.sale.feeAmount)} d'honoraires à la charge de l'acquéreur`
       : null;
   const floorLabel =
     typeof listing.property.rooms.floor === "number"
@@ -101,24 +101,24 @@ export async function PublicListingDetailPage({ listing }: { listing: PropertyLi
                 title="⚡ DPE"
                 value={listing.property.energy.dpeValue}
                 label={listing.property.energy.dpeLabel}
-                unit="kWh/m2/an"
+                unit="kWh/m²/an"
               />
               <PropertyEnergyScale
                 title="🌿 GES"
                 value={listing.property.energy.gesValue}
                 label={listing.property.energy.gesLabel}
-                unit="kgCO2/m2/an"
+                unit="kgCO₂/m²/an"
               />
             </section>
 
             <section className="rounded-2xl border border-[rgba(20,20,70,0.18)] p-6 space-y-4">
-              <h2 className="sillage-section-title">Caracteristiques detaillees</h2>
+              <h2 className="sillage-section-title">Caractéristiques détaillées</h2>
               <dl className="grid gap-3 text-sm sm:grid-cols-2 xl:grid-cols-3">
                 <div>
                   <dt className="opacity-65">📐 Surface habitable</dt>
                   <dd>
                     {typeof listing.livingArea === "number"
-                      ? `${Math.round(listing.livingArea)} m2`
+                      ? `${Math.round(listing.livingArea)} m²`
                       : "-"}
                   </dd>
                 </div>
@@ -127,7 +127,7 @@ export async function PublicListingDetailPage({ listing }: { listing: PropertyLi
                   <dd>{typeof listing.bedrooms === "number" ? listing.bedrooms : "-"}</dd>
                 </div>
                 <div>
-                  <dt className="opacity-65">🛋️ Sejours</dt>
+                  <dt className="opacity-65">🛋️ Séjours</dt>
                   <dd>
                     {typeof listing.property.rooms.livingRooms === "number"
                       ? listing.property.rooms.livingRooms
@@ -135,19 +135,19 @@ export async function PublicListingDetailPage({ listing }: { listing: PropertyLi
                   </dd>
                 </div>
                 <div>
-                  <dt className="opacity-65">📏 Surface du sejour</dt>
+                  <dt className="opacity-65">📏 Surface du séjour</dt>
                   <dd>
                     {typeof listing.property.surfaces.livingRoomArea === "number"
-                      ? `${Math.round(listing.property.surfaces.livingRoomArea)} m2`
+                      ? `${Math.round(listing.property.surfaces.livingRoomArea)} m²`
                       : "-"}
                   </dd>
                 </div>
                 <div>
-                  <dt className="opacity-65">🏢 Etage / immeuble</dt>
+                  <dt className="opacity-65">🏢 Étage / immeuble</dt>
                   <dd>{floorLabel}</dd>
                 </div>
                 <div>
-                  <dt className="opacity-65">🔝 Dernier etage</dt>
+                  <dt className="opacity-65">🔝 Dernier étage</dt>
                   <dd>
                     {listing.property.rooms.isTopFloor === null
                       ? "-"
@@ -183,7 +183,7 @@ export async function PublicListingDetailPage({ listing }: { listing: PropertyLi
                       ? "-"
                       : listing.property.amenities.hasTerrace
                       ? typeof listing.property.surfaces.terraceArea === "number"
-                        ? `Oui • ${Math.round(listing.property.surfaces.terraceArea)} m2`
+                        ? `Oui • ${Math.round(listing.property.surfaces.terraceArea)} m²`
                         : "Oui"
                       : "Non"}
                   </dd>
@@ -195,7 +195,7 @@ export async function PublicListingDetailPage({ listing }: { listing: PropertyLi
                       ? "-"
                       : listing.property.amenities.hasBalcony
                       ? typeof listing.property.surfaces.balconyArea === "number"
-                        ? `Oui • ${Math.round(listing.property.surfaces.balconyArea)} m2`
+                        ? `Oui • ${Math.round(listing.property.surfaces.balconyArea)} m²`
                         : "Oui"
                       : "Non"}
                   </dd>
@@ -209,7 +209,7 @@ export async function PublicListingDetailPage({ listing }: { listing: PropertyLi
                   <dd>{listing.property.amenities.seaView ?? "-"}</dd>
                 </div>
                 <div>
-                  <dt className="opacity-65">🧭 Condition generale</dt>
+                  <dt className="opacity-65">🧭 Condition générale</dt>
                   <dd>{listing.property.generalCondition ?? "-"}</dd>
                 </div>
                 <div>
@@ -292,12 +292,12 @@ export async function PublicListingDetailPage({ listing }: { listing: PropertyLi
                   <dt className="opacity-65">📐 Surface Carrez</dt>
                   <dd>
                     {typeof listing.property.surfaces.loiCarrezArea === "number"
-                      ? `${Math.round(listing.property.surfaces.loiCarrezArea)} m2`
+                      ? `${Math.round(listing.property.surfaces.loiCarrezArea)} m²`
                       : "-"}
                   </dd>
                 </div>
                 <div>
-                  <dt className="opacity-65">🛋️ Nombre de pieces</dt>
+                  <dt className="opacity-65">🛋️ Nombre de pièces</dt>
                   <dd>{typeof listing.property.rooms.roomCount === "number" ? listing.property.rooms.roomCount : "-"}</dd>
                 </div>
                 <div>
@@ -324,22 +324,22 @@ export async function PublicListingDetailPage({ listing }: { listing: PropertyLi
             </section>
 
             <section className="rounded-2xl border border-[rgba(20,20,70,0.18)] p-6 space-y-3">
-              <h2 className="sillage-section-title">Description detaillee</h2>
+              <h2 className="sillage-section-title">Description détaillée</h2>
               <p className="sillage-editorial-text opacity-85">
-                {listing.property.description ?? "Description bientot disponible."}
+                {listing.property.description ?? "Description bientôt disponible."}
               </p>
             </section>
 
             {listing.property.videoUrl ? (
               <section className="rounded-2xl border border-[rgba(20,20,70,0.18)] p-6 space-y-2">
-                <h2 className="sillage-section-title">Video</h2>
+                <h2 className="sillage-section-title">Vidéo</h2>
                 <a
                   href={listing.property.videoUrl}
                   target="_blank"
                   rel="noreferrer"
                   className="sillage-btn-secondary inline-block rounded px-4 py-2 text-sm"
                 >
-                  Voir la video
+                  Voir la vidéo
                 </a>
               </section>
             ) : null}

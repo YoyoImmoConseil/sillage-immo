@@ -6,13 +6,13 @@ import { SellerMagicLinkForm } from "../_components/seller-magic-link-form";
 const getErrorMessage = (errorCode: string | null) => {
   switch (errorCode) {
     case "missing_token_hash":
-      return "Le lien de connexion recu par email est incomplet.";
+      return "Le lien de connexion reçu par email est incomplet.";
     case "magic_link_invalid":
-      return "Le lien de connexion est invalide ou a expire.";
+      return "Le lien de connexion est invalide ou a expiré.";
     case "missing_user":
-      return "Le compte de connexion n'a pas pu etre verifie.";
+      return "Le compte de connexion n'a pas pu être vérifié.";
     case "no_portal_access":
-      return "Aucun espace client actif n'est rattache a cette adresse email.";
+      return "Aucun espace client actif n'est rattaché à cette adresse email.";
     default:
       return null;
   }
@@ -25,9 +25,9 @@ export function SellerLoginPageContent() {
   return (
     <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-8">
       <div className="space-y-2">
-        <h2 className="text-2xl font-semibold text-[#141446]">Connexion a votre espace client</h2>
+        <h2 className="text-2xl font-semibold text-[#141446]">Connexion à votre espace client</h2>
         <p className="text-sm text-[#141446]/75">
-          Saisissez l&apos;adresse email rattachee a votre espace client pour recevoir un lien de connexion.
+          Saisissez l&apos;adresse email rattachée à votre espace client pour recevoir un lien de connexion.
         </p>
       </div>
 
@@ -40,7 +40,7 @@ export function SellerLoginPageContent() {
       <div className="mt-6">
         <SellerMagicLinkForm
           submitLabel="Recevoir un lien de connexion"
-          successMessage="Si cette adresse dispose d'un espace client, un email de connexion vient d'etre envoye."
+          successMessage="Si cette adresse dispose d'un espace client, un email de connexion vient d'être envoyé."
         />
       </div>
     </section>

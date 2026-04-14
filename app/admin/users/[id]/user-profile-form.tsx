@@ -80,7 +80,7 @@ export function UserProfileForm({ user, canManage }: { user: UserProfile; canMan
           return;
         }
 
-        setResult("Fiche utilisateur mise a jour.");
+        setResult("Fiche utilisateur mise à jour.");
         router.refresh();
       } catch {
         setError("Enregistrement impossible.");
@@ -93,7 +93,7 @@ export function UserProfileForm({ user, canManage }: { user: UserProfile; canMan
     setResult(null);
 
     if (!(await isPortrait(file))) {
-      setError("Le portrait doit etre vertical.");
+      setError("Le portrait doit être vertical.");
       return;
     }
 
@@ -118,7 +118,7 @@ export function UserProfileForm({ user, canManage }: { user: UserProfile; canMan
         }
 
         setAvatarUrl(payload.avatarUrl);
-        setResult("Photo mise a jour.");
+        setResult("Photo mise à jour.");
         router.refresh();
       } catch {
         setError("Upload impossible.");
@@ -137,7 +137,7 @@ export function UserProfileForm({ user, canManage }: { user: UserProfile; canMan
           </p>
         </div>
         <Link href="/admin/users" className="rounded border px-4 py-2 text-sm text-[#141446]">
-          Retour a la liste
+          Retour à la liste
         </Link>
       </div>
 
@@ -169,12 +169,12 @@ export function UserProfileForm({ user, canManage }: { user: UserProfile; canMan
                 }}
               />
             </label>
-            <p className="text-xs text-[#141446]/60">Format portrait recommande. PNG, JPG ou WebP, 5 Mo max.</p>
+            <p className="text-xs text-[#141446]/60">Format portrait recommandé. PNG, JPG ou WebP, 5 Mo max.</p>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
             <label className="text-sm text-[#141446]">
-              <span className="mb-2 block font-medium">Prenom</span>
+              <span className="mb-2 block font-medium">Prénom</span>
               <input
                 className="w-full rounded border px-3 py-2"
                 value={firstName}
@@ -208,7 +208,7 @@ export function UserProfileForm({ user, canManage }: { user: UserProfile; canMan
               </select>
             </label>
             <label className="text-sm text-[#141446]">
-              <span className="mb-2 block font-medium">Telephone</span>
+              <span className="mb-2 block font-medium">Téléphone</span>
               <input
                 className="w-full rounded border px-3 py-2"
                 placeholder="Ex. 06 00 00 00 00"
@@ -228,14 +228,14 @@ export function UserProfileForm({ user, canManage }: { user: UserProfile; canMan
               />
             </label>
             <label className="text-sm text-[#141446] md:col-span-2">
-              <span className="mb-2 block font-medium">Email affiche</span>
+              <span className="mb-2 block font-medium">Email affiché</span>
               <input className="w-full rounded border px-3 py-2 bg-[#f8f5f1]" value={user.email} disabled />
             </label>
             <label className="text-sm text-[#141446] md:col-span-2">
-              <span className="mb-2 block font-medium">Presentation</span>
+              <span className="mb-2 block font-medium">Présentation</span>
               <textarea
                 className="min-h-40 w-full rounded border px-3 py-2"
-                placeholder="Presentation publique de l'utilisateur"
+                placeholder="Présentation publique de l'utilisateur"
                 value={bio}
                 disabled={!canManage || isPending}
                 onChange={(event) => setBio(event.target.value)}

@@ -30,17 +30,17 @@ export function SellerProjectFormSection({
 
   return (
     <section className="rounded-2xl border border-[rgba(20,20,70,0.2)] bg-[#f4ece4] p-6 space-y-4">
-      <h2 className="sillage-section-title">Etape 1 - Votre projet et votre bien</h2>
+      <h2 className="sillage-section-title">Étape 1 - Votre projet et votre bien</h2>
       <p className="text-sm opacity-75">
         Quelques informations simples pour cadrer votre estimation et vous proposer un accompagnement
-        vraiment adapte a votre situation.
+        vraiment adapté à votre situation.
       </p>
       <div className="grid gap-3 sm:grid-cols-2 text-sm">
         <p className="sm:col-span-2 text-xs uppercase tracking-wide opacity-70">
-          Vos coordonnees
+          Vos coordonnées
         </p>
         <label>
-          Prenom *
+          Prénom *
           <input
             className="mt-1 w-full rounded border px-3 py-2"
             value={form.firstName}
@@ -68,7 +68,7 @@ export function SellerProjectFormSection({
           />
         </label>
         <label>
-          Telephone
+          Téléphone
           <input
             className="mt-1 w-full rounded border px-3 py-2"
             value={form.phone}
@@ -79,19 +79,19 @@ export function SellerProjectFormSection({
 
         <p className="sm:col-span-2 text-xs uppercase tracking-wide opacity-70">Votre projet</p>
         <label className="sm:col-span-2">
-          Ou en est votre projet de vente ?
+          Où en est votre projet de vente ?
           <select
             className="mt-1 w-full rounded border px-3 py-2"
             value={form.timeline}
             onChange={(event) => onUpdate("timeline", event.target.value as FlowForm["timeline"])}
           >
-            <option value="already_listed">J&apos;ai deja mis en vente</option>
+            <option value="already_listed">J&apos;ai déjà mis en vente</option>
             <option value="list_now">Je veux mettre en vente maintenant</option>
             <option value="list_within_6_months">Je veux mettre en vente dans les 6 mois</option>
             <option value="self_sell_first">
               Je veux commencer a vendre par moi-meme sans agence
             </option>
-            <option value="early_reflection">Je commence juste a reflechir au projet</option>
+            <option value="early_reflection">Je commence juste à réfléchir au projet</option>
             <option value="personal_information_only">
               J&apos;ai juste besoin de l&apos;information pour des raisons personnelles
             </option>
@@ -146,10 +146,10 @@ export function SellerProjectFormSection({
         </label>
 
         <p className="sm:col-span-2 text-xs uppercase tracking-wide opacity-70">
-          Caracteristiques du bien
+          Caractéristiques du bien
         </p>
         <label>
-          Surface (m2)
+          Surface (m²)
           <input
             className="mt-1 w-full rounded border px-3 py-2"
             value={form.livingArea}
@@ -158,7 +158,7 @@ export function SellerProjectFormSection({
           />
         </label>
         <label>
-          Pieces
+          Pièces
           <input
             className="mt-1 w-full rounded border px-3 py-2"
             value={form.rooms}
@@ -167,7 +167,7 @@ export function SellerProjectFormSection({
           />
         </label>
         <label>
-          Etage
+          Étage
           <input
             className="mt-1 w-full rounded border px-3 py-2"
             value={form.floor}
@@ -176,7 +176,7 @@ export function SellerProjectFormSection({
           />
         </label>
         <label>
-          Nombre d&apos;etages dans l&apos;immeuble
+          Nombre d&apos;étages dans l&apos;immeuble
           <input
             className="mt-1 w-full rounded border px-3 py-2"
             value={form.buildingTotalFloors}
@@ -191,14 +191,14 @@ export function SellerProjectFormSection({
             value={form.terrace}
             onChange={(event) => onUpdate("terrace", event.target.value as FlowForm["terrace"])}
           >
-            <option value="">Selectionner</option>
+            <option value="">Sélectionner</option>
             <option value="yes">Oui</option>
             <option value="no">Non</option>
           </select>
         </label>
         {form.terrace === "yes" ? (
           <label>
-            Taille de la terrasse (m2)
+            Taille de la terrasse (m²)
             <input
               className="mt-1 w-full rounded border px-3 py-2"
               value={form.terraceArea}
@@ -214,14 +214,14 @@ export function SellerProjectFormSection({
             value={form.balcony}
             onChange={(event) => onUpdate("balcony", event.target.value as FlowForm["balcony"])}
           >
-            <option value="">Selectionner</option>
+            <option value="">Sélectionner</option>
             <option value="yes">Oui</option>
             <option value="no">Non</option>
           </select>
         </label>
         {form.balcony === "yes" ? (
           <label>
-            Taille du balcon (m2)
+            Taille du balcon (m²)
             <input
               className="mt-1 w-full rounded border px-3 py-2"
               value={form.balconyArea}
@@ -231,7 +231,7 @@ export function SellerProjectFormSection({
           </label>
         ) : null}
         <label>
-          Exposition du sejour
+          Exposition du séjour
           <select
             className="mt-1 w-full rounded border px-3 py-2"
             value={form.livingExposure}
@@ -239,7 +239,7 @@ export function SellerProjectFormSection({
               onUpdate("livingExposure", event.target.value as FlowForm["livingExposure"])
             }
           >
-            <option value="">Selectionner</option>
+            <option value="">Sélectionner</option>
             <option value="north">Nord</option>
             <option value="north_east">Nord Est</option>
             <option value="east">Est</option>
@@ -257,13 +257,13 @@ export function SellerProjectFormSection({
             value={form.elevator}
             onChange={(event) => onUpdate("elevator", event.target.value as FlowForm["elevator"])}
           >
-            <option value="">Selectionner</option>
+            <option value="">Sélectionner</option>
             <option value="yes">Oui</option>
             <option value="no">Non</option>
           </select>
         </label>
         <label>
-          Etat de l&apos;appartement *
+          État de l&apos;appartement *
           <select
             className="mt-1 w-full rounded border px-3 py-2"
             value={form.apartmentCondition}
@@ -271,24 +271,24 @@ export function SellerProjectFormSection({
               onUpdate("apartmentCondition", event.target.value as FlowForm["apartmentCondition"])
             }
           >
-            <option value="">Selectionner</option>
-            <option value="a_renover">A renover</option>
-            <option value="renove_20_ans">Renove il y a 20 ans</option>
-            <option value="renove_10_ans">Renove il y a 10 ans</option>
-            <option value="renove_moins_5_ans">Renove il y a moins de 5 ans</option>
+            <option value="">Sélectionner</option>
+            <option value="a_renover">À rénover</option>
+            <option value="renove_20_ans">Rénové il y a 20 ans</option>
+            <option value="renove_10_ans">Rénové il y a 10 ans</option>
+            <option value="renove_moins_5_ans">Rénové il y a moins de 5 ans</option>
             <option value="neuf">Neuf</option>
           </select>
         </label>
         <label>
-          Age de l&apos;immeuble (optionnel)
+          Âge de l&apos;immeuble (optionnel)
           <select
             className="mt-1 w-full rounded border px-3 py-2"
             value={form.buildingAge}
             onChange={(event) => onUpdate("buildingAge", event.target.value as FlowForm["buildingAge"])}
           >
-            <option value="">Non renseigne</option>
-            <option value="ancien_1950">Ancien (jusqu&apos;a 1950)</option>
-            <option value="recent_1950_1970">Recent (1950-1970)</option>
+            <option value="">Non renseigné</option>
+            <option value="ancien_1950">Ancien (jusqu&apos;à 1950)</option>
+            <option value="recent_1950_1970">Récent (1950-1970)</option>
             <option value="moderne_1980_today">Moderne (1980 - Aujourd&apos;hui)</option>
           </select>
         </label>
@@ -299,16 +299,16 @@ export function SellerProjectFormSection({
             value={form.seaView}
             onChange={(event) => onUpdate("seaView", event.target.value as FlowForm["seaView"])}
           >
-            <option value="">Non renseigne</option>
+            <option value="">Non renseigné</option>
             <option value="none">Non</option>
             <option value="panoramic">Vue mer panoramique</option>
             <option value="classic">Vue mer classique</option>
-            <option value="lateral">Vue mer laterale</option>
+            <option value="lateral">Vue mer latérale</option>
           </select>
         </label>
         {topFloorKnown ? (
           <p className="sm:col-span-2 text-xs opacity-70">
-            Dernier etage:{" "}
+            Dernier étage :{" "}
             <strong>
               {toOptionalInteger(form.floor) === toOptionalInteger(form.buildingTotalFloors) ? "Oui" : "Non"}
             </strong>
@@ -321,7 +321,7 @@ export function SellerProjectFormSection({
             rows={3}
             value={form.message}
             onChange={(event) => onUpdate("message", event.target.value)}
-            placeholder="Ex: travaux recents, contraintes de calendrier, contexte particulier..."
+            placeholder="Ex : travaux récents, contraintes de calendrier, contexte particulier..."
           />
         </label>
       </div>
@@ -342,7 +342,7 @@ export function SellerProjectFormSection({
         }
         onClick={onSendOtp}
       >
-        {loading ? "Envoi..." : "Etape 2 - Securiser mon email"}
+        {loading ? "Envoi..." : "Étape 2 - Sécuriser mon email"}
       </button>
     </section>
   );
@@ -373,9 +373,9 @@ export function SellerEmailVerificationSection({
 }: SellerEmailVerificationSectionProps) {
   return (
     <section className="rounded-2xl bg-[#141446] p-6 text-[#f4ece4] space-y-4">
-      <h2 className="sillage-section-title">Etape 2 - Verification de votre email</h2>
+      <h2 className="sillage-section-title">Étape 2 - Vérification de votre email</h2>
       <p className="text-sm text-[#f4ece4]/80">
-        Entrez le code recu par email pour finaliser la securisation de votre demande.
+        Entrez le code reçu par email pour finaliser la sécurisation de votre demande.
       </p>
       <div className="flex gap-3 items-end flex-wrap">
         <label className="text-sm">
@@ -392,12 +392,12 @@ export function SellerEmailVerificationSection({
           disabled={loading || otp.trim().length < 4}
           onClick={onVerifyOtp}
         >
-          {loading ? "Verification..." : "Valider le code"}
+          {loading ? "Vérification..." : "Valider le code"}
         </button>
       </div>
       {previewCode ? (
         <p className="text-xs text-amber-700">
-          Mode dev: code OTP = <code>{previewCode}</code>
+          Mode dev : code OTP = <code>{previewCode}</code>
         </p>
       ) : null}
       {verificationToken ? (
@@ -408,7 +408,7 @@ export function SellerEmailVerificationSection({
             disabled={loading}
             onClick={onEstimateAndCreate}
           >
-            {loading ? "Calcul en cours..." : "Etape 3 - Obtenir mon estimation precise"}
+            {loading ? "Calcul en cours..." : "Étape 3 - Obtenir mon estimation précise"}
           </button>
           {isEstimating ? (
             <div className="space-y-1">
@@ -453,7 +453,7 @@ export function SellerEstimationResultSection({
 
   return (
     <section className="rounded-2xl border border-[rgba(20,20,70,0.2)] bg-[#f4ece4] p-6 space-y-3">
-      <h2 className="sillage-section-title">Votre estimation est prete</h2>
+      <h2 className="sillage-section-title">Votre estimation est prête</h2>
       <p className="text-sm opacity-75">
         {valuation.addressLabel ?? form.propertyAddress} {valuation.cityZipCode ?? form.postalCode}{" "}
         {valuation.cityName ?? form.city}
@@ -461,7 +461,7 @@ export function SellerEstimationResultSection({
       <p className="text-sm">
         {valuation.valuationPriceLow !== null || valuation.valuationPriceHigh !== null ? (
           <>
-            Fourchette estimee:{" "}
+            Fourchette estimée :{" "}
             <strong>
               {valuation.valuationPriceLow !== null ? formatEur(valuation.valuationPriceLow) : "-"} -{" "}
               {valuation.valuationPriceHigh !== null ? formatEur(valuation.valuationPriceHigh) : "-"}
@@ -469,37 +469,37 @@ export function SellerEstimationResultSection({
           </>
         ) : valuation.valuationPrice !== null ? (
           <>
-            Valeur estimee (indicative): <strong>{formatEur(valuation.valuationPrice)}</strong>
+            Valeur estimée (indicative) : <strong>{formatEur(valuation.valuationPrice)}</strong>
           </>
         ) : (
           <>
-            Estimation en cours de finalisation. Un conseiller vous partage la fourchette precise tres
+            Estimation en cours de finalisation. Un conseiller vous partage la fourchette précise très
             rapidement.
           </>
         )}
       </p>
       <div className="rounded-xl border border-[rgba(20,20,70,0.22)] bg-[rgba(244,236,228,0.9)] p-4 space-y-2">
-        <h3 className="text-sm font-semibold">Pourquoi confier la vente a Sillage Immo ?</h3>
+        <h3 className="text-sm font-semibold">Pourquoi confier la vente à Sillage Immo ?</h3>
         <ul className="text-sm space-y-2 list-disc pl-5">
           <li>
-            Positionnement premium local a Nice et sur la Cote d&apos;Azur pour capter des acheteurs
-            qualifies.
+            Positionnement premium local à Nice et sur la Côte d&apos;Azur pour capter des acheteurs
+            qualifiés.
           </li>
           <li>
-            Strategie de mise en vente sur-mesure (prix, presentation, ciblage, diffusion) pour
-            accelerer les visites utiles.
+            Stratégie de mise en vente sur mesure (prix, présentation, ciblage, diffusion) pour
+            accélérer les visites utiles.
           </li>
           <li>
-            Accompagnement complet: diagnostics, documents syndic, cadrage juridique et negociation.
+            Accompagnement complet : diagnostics, documents syndic, cadrage juridique et négociation.
           </li>
         </ul>
         <p className="text-xs opacity-70">
-          Objectif: vous aider a vendre au bon prix, dans le bon delai, avec un pilotage clair a
-          chaque etape.
+          Objectif : vous aider à vendre au bon prix, dans le bon délai, avec un pilotage clair à
+          chaque étape.
         </p>
       </div>
       <div className="rounded-xl border border-[rgba(20,20,70,0.22)] p-4 space-y-1">
-        <p className="text-sm font-medium">Votre prochain pas (recommande)</p>
+        <p className="text-sm font-medium">Votre prochain pas (recommandé)</p>
         <p className="text-sm opacity-80">
           Finalisez votre demande pour recevoir un appel de cadrage avec un interlocuteur unique et un
           plan de commercialisation sur-mesure.
@@ -507,11 +507,11 @@ export function SellerEstimationResultSection({
       </div>
       {portalAccessStatus !== "idle" || portalAccessMessage ? (
         <div className="rounded-xl border border-[rgba(20,20,70,0.22)] bg-[rgba(244,236,228,0.9)] p-4 space-y-2">
-          <p className="text-sm font-medium">Acces a votre espace client</p>
+          <p className="text-sm font-medium">Accès à votre espace client</p>
           {portalAccessMessage ? <p className="text-sm opacity-80">{portalAccessMessage}</p> : null}
           {portalAccessStatus === "sent" && portalAccessEmail ? (
             <p className="text-xs opacity-70">
-              Ouvrez le lien recu par email pour activer ou retrouver votre espace client vendeur.
+              Ouvrez le lien reçu par email pour activer ou retrouver votre espace client vendeur.
             </p>
           ) : null}
           {portalAccessStatus === "sending" ? (
@@ -523,7 +523,7 @@ export function SellerEstimationResultSection({
               className="rounded border border-[#141446]/20 px-4 py-2 text-sm text-[#141446]"
               onClick={onResendPortalAccess}
             >
-              Renvoyer mon lien d&apos;acces
+              Renvoyer mon lien d&apos;accès
             </button>
           ) : null}
         </div>
@@ -536,7 +536,7 @@ export function SellerEstimationResultSection({
           router.push(`/merci-vendeur?access=${encodeURIComponent(thankYouAccessToken)}`)
         }
       >
-        Finaliser et etre rappele par un conseiller
+        Finaliser et être rappelé par un conseiller
       </button>
     </section>
   );

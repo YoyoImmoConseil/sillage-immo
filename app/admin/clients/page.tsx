@@ -18,8 +18,8 @@ const formatAccountStatus = (item: {
   authUserId: string | null;
   hasAcceptedInvitation: boolean;
 }) => {
-  if (item.authUserId) return "Compte active";
-  if (item.hasAcceptedInvitation) return "Compte active";
+  if (item.authUserId) return "Compte actif";
+  if (item.hasAcceptedInvitation) return "Compte actif";
   return "Prospect";
 };
 
@@ -37,7 +37,7 @@ export default async function ClientsAdminPage({ searchParams }: ClientsAdminPag
     warningMessage =
       error instanceof TimeoutError
         ? error.message
-        : "Impossible de verifier la session admin pour le moment.";
+        : "Impossible de vérifier la session admin pour le moment.";
   }
 
   if (!context && !warningMessage) {
@@ -57,7 +57,7 @@ export default async function ClientsAdminPage({ searchParams }: ClientsAdminPag
             {warningMessage ?? "La page est temporairement indisponible."}
           </p>
           <Link href="/admin/login" className="mt-4 inline-block text-sm underline text-[#141446]">
-            Retour a la connexion admin
+            Retour à la connexion admin
           </Link>
         </section>
       </main>
@@ -90,7 +90,7 @@ export default async function ClientsAdminPage({ searchParams }: ClientsAdminPag
   return (
     <AdminShell
       title="Clients vendeurs"
-      description="Gerer les espaces client, rattacher leads et biens, affecter les conseillers et inviter les clients."
+      description="Gérer les espaces client, rattacher leads et biens, affecter les conseillers et inviter les clients."
       role={context.role}
       profileName={context.profile?.fullName ?? context.profile?.email ?? "Mode admin"}
     >
@@ -100,12 +100,12 @@ export default async function ClientsAdminPage({ searchParams }: ClientsAdminPag
             className="rounded border px-3 py-2 text-sm"
             name="search"
             defaultValue={filters.search ?? ""}
-            placeholder="Nom, email, telephone"
+            placeholder="Nom, email, téléphone"
           />
           <select className="rounded border px-3 py-2 text-sm" name="status" defaultValue={filters.status ?? "all"}>
             <option value="all">Tous</option>
-            <option value="account_active">Compte active</option>
-            <option value="invite_pending">Invite en attente</option>
+            <option value="account_active">Compte actif</option>
+            <option value="invite_pending">Invitation en attente</option>
             <option value="prospect">Prospect</option>
           </select>
           <button className="sillage-btn rounded px-4 py-2 text-sm">Filtrer</button>
@@ -115,7 +115,7 @@ export default async function ClientsAdminPage({ searchParams }: ClientsAdminPag
             className="sillage-btn rounded px-4 py-2 text-sm"
             href="/admin/clients/new"
           >
-            Creer un client
+            Créer un client
           </Link>
         )}
       </div>
@@ -134,10 +134,10 @@ export default async function ClientsAdminPage({ searchParams }: ClientsAdminPag
             <tr className="border-b border-[rgba(20,20,70,0.2)] text-left">
               <th className="p-3 font-medium">Nom</th>
               <th className="p-3 font-medium">Email</th>
-              <th className="p-3 font-medium">Telephone</th>
+              <th className="p-3 font-medium">Téléphone</th>
               <th className="p-3 font-medium">Projets</th>
               <th className="p-3 font-medium">Statut</th>
-              <th className="p-3 font-medium">Derniere activite</th>
+              <th className="p-3 font-medium">Dernière activité</th>
               <th className="p-3 font-medium">Action</th>
             </tr>
           </thead>

@@ -12,6 +12,52 @@ type SellerProjectPageProps = {
 
 const formatDate = (value: string) => new Date(value).toLocaleString("fr-FR");
 
+const getSellerEventCopy = (eventName: string, eventCategory: string) => {
+  switch (eventName) {
+    case "client_invitation.sent":
+      return {
+        title: "Votre accès à l'espace client est prêt",
+        body: "Un lien de connexion sécurisé vous a été envoyé pour retrouver votre projet à tout moment.",
+      };
+    case "client_invitation.accepted":
+      return {
+        title: "Votre espace client est actif",
+        body: "Vous pouvez maintenant suivre votre projet vendeur et retrouver vos informations en un seul endroit.",
+      };
+    case "project_property.linked_from_estimation":
+    case "project_property.linked":
+      return {
+        title: "Votre bien a été ajouté à votre espace",
+        body: "Les informations de votre bien sont désormais rattachées à votre projet pour un suivi plus clair.",
+      };
+    case "valuation.recorded":
+      return {
+        title: "Votre estimation est disponible",
+        body: "Votre première fourchette de valeur a été enregistrée dans votre espace client.",
+      };
+    case "seller_project.created_from_lead":
+      return {
+        title: "Votre projet vendeur est ouvert",
+        body: "Votre espace Sillage commence à se structurer autour de votre bien et de votre vente.",
+      };
+    case "advisor.assigned":
+      return {
+        title: "Un conseiller Sillage vous accompagne",
+        body: "Votre projet est maintenant suivi par un interlocuteur dédié.",
+      };
+    default:
+      return {
+        title:
+          eventCategory === "valuation"
+            ? "Votre projet évolue"
+            : eventCategory === "invitation"
+              ? "Votre accès client progresse"
+              : "Une nouvelle étape a été franchie",
+        body: "Votre espace client a été mis à jour avec une nouvelle information concernant votre projet.",
+      };
+  }
+};
+
 function SellerProjectDetailView({ detail }: { detail: SellerPortalProjectDetail }) {
   const appointmentUrl =
     detail.advisor?.bookingUrl ??
@@ -29,7 +75,7 @@ function SellerProjectDetailView({ detail }: { detail: SellerPortalProjectDetail
     <div className="space-y-6">
       <div className="flex flex-wrap gap-4">
         <Link href="/espace-client" className="text-sm underline text-[#141446]">
-          Retour a mes projets
+          Retour à mes projets
         </Link>
       </div>
 
@@ -46,7 +92,7 @@ function SellerProjectDetailView({ detail }: { detail: SellerPortalProjectDetail
                 ? SELLER_PROJECT_STATUS_LABELS[
                     detail.project.projectStatus as keyof typeof SELLER_PROJECT_STATUS_LABELS
                   ] ?? detail.project.projectStatus
-                : "A definir"}
+                : "À définir"}
             </p>
           </div>
           <div className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-4">
@@ -60,9 +106,9 @@ function SellerProjectDetailView({ detail }: { detail: SellerPortalProjectDetail
             </p>
           </div>
           <div className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-4">
-            <p className="text-xs uppercase text-[#141446]/60">Derniere connexion</p>
+            <p className="text-xs uppercase text-[#141446]/60">Dernière connexion</p>
             <p className="mt-2 text-[#141446]">
-              {detail.client.lastLoginAt ? formatDate(detail.client.lastLoginAt) : "Premiere connexion"}
+              {detail.client.lastLoginAt ? formatDate(detail.client.lastLoginAt) : "Première connexion"}
             </p>
           </div>
         </div>
@@ -71,7 +117,7 @@ function SellerProjectDetailView({ detail }: { detail: SellerPortalProjectDetail
       <section className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
         <div className="space-y-6">
           <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-8">
-            <h3 className="text-xl font-semibold text-[#141446]">Derniere estimation</h3>
+            <h3 className="text-xl font-semibold text-[#141446]">Dernière estimation</h3>
             {detail.valuation ? (
               <div className="mt-4 space-y-2 text-[#141446]">
                 <p>
@@ -96,20 +142,20 @@ function SellerProjectDetailView({ detail }: { detail: SellerPortalProjectDetail
                 )}
                 <p className="text-sm text-[#141446]/75">
                   Source : {detail.valuation.provider ?? "Sillage Immo"}
-                  {detail.valuation.syncedAt ? ` · Mise a jour le ${formatDate(detail.valuation.syncedAt)}` : ""}
+                  {detail.valuation.syncedAt ? ` · Mise à jour le ${formatDate(detail.valuation.syncedAt)}` : ""}
                 </p>
               </div>
             ) : (
               <p className="mt-4 text-sm text-[#141446]/75">
-                Aucune estimation detaillee n&apos;est encore disponible.
+                Aucune estimation détaillée n&apos;est encore disponible.
               </p>
             )}
           </section>
 
           <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-8">
-            <h3 className="text-xl font-semibold text-[#141446]">Bien rattache</h3>
+            <h3 className="text-xl font-semibold text-[#141446]">Bien rattaché</h3>
             {detail.properties.length === 0 ? (
-              <p className="mt-4 text-sm text-[#141446]/75">Aucun bien n&apos;est encore rattache a ce projet.</p>
+              <p className="mt-4 text-sm text-[#141446]/75">Aucun bien n&apos;est encore rattaché à ce projet.</p>
             ) : (
               <div className="mt-4 space-y-3">
                 {detail.properties.map((property) => (
@@ -118,7 +164,7 @@ function SellerProjectDetailView({ detail }: { detail: SellerPortalProjectDetail
                       {property.formattedAddress ?? "Adresse en cours de synchronisation"}
                     </p>
                     <p className="mt-1 text-sm text-[#141446]/75">
-                      {property.propertyType ? formatPropertyTypeLabel(property.propertyType) : "Type non renseigne"}
+                      {property.propertyType ? formatPropertyTypeLabel(property.propertyType) : "Type non renseigné"}
                       {property.livingArea ? ` · ${property.livingArea} m²` : ""}
                       {property.isPrimary ? " · Bien principal" : ""}
                     </p>
@@ -129,15 +175,23 @@ function SellerProjectDetailView({ detail }: { detail: SellerPortalProjectDetail
           </section>
 
           <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-8">
-            <h3 className="text-xl font-semibold text-[#141446]">Historique recent</h3>
+            <h3 className="text-xl font-semibold text-[#141446]">Historique récent</h3>
             {detail.events.length === 0 ? (
-              <p className="mt-4 text-sm text-[#141446]/75">Aucun evenement visible pour le moment.</p>
+              <p className="mt-4 text-sm text-[#141446]/75">Aucun événement visible pour le moment.</p>
             ) : (
               <div className="mt-4 space-y-3">
                 {detail.events.map((event) => (
                   <div key={event.id} className="flex flex-col gap-1 rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-4">
-                    <span className="text-xs uppercase text-[#141446]/55">{formatDate(event.createdAt)}</span>
-                    <span className="text-sm text-[#141446]">{event.eventName}</span>
+                    {(() => {
+                      const copy = getSellerEventCopy(event.eventName, event.eventCategory);
+                      return (
+                        <>
+                          <span className="text-xs uppercase text-[#141446]/55">{formatDate(event.createdAt)}</span>
+                          <span className="text-sm font-medium text-[#141446]">{copy.title}</span>
+                          <span className="text-sm text-[#141446]/72">{copy.body}</span>
+                        </>
+                      );
+                    })()}
                   </div>
                 ))}
               </div>
@@ -166,7 +220,7 @@ function SellerProjectDetailView({ detail }: { detail: SellerPortalProjectDetail
               </div>
             ) : (
               <p className="mt-4 text-sm text-[#141446]/75">
-                Aucun conseiller n&apos;est encore affecte. Notre equipe reviendra vers vous.
+                Aucun conseiller n&apos;est encore affecté. Notre équipe reviendra vers vous.
               </p>
             )}
           </section>
@@ -190,7 +244,7 @@ function SellerProjectDetailView({ detail }: { detail: SellerPortalProjectDetail
                 </a>
               ) : (
                 <a href="mailto:contact@sillage-immo.com" className="block underline">
-                  Contacter l&apos;equipe Sillage Immo
+                  Contacter l&apos;équipe Sillage Immo
                 </a>
               )}
             </div>
@@ -221,17 +275,17 @@ export default async function SellerProjectPage({ params }: SellerProjectPagePro
     <div className="space-y-6">
       <div className="flex flex-wrap gap-4">
         <Link href="/espace-client" className="text-sm underline text-[#141446]">
-          Retour a mes projets
+          Retour à mes projets
         </Link>
       </div>
 
       <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-8">
         <p className="text-xs uppercase tracking-[0.18em] text-[#141446]/60">
-          {detail.kind === "buyer" ? "Projet acquereur" : detail.detail.projectTypeLabel}
+          {detail.kind === "buyer" ? "Projet acquéreur" : detail.detail.projectTypeLabel}
         </p>
         <h2 className="mt-2 text-2xl font-semibold text-[#141446]">
           {detail.detail.title ??
-            (detail.kind === "buyer" ? "Projet acquereur" : "Projet client")}
+            (detail.kind === "buyer" ? "Projet acquéreur" : "Projet client")}
         </h2>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <div className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-4">
@@ -239,7 +293,7 @@ export default async function SellerProjectPage({ params }: SellerProjectPagePro
             <p className="mt-2 text-[#141446]">{detail.detail.status}</p>
           </div>
           <div className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-4">
-            <p className="text-xs uppercase text-[#141446]/60">Creation</p>
+            <p className="text-xs uppercase text-[#141446]/60">Création</p>
             <p className="mt-2 text-[#141446]">
               {formatDate(detail.detail.createdAt)}
             </p>
@@ -249,7 +303,7 @@ export default async function SellerProjectPage({ params }: SellerProjectPagePro
 
       <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-8">
         <h3 className="text-xl font-semibold text-[#141446]">
-          {detail.kind === "buyer" ? "Recherche rattachee" : "Projet en preparation"}
+          {detail.kind === "buyer" ? "Recherche rattachée" : "Projet en préparation"}
         </h3>
         <p className="mt-4 text-sm text-[#141446]/75">{detail.detail.message}</p>
         {detail.kind === "buyer" ? (
@@ -263,7 +317,7 @@ export default async function SellerProjectPage({ params }: SellerProjectPagePro
             <div className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-4">
               <p className="text-xs uppercase text-[#141446]/60">Budget</p>
               <p className="mt-2 text-[#141446]">
-                {detail.detail.budgetLabel ?? "Budget a preciser"}
+                {detail.detail.budgetLabel ?? "Budget à préciser"}
               </p>
             </div>
             <div className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-4">
@@ -275,7 +329,7 @@ export default async function SellerProjectPage({ params }: SellerProjectPagePro
             <div className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-4">
               <p className="text-xs uppercase text-[#141446]/60">Financement</p>
               <p className="mt-2 text-[#141446]">
-                {detail.detail.financingStatus ?? "Situation non renseignee"}
+                {detail.detail.financingStatus ?? "Situation non renseignée"}
               </p>
             </div>
           </div>
@@ -283,14 +337,14 @@ export default async function SellerProjectPage({ params }: SellerProjectPagePro
         {detail.kind === "buyer" && (detail.detail.propertyTypes.length > 0 || detail.detail.roomsMin || detail.detail.livingAreaMin) ? (
           <p className="mt-4 text-sm text-[#141446]/70">
             {detail.detail.propertyTypes.length > 0
-              ? `Types recherches : ${detail.detail.propertyTypes.join(", ")}`
-              : "Types de biens a preciser"}
-            {detail.detail.roomsMin ? ` · ${detail.detail.roomsMin} piece(s) min.` : ""}
+              ? `Types recherchés : ${detail.detail.propertyTypes.join(", ")}`
+              : "Types de biens à préciser"}
+            {detail.detail.roomsMin ? ` · ${detail.detail.roomsMin} pièce(s) min.` : ""}
             {detail.detail.livingAreaMin ? ` · ${detail.detail.livingAreaMin} m² min.` : ""}
           </p>
         ) : null}
         <p className="mt-3 text-sm text-[#141446]/70">
-          Votre compte peut deja accueillir plusieurs projets. Le detail de ce parcours continuera a
+          Votre compte peut déjà accueillir plusieurs projets. Le détail de ce parcours continuera à
           s&apos;enrichir sans changer votre mode de connexion.
         </p>
       </section>

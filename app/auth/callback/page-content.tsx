@@ -25,7 +25,7 @@ const withTimeout = async <T,>(promise: Promise<T>, timeoutMs: number) => {
 export function AuthCallbackPageContent() {
   const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
-  const [step, setStep] = useState("Preparation de la connexion...");
+  const [step, setStep] = useState("Préparation de la connexion...");
 
   useEffect(() => {
     let isActive = true;
@@ -39,13 +39,11 @@ export function AuthCallbackPageContent() {
           }
         })()
     );
-    const runId = `admin-callback-${Date.now()}`;
-
     const redirectWithUser = (email?: string | null) => {
       if (!isActive) {
         return;
       }
-      setStep(`Session validee${email ? ` pour ${email}` : ""}. Redirection vers l'administration...`);
+      setStep(`Session validée${email ? ` pour ${email}` : ""}. Redirection vers l'administration...`);
       window.location.replace(nextPath);
     };
 
@@ -123,7 +121,7 @@ export function AuthCallbackPageContent() {
         });
 
         if (isActive) {
-          setStep("Verification de la session...");
+          setStep("Vérification de la session...");
         }
 
         for (let attempt = 0; attempt < 8; attempt += 1) {
@@ -140,14 +138,14 @@ export function AuthCallbackPageContent() {
 
         subscription.unsubscribe();
 
-        setError("Aucune session Google n'a ete creee apres le retour de Google.");
+        setError("Aucune session Google n'a été créée après le retour de Google.");
       } catch (cause) {
         if (!isActive) {
           return;
         }
 
         const message = cause instanceof Error ? cause.message : "Erreur inconnue.";
-        setError(`La finalisation de la connexion Google a echoue: ${message}`);
+        setError(`La finalisation de la connexion Google a échoué : ${message}`);
       }
     };
 
@@ -169,7 +167,7 @@ export function AuthCallbackPageContent() {
               {error}
             </p>
             <Link href="/admin/login" className="inline-block text-sm underline text-[#141446]">
-              Retour a la connexion admin
+              Retour à la connexion admin
             </Link>
           </>
         ) : (

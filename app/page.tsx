@@ -7,38 +7,38 @@ import Link from "next/link";
 
 const methodSteps = [
   {
-    title: "Estimation fiable et argumentee",
+    title: "Estimation fiable et argumentée",
     description:
-      "Analyse locale precise du bien et de son environnement pour fixer une strategie de prix solide.",
+      "Analyse locale précise du bien et de son environnement pour fixer une stratégie de prix solide.",
   },
   {
     title: "Mise en valeur premium",
     description:
-      "Photos HD, visite immersive et presentation de qualite pour maximiser l'attractivite.",
+      "Photos HD, visite immersive et présentation de qualité pour maximiser l'attractivité.",
   },
   {
-    title: "Diffusion large et ciblee",
+    title: "Diffusion large et ciblée",
     description:
-      "Visibilite portails + reseau inter-agences, avec un interlocuteur unique pour vous.",
+      "Visibilité portails + réseau inter-agences, avec un interlocuteur unique pour vous.",
   },
   {
-    title: "Qualification acquereurs",
+    title: "Qualification acquéreurs",
     description:
-      "Tri des contacts et verification des dossiers pour eviter les visites peu qualifiees.",
+      "Tri des contacts et vérification des dossiers pour éviter les visites peu qualifiées.",
   },
   {
     title: "Suivi transparent",
     description:
-      "Pilotage pas a pas des actions de commercialisation avec retour clair a chaque etape.",
+      "Pilotage pas à pas des actions de commercialisation avec retour clair à chaque étape.",
   },
   {
-    title: "Accompagnement jusqu'a la signature",
+    title: "Accompagnement jusqu'à la signature",
     description:
       "Coordination du dossier et accompagnement administratif pour vendre dans de bonnes conditions.",
   },
 ];
 
-const neighborhoods = ["Carre d'Or", "Mont Boron", "Cimiez", "Le Port", "Wilson", "Liberation"];
+const neighborhoods = ["Carré d'Or", "Mont Boron", "Cimiez", "Le Port", "Wilson", "Libération"];
 
 export default async function Home() {
   return (
@@ -47,7 +47,7 @@ export default async function Home() {
         <div className="relative isolate overflow-hidden">
           <Image
             src="/home-hero-windows-nice.png"
-            alt="Facade nicoise ensoleillee"
+            alt="Façade niçoise ensoleillée"
             fill
             priority
             sizes="100vw"
@@ -62,13 +62,13 @@ export default async function Home() {
               </div>
               <div className="space-y-4">
                 <p className="text-xs uppercase tracking-[0.2em] text-[#f4ece4]/70">
-                  Immobilier premium a Nice et sur la Cote d&apos;Azur
+                  Immobilier premium à Nice et sur la Côte d&apos;Azur
                 </p>
                 <h1 className="sillage-section-title-font text-3xl md:text-5xl font-semibold leading-tight">
-                  Vendre, acheter, louer: un accompagnement global et sur-mesure
+                  Vendre, acheter, louer : un accompagnement global et sur mesure
                 </h1>
                 <p className="sillage-editorial-text text-[#f4ece4]/85 max-w-3xl">
-                  Sillage Immo vous accompagne sur l&apos;ensemble de votre projet immobilier: estimation,
+                  Sillage Immo vous accompagne sur l&apos;ensemble de votre projet immobilier : estimation,
                   commercialisation, acquisition, location et gestion locative avec un niveau de
                   service premium.
                 </p>
@@ -89,13 +89,13 @@ export default async function Home() {
                     href="/estimation"
                     className="inline-block rounded bg-[#f4ece4] px-5 py-2.5 text-sm text-[#141446] hover:opacity-90 transition-opacity"
                   >
-                    Decouvrir la valeur de mon bien
+                    Découvrir la valeur de mon bien
                   </Link>
                   <a
                     href="tel:+33423450485"
                     className="inline-block rounded border border-[#f4ece4] px-5 py-2.5 text-sm text-[#f4ece4] hover:bg-[#f4ece4] hover:text-[#141446] transition-colors"
                   >
-                    Parler a un conseiller
+                    Parler à un conseiller
                   </a>
                 </div>
               </div>
@@ -112,15 +112,15 @@ export default async function Home() {
           </div>
           <div className="py-2">
             <p className="text-4xl font-medium">+350</p>
-            <p className="text-sm opacity-70">Vendeurs accompagnes</p>
+            <p className="text-sm opacity-70">Vendeurs accompagnés</p>
           </div>
           <div className="py-2">
             <p className="text-4xl font-medium">+10 ans</p>
-            <p className="text-sm opacity-70">Experience locale</p>
+            <p className="text-sm opacity-70">Expérience locale</p>
           </div>
           <div className="py-2">
             <p className="text-4xl font-medium">7j/7</p>
-            <p className="text-sm opacity-70">Disponibilite conseiller</p>
+            <p className="text-sm opacity-70">Disponibilité conseiller</p>
           </div>
         </div>
       </section>
@@ -138,29 +138,29 @@ export default async function Home() {
               <p className="text-xs uppercase tracking-[0.16em] opacity-70">Catalogue vente</p>
               <h2 className="sillage-section-title">Nos biens en vente</h2>
               <p className="sillage-editorial-text opacity-75">
-                Appartements, maisons, villas et biens premium diffuses par Sillage Immo.
+                Appartements, maisons, villas et biens premium diffusés par Sillage Immo.
               </p>
               <Link href="/vente" className="sillage-btn inline-block rounded px-4 py-2 text-sm">
-                Explorer la selection
+                Explorer la sélection
               </Link>
             </article>
             <article className="rounded-2xl border border-[rgba(20,20,70,0.18)] p-6 space-y-3">
               <p className="text-xs uppercase tracking-[0.16em] opacity-70">Catalogue location</p>
               <h2 className="sillage-section-title">Nos biens en location</h2>
               <p className="sillage-editorial-text opacity-75">
-                Une selection de biens a louer, avec un accompagnement locatif clair et reactif.
+                Une sélection de biens à louer, avec un accompagnement locatif clair et réactif.
               </p>
               <Link
                 href="/location"
                 className="sillage-btn inline-block rounded px-4 py-2 text-sm"
               >
-                Voir les opportunites
+                Voir les opportunités
               </Link>
             </article>
           </div>
-          <h2 className="sillage-section-title">Vous vendez ? Notre methode en 6 etapes</h2>
+          <h2 className="sillage-section-title">Vous vendez ? Notre méthode en 6 étapes</h2>
           <p className="sillage-editorial-text opacity-75 max-w-3xl">
-            Une execution claire, orientee resultat, pour vendre au bon prix et dans les meilleures
+            Une exécution claire, orientée résultat, pour vendre au bon prix et dans les meilleures
             conditions.
           </p>
           <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
@@ -186,18 +186,18 @@ export default async function Home() {
             <h2 className="sillage-section-title">Vendre seul</h2>
             <ul className="sillage-editorial-text opacity-80 space-y-1">
               <li>Estimation souvent approximative</li>
-              <li>Diffusion et visibilite limitees</li>
-              <li>Visites parfois peu qualifiees</li>
+              <li>Diffusion et visibilité limitées</li>
+              <li>Visites parfois peu qualifiées</li>
               <li>Charge administrative et juridique plus lourde</li>
             </ul>
           </article>
           <article className="space-y-3">
             <h2 className="sillage-section-title">Avec Sillage Immo</h2>
             <ul className="sillage-editorial-text opacity-80 space-y-1">
-              <li>Strategie de prix et de commercialisation personnalisee</li>
-              <li>Diffusion multi-canale + reseau inter-agences</li>
-              <li>Qualification des acquereurs et meilleur pilotage</li>
-              <li>Accompagnement complet jusqu&apos;a la signature notaire</li>
+              <li>Stratégie de prix et de commercialisation personnalisée</li>
+              <li>Diffusion multi-canal + réseau inter-agences</li>
+              <li>Qualification des acquéreurs et meilleur pilotage</li>
+              <li>Accompagnement complet jusqu&apos;à la signature notaire</li>
             </ul>
           </article>
         </div>
@@ -207,8 +207,8 @@ export default async function Home() {
         <div className="w-full px-6 py-10 md:px-10 md:py-14 xl:px-14 2xl:px-20 space-y-5">
           <h2 className="sillage-section-title">Nos quartiers, notre territoire</h2>
           <p className="sillage-editorial-text max-w-3xl opacity-75">
-            De Wilson a Cimiez, du Port au Carre d&apos;Or: nous adaptons la strategie a la micro-zone
-            et au profil acquereur cible.
+            De Wilson à Cimiez, du Port au Carré d&apos;Or : nous adaptons la stratégie à la micro-zone
+            et au profil acquéreur ciblé.
           </p>
           <div className="flex flex-wrap gap-2">
             {neighborhoods.map((area) => (
@@ -230,16 +230,16 @@ export default async function Home() {
 
       <section id="contact-expert" className="sillage-section-light">
         <div className="w-full px-6 py-10 md:px-10 md:py-14 xl:px-14 2xl:px-20 space-y-3">
-          <h2 className="sillage-section-title">Parlez a un conseiller Sillage Immo</h2>
+          <h2 className="sillage-section-title">Parlez à un conseiller Sillage Immo</h2>
           <p className="sillage-editorial-text opacity-80 max-w-3xl">
-            Vous souhaitez cadrer votre projet vendeur, acquereur ou locatif ? Notre equipe est a
-            votre disposition pour une recommandation claire et personnalisee.
+            Vous souhaitez cadrer votre projet vendeur, acquéreur ou locatif ? Notre équipe est à
+            votre disposition pour une recommandation claire et personnalisée.
           </p>
           <a
             href="tel:+33423450485"
             className="inline-block rounded border border-[#141446] px-5 py-2.5 text-sm text-[#141446] hover:bg-[#141446] hover:text-[#f4ece4] transition-colors"
           >
-            Parler a un expert
+            Parler à un expert
           </a>
         </div>
       </section>

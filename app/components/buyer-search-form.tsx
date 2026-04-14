@@ -31,13 +31,13 @@ export function BuyerSearchForm() {
         setError(data.message ?? "Impossible d'enregistrer votre recherche.");
         return;
       }
-      setSuccess("Merci. Votre recherche est enregistree, un conseiller vous contacte rapidement.");
+      setSuccess("Merci. Votre recherche est enregistrée, un conseiller vous contacte rapidement.");
       setFullName("");
       setEmail("");
       setPhone("");
       setSearchDetails("");
     } catch {
-      setError("Erreur reseau, merci de reessayer.");
+      setError("Erreur réseau, merci de réessayer.");
     } finally {
       setLoading(false);
     }
@@ -45,10 +45,10 @@ export function BuyerSearchForm() {
 
   return (
     <section id="acquereur-form" className="sillage-card p-0 space-y-4">
-      <h2 className="sillage-section-title">Confier ma recherche acquereur</h2>
+      <h2 className="sillage-section-title">Confier ma recherche acquéreur</h2>
       <p className="text-sm opacity-75">
-        Decrivez votre recherche detaillee. Les meilleurs biens peuvent deja etre en base ou
-        arriver demain: nous vous accompagnons de A a Z pour capter les bonnes opportunites.
+        Décrivez votre recherche détaillée. Les meilleurs biens peuvent déjà être en base ou
+        arriver demain : nous vous accompagnons de A à Z pour capter les bonnes opportunités.
       </p>
       <div className="grid gap-3 sm:grid-cols-2 text-sm">
         <label>
@@ -69,7 +69,7 @@ export function BuyerSearchForm() {
           />
         </label>
         <label>
-          Telephone
+          Téléphone
           <input
             className="mt-1 w-full rounded border px-3 py-2"
             value={phone}
@@ -77,7 +77,7 @@ export function BuyerSearchForm() {
           />
         </label>
         <label className="sm:col-span-2">
-          Recherche detaillee (secteur, budget, type de bien, criteres) *
+          Recherche détaillée (secteur, budget, type de bien, critères) *
           <textarea
             className="mt-1 w-full rounded border px-3 py-2"
             rows={4}

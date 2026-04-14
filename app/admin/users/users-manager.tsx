@@ -57,7 +57,7 @@ export function UsersManager(props: {
         };
 
         if (!response.ok || !payload.ok || !payload.created) {
-          setError(payload.message ?? "Creation impossible.");
+          setError(payload.message ?? "Création impossible.");
           return;
         }
 
@@ -65,10 +65,10 @@ export function UsersManager(props: {
         setFirstName("");
         setLastName("");
         setRole("collaborateur");
-        setResult("Acces cree. La personne pourra maintenant se connecter avec Google.");
+        setResult("Accès créé. La personne pourra maintenant se connecter avec Google.");
         router.refresh();
       } catch {
-        setError("Creation impossible.");
+        setError("Création impossible.");
       }
     });
   };
@@ -86,12 +86,12 @@ export function UsersManager(props: {
         });
         const data = (await response.json()) as { ok?: boolean; message?: string };
         if (!response.ok || !data.ok) {
-          setError(data.message ?? "Mise a jour impossible.");
+          setError(data.message ?? "Mise à jour impossible.");
           return;
         }
         router.refresh();
       } catch {
-        setError("Mise a jour impossible.");
+        setError("Mise à jour impossible.");
       }
     });
   };
@@ -99,37 +99,37 @@ export function UsersManager(props: {
   return (
     <div className="space-y-6">
       <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6">
-        <h2 className="text-xl font-semibold text-[#141446]">Regle V1 des droits</h2>
+        <h2 className="text-xl font-semibold text-[#141446]">Règle V1 des droits</h2>
         <p className="mt-2 text-sm text-[#141446]/72">
-          Les droits sont attribues automatiquement selon le role. Aucun droit individuel n&apos;est
-          configure dans cette version.
+          Les droits sont attribués automatiquement selon le rôle. Aucun droit individuel n&apos;est
+          configuré dans cette version.
         </p>
         <div className="mt-4 grid gap-3 md:grid-cols-3">
           <article className="rounded-2xl border border-[rgba(20,20,70,0.12)] p-4 text-sm text-[#141446]/78">
             <p className="font-semibold text-[#141446]">Collaborateur</p>
-            <p className="mt-2">Travaille sur les leads et les biens selon le perimetre metier standard.</p>
+            <p className="mt-2">Travaille sur les leads et les biens selon le périmètre métier standard.</p>
           </article>
           <article className="rounded-2xl border border-[rgba(20,20,70,0.12)] p-4 text-sm text-[#141446]/78">
             <p className="font-semibold text-[#141446]">Manager</p>
-            <p className="mt-2">Pilote l&apos;activite metier mais ne gere pas les acces ni les roles.</p>
+            <p className="mt-2">Pilote l&apos;activité métier mais ne gère pas les accès ni les rôles.</p>
           </article>
           <article className="rounded-2xl border border-[rgba(20,20,70,0.12)] p-4 text-sm text-[#141446]/78">
             <p className="font-semibold text-[#141446]">Administrateur</p>
-            <p className="mt-2">Gere tous les acces, les changements de role et les activations.</p>
+            <p className="mt-2">Gère tous les accès, les changements de rôle et les activations.</p>
           </article>
         </div>
       </section>
 
       {props.canManage ? (
         <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6">
-          <h2 className="text-xl font-semibold text-[#141446]">Creer un acces admin</h2>
+          <h2 className="text-xl font-semibold text-[#141446]">Créer un accès admin</h2>
           <p className="mt-2 text-sm text-[#141446]/72">
             On autorise ici une adresse email interne, puis la connexion se fait ensuite avec Google.
           </p>
           <form onSubmit={createUser} className="mt-4 grid gap-3 md:grid-cols-5">
             <input
               className="rounded border px-3 py-2 text-sm"
-              placeholder="Prenom"
+              placeholder="Prénom"
               value={firstName}
               onChange={(event) => setFirstName(event.target.value)}
             />
@@ -159,7 +159,7 @@ export function UsersManager(props: {
               ))}
             </select>
             <button className="sillage-btn rounded px-4 py-2 text-sm disabled:opacity-60" disabled={isPending}>
-              {isPending ? "Creation..." : "Creer l'acces"}
+              {isPending ? "Création..." : "Créer l'accès"}
             </button>
           </form>
           {result ? <p className="mt-3 text-sm text-green-700">{result}</p> : null}
@@ -172,7 +172,7 @@ export function UsersManager(props: {
             <tr className="border-b border-[rgba(20,20,70,0.14)] text-left">
               <th className="p-3">Nom</th>
               <th className="p-3">Email</th>
-              <th className="p-3">Role</th>
+              <th className="p-3">Rôle</th>
               <th className="p-3">Statut</th>
               <th className="p-3">Actions</th>
             </tr>
@@ -223,15 +223,15 @@ export function UsersManager(props: {
                     user.role
                   )}
                   {props.currentProfileId === user.id ? (
-                    <p className="mt-2 text-xs text-[#141446]/60">Votre propre role ne peut pas etre modifie ici.</p>
+                    <p className="mt-2 text-xs text-[#141446]/60">Votre propre rôle ne peut pas être modifié ici.</p>
                   ) : null}
                   {user.role === "administrateur" && user.isActive && activeAdministrators <= 1 ? (
-                    <p className="mt-2 text-xs text-[#141446]/60">Dernier administrateur actif: role verrouille.</p>
+                    <p className="mt-2 text-xs text-[#141446]/60">Dernier administrateur actif : rôle verrouillé.</p>
                   ) : null}
                 </td>
                 <td className="p-3">
                   {user.isActive ? "Actif" : "Suspendu"}
-                  {user.authUserId ? " · Connecte" : " · En attente Google"}
+                  {user.authUserId ? " · Connecté" : " · En attente Google"}
                 </td>
                 <td className="p-3">
                   <div className="space-y-2">
@@ -256,13 +256,13 @@ export function UsersManager(props: {
                               onClick={() => updateUser(user.id, { isActive: !user.isActive })}
                               disabled={isPending || isSelf || isLastActiveAdmin}
                             >
-                              {user.isActive ? "Suspendre" : "Reactiver"}
+                              {user.isActive ? "Suspendre" : "Réactiver"}
                             </button>
                             {isSelf ? (
-                              <p className="text-xs text-[#141446]/60">Vous ne pouvez pas suspendre votre propre acces.</p>
+                              <p className="text-xs text-[#141446]/60">Vous ne pouvez pas suspendre votre propre accès.</p>
                             ) : null}
                             {isLastActiveAdmin ? (
-                              <p className="text-xs text-[#141446]/60">Le dernier administrateur actif ne peut pas etre suspendu.</p>
+                              <p className="text-xs text-[#141446]/60">Le dernier administrateur actif ne peut pas être suspendu.</p>
                             ) : null}
                           </>
                         );
