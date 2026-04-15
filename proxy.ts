@@ -4,6 +4,7 @@ import { DEFAULT_LOCALE, isSupportedLocale } from "@/lib/i18n/config";
 import { stripLocalePrefix } from "@/lib/i18n/routing";
 
 const EXCLUDED_PREFIXES = ["/api", "/_next", "/admin"];
+const LOCALE_COOKIE_NAME = "sillage-locale";
 
 const isExcludedPath = (pathname: string) => {
   if (pathname === "/favicon.ico" || pathname === "/icon.png") {
@@ -34,15 +35,25 @@ export function proxy(request: NextRequest) {
 
     headers.set("x-sillage-locale", maybeLocale);
     const rewriteUrl = new URL(`${strippedPath}${search}`, request.url);
-    return NextResponse.rewrite(rewriteUrl, {
+    const response = NextResponse.rewrite(rewriteUrl, {
       request: { headers },
     });
+    response.cookies.set(LOCALE_COOKIE_NAME, maybeLocale, {
+      path: "/",
+      sameSite: "lax",
+    });
+    return response;
   }
 
   headers.set("x-sillage-locale", DEFAULT_LOCALE);
-  return NextResponse.next({
+  const response = NextResponse.next({
     request: { headers },
   });
+  response.cookies.set(LOCALE_COOKIE_NAME, DEFAULT_LOCALE, {
+    path: "/",
+    sameSite: "lax",
+  });
+  return response;
 }
 
 export const config = {
