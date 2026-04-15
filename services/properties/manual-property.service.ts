@@ -1,5 +1,7 @@
 import "server-only";
 import crypto from "node:crypto";
+import type { AppLocale } from "@/lib/i18n/config";
+import { mergeLocalizedText } from "@/lib/i18n/localized-content";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import type { Database } from "@/types/db/supabase";
 import type { PropertyBusinessType } from "@/types/domain/properties";
@@ -140,6 +142,8 @@ export const getAdminPropertyDetail = async (propertyId: string): Promise<AdminP
 export const createManualProperty = async (input: {
   title: string;
   description?: string;
+  titleTranslations?: Partial<Record<AppLocale, string | null | undefined>>;
+  descriptionTranslations?: Partial<Record<AppLocale, string | null | undefined>>;
   propertyType?: string;
   city?: string;
   postalCode?: string;
@@ -156,6 +160,12 @@ export const createManualProperty = async (input: {
 }) => {
   const now = new Date().toISOString();
   const sourceRef = createSourceRef();
+  const propertyMetadata = mergeLocalizedText(
+    mergeLocalizedText({}, "title", input.titleTranslations),
+    "description",
+    input.descriptionTranslations
+  );
+  const listingMetadata = mergeLocalizedText({}, "title", input.titleTranslations);
 
   const { data: propertyData, error: propertyError } = await supabaseAdmin
     .from("properties")
@@ -176,7 +186,7 @@ export const createManualProperty = async (input: {
       has_terrace: input.hasTerrace ?? null,
       has_elevator: input.hasElevator ?? null,
       raw_payload: {},
-      metadata: {},
+      metadata: propertyMetadata,
       updated_at: now,
       last_synced_at: now,
     })
@@ -212,7 +222,7 @@ export const createManualProperty = async (input: {
       price_amount: input.priceAmount ?? null,
       published_at: input.isPublished ? now : null,
       updated_at: now,
-      listing_metadata: {},
+      listing_metadata: listingMetadata,
     })
     .select("*")
     .single();
@@ -231,6 +241,8 @@ export const updateManualProperty = async (input: {
   propertyId: string;
   title: string;
   description?: string;
+  titleTranslations?: Partial<Record<AppLocale, string | null | undefined>>;
+  descriptionTranslations?: Partial<Record<AppLocale, string | null | undefined>>;
   propertyType?: string;
   city?: string;
   postalCode?: string;
@@ -254,6 +266,12 @@ export const updateManualProperty = async (input: {
   }
 
   const now = new Date().toISOString();
+  const propertyMetadata = mergeLocalizedText(
+    mergeLocalizedText(detail.property.metadata, "title", input.titleTranslations),
+    "description",
+    input.descriptionTranslations
+  );
+  const listingMetadata = mergeLocalizedText(detail.listing?.listing_metadata ?? {}, "title", input.titleTranslations);
 
   const { error: propertyError } = await supabaseAdmin
     .from("properties")
@@ -269,6 +287,7 @@ export const updateManualProperty = async (input: {
       floor: input.floor ?? null,
       has_terrace: input.hasTerrace ?? null,
       has_elevator: input.hasElevator ?? null,
+      metadata: propertyMetadata,
       updated_at: now,
       last_synced_at: now,
     })
@@ -298,6 +317,7 @@ export const updateManualProperty = async (input: {
       price_amount: input.priceAmount ?? null,
       published_at: input.isPublished ? now : null,
       unpublished_at: input.isPublished ? null : now,
+      listing_metadata: listingMetadata,
       updated_at: now,
     })
     .eq("property_id", input.propertyId);

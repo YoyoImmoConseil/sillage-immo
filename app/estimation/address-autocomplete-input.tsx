@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { AppLocale } from "@/lib/i18n/config";
 
 type Suggestion = {
   label: string;
@@ -23,6 +24,7 @@ type AddressAutocompleteInputProps = {
   onAddressSelected: (data: AddressData) => void;
   disabled?: boolean;
   label?: string;
+  locale?: AppLocale;
 };
 
 const BAN_API_BASE_URL = "https://api-adresse.data.gouv.fr/search/";
@@ -35,7 +37,30 @@ export function AddressAutocompleteInput({
   onAddressSelected,
   disabled,
   label = "Adresse du bien *",
+  locale = "fr",
 }: AddressAutocompleteInputProps) {
+  const copy = {
+    fr: {
+      label,
+      apiError: "Autocomplete indisponible temporairement.",
+      helper: "Autocomplete adresse via Base Adresse Nationale (gratuite).",
+    },
+    en: {
+      label: label === "Adresse du bien *" ? "Property address *" : label,
+      apiError: "Address autocomplete is temporarily unavailable.",
+      helper: "Address autocomplete powered by the French national address database.",
+    },
+    es: {
+      label: label === "Adresse du bien *" ? "Dirección del inmueble *" : label,
+      apiError: "El autocompletado de direcciones no está disponible temporalmente.",
+      helper: "Autocompletado de direcciones mediante la Base Adresse Nationale francesa.",
+    },
+    ru: {
+      label: label === "Adresse du bien *" ? "Адрес объекта *" : label,
+      apiError: "Автодополнение адреса временно недоступно.",
+      helper: "Автодополнение адресов на базе французской национальной адресной базы.",
+    },
+  }[locale];
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -100,7 +125,7 @@ export function AddressAutocompleteInput({
         })
         .catch(() => {
           setSuggestions([]);
-          setError("Autocomplete indisponible temporairement.");
+          setError(copy.apiError);
         });
     }, 250);
 
@@ -108,7 +133,7 @@ export function AddressAutocompleteInput({
       window.clearTimeout(timeout);
       controller.abort();
     };
-  }, [value]);
+  }, [copy.apiError, value]);
 
   const selectSuggestion = (suggestion: Suggestion) => {
     onAddressChange(suggestion.address);
@@ -123,7 +148,7 @@ export function AddressAutocompleteInput({
 
   return (
     <label className="sm:col-span-2 text-sm">
-      {label}
+      {copy.label}
       <div ref={wrapperRef} className="relative mt-1">
         <input
           className="w-full rounded border px-3 py-2"
@@ -154,7 +179,7 @@ export function AddressAutocompleteInput({
       </div>
       {error ? <p className="mt-1 text-xs text-amber-700">{error}</p> : null}
       <p className="mt-1 text-xs opacity-60">
-        Autocomplete adresse via Base Adresse Nationale (gratuite).
+        {copy.helper}
       </p>
     </label>
   );

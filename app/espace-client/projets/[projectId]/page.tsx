@@ -1,28 +1,61 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getRequestLocale } from "@/lib/i18n/request";
+import { formatCurrency, formatDateTime } from "@/lib/i18n/format";
+import {
+  formatPropertyTypeLabel as formatLocalizedPropertyTypeLabel,
+  getMandateStatusLabel,
+  getSellerProjectStatusLabel,
+} from "@/lib/i18n/domain";
+import { localizePath } from "@/lib/i18n/routing";
 import { requireClientSpacePageContext } from "@/lib/client-space/auth";
 import { getClientPortalProjectDetail } from "@/services/clients/client-portal.service";
 import type { SellerPortalProjectDetail } from "@/services/clients/seller-portal.service";
-import { MANDATE_STATUS_LABELS, SELLER_PROJECT_STATUS_LABELS } from "@/types/domain/client";
-import { formatPropertyTypeLabel } from "@/lib/properties/property-type-label";
+import type { AppLocale } from "@/lib/i18n/config";
 
 type SellerProjectPageProps = {
   params: Promise<{ projectId: string }>;
 };
 
-const formatDate = (value: string) => new Date(value).toLocaleString("fr-FR");
-
-const getSellerEventCopy = (eventName: string, eventCategory: string) => {
+const getSellerEventCopy = (eventName: string, eventCategory: string, locale: AppLocale) => {
   switch (eventName) {
     case "client_invitation.sent":
       return {
-        title: "Votre accès à l'espace client est prêt",
-        body: "Un lien de connexion sécurisé vous a été envoyé pour retrouver votre projet à tout moment.",
+        title:
+          locale === "en"
+            ? "Your client portal access is ready"
+            : locale === "es"
+              ? "Su acceso al espacio cliente está listo"
+              : locale === "ru"
+                ? "Доступ к вашему клиентскому пространству готов"
+                : "Votre accès à l'espace client est prêt",
+        body:
+          locale === "en"
+            ? "A secure login link has been sent so you can find your project at any time."
+            : locale === "es"
+              ? "Se le ha enviado un enlace seguro para que pueda encontrar su proyecto en cualquier momento."
+              : locale === "ru"
+                ? "Вам отправлена защищенная ссылка для входа, чтобы вы могли в любой момент найти свой проект."
+                : "Un lien de connexion sécurisé vous a été envoyé pour retrouver votre projet à tout moment.",
       };
     case "client_invitation.accepted":
       return {
-        title: "Votre espace client est actif",
-        body: "Vous pouvez maintenant suivre votre projet vendeur et retrouver vos informations en un seul endroit.",
+        title:
+          locale === "en"
+            ? "Your client portal is active"
+            : locale === "es"
+              ? "Su espacio cliente está activo"
+              : locale === "ru"
+                ? "Ваше клиентское пространство активно"
+                : "Votre espace client est actif",
+        body:
+          locale === "en"
+            ? "You can now follow your seller project and access your information in one place."
+            : locale === "es"
+              ? "Ahora puede seguir su proyecto vendedor y encontrar toda su información en un solo lugar."
+              : locale === "ru"
+                ? "Теперь вы можете следить за своим проектом продавца и находить всю информацию в одном месте."
+                : "Vous pouvez maintenant suivre votre projet vendeur et retrouver vos informations en un seul endroit.",
       };
     case "project_property.linked_from_estimation":
     case "project_property.linked":
@@ -32,8 +65,22 @@ const getSellerEventCopy = (eventName: string, eventCategory: string) => {
       };
     case "valuation.recorded":
       return {
-        title: "Votre estimation est disponible",
-        body: "Votre première fourchette de valeur a été enregistrée dans votre espace client.",
+        title:
+          locale === "en"
+            ? "Your valuation is available"
+            : locale === "es"
+              ? "Su valoración está disponible"
+              : locale === "ru"
+                ? "Ваша оценка доступна"
+                : "Votre estimation est disponible",
+        body:
+          locale === "en"
+            ? "Your first value range has been recorded in your client portal."
+            : locale === "es"
+              ? "Su primera horquilla de valor se ha registrado en su espacio cliente."
+              : locale === "ru"
+                ? "Первый диапазон оценки сохранен в вашем клиентском пространстве."
+                : "Votre première fourchette de valeur a été enregistrée dans votre espace client.",
       };
     case "seller_project.created_from_lead":
       return {
@@ -49,16 +96,170 @@ const getSellerEventCopy = (eventName: string, eventCategory: string) => {
       return {
         title:
           eventCategory === "valuation"
-            ? "Votre projet évolue"
+            ? locale === "en"
+              ? "Your project is moving forward"
+              : locale === "es"
+                ? "Su proyecto avanza"
+                : locale === "ru"
+                  ? "Ваш проект развивается"
+                  : "Votre projet évolue"
             : eventCategory === "invitation"
-              ? "Votre accès client progresse"
-              : "Une nouvelle étape a été franchie",
-        body: "Votre espace client a été mis à jour avec une nouvelle information concernant votre projet.",
+              ? locale === "en"
+                ? "Your client access is progressing"
+                : locale === "es"
+                  ? "Su acceso cliente avanza"
+                  : locale === "ru"
+                    ? "Ваш клиентский доступ развивается"
+                    : "Votre accès client progresse"
+              : locale === "en"
+                ? "A new step has been completed"
+                : locale === "es"
+                  ? "Se ha alcanzado una nueva etapa"
+                  : locale === "ru"
+                    ? "Пройден новый этап"
+                    : "Une nouvelle étape a été franchie",
+        body:
+          locale === "en"
+            ? "Your client portal has been updated with new information about your project."
+            : locale === "es"
+              ? "Su espacio cliente se ha actualizado con nueva información sobre su proyecto."
+              : locale === "ru"
+                ? "Ваше клиентское пространство обновлено новой информацией о вашем проекте."
+                : "Votre espace client a été mis à jour avec une nouvelle information concernant votre projet.",
       };
   }
 };
 
-function SellerProjectDetailView({ detail }: { detail: SellerPortalProjectDetail }) {
+function SellerProjectDetailView({
+  detail,
+  locale,
+}: {
+  detail: SellerPortalProjectDetail;
+  locale: AppLocale;
+}) {
+  const copy = {
+    fr: {
+      back: "Retour à mes projets",
+      sellerProject: "Projet vendeur",
+      projectStatus: "Statut projet",
+      mandate: "Mandat",
+      lastLogin: "Dernière connexion",
+      firstLogin: "Première connexion",
+      valuation: "Dernière estimation",
+      indicative: "Valeur indicative",
+      range: "Fourchette",
+      source: "Source",
+      updated: "Mise à jour le",
+      unavailable: "Non disponible",
+      noValuation: "Aucune estimation détaillée n'est encore disponible.",
+      linkedProperty: "Bien rattaché",
+      noProperty: "Aucun bien n'est encore rattaché à ce projet.",
+      syncingAddress: "Adresse en cours de synchronisation",
+      unknownType: "Type non renseigné",
+      primaryProperty: "Bien principal",
+      history: "Historique récent",
+      noEvents: "Aucun événement visible pour le moment.",
+      advisor: "Votre conseiller",
+      noAdvisor: "Aucun conseiller n'est encore affecté. Notre équipe reviendra vers vous.",
+      nextAction: "Prochaine action",
+      book: "Prendre rendez-vous",
+      contactAdvisor: "Contacter mon conseiller par email",
+      contactTeam: "Contacter l'équipe Sillage Immo",
+      notDefined: "À définir",
+      none: "Aucun",
+    },
+    en: {
+      back: "Back to my projects",
+      sellerProject: "Seller project",
+      projectStatus: "Project status",
+      mandate: "Mandate",
+      lastLogin: "Last login",
+      firstLogin: "First login",
+      valuation: "Latest valuation",
+      indicative: "Indicative value",
+      range: "Range",
+      source: "Source",
+      updated: "Updated on",
+      unavailable: "Unavailable",
+      noValuation: "No detailed valuation is available yet.",
+      linkedProperty: "Linked property",
+      noProperty: "No property is linked to this project yet.",
+      syncingAddress: "Address is being synchronized",
+      unknownType: "Property type not provided",
+      primaryProperty: "Primary property",
+      history: "Recent timeline",
+      noEvents: "No visible event at the moment.",
+      advisor: "Your advisor",
+      noAdvisor: "No advisor has been assigned yet. Our team will get back to you.",
+      nextAction: "Next action",
+      book: "Book an appointment",
+      contactAdvisor: "Contact my advisor by email",
+      contactTeam: "Contact the Sillage Immo team",
+      notDefined: "To be defined",
+      none: "None",
+    },
+    es: {
+      back: "Volver a mis proyectos",
+      sellerProject: "Proyecto vendedor",
+      projectStatus: "Estado del proyecto",
+      mandate: "Mandato",
+      lastLogin: "Última conexión",
+      firstLogin: "Primera conexión",
+      valuation: "Última valoración",
+      indicative: "Valor indicativo",
+      range: "Horquilla",
+      source: "Fuente",
+      updated: "Actualizado el",
+      unavailable: "No disponible",
+      noValuation: "Aún no hay una valoración detallada disponible.",
+      linkedProperty: "Inmueble vinculado",
+      noProperty: "Aún no hay ningún inmueble vinculado a este proyecto.",
+      syncingAddress: "Dirección en curso de sincronización",
+      unknownType: "Tipo no indicado",
+      primaryProperty: "Inmueble principal",
+      history: "Historial reciente",
+      noEvents: "No hay eventos visibles por el momento.",
+      advisor: "Su asesor",
+      noAdvisor: "Aún no se ha asignado ningún asesor. Nuestro equipo se pondrá en contacto con usted.",
+      nextAction: "Próxima acción",
+      book: "Reservar una cita",
+      contactAdvisor: "Contactar con mi asesor por email",
+      contactTeam: "Contactar con el equipo de Sillage Immo",
+      notDefined: "Por definir",
+      none: "Ninguno",
+    },
+    ru: {
+      back: "Назад к моим проектам",
+      sellerProject: "Проект продавца",
+      projectStatus: "Статус проекта",
+      mandate: "Мандат",
+      lastLogin: "Последний вход",
+      firstLogin: "Первый вход",
+      valuation: "Последняя оценка",
+      indicative: "Ориентировочная стоимость",
+      range: "Диапазон",
+      source: "Источник",
+      updated: "Обновлено",
+      unavailable: "Недоступно",
+      noValuation: "Подробная оценка пока недоступна.",
+      linkedProperty: "Привязанный объект",
+      noProperty: "К этому проекту пока не привязан ни один объект.",
+      syncingAddress: "Адрес синхронизируется",
+      unknownType: "Тип объекта не указан",
+      primaryProperty: "Основной объект",
+      history: "Недавняя история",
+      noEvents: "Пока нет видимых событий.",
+      advisor: "Ваш консультант",
+      noAdvisor: "Консультант еще не назначен. Наша команда свяжется с вами.",
+      nextAction: "Следующее действие",
+      book: "Записаться на встречу",
+      contactAdvisor: "Связаться с консультантом по email",
+      contactTeam: "Связаться с командой Sillage Immo",
+      notDefined: "Уточняется",
+      none: "Нет",
+    },
+  }[locale];
+  const formatPortalDate = (value: string) => formatDateTime(value, locale);
   const appointmentUrl =
     detail.advisor?.bookingUrl ??
     detail.properties.find((property) => property.isPrimary && property.appointmentServiceUrl)
@@ -74,41 +275,33 @@ function SellerProjectDetailView({ detail }: { detail: SellerPortalProjectDetail
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap gap-4">
-        <Link href="/espace-client" className="text-sm underline text-[#141446]">
-          Retour à mes projets
+        <Link href={localizePath("/espace-client", locale)} className="text-sm underline text-[#141446]">
+          {copy.back}
         </Link>
       </div>
 
       <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-8">
-        <p className="text-xs uppercase tracking-[0.18em] text-[#141446]/60">Projet vendeur</p>
+        <p className="text-xs uppercase tracking-[0.18em] text-[#141446]/60">{copy.sellerProject}</p>
         <h2 className="mt-2 text-2xl font-semibold text-[#141446]">
-          {detail.project.title ?? "Projet vendeur"}
+          {detail.project.title ?? copy.sellerProject}
         </h2>
         <div className="mt-4 grid gap-4 md:grid-cols-3">
           <div className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-4">
-            <p className="text-xs uppercase text-[#141446]/60">Statut projet</p>
+            <p className="text-xs uppercase text-[#141446]/60">{copy.projectStatus}</p>
             <p className="mt-2 text-[#141446]">
-              {detail.project.projectStatus
-                ? SELLER_PROJECT_STATUS_LABELS[
-                    detail.project.projectStatus as keyof typeof SELLER_PROJECT_STATUS_LABELS
-                  ] ?? detail.project.projectStatus
-                : "À définir"}
+              {getSellerProjectStatusLabel(detail.project.projectStatus, locale) ?? copy.notDefined}
             </p>
           </div>
           <div className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-4">
-            <p className="text-xs uppercase text-[#141446]/60">Mandat</p>
+            <p className="text-xs uppercase text-[#141446]/60">{copy.mandate}</p>
             <p className="mt-2 text-[#141446]">
-              {detail.project.mandateStatus
-                ? MANDATE_STATUS_LABELS[
-                    detail.project.mandateStatus as keyof typeof MANDATE_STATUS_LABELS
-                  ] ?? detail.project.mandateStatus
-                : "Aucun"}
+              {getMandateStatusLabel(detail.project.mandateStatus, locale) ?? copy.none}
             </p>
           </div>
           <div className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-4">
-            <p className="text-xs uppercase text-[#141446]/60">Dernière connexion</p>
+            <p className="text-xs uppercase text-[#141446]/60">{copy.lastLogin}</p>
             <p className="mt-2 text-[#141446]">
-              {detail.client.lastLoginAt ? formatDate(detail.client.lastLoginAt) : "Première connexion"}
+              {detail.client.lastLoginAt ? formatPortalDate(detail.client.lastLoginAt) : copy.firstLogin}
             </p>
           </div>
         </div>
@@ -117,56 +310,58 @@ function SellerProjectDetailView({ detail }: { detail: SellerPortalProjectDetail
       <section className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
         <div className="space-y-6">
           <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-8">
-            <h3 className="text-xl font-semibold text-[#141446]">Dernière estimation</h3>
+            <h3 className="text-xl font-semibold text-[#141446]">{copy.valuation}</h3>
             {detail.valuation ? (
               <div className="mt-4 space-y-2 text-[#141446]">
                 <p>
-                  Valeur indicative :{" "}
+                  {copy.indicative} :{" "}
                   <strong>
                     {detail.valuation.estimatedPrice
-                      ? `${detail.valuation.estimatedPrice.toLocaleString("fr-FR")} €`
-                      : "Non disponible"}
+                      ? formatCurrency(detail.valuation.estimatedPrice, locale, "EUR")
+                      : copy.unavailable}
                   </strong>
                 </p>
                 {(detail.valuation.valuationLow || detail.valuation.valuationHigh) && (
                   <p className="text-sm text-[#141446]/75">
-                    Fourchette :
+                    {copy.range} :
                     {detail.valuation.valuationLow
-                      ? ` ${detail.valuation.valuationLow.toLocaleString("fr-FR")} €`
+                      ? ` ${formatCurrency(detail.valuation.valuationLow, locale, "EUR")}`
                       : " n/a"}
                     {" - "}
                     {detail.valuation.valuationHigh
-                      ? `${detail.valuation.valuationHigh.toLocaleString("fr-FR")} €`
+                      ? `${formatCurrency(detail.valuation.valuationHigh, locale, "EUR")}`
                       : "n/a"}
                   </p>
                 )}
                 <p className="text-sm text-[#141446]/75">
-                  Source : {detail.valuation.provider ?? "Sillage Immo"}
-                  {detail.valuation.syncedAt ? ` · Mise à jour le ${formatDate(detail.valuation.syncedAt)}` : ""}
+                  {copy.source} : {detail.valuation.provider ?? "Sillage Immo"}
+                  {detail.valuation.syncedAt ? ` · ${copy.updated} ${formatPortalDate(detail.valuation.syncedAt)}` : ""}
                 </p>
               </div>
             ) : (
               <p className="mt-4 text-sm text-[#141446]/75">
-                Aucune estimation détaillée n&apos;est encore disponible.
+                {copy.noValuation}
               </p>
             )}
           </section>
 
           <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-8">
-            <h3 className="text-xl font-semibold text-[#141446]">Bien rattaché</h3>
+            <h3 className="text-xl font-semibold text-[#141446]">{copy.linkedProperty}</h3>
             {detail.properties.length === 0 ? (
-              <p className="mt-4 text-sm text-[#141446]/75">Aucun bien n&apos;est encore rattaché à ce projet.</p>
+              <p className="mt-4 text-sm text-[#141446]/75">{copy.noProperty}</p>
             ) : (
               <div className="mt-4 space-y-3">
                 {detail.properties.map((property) => (
                   <div key={property.id} className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-4">
                     <p className="font-medium text-[#141446]">
-                      {property.formattedAddress ?? "Adresse en cours de synchronisation"}
+                      {property.formattedAddress ?? copy.syncingAddress}
                     </p>
                     <p className="mt-1 text-sm text-[#141446]/75">
-                      {property.propertyType ? formatPropertyTypeLabel(property.propertyType) : "Type non renseigné"}
+                      {property.propertyType
+                        ? formatLocalizedPropertyTypeLabel(property.propertyType, locale)
+                        : copy.unknownType}
                       {property.livingArea ? ` · ${property.livingArea} m²` : ""}
-                      {property.isPrimary ? " · Bien principal" : ""}
+                      {property.isPrimary ? ` · ${copy.primaryProperty}` : ""}
                     </p>
                   </div>
                 ))}
@@ -175,20 +370,20 @@ function SellerProjectDetailView({ detail }: { detail: SellerPortalProjectDetail
           </section>
 
           <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-8">
-            <h3 className="text-xl font-semibold text-[#141446]">Historique récent</h3>
+            <h3 className="text-xl font-semibold text-[#141446]">{copy.history}</h3>
             {detail.events.length === 0 ? (
-              <p className="mt-4 text-sm text-[#141446]/75">Aucun événement visible pour le moment.</p>
+              <p className="mt-4 text-sm text-[#141446]/75">{copy.noEvents}</p>
             ) : (
               <div className="mt-4 space-y-3">
                 {detail.events.map((event) => (
                   <div key={event.id} className="flex flex-col gap-1 rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-4">
                     {(() => {
-                      const copy = getSellerEventCopy(event.eventName, event.eventCategory);
+                      const eventCopy = getSellerEventCopy(event.eventName, event.eventCategory, locale);
                       return (
                         <>
-                          <span className="text-xs uppercase text-[#141446]/55">{formatDate(event.createdAt)}</span>
-                          <span className="text-sm font-medium text-[#141446]">{copy.title}</span>
-                          <span className="text-sm text-[#141446]/72">{copy.body}</span>
+                          <span className="text-xs uppercase text-[#141446]/55">{formatPortalDate(event.createdAt)}</span>
+                          <span className="text-sm font-medium text-[#141446]">{eventCopy.title}</span>
+                          <span className="text-sm text-[#141446]/72">{eventCopy.body}</span>
                         </>
                       );
                     })()}
@@ -201,7 +396,7 @@ function SellerProjectDetailView({ detail }: { detail: SellerPortalProjectDetail
 
         <div className="space-y-6">
           <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-8">
-            <h3 className="text-xl font-semibold text-[#141446]">Votre conseiller</h3>
+            <h3 className="text-xl font-semibold text-[#141446]">{copy.advisor}</h3>
             {detail.advisor ? (
               <div className="mt-4 space-y-2 text-sm text-[#141446]">
                 <p className="font-medium text-base">{advisorDisplayName}</p>
@@ -220,13 +415,13 @@ function SellerProjectDetailView({ detail }: { detail: SellerPortalProjectDetail
               </div>
             ) : (
               <p className="mt-4 text-sm text-[#141446]/75">
-                Aucun conseiller n&apos;est encore affecté. Notre équipe reviendra vers vous.
+                {copy.noAdvisor}
               </p>
             )}
           </section>
 
           <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-8">
-            <h3 className="text-xl font-semibold text-[#141446]">Prochaine action</h3>
+            <h3 className="text-xl font-semibold text-[#141446]">{copy.nextAction}</h3>
             <div className="mt-4 space-y-3 text-sm text-[#141446]">
               {appointmentUrl ? (
                 <a
@@ -235,16 +430,16 @@ function SellerProjectDetailView({ detail }: { detail: SellerPortalProjectDetail
                   rel="noreferrer"
                   className="inline-block rounded bg-[#141446] px-4 py-2 text-[#f4ece4]"
                 >
-                  Prendre rendez-vous
+                  {copy.book}
                 </a>
               ) : null}
               {detail.advisor ? (
                 <a href={`mailto:${detail.advisor.email}`} className="block underline">
-                  Contacter mon conseiller par email
+                  {copy.contactAdvisor}
                 </a>
               ) : (
                 <a href="mailto:contact@sillage-immo.com" className="block underline">
-                  Contacter l&apos;équipe Sillage Immo
+                  {copy.contactTeam}
                 </a>
               )}
             </div>
@@ -256,11 +451,13 @@ function SellerProjectDetailView({ detail }: { detail: SellerPortalProjectDetail
 }
 
 export default async function SellerProjectPage({ params }: SellerProjectPageProps) {
+  const locale = await getRequestLocale();
   const context = await requireClientSpacePageContext();
   const { projectId } = await params;
   const detail = await getClientPortalProjectDetail({
     authUserId: context.authUserId,
     projectId,
+    locale,
   });
 
   if (!detail) {
@@ -268,34 +465,120 @@ export default async function SellerProjectPage({ params }: SellerProjectPagePro
   }
 
   if (detail.kind === "seller") {
-    return <SellerProjectDetailView detail={detail.detail} />;
+    return <SellerProjectDetailView detail={detail.detail} locale={locale} />;
   }
+
+  const copy = {
+    fr: {
+      back: "Retour à mes projets",
+      buyer: "Projet acquéreur",
+      client: "Projet client",
+      status: "Statut projet",
+      createdAt: "Création",
+      linkedSearch: "Recherche rattachée",
+      preparing: "Projet en préparation",
+      searchArea: "Zone de recherche",
+      searchAreaFallback: "Zone en cours de qualification",
+      budget: "Budget",
+      budgetFallback: "Budget à préciser",
+      searchStatus: "Statut recherche",
+      searchStatusFallback: "Recherche en cours de qualification",
+      financing: "Financement",
+      financingFallback: "Situation non renseignée",
+      searchedTypes: "Types recherchés",
+      typesFallback: "Types de biens à préciser",
+      multiProject:
+        "Votre compte peut déjà accueillir plusieurs projets. Le détail de ce parcours continuera à s'enrichir sans changer votre mode de connexion.",
+    },
+    en: {
+      back: "Back to my projects",
+      buyer: "Buyer project",
+      client: "Client project",
+      status: "Project status",
+      createdAt: "Created on",
+      linkedSearch: "Linked search",
+      preparing: "Project being prepared",
+      searchArea: "Search area",
+      searchAreaFallback: "Area being qualified",
+      budget: "Budget",
+      budgetFallback: "Budget to be clarified",
+      searchStatus: "Search status",
+      searchStatusFallback: "Search being qualified",
+      financing: "Financing",
+      financingFallback: "Situation not provided",
+      searchedTypes: "Requested property types",
+      typesFallback: "Property types to be defined",
+      multiProject:
+        "Your account can already host several projects. The detail of this journey will continue to grow without changing your login mode.",
+    },
+    es: {
+      back: "Volver a mis proyectos",
+      buyer: "Proyecto comprador",
+      client: "Proyecto cliente",
+      status: "Estado del proyecto",
+      createdAt: "Creación",
+      linkedSearch: "Búsqueda vinculada",
+      preparing: "Proyecto en preparación",
+      searchArea: "Zona de búsqueda",
+      searchAreaFallback: "Zona en fase de cualificación",
+      budget: "Presupuesto",
+      budgetFallback: "Presupuesto por precisar",
+      searchStatus: "Estado de la búsqueda",
+      searchStatusFallback: "Búsqueda en fase de cualificación",
+      financing: "Financiación",
+      financingFallback: "Situación no indicada",
+      searchedTypes: "Tipos buscados",
+      typesFallback: "Tipos de inmueble por precisar",
+      multiProject:
+        "Su cuenta ya puede acoger varios proyectos. El detalle de este recorrido seguirá enriqueciéndose sin cambiar su modo de conexión.",
+    },
+    ru: {
+      back: "Назад к моим проектам",
+      buyer: "Проект покупателя",
+      client: "Клиентский проект",
+      status: "Статус проекта",
+      createdAt: "Создан",
+      linkedSearch: "Привязанный поиск",
+      preparing: "Проект в подготовке",
+      searchArea: "Зона поиска",
+      searchAreaFallback: "Зона уточняется",
+      budget: "Бюджет",
+      budgetFallback: "Бюджет уточняется",
+      searchStatus: "Статус поиска",
+      searchStatusFallback: "Поиск в процессе квалификации",
+      financing: "Финансирование",
+      financingFallback: "Информация не указана",
+      searchedTypes: "Искомые типы объектов",
+      typesFallback: "Типы объектов уточняются",
+      multiProject:
+        "Ваша учетная запись уже может объединять несколько проектов. Детализация этого сценария будет расширяться без изменения способа входа.",
+    },
+  }[locale];
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap gap-4">
-        <Link href="/espace-client" className="text-sm underline text-[#141446]">
-          Retour à mes projets
+        <Link href={localizePath("/espace-client", locale)} className="text-sm underline text-[#141446]">
+          {copy.back}
         </Link>
       </div>
 
       <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-8">
         <p className="text-xs uppercase tracking-[0.18em] text-[#141446]/60">
-          {detail.kind === "buyer" ? "Projet acquéreur" : detail.detail.projectTypeLabel}
+          {detail.kind === "buyer" ? copy.buyer : detail.detail.projectTypeLabel}
         </p>
         <h2 className="mt-2 text-2xl font-semibold text-[#141446]">
-          {detail.detail.title ??
-            (detail.kind === "buyer" ? "Projet acquéreur" : "Projet client")}
+          {detail.detail.title ?? (detail.kind === "buyer" ? copy.buyer : copy.client)}
         </h2>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <div className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-4">
-            <p className="text-xs uppercase text-[#141446]/60">Statut projet</p>
+            <p className="text-xs uppercase text-[#141446]/60">{copy.status}</p>
             <p className="mt-2 text-[#141446]">{detail.detail.status}</p>
           </div>
           <div className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-4">
-            <p className="text-xs uppercase text-[#141446]/60">Création</p>
+            <p className="text-xs uppercase text-[#141446]/60">{copy.createdAt}</p>
             <p className="mt-2 text-[#141446]">
-              {formatDate(detail.detail.createdAt)}
+              {formatDateTime(detail.detail.createdAt, locale)}
             </p>
           </div>
         </div>
@@ -303,33 +586,33 @@ export default async function SellerProjectPage({ params }: SellerProjectPagePro
 
       <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-8">
         <h3 className="text-xl font-semibold text-[#141446]">
-          {detail.kind === "buyer" ? "Recherche rattachée" : "Projet en préparation"}
+          {detail.kind === "buyer" ? copy.linkedSearch : copy.preparing}
         </h3>
         <p className="mt-4 text-sm text-[#141446]/75">{detail.detail.message}</p>
         {detail.kind === "buyer" ? (
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             <div className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-4">
-              <p className="text-xs uppercase text-[#141446]/60">Zone de recherche</p>
+              <p className="text-xs uppercase text-[#141446]/60">{copy.searchArea}</p>
               <p className="mt-2 text-[#141446]">
-                {detail.detail.locationLabel ?? "Zone en cours de qualification"}
+                {detail.detail.locationLabel ?? copy.searchAreaFallback}
               </p>
             </div>
             <div className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-4">
-              <p className="text-xs uppercase text-[#141446]/60">Budget</p>
+              <p className="text-xs uppercase text-[#141446]/60">{copy.budget}</p>
               <p className="mt-2 text-[#141446]">
-                {detail.detail.budgetLabel ?? "Budget à préciser"}
+                {detail.detail.budgetLabel ?? copy.budgetFallback}
               </p>
             </div>
             <div className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-4">
-              <p className="text-xs uppercase text-[#141446]/60">Statut recherche</p>
+              <p className="text-xs uppercase text-[#141446]/60">{copy.searchStatus}</p>
               <p className="mt-2 text-[#141446]">
-                {detail.detail.searchStatus ?? "Recherche en cours de qualification"}
+                {detail.detail.searchStatus ?? copy.searchStatusFallback}
               </p>
             </div>
             <div className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-4">
-              <p className="text-xs uppercase text-[#141446]/60">Financement</p>
+              <p className="text-xs uppercase text-[#141446]/60">{copy.financing}</p>
               <p className="mt-2 text-[#141446]">
-                {detail.detail.financingStatus ?? "Situation non renseignée"}
+                {detail.detail.financingStatus ?? copy.financingFallback}
               </p>
             </div>
           </div>
@@ -337,15 +620,14 @@ export default async function SellerProjectPage({ params }: SellerProjectPagePro
         {detail.kind === "buyer" && (detail.detail.propertyTypes.length > 0 || detail.detail.roomsMin || detail.detail.livingAreaMin) ? (
           <p className="mt-4 text-sm text-[#141446]/70">
             {detail.detail.propertyTypes.length > 0
-              ? `Types recherchés : ${detail.detail.propertyTypes.join(", ")}`
-              : "Types de biens à préciser"}
+              ? `${copy.searchedTypes} : ${detail.detail.propertyTypes.join(", ")}`
+              : copy.typesFallback}
             {detail.detail.roomsMin ? ` · ${detail.detail.roomsMin} pièce(s) min.` : ""}
             {detail.detail.livingAreaMin ? ` · ${detail.detail.livingAreaMin} m² min.` : ""}
           </p>
         ) : null}
         <p className="mt-3 text-sm text-[#141446]/70">
-          Votre compte peut déjà accueillir plusieurs projets. Le détail de ce parcours continuera à
-          s&apos;enrichir sans changer votre mode de connexion.
+          {copy.multiProject}
         </p>
       </section>
     </div>

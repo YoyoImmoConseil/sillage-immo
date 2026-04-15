@@ -3,6 +3,7 @@ import { Libre_Baskerville, Montserrat, Open_Sans } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
 import { SiteHeader } from "./components/site-header";
+import { getRequestLocale } from "@/lib/i18n/request";
 
 const hkGrotesk = localFont({
   variable: "--font-hk-grotesk",
@@ -50,13 +51,15 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getRequestLocale();
+
   return (
-    <html lang="fr">
+    <html lang={locale}>
       <body
         className={`${hkGrotesk.variable} ${montagna.variable} ${libreBaskerville.variable} ${montserrat.variable} ${openSans.variable} antialiased`}
       >

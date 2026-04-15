@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { DEFAULT_LOCALE, isSupportedLocale } from "@/lib/i18n/config";
 import {
   listPropertyTypesForBusinessType,
   listPublicPropertyListings,
@@ -26,6 +27,8 @@ const isBusinessType = (value: string | null): value is PropertyBusinessType => 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const businessTypeParam = searchParams.get("businessType");
+  const headerLocale = request.headers.get("x-sillage-locale");
+  const locale = isSupportedLocale(headerLocale) ? headerLocale : DEFAULT_LOCALE;
 
   if (!isBusinessType(businessTypeParam)) {
     return NextResponse.json(
@@ -36,6 +39,7 @@ export async function GET(request: Request) {
 
   const [listings, propertyTypes] = await Promise.all([
     listPublicPropertyListings({
+      locale,
       businessType: businessTypeParam,
       city: searchParams.get("city") ?? undefined,
       propertyType: searchParams.get("type") ?? undefined,

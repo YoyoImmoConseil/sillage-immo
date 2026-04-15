@@ -2,14 +2,9 @@
 
 import Link from "next/link";
 import { useState } from "react";
-
-const navItems = [
-  { href: "/vente", label: "Vente" },
-  { href: "/location", label: "Location" },
-  { href: "/estimation", label: "Estimation" },
-] as const;
-
-const clientSpaceItem = { href: "/espace-client/login", label: "Mon Espace Sillage" } as const;
+import { usePathname } from "next/navigation";
+import { LanguageSwitcher } from "./language-switcher";
+import { getPathLocale, localizePath } from "@/lib/i18n/routing";
 
 type SiteHeaderClientProps = {
   isMobileOs: boolean;
@@ -17,15 +12,68 @@ type SiteHeaderClientProps = {
 
 export function SiteHeaderClient({ isMobileOs }: SiteHeaderClientProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const pathname = usePathname() ?? "/";
+  const locale = getPathLocale(pathname);
+  const isAdminArea = pathname === "/admin" || pathname.startsWith("/admin/") || pathname === "/auth/callback";
+
+  const copy = {
+    fr: {
+      home: "Accueil",
+      sale: "Vente",
+      rental: "Location",
+      valuation: "Estimation",
+      clientSpace: "Mon Espace Sillage",
+      openMenu: "Ouvrir le menu",
+      closeMenu: "Fermer le menu",
+    },
+    en: {
+      home: "Home",
+      sale: "Sales",
+      rental: "Rentals",
+      valuation: "Valuation",
+      clientSpace: "My Sillage Space",
+      openMenu: "Open menu",
+      closeMenu: "Close menu",
+    },
+    es: {
+      home: "Inicio",
+      sale: "Venta",
+      rental: "Alquiler",
+      valuation: "Valoración",
+      clientSpace: "Mi Espacio Sillage",
+      openMenu: "Abrir el menú",
+      closeMenu: "Cerrar el menú",
+    },
+    ru: {
+      home: "Главная",
+      sale: "Продажа",
+      rental: "Аренда",
+      valuation: "Оценка",
+      clientSpace: "Моё пространство Sillage",
+      openMenu: "Открыть меню",
+      closeMenu: "Закрыть меню",
+    },
+  }[locale];
+
+  const navItems = [
+    { href: localizePath("/vente", locale), label: copy.sale },
+    { href: localizePath("/location", locale), label: copy.rental },
+    { href: localizePath("/estimation", locale), label: copy.valuation },
+  ] as const;
+
+  const clientSpaceItem = {
+    href: localizePath("/espace-client/login", locale),
+    label: copy.clientSpace,
+  } as const;
 
   return (
     <header className="sticky top-0 z-50 bg-[#141446] text-[#f4ece4]">
       <div className="relative flex min-h-[90px] w-full items-center justify-between px-6 md:px-10 xl:px-14 2xl:px-20">
         <Link
-          href="/"
+          href={localizePath("/", locale)}
           className="text-base tracking-[0.16em] uppercase text-[#f4ece4]/90 md:text-[1.05rem]"
         >
-          Accueil
+          {copy.home}
         </Link>
 
         {isMobileOs ? (
@@ -33,7 +81,7 @@ export function SiteHeaderClient({ isMobileOs }: SiteHeaderClientProps) {
             <button
               type="button"
               className="inline-flex h-11 w-11 items-center justify-center text-[#f4ece4]"
-              aria-label={isOpen ? "Fermer le menu" : "Ouvrir le menu"}
+              aria-label={isOpen ? copy.closeMenu : copy.openMenu}
               aria-expanded={isOpen}
               onClick={() => setIsOpen((current) => !current)}
             >
@@ -64,6 +112,7 @@ export function SiteHeaderClient({ isMobileOs }: SiteHeaderClientProps) {
                   >
                     {clientSpaceItem.label}
                   </Link>
+                  {!isAdminArea ? <LanguageSwitcher /> : null}
                 </div>
               </nav>
             ) : null}
@@ -81,6 +130,7 @@ export function SiteHeaderClient({ isMobileOs }: SiteHeaderClientProps) {
             >
               {clientSpaceItem.label}
             </Link>
+            {!isAdminArea ? <LanguageSwitcher /> : null}
           </nav>
         )}
       </div>

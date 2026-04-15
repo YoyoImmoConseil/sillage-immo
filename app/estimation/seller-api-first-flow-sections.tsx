@@ -1,10 +1,12 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import type { AppLocale } from "@/lib/i18n/config";
+import { formatCurrency } from "@/lib/i18n/format";
+import { localizePath } from "@/lib/i18n/routing";
 import { AddressAutocompleteInput } from "./address-autocomplete-input";
 import { SellerResultChat } from "./seller-result-chat";
 import {
-  formatEur,
   toOptionalInteger,
   type FlowForm,
   type UpdateFlowForm,
@@ -12,6 +14,7 @@ import {
 } from "./seller-api-first-flow.shared";
 
 type SellerProjectFormSectionProps = {
+  locale?: AppLocale;
   form: FlowForm;
   loading: boolean;
   onUpdate: UpdateFlowForm;
@@ -19,22 +22,50 @@ type SellerProjectFormSectionProps = {
 };
 
 export function SellerProjectFormSection({
+  locale = "fr",
   form,
   loading,
   onUpdate,
   onSendOtp,
 }: SellerProjectFormSectionProps) {
+  const copy = {
+    fr: {
+      title: "Étape 1 - Votre projet et votre bien",
+      intro:
+        "Quelques informations simples pour cadrer votre estimation et vous proposer un accompagnement vraiment adapté à votre situation.",
+      send: "Étape 2 - Sécuriser mon email",
+      sending: "Envoi...",
+    },
+    en: {
+      title: "Step 1 - Your project and property",
+      intro:
+        "A few simple details to frame your valuation and offer guidance that truly fits your situation.",
+      send: "Step 2 - Secure my email",
+      sending: "Sending...",
+    },
+    es: {
+      title: "Paso 1 - Su proyecto y su inmueble",
+      intro:
+        "Algunos datos sencillos para enmarcar su valoración y proponerle un acompañamiento realmente adaptado a su situación.",
+      send: "Paso 2 - Asegurar mi email",
+      sending: "Envío...",
+    },
+    ru: {
+      title: "Шаг 1 - Ваш проект и ваш объект",
+      intro:
+        "Несколько простых данных, чтобы подготовить оценку и предложить сопровождение, действительно подходящее вашей ситуации.",
+      send: "Шаг 2 - Подтвердить мой email",
+      sending: "Отправка...",
+    },
+  }[locale];
   const topFloorKnown =
     toOptionalInteger(form.floor) !== undefined &&
     toOptionalInteger(form.buildingTotalFloors) !== undefined;
 
   return (
     <section className="rounded-2xl border border-[rgba(20,20,70,0.2)] bg-[#f4ece4] p-6 space-y-4">
-      <h2 className="sillage-section-title">Étape 1 - Votre projet et votre bien</h2>
-      <p className="text-sm opacity-75">
-        Quelques informations simples pour cadrer votre estimation et vous proposer un accompagnement
-        vraiment adapté à votre situation.
-      </p>
+      <h2 className="sillage-section-title">{copy.title}</h2>
+      <p className="text-sm opacity-75">{copy.intro}</p>
       <div className="grid gap-3 sm:grid-cols-2 text-sm">
         <p className="sm:col-span-2 text-xs uppercase tracking-wide opacity-70">
           Vos coordonnées
@@ -342,13 +373,14 @@ export function SellerProjectFormSection({
         }
         onClick={onSendOtp}
       >
-        {loading ? "Envoi..." : "Étape 2 - Sécuriser mon email"}
+        {loading ? copy.sending : copy.send}
       </button>
     </section>
   );
 }
 
 type SellerEmailVerificationSectionProps = {
+  locale?: AppLocale;
   otp: string;
   loading: boolean;
   previewCode: string | null;
@@ -361,6 +393,7 @@ type SellerEmailVerificationSectionProps = {
 };
 
 export function SellerEmailVerificationSection({
+  locale = "fr",
   otp,
   loading,
   previewCode,
@@ -371,15 +404,59 @@ export function SellerEmailVerificationSection({
   onVerifyOtp,
   onEstimateAndCreate,
 }: SellerEmailVerificationSectionProps) {
+  const copy = {
+    fr: {
+      title: "Étape 2 - Vérification de votre email",
+      intro: "Entrez le code reçu par email pour finaliser la sécurisation de votre demande.",
+      code: "Code email",
+      verify: "Valider le code",
+      verifying: "Vérification...",
+      dev: "Mode dev : code OTP =",
+      estimate: "Étape 3 - Obtenir mon estimation précise",
+      estimating: "Calcul en cours...",
+      progress: "Analyse en cours...",
+    },
+    en: {
+      title: "Step 2 - Verify your email",
+      intro: "Enter the code received by email to finalize and secure your request.",
+      code: "Email code",
+      verify: "Validate code",
+      verifying: "Verifying...",
+      dev: "Dev mode: OTP code =",
+      estimate: "Step 3 - Get my detailed valuation",
+      estimating: "Calculating...",
+      progress: "Analysis in progress...",
+    },
+    es: {
+      title: "Paso 2 - Verificación de su email",
+      intro: "Introduzca el código recibido por email para finalizar y asegurar su solicitud.",
+      code: "Código por email",
+      verify: "Validar código",
+      verifying: "Verificando...",
+      dev: "Modo dev: código OTP =",
+      estimate: "Paso 3 - Obtener mi valoración detallada",
+      estimating: "Calculando...",
+      progress: "Análisis en curso...",
+    },
+    ru: {
+      title: "Шаг 2 - Подтверждение email",
+      intro: "Введите код, полученный по email, чтобы завершить и защитить вашу заявку.",
+      code: "Код из email",
+      verify: "Подтвердить код",
+      verifying: "Проверка...",
+      dev: "Режим dev: OTP-код =",
+      estimate: "Шаг 3 - Получить точную оценку",
+      estimating: "Расчет...",
+      progress: "Идет анализ...",
+    },
+  }[locale];
   return (
     <section className="rounded-2xl bg-[#141446] p-6 text-[#f4ece4] space-y-4">
-      <h2 className="sillage-section-title">Étape 2 - Vérification de votre email</h2>
-      <p className="text-sm text-[#f4ece4]/80">
-        Entrez le code reçu par email pour finaliser la sécurisation de votre demande.
-      </p>
+      <h2 className="sillage-section-title">{copy.title}</h2>
+      <p className="text-sm text-[#f4ece4]/80">{copy.intro}</p>
       <div className="flex gap-3 items-end flex-wrap">
         <label className="text-sm">
-          Code email
+          {copy.code}
           <input
             className="mt-1 rounded border px-3 py-2"
             value={otp}
@@ -392,12 +469,12 @@ export function SellerEmailVerificationSection({
           disabled={loading || otp.trim().length < 4}
           onClick={onVerifyOtp}
         >
-          {loading ? "Vérification..." : "Valider le code"}
+          {loading ? copy.verifying : copy.verify}
         </button>
       </div>
       {previewCode ? (
         <p className="text-xs text-amber-700">
-          Mode dev : code OTP = <code>{previewCode}</code>
+          {copy.dev} <code>{previewCode}</code>
         </p>
       ) : null}
       {verificationToken ? (
@@ -408,7 +485,7 @@ export function SellerEmailVerificationSection({
             disabled={loading}
             onClick={onEstimateAndCreate}
           >
-            {loading ? "Calcul en cours..." : "Étape 3 - Obtenir mon estimation précise"}
+            {loading ? copy.estimating : copy.estimate}
           </button>
           {isEstimating ? (
             <div className="space-y-1">
@@ -421,7 +498,7 @@ export function SellerEmailVerificationSection({
                   }}
                 />
               </div>
-              <p className="text-xs opacity-70">Analyse en cours... {estimateProgress}%</p>
+              <p className="text-xs opacity-70">{copy.progress} {estimateProgress}%</p>
             </div>
           ) : null}
         </div>
@@ -431,6 +508,7 @@ export function SellerEmailVerificationSection({
 }
 
 type SellerEstimationResultSectionProps = {
+  locale?: AppLocale;
   valuation: ValuationResult;
   form: FlowForm;
   thankYouAccessToken: string;
@@ -441,6 +519,7 @@ type SellerEstimationResultSectionProps = {
 };
 
 export function SellerEstimationResultSection({
+  locale = "fr",
   valuation,
   form,
   thankYouAccessToken,
@@ -450,10 +529,66 @@ export function SellerEstimationResultSection({
   onResendPortalAccess,
 }: SellerEstimationResultSectionProps) {
   const router = useRouter();
+  const copy = {
+    fr: {
+      title: "Votre estimation est prête",
+      range: "Fourchette estimée",
+      value: "Valeur estimée (indicative)",
+      pending:
+        "Estimation en cours de finalisation. Un conseiller vous partage la fourchette précise très rapidement.",
+      why: "Pourquoi confier la vente à Sillage Immo ?",
+      next: "Votre prochain pas (recommandé)",
+      portal: "Accès à votre espace client",
+      portalHint: "Ouvrez le lien reçu par email pour activer ou retrouver votre espace client vendeur.",
+      portalSending: "Envoi du lien en cours...",
+      resend: "Renvoyer mon lien d'accès",
+      finalize: "Finaliser et être rappelé par un conseiller",
+    },
+    en: {
+      title: "Your valuation is ready",
+      range: "Estimated range",
+      value: "Estimated value (indicative)",
+      pending: "Your valuation is being finalized. One of our advisors will share the detailed range very soon.",
+      why: "Why entrust your sale to Sillage Immo?",
+      next: "Your next step (recommended)",
+      portal: "Access to your client portal",
+      portalHint: "Open the email link to activate or recover your seller portal.",
+      portalSending: "Sending the link...",
+      resend: "Resend my access link",
+      finalize: "Finalize and receive a callback from an advisor",
+    },
+    es: {
+      title: "Su valoración está lista",
+      range: "Rango estimado",
+      value: "Valor estimado (orientativo)",
+      pending: "Su valoración se está finalizando. Un asesor le compartirá muy pronto la horquilla detallada.",
+      why: "¿Por qué confiar la venta a Sillage Immo?",
+      next: "Su siguiente paso (recomendado)",
+      portal: "Acceso a su espacio cliente",
+      portalHint: "Abra el enlace recibido por email para activar o recuperar su espacio cliente vendedor.",
+      portalSending: "Enviando el enlace...",
+      resend: "Reenviar mi enlace de acceso",
+      finalize: "Finalizar y ser llamado por un asesor",
+    },
+    ru: {
+      title: "Ваша оценка готова",
+      range: "Оценочный диапазон",
+      value: "Оценочная стоимость (ориентировочно)",
+      pending: "Оценка находится на финальной стадии. Наш консультант очень скоро сообщит вам точный диапазон.",
+      why: "Почему стоит доверить продажу Sillage Immo?",
+      next: "Ваш следующий шаг (рекомендуется)",
+      portal: "Доступ к клиентскому пространству",
+      portalHint: "Откройте ссылку из письма, чтобы активировать или восстановить ваше пространство продавца.",
+      portalSending: "Отправляем ссылку...",
+      resend: "Отправить ссылку повторно",
+      finalize: "Завершить и получить обратный звонок от консультанта",
+    },
+  }[locale];
+  const formatLocalizedEur = (value: number) => formatCurrency(value, locale, "EUR");
 
   return (
     <section className="rounded-2xl border border-[rgba(20,20,70,0.2)] bg-[#f4ece4] p-6 space-y-3">
-      <h2 className="sillage-section-title">Votre estimation est prête</h2>
+      <h2 className="sillage-section-title">{copy.title}</h2>
       <p className="text-sm opacity-75">
         {valuation.addressLabel ?? form.propertyAddress} {valuation.cityZipCode ?? form.postalCode}{" "}
         {valuation.cityName ?? form.city}
@@ -461,25 +596,22 @@ export function SellerEstimationResultSection({
       <p className="text-sm">
         {valuation.valuationPriceLow !== null || valuation.valuationPriceHigh !== null ? (
           <>
-            Fourchette estimée :{" "}
+            {copy.range} :{" "}
             <strong>
-              {valuation.valuationPriceLow !== null ? formatEur(valuation.valuationPriceLow) : "-"} -{" "}
-              {valuation.valuationPriceHigh !== null ? formatEur(valuation.valuationPriceHigh) : "-"}
+              {valuation.valuationPriceLow !== null ? formatLocalizedEur(valuation.valuationPriceLow) : "-"} -{" "}
+              {valuation.valuationPriceHigh !== null ? formatLocalizedEur(valuation.valuationPriceHigh) : "-"}
             </strong>
           </>
         ) : valuation.valuationPrice !== null ? (
           <>
-            Valeur estimée (indicative) : <strong>{formatEur(valuation.valuationPrice)}</strong>
+            {copy.value} : <strong>{formatLocalizedEur(valuation.valuationPrice)}</strong>
           </>
         ) : (
-          <>
-            Estimation en cours de finalisation. Un conseiller vous partage la fourchette précise très
-            rapidement.
-          </>
+          <>{copy.pending}</>
         )}
       </p>
       <div className="rounded-xl border border-[rgba(20,20,70,0.22)] bg-[rgba(244,236,228,0.9)] p-4 space-y-2">
-        <h3 className="text-sm font-semibold">Pourquoi confier la vente à Sillage Immo ?</h3>
+        <h3 className="text-sm font-semibold">{copy.why}</h3>
         <ul className="text-sm space-y-2 list-disc pl-5">
           <li>
             Positionnement premium local à Nice et sur la Côte d&apos;Azur pour capter des acheteurs
@@ -499,7 +631,7 @@ export function SellerEstimationResultSection({
         </p>
       </div>
       <div className="rounded-xl border border-[rgba(20,20,70,0.22)] p-4 space-y-1">
-        <p className="text-sm font-medium">Votre prochain pas (recommandé)</p>
+        <p className="text-sm font-medium">{copy.next}</p>
         <p className="text-sm opacity-80">
           Finalisez votre demande pour recevoir un appel de cadrage avec un interlocuteur unique et un
           plan de commercialisation sur-mesure.
@@ -507,15 +639,15 @@ export function SellerEstimationResultSection({
       </div>
       {portalAccessStatus !== "idle" || portalAccessMessage ? (
         <div className="rounded-xl border border-[rgba(20,20,70,0.22)] bg-[rgba(244,236,228,0.9)] p-4 space-y-2">
-          <p className="text-sm font-medium">Accès à votre espace client</p>
+          <p className="text-sm font-medium">{copy.portal}</p>
           {portalAccessMessage ? <p className="text-sm opacity-80">{portalAccessMessage}</p> : null}
           {portalAccessStatus === "sent" && portalAccessEmail ? (
             <p className="text-xs opacity-70">
-              Ouvrez le lien reçu par email pour activer ou retrouver votre espace client vendeur.
+              {copy.portalHint}
             </p>
           ) : null}
           {portalAccessStatus === "sending" ? (
-            <p className="text-xs opacity-70">Envoi du lien en cours...</p>
+            <p className="text-xs opacity-70">{copy.portalSending}</p>
           ) : null}
           {portalAccessStatus === "error" && onResendPortalAccess ? (
             <button
@@ -523,20 +655,22 @@ export function SellerEstimationResultSection({
               className="rounded border border-[#141446]/20 px-4 py-2 text-sm text-[#141446]"
               onClick={onResendPortalAccess}
             >
-              Renvoyer mon lien d&apos;accès
+              {copy.resend}
             </button>
           ) : null}
         </div>
       ) : null}
-      <SellerResultChat accessToken={thankYouAccessToken} />
+      <SellerResultChat accessToken={thankYouAccessToken} locale={locale} />
       <button
         type="button"
         className="sillage-btn rounded px-4 py-2 text-sm"
         onClick={() =>
-          router.push(`/merci-vendeur?access=${encodeURIComponent(thankYouAccessToken)}`)
+          router.push(
+            `${localizePath("/merci-vendeur", locale)}?access=${encodeURIComponent(thankYouAccessToken)}`
+          )
         }
       >
-        Finaliser et être rappelé par un conseiller
+        {copy.finalize}
       </button>
     </section>
   );

@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import type { AppLocale } from "@/lib/i18n/config";
+import { localizePath } from "@/lib/i18n/routing";
 
 type AiData = {
   reply: string;
@@ -17,14 +19,109 @@ type ChatMessage = {
   ctaHref?: string;
 };
 
-export function HomeCommercialAssistant() {
+const localizeAssistantHref = (href: string, locale: AppLocale) => {
+  if (!href.startsWith("/")) return href;
+  const [pathname, hash] = href.split("#");
+  const localizedPath = localizePath(pathname || "/", locale);
+  return hash ? `${localizedPath}#${hash}` : localizedPath;
+};
+
+const COPY = {
+  fr: {
+    greeting:
+      "Bonjour et bienvenue chez Sillage Immo. Décrivez votre projet, je vous oriente vers le bon parcours.",
+    title: "Assistant commercial Sillage Immo",
+    intro:
+      "Dites-nous votre projet. Nous vous orientons vers le parcours le plus pertinent, avec un accompagnement sur-mesure.",
+    sell: "Je veux vendre mon bien",
+    buy: "Je veux acheter un bien",
+    market: "Je veux me renseigner sur le marché",
+    marketUser: "Je veux juste me renseigner sur le marché",
+    marketAnswer:
+      "Le marché niçois reste dynamique mais sélectif. Une bonne stratégie de prix, de présentation et de timing fait la différence. Nos experts vous donnent une lecture locale claire, actionnable et adaptée à votre projet.",
+    marketCta: "Rencontrer un expert Sillage Immo",
+    unavailable: "Assistant temporairement indisponible.",
+    networkError: "Erreur réseau, merci de réessayer.",
+    aiPrefix: "Sillage IA:",
+    userPrefix: "Vous:",
+    inputPlaceholder: "Ex : Je veux vendre rapidement mon appartement à Nice",
+    sendingAria: "Envoi en cours",
+    sendAria: "Envoyer",
+  },
+  en: {
+    greeting:
+      "Hello and welcome to Sillage Immo. Describe your project and I will guide you to the right path.",
+    title: "Sillage Immo Sales Assistant",
+    intro:
+      "Tell us about your project. We will guide you to the most relevant path, with tailored support.",
+    sell: "I want to sell my property",
+    buy: "I want to buy a property",
+    market: "I want market guidance",
+    marketUser: "I just want information about the market",
+    marketAnswer:
+      "The Nice market remains dynamic but selective. The right pricing, presentation and timing strategy makes all the difference. Our experts provide a clear local view that is practical and adapted to your project.",
+    marketCta: "Speak with a Sillage expert",
+    unavailable: "Assistant temporarily unavailable.",
+    networkError: "Network error, please try again.",
+    aiPrefix: "Sillage AI:",
+    userPrefix: "You:",
+    inputPlaceholder: "Example: I want to sell my apartment in Nice quickly",
+    sendingAria: "Sending",
+    sendAria: "Send",
+  },
+  es: {
+    greeting:
+      "Hola y bienvenido a Sillage Immo. Describa su proyecto y le orientaré hacia el recorrido adecuado.",
+    title: "Asistente comercial Sillage Immo",
+    intro:
+      "Cuéntenos su proyecto. Le orientamos hacia el recorrido más pertinente, con un acompañamiento a medida.",
+    sell: "Quiero vender mi inmueble",
+    buy: "Quiero comprar un inmueble",
+    market: "Quiero informarme sobre el mercado",
+    marketUser: "Solo quiero informarme sobre el mercado",
+    marketAnswer:
+      "El mercado de Niza sigue siendo dinámico pero selectivo. Una buena estrategia de precio, presentación y calendario marca la diferencia. Nuestros expertos le ofrecen una visión local clara, útil y adaptada a su proyecto.",
+    marketCta: "Hablar con un experto de Sillage",
+    unavailable: "Asistente temporalmente no disponible.",
+    networkError: "Error de red, por favor inténtelo de nuevo.",
+    aiPrefix: "Sillage IA:",
+    userPrefix: "Usted:",
+    inputPlaceholder: "Ej.: Quiero vender rápidamente mi apartamento en Niza",
+    sendingAria: "Enviando",
+    sendAria: "Enviar",
+  },
+  ru: {
+    greeting:
+      "Здравствуйте и добро пожаловать в Sillage Immo. Опишите ваш проект, и я направлю вас по подходящему сценарию.",
+    title: "Коммерческий ассистент Sillage Immo",
+    intro:
+      "Расскажите о вашем проекте. Мы подскажем наиболее подходящий сценарий и предложим индивидуальное сопровождение.",
+    sell: "Я хочу продать недвижимость",
+    buy: "Я хочу купить недвижимость",
+    market: "Я хочу узнать о рынке",
+    marketUser: "Я хочу просто узнать о рынке",
+    marketAnswer:
+      "Рынок Ниццы остаётся активным, но избирательным. Правильная стратегия цены, презентации и тайминга имеет решающее значение. Наши эксперты дают понятный локальный анализ, полезный именно для вашего проекта.",
+    marketCta: "Поговорить с экспертом Sillage",
+    unavailable: "Ассистент временно недоступен.",
+    networkError: "Ошибка сети, попробуйте еще раз.",
+    aiPrefix: "Sillage AI:",
+    userPrefix: "Вы:",
+    inputPlaceholder: "Например: я хочу быстро продать свою квартиру в Ницце",
+    sendingAria: "Отправка",
+    sendAria: "Отправить",
+  },
+} satisfies Record<AppLocale, Record<string, string>>;
+
+export function HomeCommercialAssistant({ locale = "fr" }: { locale?: AppLocale }) {
+  const copy = COPY[locale];
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [chat, setChat] = useState<ChatMessage[]>([
     {
       role: "assistant",
-      text: "Bonjour et bienvenue chez Sillage Immo. Decrivez votre projet, je vous oriente vers le bon parcours.",
+      text: copy.greeting,
     },
   ]);
 
@@ -45,6 +142,7 @@ export function HomeCommercialAssistant() {
         body: JSON.stringify({
           message: trimmed,
           history: historyForApi,
+          locale,
         }),
       });
       const data = (await response.json()) as {
@@ -53,7 +151,7 @@ export function HomeCommercialAssistant() {
         data?: AiData;
       };
       if (!response.ok || !data.ok || !data.data) {
-        setError(data.message ?? "Assistant temporairement indisponible.");
+        setError(data.message ?? copy.unavailable);
         return;
       }
       setChat((prev) => [
@@ -66,7 +164,7 @@ export function HomeCommercialAssistant() {
         },
       ]);
     } catch {
-      setError("Erreur reseau, merci de reessayer.");
+      setError(copy.networkError);
     } finally {
       setLoading(false);
     }
@@ -74,23 +172,14 @@ export function HomeCommercialAssistant() {
 
   return (
     <section className="sillage-card p-0 space-y-4">
-      <h2 className="sillage-section-title">Assistant commercial Sillage Immo</h2>
-      <p className="sillage-editorial-text opacity-75">
-        Dites-nous votre projet. Nous vous orientons vers le parcours le plus pertinent, avec un
-        accompagnement sur-mesure.
-      </p>
+      <h2 className="sillage-section-title">{copy.title}</h2>
+      <p className="sillage-editorial-text opacity-75">{copy.intro}</p>
       <div className="flex flex-wrap gap-2">
-        <Link
-          href="/estimation"
-          className="sillage-chip rounded-full px-3 py-1 text-sm"
-        >
-          Je veux vendre mon bien
+        <Link href={localizePath("/estimation", locale)} className="sillage-chip rounded-full px-3 py-1 text-sm">
+          {copy.sell}
         </Link>
-        <Link
-          href="/#acquereur-form"
-          className="sillage-chip rounded-full px-3 py-1 text-sm"
-        >
-          Je veux acheter un bien
+        <Link href={`${localizePath("/", locale)}#acquereur-form`} className="sillage-chip rounded-full px-3 py-1 text-sm">
+          {copy.buy}
         </Link>
         <button
           type="button"
@@ -98,17 +187,17 @@ export function HomeCommercialAssistant() {
           onClick={() => {
             setChat((prev) => [
               ...prev,
-              { role: "user", text: "Je veux juste me renseigner sur le marche" },
+              { role: "user", text: copy.marketUser },
               {
                 role: "assistant",
-                text: "Le marche nicois reste dynamique mais selectif. Une bonne strategie de prix, de presentation et de timing fait la difference. Nos experts vous donnent une lecture locale claire, actionnable et adaptee a votre projet.",
-                ctaLabel: "Rencontrer un expert Sillage Immo",
-                ctaHref: "/#contact-expert",
+                text: copy.marketAnswer,
+                ctaLabel: copy.marketCta,
+                ctaHref: `${localizePath("/", locale)}#contact-expert`,
               },
             ]);
           }}
         >
-          Je veux me renseigner sur le marche
+          {copy.market}
         </button>
       </div>
 
@@ -123,12 +212,12 @@ export function HomeCommercialAssistant() {
             }`}
           >
             <p>
-              <span className="mr-1">{item.role === "assistant" ? "Sillage IA:" : "Vous:"}</span>
+              <span className="mr-1">{item.role === "assistant" ? copy.aiPrefix : copy.userPrefix}</span>
               {item.text}
             </p>
             {item.role === "assistant" && item.ctaLabel && item.ctaHref ? (
               <div className="mt-2">
-                <Link href={item.ctaHref} className="sillage-btn inline-block rounded px-3 py-1 text-xs">
+                <Link href={localizeAssistantHref(item.ctaHref, locale)} className="sillage-btn inline-block rounded px-3 py-1 text-xs">
                   {item.ctaLabel}
                 </Link>
               </div>
@@ -140,7 +229,7 @@ export function HomeCommercialAssistant() {
       <div className="flex gap-2">
         <input
           className="flex-1 rounded border px-3 py-2 text-sm"
-          placeholder="Ex: Je veux vendre rapidement mon appartement a Nice"
+          placeholder={copy.inputPlaceholder}
           value={message}
           onChange={(event) => setMessage(event.target.value)}
           onKeyDown={(event) => {
@@ -155,7 +244,7 @@ export function HomeCommercialAssistant() {
           onClick={() => void ask()}
           className="sillage-btn inline-flex items-center justify-center rounded px-3 py-2 text-sm disabled:opacity-60"
           disabled={loading || message.trim().length < 2}
-          aria-label={loading ? "Envoi en cours" : "Envoyer"}
+          aria-label={loading ? copy.sendingAria : copy.sendAria}
         >
           {loading ? (
             "..."

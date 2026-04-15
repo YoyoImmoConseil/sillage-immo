@@ -1,5 +1,7 @@
 import "server-only";
 
+import type { AppLocale } from "@/lib/i18n/config";
+import { resolveLocalizedText } from "@/lib/i18n/localized-content";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { parseAdminProfileMetadata } from "@/services/admin/admin-profile-metadata";
 import { ADMIN_ROLE_LABELS, type AdminRole, type AdminTeamTitle } from "@/types/domain/admin";
@@ -36,7 +38,8 @@ const ROLE_ORDER: AdminRole[] = ["administrateur", "manager", "collaborateur"];
 
 const mapPublicTeamMember = (
   row: TeamMemberRow,
-  roleByProfileId: Map<string, TeamRoleRow>
+  roleByProfileId: Map<string, TeamRoleRow>,
+  locale: AppLocale
 ): PublicTeamMember => {
   const metadata = parseAdminProfileMetadata(row.metadata);
   const role = (roleByProfileId.get(row.id)?.role as AdminRole | undefined) ?? "collaborateur";
@@ -52,12 +55,17 @@ const mapPublicTeamMember = (
     title: metadata.title,
     email: row.email,
     phone: metadata.phone,
-    bio: metadata.bio,
+    bio: resolveLocalizedText({
+      locale,
+      field: "bio",
+      fallback: metadata.bio,
+      sources: [row.metadata],
+    }),
     avatarUrl: metadata.avatarUrl,
   };
 };
 
-export const listPublicTeamMembers = async (): Promise<PublicTeamMember[]> => {
+export const listPublicTeamMembers = async (locale: AppLocale = "fr"): Promise<PublicTeamMember[]> => {
   const [{ data: profiles, error: profilesError }, { data: roles, error: rolesError }] =
     await Promise.all([
       supabaseAdmin
@@ -83,12 +91,13 @@ export const listPublicTeamMembers = async (): Promise<PublicTeamMember[]> => {
 
   return ((profiles ?? []) as TeamMemberRow[])
     .filter((row) => roleByProfileId.has(row.id))
-    .map((row) => mapPublicTeamMember(row, roleByProfileId))
+    .map((row) => mapPublicTeamMember(row, roleByProfileId, locale))
     .sort((left, right) => ROLE_ORDER.indexOf(left.role) - ROLE_ORDER.indexOf(right.role));
 };
 
 export const getPublicTeamMemberByEmail = async (
-  email: string
+  email: string,
+  locale: AppLocale = "fr"
 ): Promise<PublicTeamMember | null> => {
   const normalizedEmail = email.trim().toLowerCase();
   if (!normalizedEmail) return null;
@@ -121,5 +130,5 @@ export const getPublicTeamMemberByEmail = async (
     return null;
   }
 
-  return mapPublicTeamMember(profile as TeamMemberRow, roleByProfileId);
+  return mapPublicTeamMember(profile as TeamMemberRow, roleByProfileId, locale);
 };

@@ -1,6 +1,9 @@
 /* eslint-disable @next/next/no-img-element */
 import type { Metadata } from "next";
 import Link from "next/link";
+import type { AppLocale } from "@/lib/i18n/config";
+import { formatCurrency } from "@/lib/i18n/format";
+import { localizePath } from "@/lib/i18n/routing";
 import { formatPropertyTypeLabel } from "@/lib/properties/property-type-label";
 import { getPublicTeamMemberByEmail } from "@/services/home/team.service";
 import type { PropertyListingSnapshot } from "@/types/domain/properties";
@@ -8,10 +11,20 @@ import { formatListingPrice } from "@/services/properties/property-listing.servi
 import { PropertyEnergyScale } from "./property-energy-scale";
 import { PropertyGallery } from "./property-gallery";
 
-export const buildPublicListingMetadata = (listing: PropertyListingSnapshot | null): Metadata => {
+export const buildPublicListingMetadata = (
+  listing: PropertyListingSnapshot | null,
+  locale: AppLocale = "fr"
+): Metadata => {
   if (!listing) {
     return {
-      title: "Bien immobilier | Sillage Immo",
+      title:
+        locale === "en"
+          ? "Property | Sillage Immo"
+          : locale === "es"
+            ? "Inmueble | Sillage Immo"
+            : locale === "ru"
+              ? "Недвижимость | Sillage Immo"
+              : "Bien immobilier | Sillage Immo",
     };
   }
 
@@ -19,14 +32,80 @@ export const buildPublicListingMetadata = (listing: PropertyListingSnapshot | nu
     title: `${listing.title ?? "Bien immobilier"} | Sillage Immo`,
     description:
       listing.property.description?.slice(0, 160) ??
-      "Consultez le détail de ce bien immobilier proposé par Sillage Immo.",
+      (locale === "en"
+        ? "Explore this property presented by Sillage Immo."
+        : locale === "es"
+          ? "Consulte este inmueble presentado por Sillage Immo."
+          : locale === "ru"
+            ? "Ознакомьтесь с этим объектом от Sillage Immo."
+            : "Consultez le détail de ce bien immobilier proposé par Sillage Immo."),
   };
 };
 
-export async function PublicListingDetailPage({ listing }: { listing: PropertyListingSnapshot }) {
+export async function PublicListingDetailPage({
+  listing,
+  locale = "fr",
+}: {
+  listing: PropertyListingSnapshot;
+  locale?: AppLocale;
+}) {
+  const copy = {
+    fr: {
+      back: "Retour au catalogue",
+      features: "Caractéristiques détaillées",
+      photos: "Photos du bien",
+      contact: "Interlocuteur Sillage",
+      virtualTour: "Visite virtuelle",
+      openMatterport: "Ouvrir la visite Matterport",
+      highlights: "A retenir",
+      description: "Description détaillée",
+      descriptionFallback: "Description bientôt disponible.",
+      video: "Vidéo",
+      watchVideo: "Voir la vidéo",
+    },
+    en: {
+      back: "Back to listings",
+      features: "Detailed features",
+      photos: "Property photos",
+      contact: "Your Sillage contact",
+      virtualTour: "Virtual tour",
+      openMatterport: "Open Matterport tour",
+      highlights: "Key facts",
+      description: "Detailed description",
+      descriptionFallback: "Description coming soon.",
+      video: "Video",
+      watchVideo: "Watch the video",
+    },
+    es: {
+      back: "Volver al catálogo",
+      features: "Características detalladas",
+      photos: "Fotos del inmueble",
+      contact: "Interlocutor Sillage",
+      virtualTour: "Visita virtual",
+      openMatterport: "Abrir la visita Matterport",
+      highlights: "Puntos clave",
+      description: "Descripción detallada",
+      descriptionFallback: "Descripción próximamente disponible.",
+      video: "Vídeo",
+      watchVideo: "Ver el vídeo",
+    },
+    ru: {
+      back: "Назад к каталогу",
+      features: "Подробные характеристики",
+      photos: "Фотографии объекта",
+      contact: "Ваш контакт в Sillage",
+      virtualTour: "Виртуальный тур",
+      openMatterport: "Открыть Matterport-тур",
+      highlights: "Ключевые факты",
+      description: "Подробное описание",
+      descriptionFallback: "Описание скоро появится.",
+      video: "Видео",
+      watchVideo: "Смотреть видео",
+    },
+  }[locale];
   const contact = listing.property.negotiator;
   const contactEmail = typeof contact.email === "string" && contact.email.trim() ? contact.email.trim() : null;
-  const contactProfile = contactEmail ? await getPublicTeamMemberByEmail(contactEmail) : null;
+  const contactProfile = contactEmail ? await getPublicTeamMemberByEmail(contactEmail, locale) : null;
   const contactFullName = [contact.first_name, contact.last_name]
     .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
     .join(" ");
@@ -45,11 +124,13 @@ export async function PublicListingDetailPage({ listing }: { listing: PropertyLi
   const gallery = listing.property.media.filter((item) => item.kind === "image");
   const feeMention =
     listing.property.sale.feeChargeBearer === "buyer" && typeof listing.property.sale.feeAmount === "number"
-      ? `Incluant ${new Intl.NumberFormat("fr-FR", {
-          style: "currency",
-          currency: listing.priceCurrency || "EUR",
-          maximumFractionDigits: 0,
-        }).format(listing.property.sale.feeAmount)} d'honoraires à la charge de l'acquéreur`
+      ? locale === "en"
+        ? `Including ${formatCurrency(listing.property.sale.feeAmount, locale, listing.priceCurrency || "EUR")} fees payable by the buyer`
+        : locale === "es"
+          ? `Incluye ${formatCurrency(listing.property.sale.feeAmount, locale, listing.priceCurrency || "EUR")} de honorarios a cargo del comprador`
+          : locale === "ru"
+            ? `Включая ${formatCurrency(listing.property.sale.feeAmount, locale, listing.priceCurrency || "EUR")} комиссии за счет покупателя`
+            : `Incluant ${formatCurrency(listing.property.sale.feeAmount, locale, listing.priceCurrency || "EUR")} d'honoraires à la charge de l'acquéreur`
       : null;
   const floorLabel =
     typeof listing.property.rooms.floor === "number"
@@ -63,9 +144,9 @@ export async function PublicListingDetailPage({ listing }: { listing: PropertyLi
       <section className="bg-[#141446] text-[#f4ece4]">
         <div className="w-full px-6 pb-8 pt-4 md:px-10 md:pb-8 md:pt-3 xl:px-14 2xl:px-20 space-y-3">
           <Link
-            href={listing.businessType === "sale" ? "/vente" : "/location"}
+            href={localizePath(listing.businessType === "sale" ? "/vente" : "/location", locale)}
             className="inline-flex text-xl leading-none"
-            aria-label="Retour au catalogue"
+            aria-label={copy.back}
           >
             ←
           </Link>
@@ -112,7 +193,7 @@ export async function PublicListingDetailPage({ listing }: { listing: PropertyLi
             </section>
 
             <section className="rounded-2xl border border-[rgba(20,20,70,0.18)] p-6 space-y-4">
-              <h2 className="sillage-section-title">Caractéristiques détaillées</h2>
+              <h2 className="sillage-section-title">{copy.features}</h2>
               <dl className="grid gap-3 text-sm sm:grid-cols-2 xl:grid-cols-3">
                 <div>
                   <dt className="opacity-65">📐 Surface habitable</dt>
@@ -221,7 +302,7 @@ export async function PublicListingDetailPage({ listing }: { listing: PropertyLi
 
             {gallery.length > 1 ? (
               <section className="rounded-2xl border border-[rgba(20,20,70,0.18)] p-6 space-y-4">
-                <h2 className="sillage-section-title">Photos du bien</h2>
+                <h2 className="sillage-section-title">{copy.photos}</h2>
                 <div className="grid gap-3 grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
                   {gallery.map((image, index) =>
                     image.cachedUrl || image.remoteUrl ? (
@@ -244,7 +325,7 @@ export async function PublicListingDetailPage({ listing }: { listing: PropertyLi
 
           <aside className="space-y-6">
             <section className="rounded-2xl bg-[#141446] p-6 text-[#f4ece4] space-y-3">
-              <h2 className="sillage-section-title text-[#f4ece4]">Interlocuteur Sillage</h2>
+              <h2 className="sillage-section-title text-[#f4ece4]">{copy.contact}</h2>
               {contactAvatarUrl ? (
                 <img
                   src={contactAvatarUrl}
@@ -269,20 +350,20 @@ export async function PublicListingDetailPage({ listing }: { listing: PropertyLi
 
             {listing.property.virtualTourUrl ? (
               <section className="rounded-2xl border border-[rgba(20,20,70,0.18)] p-6 space-y-2">
-                <h2 className="sillage-section-title">Visite virtuelle</h2>
+                <h2 className="sillage-section-title">{copy.virtualTour}</h2>
                 <a
                   href={listing.property.virtualTourUrl}
                   target="_blank"
                   rel="noreferrer"
                   className="sillage-btn inline-block rounded px-4 py-2 text-sm"
                 >
-                  Ouvrir la visite Matterport
+                  {copy.openMatterport}
                 </a>
               </section>
             ) : null}
 
             <section className="rounded-2xl border border-[rgba(20,20,70,0.18)] p-6 space-y-4">
-              <h2 className="sillage-section-title">A retenir</h2>
+              <h2 className="sillage-section-title">{copy.highlights}</h2>
               <dl className="grid gap-3 text-sm sm:grid-cols-2">
                 <div>
                   <dt className="opacity-65">🏠 Typologie</dt>
@@ -324,22 +405,22 @@ export async function PublicListingDetailPage({ listing }: { listing: PropertyLi
             </section>
 
             <section className="rounded-2xl border border-[rgba(20,20,70,0.18)] p-6 space-y-3">
-              <h2 className="sillage-section-title">Description détaillée</h2>
+              <h2 className="sillage-section-title">{copy.description}</h2>
               <p className="sillage-editorial-text opacity-85">
-                {listing.property.description ?? "Description bientôt disponible."}
+                {listing.property.description ?? copy.descriptionFallback}
               </p>
             </section>
 
             {listing.property.videoUrl ? (
               <section className="rounded-2xl border border-[rgba(20,20,70,0.18)] p-6 space-y-2">
-                <h2 className="sillage-section-title">Vidéo</h2>
+                <h2 className="sillage-section-title">{copy.video}</h2>
                 <a
                   href={listing.property.videoUrl}
                   target="_blank"
                   rel="noreferrer"
                   className="sillage-btn-secondary inline-block rounded px-4 py-2 text-sm"
                 >
-                  Voir la vidéo
+                  {copy.watchVideo}
                 </a>
               </section>
             ) : null}

@@ -3,6 +3,7 @@ import {
   listPublicPropertyListings,
   toPublicPropertyListingSummary,
 } from "@/services/properties/property-listing.service";
+import type { AppLocale } from "@/lib/i18n/config";
 import { PublicListingsSearch } from "./public-listings-search";
 import type { PropertyBusinessType } from "@/types/domain/properties";
 
@@ -22,6 +23,7 @@ type ListingSearchParams = {
 };
 
 type PublicListingsPageProps = {
+  locale: AppLocale;
   businessType: PropertyBusinessType;
   title: string;
   intro: string;
@@ -43,6 +45,7 @@ const toBoolean = (value: string | undefined) => {
 export async function PublicListingsPage(props: PublicListingsPageProps) {
   const [listings, propertyTypes] = await Promise.all([
     listPublicPropertyListings({
+      locale: props.locale,
       businessType: props.businessType,
       city: props.searchParams.city,
       propertyType: props.searchParams.type,
@@ -75,6 +78,7 @@ export async function PublicListingsPage(props: PublicListingsPageProps) {
       <section className="bg-[#f4ece4] text-[#141446]">
         <div className="w-full px-6 py-8 md:px-10 xl:px-14 2xl:px-20 space-y-8">
           <PublicListingsSearch
+            locale={props.locale}
             businessType={props.businessType}
             initialListings={listings.map(toPublicPropertyListingSummary)}
             initialPropertyTypes={propertyTypes}

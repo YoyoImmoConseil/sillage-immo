@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import type { AppLocale } from "@/lib/i18n/config";
 import { formatPropertyTypeLabel } from "@/lib/properties/property-type-label";
 import { PropertyCard } from "./property-card";
 import type { PropertyBusinessType, PublicPropertyListingSummary } from "@/types/domain/properties";
@@ -21,6 +22,7 @@ type ListingFilters = {
 };
 
 type PublicListingsSearchProps = {
+  locale: AppLocale;
   businessType: PropertyBusinessType;
   initialListings: PublicPropertyListingSummary[];
   initialPropertyTypes: string[];
@@ -31,6 +33,112 @@ const filterEntries = (filters: ListingFilters) =>
   Object.entries(filters).filter(([, value]) => typeof value === "string" && value.trim().length > 0);
 
 export function PublicListingsSearch(props: PublicListingsSearchProps) {
+  const copy = {
+    fr: {
+      loadError: "Impossible de charger les biens avec ces filtres.",
+      searchError: "Erreur de recherche.",
+      city: "Ville",
+      propertyType: "Type de bien",
+      allTypes: "Tous les types",
+      minBudget: "Budget min",
+      maxBudget: "Budget max",
+      minRooms: "Nb de pièces min",
+      maxRooms: "Nb de pièces max",
+      minSurface: "Surface min (m²)",
+      maxSurface: "Surface max (m²)",
+      minFloor: "Étage min",
+      maxFloor: "Étage max",
+      terrace: "Terrasse",
+      elevator: "Ascenseur",
+      indifferent: "Indifférent",
+      yes: "Oui",
+      no: "Non",
+      reset: "Réinitialiser",
+      updating: "Mise à jour des résultats...",
+      available: "disponible",
+      availablePlural: "disponibles",
+      noResultsTitle: "Aucun bien ne correspond à ces critères",
+      noResultsBody: "Ajustez vos filtres ou contactez Sillage Immo pour nous partager votre recherche.",
+    },
+    en: {
+      loadError: "Unable to load properties with these filters.",
+      searchError: "Search error.",
+      city: "City",
+      propertyType: "Property type",
+      allTypes: "All types",
+      minBudget: "Min budget",
+      maxBudget: "Max budget",
+      minRooms: "Min rooms",
+      maxRooms: "Max rooms",
+      minSurface: "Min surface (sqm)",
+      maxSurface: "Max surface (sqm)",
+      minFloor: "Min floor",
+      maxFloor: "Max floor",
+      terrace: "Terrace",
+      elevator: "Elevator",
+      indifferent: "Any",
+      yes: "Yes",
+      no: "No",
+      reset: "Reset",
+      updating: "Updating results...",
+      available: "available",
+      availablePlural: "available",
+      noResultsTitle: "No property matches these criteria",
+      noResultsBody: "Adjust your filters or contact Sillage Immo to share your search with us.",
+    },
+    es: {
+      loadError: "No se pudieron cargar los inmuebles con estos filtros.",
+      searchError: "Error de búsqueda.",
+      city: "Ciudad",
+      propertyType: "Tipo de inmueble",
+      allTypes: "Todos los tipos",
+      minBudget: "Presupuesto mínimo",
+      maxBudget: "Presupuesto máximo",
+      minRooms: "Mín. habitaciones",
+      maxRooms: "Máx. habitaciones",
+      minSurface: "Superficie mín. (m²)",
+      maxSurface: "Superficie máx. (m²)",
+      minFloor: "Planta mín.",
+      maxFloor: "Planta máx.",
+      terrace: "Terraza",
+      elevator: "Ascensor",
+      indifferent: "Indiferente",
+      yes: "Sí",
+      no: "No",
+      reset: "Restablecer",
+      updating: "Actualizando resultados...",
+      available: "disponible",
+      availablePlural: "disponibles",
+      noResultsTitle: "Ningún inmueble coincide con estos criterios",
+      noResultsBody: "Ajuste sus filtros o contacte con Sillage Immo para compartirnos su búsqueda.",
+    },
+    ru: {
+      loadError: "Не удалось загрузить объекты с такими фильтрами.",
+      searchError: "Ошибка поиска.",
+      city: "Город",
+      propertyType: "Тип объекта",
+      allTypes: "Все типы",
+      minBudget: "Бюджет от",
+      maxBudget: "Бюджет до",
+      minRooms: "Мин. комнат",
+      maxRooms: "Макс. комнат",
+      minSurface: "Мин. площадь (м²)",
+      maxSurface: "Макс. площадь (м²)",
+      minFloor: "Этаж от",
+      maxFloor: "Этаж до",
+      terrace: "Терраса",
+      elevator: "Лифт",
+      indifferent: "Неважно",
+      yes: "Да",
+      no: "Нет",
+      reset: "Сбросить",
+      updating: "Обновление результатов...",
+      available: "доступен",
+      availablePlural: "доступно",
+      noResultsTitle: "По этим критериям ничего не найдено",
+      noResultsBody: "Измените фильтры или свяжитесь с Sillage Immo, чтобы поделиться вашим запросом.",
+    },
+  }[props.locale];
   const [filters, setFilters] = useState<ListingFilters>(props.initialFilters);
   const [listings, setListings] = useState<PublicPropertyListingSummary[]>(props.initialListings);
   const [propertyTypes, setPropertyTypes] = useState<string[]>(props.initialPropertyTypes);
@@ -57,7 +165,7 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
         });
 
         if (!response.ok) {
-          throw new Error("Impossible de charger les biens avec ces filtres.");
+          throw new Error(copy.loadError);
         }
 
         const payload = (await response.json()) as {
@@ -68,7 +176,7 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
         };
 
         if (!payload.ok) {
-          throw new Error(payload.message ?? "Erreur de recherche.");
+          throw new Error(payload.message ?? copy.searchError);
         }
 
         setListings(payload.listings ?? []);
@@ -77,7 +185,7 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
         }
       } catch (err) {
         if (controller.signal.aborted) return;
-        const message = err instanceof Error ? err.message : "Erreur de recherche.";
+        const message = err instanceof Error ? err.message : copy.searchError;
         setError(message);
       } finally {
         if (!controller.signal.aborted) {
@@ -90,7 +198,7 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
       controller.abort();
       window.clearTimeout(timeout);
     };
-  }, [queryString]);
+  }, [copy.loadError, copy.searchError, queryString]);
 
   const onFilterChange = (key: keyof ListingFilters, value: string) => {
     setFilters((current) => ({
@@ -120,7 +228,7 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
     <div className="space-y-8">
       <div className="grid gap-3 rounded-2xl border border-[rgba(20,20,70,0.18)] p-5 md:grid-cols-4">
         <label className="text-sm">
-          Ville
+          {copy.city}
           <input
             className="mt-1 w-full rounded border px-3 py-2"
             value={filters.city}
@@ -129,22 +237,22 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
           />
         </label>
         <label className="text-sm">
-          Type de bien
+          {copy.propertyType}
           <select
             className="mt-1 w-full rounded border px-3 py-2"
             value={filters.type}
             onChange={(event) => onFilterChange("type", event.target.value)}
           >
-            <option value="">Tous les types</option>
+            <option value="">{copy.allTypes}</option>
             {propertyTypes.map((type) => (
               <option key={type} value={type}>
-                {formatPropertyTypeLabel(type) ?? type}
+                {formatPropertyTypeLabel(type, props.locale) ?? type}
               </option>
             ))}
           </select>
         </label>
         <label className="text-sm">
-          Budget min
+          {copy.minBudget}
           <input
             className="mt-1 w-full rounded border px-3 py-2"
             value={filters.minPrice}
@@ -154,7 +262,7 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
           />
         </label>
         <label className="text-sm">
-          Budget max
+          {copy.maxBudget}
           <input
             className="mt-1 w-full rounded border px-3 py-2"
             value={filters.maxPrice}
@@ -165,7 +273,7 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
         </label>
 
         <label className="text-sm">
-          Nb de pièces min
+          {copy.minRooms}
           <input
             className="mt-1 w-full rounded border px-3 py-2"
             value={filters.minRooms}
@@ -175,7 +283,7 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
           />
         </label>
         <label className="text-sm">
-          Nb de pièces max
+          {copy.maxRooms}
           <input
             className="mt-1 w-full rounded border px-3 py-2"
             value={filters.maxRooms}
@@ -185,7 +293,7 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
           />
         </label>
         <label className="text-sm">
-          Surface min (m²)
+          {copy.minSurface}
           <input
             className="mt-1 w-full rounded border px-3 py-2"
             value={filters.minSurface}
@@ -195,7 +303,7 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
           />
         </label>
         <label className="text-sm">
-          Surface max (m²)
+          {copy.maxSurface}
           <input
             className="mt-1 w-full rounded border px-3 py-2"
             value={filters.maxSurface}
@@ -206,7 +314,7 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
         </label>
 
         <label className="text-sm">
-          Étage min
+          {copy.minFloor}
           <input
             className="mt-1 w-full rounded border px-3 py-2"
             value={filters.minFloor}
@@ -216,7 +324,7 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
           />
         </label>
         <label className="text-sm">
-          Étage max
+          {copy.maxFloor}
           <input
             className="mt-1 w-full rounded border px-3 py-2"
             value={filters.maxFloor}
@@ -226,56 +334,63 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
           />
         </label>
         <label className="text-sm">
-          Terrasse
+          {copy.terrace}
           <select
             className="mt-1 w-full rounded border px-3 py-2"
             value={filters.terrace}
             onChange={(event) => onFilterChange("terrace", event.target.value)}
           >
-            <option value="">Indifférent</option>
-            <option value="true">Oui</option>
-            <option value="false">Non</option>
+            <option value="">{copy.indifferent}</option>
+            <option value="true">{copy.yes}</option>
+            <option value="false">{copy.no}</option>
           </select>
         </label>
         <label className="text-sm">
-          Ascenseur
+          {copy.elevator}
           <select
             className="mt-1 w-full rounded border px-3 py-2"
             value={filters.elevator}
             onChange={(event) => onFilterChange("elevator", event.target.value)}
           >
-            <option value="">Indifférent</option>
-            <option value="true">Oui</option>
-            <option value="false">Non</option>
+            <option value="">{copy.indifferent}</option>
+            <option value="true">{copy.yes}</option>
+            <option value="false">{copy.no}</option>
           </select>
         </label>
 
         <div className="md:col-span-4 flex flex-wrap items-center gap-3">
           <button type="button" className="sillage-btn rounded px-4 py-2 text-sm" onClick={resetFilters}>
-            Réinitialiser
+            {copy.reset}
           </button>
-          {isLoading ? <p className="text-sm opacity-70">Mise à jour des résultats...</p> : null}
+          {isLoading ? <p className="text-sm opacity-70">{copy.updating}</p> : null}
           {error ? <p className="text-sm text-red-700">{error}</p> : null}
         </div>
       </div>
 
       <div className="flex items-center justify-between gap-4">
         <p className="text-sm opacity-75">
-          {listings.length} bien{listings.length > 1 ? "s" : ""} disponible{listings.length > 1 ? "s" : ""}
+          {listings.length}{" "}
+          {props.locale === "fr"
+            ? `bien${listings.length > 1 ? "s" : ""} ${listings.length > 1 ? copy.availablePlural : copy.available}`
+            : props.locale === "es"
+              ? `inmueble${listings.length > 1 ? "s" : ""} ${listings.length > 1 ? copy.availablePlural : copy.available}`
+              : props.locale === "ru"
+                ? `объект${listings.length > 1 ? "а" : ""} ${copy.availablePlural}`
+                : `properties ${copy.available}`}
         </p>
       </div>
 
       {listings.length === 0 ? (
         <section className="rounded-2xl border border-[rgba(20,20,70,0.18)] p-6">
-          <h2 className="text-xl font-semibold">Aucun bien ne correspond à ces critères</h2>
+          <h2 className="text-xl font-semibold">{copy.noResultsTitle}</h2>
           <p className="mt-2 max-w-2xl text-sm opacity-75">
-            Ajustez vos filtres ou contactez Sillage Immo pour nous partager votre recherche.
+            {copy.noResultsBody}
           </p>
         </section>
       ) : (
         <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           {listings.map((listing) => (
-            <PropertyCard key={listing.id} listing={listing} />
+            <PropertyCard key={listing.id} listing={listing} locale={props.locale} />
           ))}
         </section>
       )}
