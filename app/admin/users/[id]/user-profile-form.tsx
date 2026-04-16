@@ -1,5 +1,6 @@
 "use client";
 
+import NextImage from "next/image";
 import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -144,9 +145,15 @@ export function UserProfileForm({ user, canManage }: { user: UserProfile; canMan
       <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6">
         <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
           <div className="space-y-3">
-            <div className="aspect-[3/4] overflow-hidden rounded-3xl bg-[#f4ece4]">
+            <div className="relative aspect-[3/4] overflow-hidden rounded-3xl bg-[#f4ece4]">
               {avatarUrl ? (
-                <img src={avatarUrl} alt={user.fullName ?? user.email} className="h-full w-full object-cover" />
+                <NextImage
+                  src={avatarUrl}
+                  alt={user.fullName ?? user.email}
+                  fill
+                  sizes="240px"
+                  className="object-cover"
+                />
               ) : (
                 <div className="flex h-full items-center justify-center text-sm text-[#141446]/55">
                   Aucun portrait
@@ -218,14 +225,28 @@ export function UserProfileForm({ user, canManage }: { user: UserProfile; canMan
               />
             </label>
             <label className="text-sm text-[#141446]">
-              <span className="mb-2 block font-medium">Lien de prise de rendez-vous</span>
+              <span className="mb-2 block font-medium">Lien Google de prise de rendez-vous</span>
               <input
                 className="w-full rounded border px-3 py-2"
-                placeholder="https://..."
+                placeholder="https://calendar.google.com/..."
                 value={bookingUrl}
                 disabled={!canManage || isPending}
                 onChange={(event) => setBookingUrl(event.target.value)}
               />
+              <span className="mt-2 block text-xs text-[#141446]/60">
+                Collez ici le lien Google Agenda ou Google Appointment Schedule du conseiller. Quand il est
+                renseigné, le client peut reserver directement un rendez-vous physique ou visio depuis son espace.
+              </span>
+              {bookingUrl.trim() ? (
+                <a
+                  href={bookingUrl.trim()}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-2 inline-block text-xs underline text-[#141446]"
+                >
+                  Ouvrir le lien configuré
+                </a>
+              ) : null}
             </label>
             <label className="text-sm text-[#141446] md:col-span-2">
               <span className="mb-2 block font-medium">Email affiché</span>

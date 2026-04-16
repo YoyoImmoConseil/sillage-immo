@@ -161,8 +161,13 @@ function SellerProjectDetailView({
       noEvents: "Aucun événement visible pour le moment.",
       advisor: "Votre conseiller",
       noAdvisor: "Aucun conseiller n'est encore affecté. Notre équipe reviendra vers vous.",
+      advisorAvailability:
+        "Prenez directement rendez-vous avec votre conseiller pour un échange en physique ou en visio.",
+      advisorBookingPending:
+        "La prise de rendez-vous en ligne n'est pas encore disponible pour ce conseiller. Vous pouvez déjà le contacter par email.",
       nextAction: "Prochaine action",
       book: "Prendre rendez-vous",
+      bookWithAdvisor: "Prendre rendez-vous avec mon conseiller",
       contactAdvisor: "Contacter mon conseiller par email",
       contactTeam: "Contacter l'équipe Sillage Immo",
       notDefined: "À définir",
@@ -191,8 +196,13 @@ function SellerProjectDetailView({
       noEvents: "No visible event at the moment.",
       advisor: "Your advisor",
       noAdvisor: "No advisor has been assigned yet. Our team will get back to you.",
+      advisorAvailability:
+        "Book directly with your advisor for an in-person meeting or a video appointment.",
+      advisorBookingPending:
+        "Online booking is not available for this advisor yet. You can already contact them by email.",
       nextAction: "Next action",
       book: "Book an appointment",
+      bookWithAdvisor: "Book with my advisor",
       contactAdvisor: "Contact my advisor by email",
       contactTeam: "Contact the Sillage Immo team",
       notDefined: "To be defined",
@@ -221,8 +231,13 @@ function SellerProjectDetailView({
       noEvents: "No hay eventos visibles por el momento.",
       advisor: "Su asesor",
       noAdvisor: "Aún no se ha asignado ningún asesor. Nuestro equipo se pondrá en contacto con usted.",
+      advisorAvailability:
+        "Reserve directamente con su asesor una cita presencial o una videollamada.",
+      advisorBookingPending:
+        "La reserva en línea todavía no está disponible para este asesor. Ya puede contactarlo por email.",
       nextAction: "Próxima acción",
       book: "Reservar una cita",
+      bookWithAdvisor: "Reservar con mi asesor",
       contactAdvisor: "Contactar con mi asesor por email",
       contactTeam: "Contactar con el equipo de Sillage Immo",
       notDefined: "Por definir",
@@ -251,8 +266,13 @@ function SellerProjectDetailView({
       noEvents: "Пока нет видимых событий.",
       advisor: "Ваш консультант",
       noAdvisor: "Консультант еще не назначен. Наша команда свяжется с вами.",
+      advisorAvailability:
+        "Запишитесь напрямую к вашему консультанту на личную встречу или видеозвонок.",
+      advisorBookingPending:
+        "Онлайн-запись для этого консультанта пока недоступна. Вы уже можете связаться с ним по email.",
       nextAction: "Следующее действие",
       book: "Записаться на встречу",
+      bookWithAdvisor: "Записаться к моему консультанту",
       contactAdvisor: "Связаться с консультантом по email",
       contactTeam: "Связаться с командой Sillage Immo",
       notDefined: "Уточняется",
@@ -412,6 +432,21 @@ function SellerProjectDetailView({
                     </a>
                   </p>
                 ) : null}
+                {detail.advisor.bookingUrl ? (
+                  <div className="pt-3">
+                    <p className="mb-3 text-[#141446]/75">{copy.advisorAvailability}</p>
+                    <a
+                      href={detail.advisor.bookingUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-block rounded bg-[#141446] px-4 py-2 text-[#f4ece4]"
+                    >
+                      {copy.bookWithAdvisor}
+                    </a>
+                  </div>
+                ) : (
+                  <p className="pt-3 text-[#141446]/75">{copy.advisorBookingPending}</p>
+                )}
               </div>
             ) : (
               <p className="mt-4 text-sm text-[#141446]/75">
