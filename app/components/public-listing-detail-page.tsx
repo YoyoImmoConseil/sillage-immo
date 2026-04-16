@@ -121,6 +121,8 @@ export async function PublicListingDetailPage({
       contact.image_url,
       contact.imageUrl,
     ].find((value): value is string => typeof value === "string" && value.trim().length > 0);
+  // Public listing galleries remain photo-only on purpose even if the
+  // underlying property object can now store additional media kinds.
   const gallery = listing.property.media.filter((item) => item.kind === "image");
   const feeMention =
     listing.property.sale.feeChargeBearer === "buyer" && typeof listing.property.sale.feeAmount === "number"

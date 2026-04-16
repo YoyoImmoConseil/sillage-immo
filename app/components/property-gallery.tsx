@@ -16,15 +16,14 @@ const getImageUrl = (image: PropertyMediaSnapshot) => {
 
 export function PropertyGallery({ images, title, showThumbnails = true }: PropertyGalleryProps) {
   const validImages = useMemo(
+    // This component is intentionally image-only; callers may pass the full
+    // property media array, but videos and documents are ignored here.
     () => images.filter((image) => image.kind === "image" && getImageUrl(image)),
     [images]
   );
   const [activeIndex, setActiveIndex] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
-
-  useEffect(() => {
-    setActiveIndex(0);
-  }, [validImages.length]);
+  const safeActiveIndex = activeIndex >= validImages.length ? 0 : activeIndex;
 
   useEffect(() => {
     if (!isFullscreen) return;
@@ -51,7 +50,7 @@ export function PropertyGallery({ images, title, showThumbnails = true }: Proper
     );
   }
 
-  const activeImage = validImages[activeIndex];
+  const activeImage = validImages[safeActiveIndex];
   const activeUrl = getImageUrl(activeImage);
 
   if (!activeUrl) {
@@ -101,7 +100,7 @@ export function PropertyGallery({ images, title, showThumbnails = true }: Proper
           ) : null}
           <div className="absolute bottom-3 right-3 flex items-center gap-2">
             <span className="rounded-full bg-[rgba(20,20,70,0.7)] px-3 py-1 text-xs text-white">
-              {activeIndex + 1} / {validImages.length}
+              {safeActiveIndex + 1} / {validImages.length}
             </span>
             <button
               type="button"
@@ -124,7 +123,7 @@ export function PropertyGallery({ images, title, showThumbnails = true }: Proper
                   key={image.id}
                   type="button"
                   className={`overflow-hidden rounded-xl border ${
-                    index === activeIndex
+                    index === safeActiveIndex
                       ? "border-[#141446] ring-2 ring-[rgba(20,20,70,0.25)]"
                       : "border-[rgba(20,20,70,0.14)]"
                   }`}
@@ -147,7 +146,7 @@ export function PropertyGallery({ images, title, showThumbnails = true }: Proper
         <div className="fixed inset-0 z-50 bg-[rgba(20,20,70,0.94)] p-4 md:p-8">
           <div className="flex items-center justify-between pb-4 text-white">
             <p className="text-sm">
-              {title} · {activeIndex + 1}/{validImages.length}
+              {title} · {safeActiveIndex + 1}/{validImages.length}
             </p>
             <button
               type="button"

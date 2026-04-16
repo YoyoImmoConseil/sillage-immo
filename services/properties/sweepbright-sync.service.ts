@@ -277,6 +277,7 @@ const cachePropertyMediaAssets = async (input: { propertyId: string; listingId: 
 
   const mediaRows = (mediaData ?? []) as PropertyMediaRow[];
   for (const media of mediaRows) {
+    if (media.kind === "video") continue;
     if (!media.remote_url) continue;
     if (media.cached_url) continue;
 

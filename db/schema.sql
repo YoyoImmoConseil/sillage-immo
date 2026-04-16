@@ -513,7 +513,7 @@ begin
   ) then
     alter table public.property_media
       add constraint chk_property_media_kind_values
-      check (kind in ('image', 'plan', 'document'));
+      check (kind in ('image', 'plan', 'document', 'video'));
   end if;
 
   if not exists (

@@ -1,7 +1,7 @@
 export type PropertyBusinessType = "sale" | "rental";
 export type PropertyKind = PropertyBusinessType | "project" | "unit";
 export type PropertyPublicationStatus = "active" | "inactive" | "deleted";
-export type PropertyMediaKind = "image" | "plan" | "document";
+export type PropertyMediaKind = "image" | "plan" | "document" | "video";
 
 export type PropertyMediaSnapshot = {
   id: string;

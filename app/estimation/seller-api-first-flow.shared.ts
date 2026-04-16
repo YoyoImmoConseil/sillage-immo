@@ -1,3 +1,4 @@
+import type { SellerUploadedPropertyMedia } from "@/types/api/seller";
 import type {
   SellerApartmentCondition,
   SellerBuildingAge,
@@ -50,6 +51,8 @@ export type ValuationResult = {
   rooms: number | null;
   livingSpaceArea: number | null;
 };
+
+export type UploadedPropertyMedia = SellerUploadedPropertyMedia;
 
 export type UpdateFlowForm = <K extends keyof FlowForm>(key: K, value: FlowForm[K]) => void;
 

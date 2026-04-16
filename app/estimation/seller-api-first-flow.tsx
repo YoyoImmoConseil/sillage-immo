@@ -4,9 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import type { AppLocale } from "@/lib/i18n/config";
 import type {
   SellerEstimateAndCreateResponse,
+  SellerPropertyMediaUploadResponse,
   SellerPortalAccessData,
   SellerSendOtpResponse,
   SellerVerifyOtpResponse,
+  SellerUploadedPropertyMedia,
 } from "@/types/api/seller";
 import {
   SellerEmailVerificationSection,
@@ -38,6 +40,9 @@ export function SellerApiFirstFlow({ locale = "fr" }: { locale?: AppLocale }) {
       emailNotVerified: "Email non vérifié. Merci de valider le code.",
       estimateError: "Impossible de calculer votre estimation.",
       estimateNetworkError: "Erreur réseau pendant le calcul d'estimation.",
+      mediaUploadNetworkError: "Erreur reseau pendant l'envoi des medias.",
+      tooManyPhotos: "Vous pouvez ajouter jusqu'a 20 photos.",
+      tooManyVideos: "Vous pouvez ajouter jusqu'a 5 videos.",
       title: "Estimation vendeur Sillage Immo",
       intro:
         "Un parcours clair, guidé et sécurisé : vous renseignez votre bien une fois, nous vérifions votre email, puis nous produisons votre estimation pour cadrer la suite.",
@@ -56,6 +61,9 @@ export function SellerApiFirstFlow({ locale = "fr" }: { locale?: AppLocale }) {
       emailNotVerified: "Email not verified. Please validate the code first.",
       estimateError: "Unable to compute your valuation.",
       estimateNetworkError: "Network error while computing the valuation.",
+      mediaUploadNetworkError: "Network error while uploading media.",
+      tooManyPhotos: "You can upload up to 20 photos.",
+      tooManyVideos: "You can upload up to 5 videos.",
       title: "Seller valuation by Sillage Immo",
       intro:
         "A clear, guided and secure journey: you provide your property details once, we verify your email, then we prepare your valuation to define the next steps.",
@@ -74,6 +82,9 @@ export function SellerApiFirstFlow({ locale = "fr" }: { locale?: AppLocale }) {
       emailNotVerified: "Email no verificado. Por favor, valide el código primero.",
       estimateError: "No se pudo calcular su valoración.",
       estimateNetworkError: "Error de red durante el cálculo de la valoración.",
+      mediaUploadNetworkError: "Error de red durante la carga de los medios.",
+      tooManyPhotos: "Puede cargar hasta 20 fotos.",
+      tooManyVideos: "Puede cargar hasta 5 videos.",
       title: "Valoración de vendedor Sillage Immo",
       intro:
         "Un recorrido claro, guiado y seguro: nos facilita una vez los datos de su inmueble, verificamos su email y después generamos su valoración para preparar la siguiente etapa.",
@@ -92,14 +103,25 @@ export function SellerApiFirstFlow({ locale = "fr" }: { locale?: AppLocale }) {
       emailNotVerified: "Email не подтвержден. Пожалуйста, сначала подтвердите код.",
       estimateError: "Не удалось рассчитать оценку.",
       estimateNetworkError: "Ошибка сети при расчете оценки.",
+      mediaUploadNetworkError: "Ошибка сети при загрузке медиафайлов.",
+      tooManyPhotos: "Можно загрузить до 20 фотографий.",
+      tooManyVideos: "Можно загрузить до 5 видео.",
       title: "Оценка для продавца от Sillage Immo",
       intro:
         "Понятный, безопасный и пошаговый процесс: вы один раз заполняете данные об объекте, мы подтверждаем ваш email и затем готовим оценку для определения дальнейших шагов.",
     },
   }[locale];
   const idempotencyKeysRef = useRef<Record<string, string>>({});
+  const uploadSessionIdRef = useRef(
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`
+  );
   const [step, setStep] = useState<Step>("form");
   const [form, setForm] = useState<FlowForm>(initialForm);
+  const [uploadedMedia, setUploadedMedia] = useState<SellerUploadedPropertyMedia[]>([]);
+  const [isUploadingMedia, setIsUploadingMedia] = useState(false);
+  const [mediaUploadError, setMediaUploadError] = useState<string | null>(null);
   const [otp, setOtp] = useState("");
   const [verificationToken, setVerificationToken] = useState<string | null>(null);
   const [previewCode, setPreviewCode] = useState<string | null>(null);
@@ -150,9 +172,49 @@ export function SellerApiFirstFlow({ locale = "fr" }: { locale?: AppLocale }) {
     return idempotencyKeysRef.current[cacheKey];
   };
 
+  const uploadMedia = async (kind: "image" | "video", files: File[]) => {
+    const currentCount = uploadedMedia.filter((item) => item.kind === kind).length;
+    const maxCount = kind === "image" ? 20 : 5;
+    if (currentCount + files.length > maxCount) {
+      setMediaUploadError(kind === "image" ? copy.tooManyPhotos : copy.tooManyVideos);
+      return;
+    }
+
+    setMediaUploadError(null);
+    setError(null);
+    setIsUploadingMedia(true);
+    try {
+      const formData = new FormData();
+      formData.set("kind", kind);
+      formData.set("uploadSessionId", uploadSessionIdRef.current);
+      files.forEach((file) => formData.append("files", file));
+
+      const response = await fetch("/api/seller/property-media/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = (await response.json()) as SellerPropertyMediaUploadResponse;
+      if (!response.ok || !data.ok) {
+        setMediaUploadError(getApiErrorMessage(data) ?? copy.mediaUploadNetworkError);
+        return;
+      }
+
+      setUploadedMedia((prev) => [...prev, ...data.data.files]);
+    } catch {
+      setMediaUploadError(copy.mediaUploadNetworkError);
+    } finally {
+      setIsUploadingMedia(false);
+    }
+  };
+
+  const removeUploadedMedia = (uploadId: string) => {
+    setUploadedMedia((prev) => prev.filter((item) => item.uploadId !== uploadId));
+  };
+
   const sendOtp = async () => {
     const normalizedEmail = form.email.trim().toLowerCase();
     setError(null);
+    setMediaUploadError(null);
     setLoading(true);
     try {
       const response = await fetch("/api/seller/email/send-otp", {
@@ -280,6 +342,16 @@ export function SellerApiFirstFlow({ locale = "fr" }: { locale?: AppLocale }) {
         syndicDocsReady: form.syndicDocsReady === "yes",
         syndicSupportNeeded:
           form.syndicDocsReady === "no" ? form.syndicSupportNeeded === "yes" : undefined,
+        uploadedMedia: uploadedMedia.map((item) => ({
+          uploadId: item.uploadId,
+          kind: item.kind,
+          fileName: item.fileName,
+          contentType: item.contentType,
+          sizeBytes: item.sizeBytes,
+          storageBucket: item.storageBucket,
+          storagePath: item.storagePath,
+          previewUrl: item.previewUrl,
+        })),
         verificationToken,
       };
       const payloadSeed = JSON.stringify(payload);
@@ -331,7 +403,12 @@ export function SellerApiFirstFlow({ locale = "fr" }: { locale?: AppLocale }) {
         locale={locale}
         form={form}
         loading={loading}
+        media={uploadedMedia}
+        mediaUploading={isUploadingMedia}
+        mediaUploadError={mediaUploadError}
         onUpdate={update}
+        onUploadMedia={(kind, files) => void uploadMedia(kind, files)}
+        onRemoveMedia={removeUploadedMedia}
         onSendOtp={() => void sendOtp()}
       />
 

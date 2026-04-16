@@ -6,9 +6,11 @@ import { formatCurrency } from "@/lib/i18n/format";
 import { localizePath } from "@/lib/i18n/routing";
 import { AddressAutocompleteInput } from "./address-autocomplete-input";
 import { SellerResultChat } from "./seller-result-chat";
+import { SellerPropertyMediaUpload } from "./seller-property-media-upload";
 import {
   toOptionalInteger,
   type FlowForm,
+  type UploadedPropertyMedia,
   type UpdateFlowForm,
   type ValuationResult,
 } from "./seller-api-first-flow.shared";
@@ -17,7 +19,12 @@ type SellerProjectFormSectionProps = {
   locale?: AppLocale;
   form: FlowForm;
   loading: boolean;
+  media: UploadedPropertyMedia[];
+  mediaUploading: boolean;
+  mediaUploadError: string | null;
   onUpdate: UpdateFlowForm;
+  onUploadMedia: (kind: "image" | "video", files: File[]) => void;
+  onRemoveMedia: (uploadId: string) => void;
   onSendOtp: () => void;
 };
 
@@ -25,7 +32,12 @@ export function SellerProjectFormSection({
   locale = "fr",
   form,
   loading,
+  media,
+  mediaUploading,
+  mediaUploadError,
   onUpdate,
+  onUploadMedia,
+  onRemoveMedia,
   onSendOtp,
 }: SellerProjectFormSectionProps) {
   const copy = {
@@ -650,6 +662,15 @@ export function SellerProjectFormSection({
             placeholder={copy.usefulInfoPlaceholder}
           />
         </label>
+        <SellerPropertyMediaUpload
+          locale={locale}
+          loading={loading}
+          uploading={mediaUploading}
+          media={media}
+          error={mediaUploadError}
+          onUpload={onUploadMedia}
+          onRemove={onRemoveMedia}
+        />
       </div>
 
       <button
@@ -657,6 +678,7 @@ export function SellerProjectFormSection({
         type="button"
         disabled={
           loading ||
+          mediaUploading ||
           !form.email ||
           !form.firstName ||
           !form.lastName ||
