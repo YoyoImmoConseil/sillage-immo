@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { LOCALE_LABELS, SUPPORTED_LOCALES, type AppLocale } from "@/lib/i18n/config";
 import { getPathLocale, localizePathWithSearch, stripLocalePrefix } from "@/lib/i18n/routing";
 
@@ -16,7 +16,6 @@ type LanguageSwitcherProps = {
 };
 
 export function LanguageSwitcher({ theme = "dark" }: LanguageSwitcherProps) {
-  const router = useRouter();
   const pathname = usePathname() ?? "/";
   const searchParams = useSearchParams();
   const locale = getPathLocale(pathname);
@@ -30,7 +29,9 @@ export function LanguageSwitcher({ theme = "dark" }: LanguageSwitcherProps) {
         value={locale}
         onChange={(event) => {
           const nextLocale = event.target.value as AppLocale;
-          router.push(localizePathWithSearch(basePath, nextLocale, search));
+          const nextUrl = localizePathWithSearch(basePath, nextLocale, search);
+          document.cookie = `sillage-locale=${nextLocale}; path=/; samesite=lax`;
+          window.location.assign(nextUrl);
         }}
         className={
           theme === "dark"
