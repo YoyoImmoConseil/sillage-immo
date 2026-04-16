@@ -13,6 +13,26 @@ type SendClientPortalMagicLinkInput = {
   origin: string;
 };
 
+type ClientPortalLinkResult =
+  | {
+      ok: true;
+      data: {
+        email: string;
+        context: "invite" | "login";
+        link: string;
+      };
+    }
+  | {
+      ok: false;
+      code:
+        | "invalid"
+        | "revoked"
+        | "expired"
+        | "email_mismatch"
+        | "no_portal_access";
+      message: string;
+    };
+
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
 
 const getSafeNextPath = (value?: string | null) => {
@@ -93,7 +113,9 @@ const generatePortalLink = async (input: {
   return confirmUrl.toString();
 };
 
-export const sendClientPortalMagicLink = async (input: SendClientPortalMagicLinkInput) => {
+const resolveClientPortalAccessLink = async (
+  input: SendClientPortalMagicLinkInput
+): Promise<ClientPortalLinkResult> => {
   const email = normalizeEmail(input.email);
   const nextPath = getSafeNextPath(input.nextPath);
   const baseUrl = getBaseUrl(input.origin);
@@ -208,10 +230,30 @@ export const sendClientPortalMagicLink = async (input: SendClientPortalMagicLink
     }
   }
 
+  return {
+    ok: true as const,
+    data: {
+      email: effectiveEmail,
+      context,
+      link,
+    },
+  };
+};
+
+export const createClientPortalAccessLink = async (input: SendClientPortalMagicLinkInput) => {
+  return resolveClientPortalAccessLink(input);
+};
+
+export const sendClientPortalMagicLink = async (input: SendClientPortalMagicLinkInput) => {
+  const resolved = await resolveClientPortalAccessLink(input);
+  if (!resolved.ok) {
+    return resolved;
+  }
+
   const sent = await sendClientPortalAccessEmail({
-    email: effectiveEmail,
-    accessLink: link,
-    context,
+    email: resolved.data.email,
+    accessLink: resolved.data.link,
+    context: resolved.data.context,
   });
 
   // #region agent log
@@ -225,7 +267,7 @@ export const sendClientPortalMagicLink = async (input: SendClientPortalMagicLink
       location: "services/clients/client-portal-magic-link.service.ts:209",
       message: "portal access email send result",
       data: {
-        context,
+        context: resolved.data.context,
         sent: sent.sent,
         provider: "provider" in sent ? sent.provider : null,
         reason: "reason" in sent ? sent.reason : null,
@@ -246,8 +288,8 @@ export const sendClientPortalMagicLink = async (input: SendClientPortalMagicLink
   return {
     ok: true as const,
     data: {
-      email: effectiveEmail,
-      context,
+      email: resolved.data.email,
+      context: resolved.data.context,
     },
   };
 };

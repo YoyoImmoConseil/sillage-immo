@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 type InviteButtonProps = {
   clientId: string;
   projectId: string;
+  showDirectAccessButton?: boolean;
   latestInvitation?: {
     id: string;
     email: string;
@@ -27,13 +28,20 @@ const getInvitationStatus = (
   return "en_attente";
 };
 
-export function InviteButton({ clientId, projectId, latestInvitation }: InviteButtonProps) {
+export function InviteButton({
+  clientId,
+  projectId,
+  latestInvitation,
+  showDirectAccessButton = false,
+}: InviteButtonProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [revoking, setRevoking] = useState(false);
+  const [directAccessLoading, setDirectAccessLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<string | null>(null);
   const [inviteLink, setInviteLink] = useState<string | null>(null);
+  const [directAccessLink, setDirectAccessLink] = useState<string | null>(null);
 
   const invitationStatus = latestInvitation ? getInvitationStatus(latestInvitation) : null;
 
@@ -69,6 +77,30 @@ export function InviteButton({ clientId, projectId, latestInvitation }: InviteBu
       setError(null);
     } catch {
       setError("Copie impossible depuis ce navigateur.");
+    }
+  };
+
+  const handleDirectAccessCopy = async () => {
+    setError(null);
+    setResult(null);
+    setDirectAccessLoading(true);
+    try {
+      const res = await fetch(`/api/admin/clients/${clientId}/projects/${projectId}/direct-access`, {
+        method: "POST",
+      });
+      const data = (await res.json()) as { ok?: boolean; message?: string; accessLink?: string };
+      if (!res.ok || !data.ok || !data.accessLink) {
+        setError(data.message ?? "Lien d'acces direct indisponible.");
+        return;
+      }
+
+      setDirectAccessLink(data.accessLink);
+      await navigator.clipboard.writeText(data.accessLink);
+      setResult("Lien d'acces direct copié.");
+    } catch {
+      setError("Copie impossible depuis ce navigateur.");
+    } finally {
+      setDirectAccessLoading(false);
     }
   };
 
@@ -140,6 +172,16 @@ export function InviteButton({ clientId, projectId, latestInvitation }: InviteBu
             Copier le lien
           </button>
         ) : null}
+        {showDirectAccessButton ? (
+          <button
+            type="button"
+            onClick={handleDirectAccessCopy}
+            disabled={directAccessLoading}
+            className="rounded border border-[#141446]/20 px-4 py-2 text-sm text-[#141446] disabled:opacity-50"
+          >
+            {directAccessLoading ? "Preparation..." : "Copier lien d'acces direct"}
+          </button>
+        ) : null}
         {latestInvitation && invitationStatus === "en_attente" ? (
           <button
             type="button"
@@ -155,6 +197,11 @@ export function InviteButton({ clientId, projectId, latestInvitation }: InviteBu
       {inviteLink ? (
         <p className="rounded-xl border border-[rgba(20,20,70,0.12)] bg-[#141446]/[0.03] px-4 py-3 text-xs text-[#141446]/75">
           {inviteLink}
+        </p>
+      ) : null}
+      {directAccessLink ? (
+        <p className="rounded-xl border border-[rgba(20,20,70,0.12)] bg-[#141446]/[0.03] px-4 py-3 text-xs text-[#141446]/75">
+          {directAccessLink}
         </p>
       ) : null}
       {result ? <p className="text-sm text-green-700">{result}</p> : null}
