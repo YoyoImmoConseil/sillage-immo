@@ -11,6 +11,7 @@ type SendClientPortalMagicLinkInput = {
   nextPath?: string;
   inviteToken?: string | null;
   origin: string;
+  baseUrlOverride?: string;
 };
 
 type ClientPortalLinkResult =
@@ -43,7 +44,10 @@ const getSafeNextPath = (value?: string | null) => {
   return value;
 };
 
-const getBaseUrl = (origin: string) => {
+const getBaseUrl = (origin: string, baseUrlOverride?: string) => {
+  if (baseUrlOverride?.trim()) {
+    return baseUrlOverride.trim();
+  }
   const configured = serverEnv.PUBLIC_SITE_URL.trim();
   return configured || origin;
 };
@@ -118,7 +122,7 @@ const resolveClientPortalAccessLink = async (
 ): Promise<ClientPortalLinkResult> => {
   const email = normalizeEmail(input.email);
   const nextPath = getSafeNextPath(input.nextPath);
-  const baseUrl = getBaseUrl(input.origin);
+  const baseUrl = getBaseUrl(input.origin, input.baseUrlOverride);
 
   let effectiveEmail = email;
   let inviteToken: string | null = null;

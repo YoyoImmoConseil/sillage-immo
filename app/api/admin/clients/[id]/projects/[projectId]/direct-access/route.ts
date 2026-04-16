@@ -42,6 +42,7 @@ export async function POST(request: Request, { params }: RouteParams) {
       email: client.email,
       nextPath: `/espace-client/projets/${projectId}`,
       origin: requestUrl.origin,
+      baseUrlOverride: requestUrl.origin,
     });
 
     if (!result.ok) {
