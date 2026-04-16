@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isClientPortalDirectAccessEnabled } from "@/lib/client-space/direct-access";
 import { sendClientPortalMagicLink } from "@/services/clients/client-portal-magic-link.service";
 
 type Body = {
@@ -8,6 +9,7 @@ type Body = {
 };
 
 export async function POST(request: Request) {
+  const requestUrl = new URL(request.url);
   let body: Body | null = null;
 
   try {
@@ -49,7 +51,8 @@ export async function POST(request: Request) {
       email,
       nextPath: body?.nextPath,
       inviteToken: body?.inviteToken,
-      origin: new URL(request.url).origin,
+      origin: requestUrl.origin,
+      baseUrlOverride: isClientPortalDirectAccessEnabled(requestUrl.host) ? requestUrl.origin : undefined,
     });
 
     if (!result.ok) {
