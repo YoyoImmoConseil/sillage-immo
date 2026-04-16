@@ -154,6 +154,7 @@ function SellerProjectDetailView({
       noValuation: "Aucune estimation détaillée n'est encore disponible.",
       linkedProperty: "Bien rattaché",
       noProperty: "Aucun bien n'est encore rattaché à ce projet.",
+      openProperty: "Ouvrir la fiche du bien",
       syncingAddress: "Adresse en cours de synchronisation",
       unknownType: "Type non renseigné",
       primaryProperty: "Bien principal",
@@ -189,6 +190,7 @@ function SellerProjectDetailView({
       noValuation: "No detailed valuation is available yet.",
       linkedProperty: "Linked property",
       noProperty: "No property is linked to this project yet.",
+      openProperty: "Open property sheet",
       syncingAddress: "Address is being synchronized",
       unknownType: "Property type not provided",
       primaryProperty: "Primary property",
@@ -224,6 +226,7 @@ function SellerProjectDetailView({
       noValuation: "Aún no hay una valoración detallada disponible.",
       linkedProperty: "Inmueble vinculado",
       noProperty: "Aún no hay ningún inmueble vinculado a este proyecto.",
+      openProperty: "Abrir la ficha del inmueble",
       syncingAddress: "Dirección en curso de sincronización",
       unknownType: "Tipo no indicado",
       primaryProperty: "Inmueble principal",
@@ -259,6 +262,7 @@ function SellerProjectDetailView({
       noValuation: "Подробная оценка пока недоступна.",
       linkedProperty: "Привязанный объект",
       noProperty: "К этому проекту пока не привязан ни один объект.",
+      openProperty: "Открыть карточку объекта",
       syncingAddress: "Адрес синхронизируется",
       unknownType: "Тип объекта не указан",
       primaryProperty: "Основной объект",
@@ -372,7 +376,11 @@ function SellerProjectDetailView({
             ) : (
               <div className="mt-4 space-y-3">
                 {detail.properties.map((property) => (
-                  <div key={property.id} className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-4">
+                  <Link
+                    key={property.id}
+                    href={localizePath(`/espace-client/biens/${property.id}`, locale)}
+                    className="block rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-4 transition-colors hover:border-[rgba(20,20,70,0.3)]"
+                  >
                     <p className="font-medium text-[#141446]">
                       {property.formattedAddress ?? copy.syncingAddress}
                     </p>
@@ -383,7 +391,8 @@ function SellerProjectDetailView({
                       {property.livingArea ? ` · ${property.livingArea} m²` : ""}
                       {property.isPrimary ? ` · ${copy.primaryProperty}` : ""}
                     </p>
-                  </div>
+                    <p className="mt-3 text-sm underline text-[#141446]">{copy.openProperty}</p>
+                  </Link>
                 ))}
               </div>
             )}

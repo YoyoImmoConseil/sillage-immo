@@ -122,7 +122,7 @@ export const listAdminProperties = async (input: {
     }) satisfies AdminPropertyListItem[];
 };
 
-export const getAdminPropertyDetail = async (propertyId: string): Promise<AdminPropertyDetail | null> => {
+export const getPropertyDetailById = async (propertyId: string): Promise<AdminPropertyDetail | null> => {
   const [{ data: propertyData, error: propertyError }, { data: listingData, error: listingError }] =
     await Promise.all([
       supabaseAdmin.from("properties").select("*").eq("id", propertyId).maybeSingle(),
@@ -138,6 +138,8 @@ export const getAdminPropertyDetail = async (propertyId: string): Promise<AdminP
     listing: (listingData as PropertyListingRow | null) ?? null,
   };
 };
+
+export const getAdminPropertyDetail = getPropertyDetailById;
 
 export const createManualProperty = async (input: {
   title: string;
