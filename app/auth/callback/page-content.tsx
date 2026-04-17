@@ -29,6 +29,7 @@ export function AuthCallbackPageContent() {
 
   useEffect(() => {
     let isActive = true;
+    const runId = `admin-oauth-${Date.now()}`;
     const nextPath = getSafeNextPath(
       searchParams.get("next") ??
         (() => {
@@ -39,6 +40,25 @@ export function AuthCallbackPageContent() {
           }
         })()
     );
+    // #region agent log
+    fetch("http://127.0.0.1:7760/ingest/34db18ce-fe4a-4a99-91a2-c9c0aaded505", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "cada68" },
+      body: JSON.stringify({
+        sessionId: "cada68",
+        runId,
+        hypothesisId: "H2_H5",
+        location: "app/auth/callback/page-content.tsx:42",
+        message: "admin callback initialized",
+        data: {
+          hasCode: Boolean(searchParams.get("code")),
+          hasErrorDescription: Boolean(searchParams.get("error_description")),
+          nextPath,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
     const redirectWithUser = (email?: string | null) => {
       if (!isActive) {
         return;
@@ -51,11 +71,13 @@ export function AuthCallbackPageContent() {
       if (isActive) {
         setStep("Synchronisation de la session serveur...");
       }
+      const startedAt = Date.now();
       const response = await withTimeout(
         fetch("/api/admin/auth/session", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            "X-Debug-Session-Id": "cada68",
           },
           body: JSON.stringify({
             accessToken,
@@ -63,8 +85,29 @@ export function AuthCallbackPageContent() {
         }),
         7000
       );
+      const payload = (await response.json()) as { message?: string; debug?: unknown };
+      // #region agent log
+      fetch("http://127.0.0.1:7760/ingest/34db18ce-fe4a-4a99-91a2-c9c0aaded505", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "cada68" },
+        body: JSON.stringify({
+          sessionId: "cada68",
+          runId,
+          hypothesisId: "H2",
+          location: "app/auth/callback/page-content.tsx:71",
+          message: "admin session sync response",
+          data: {
+            ok: response.ok,
+            status: response.status,
+            durationMs: Date.now() - startedAt,
+            debug: payload.debug ?? null,
+            message: payload.message ?? null,
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
       if (!response.ok) {
-        const payload = (await response.json()) as { message?: string };
         throw new Error(payload.message ?? "Synchronisation serveur impossible.");
       }
     };
@@ -127,6 +170,24 @@ export function AuthCallbackPageContent() {
         for (let attempt = 0; attempt < 8; attempt += 1) {
           const session = await readSession();
           if (session?.user) {
+            // #region agent log
+            fetch("http://127.0.0.1:7760/ingest/34db18ce-fe4a-4a99-91a2-c9c0aaded505", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "cada68" },
+              body: JSON.stringify({
+                sessionId: "cada68",
+                runId,
+                hypothesisId: "H5",
+                location: "app/auth/callback/page-content.tsx:152",
+                message: "admin callback session detected",
+                data: {
+                  attempt,
+                  hasAccessToken: Boolean(session.access_token),
+                },
+                timestamp: Date.now(),
+              }),
+            }).catch(() => {});
+            // #endregion
             subscription.unsubscribe();
             await syncServerSession(session.access_token);
             redirectWithUser(session.user.email ?? null);
@@ -145,6 +206,23 @@ export function AuthCallbackPageContent() {
         }
 
         const message = cause instanceof Error ? cause.message : "Erreur inconnue.";
+        // #region agent log
+        fetch("http://127.0.0.1:7760/ingest/34db18ce-fe4a-4a99-91a2-c9c0aaded505", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "cada68" },
+          body: JSON.stringify({
+            sessionId: "cada68",
+            runId,
+            hypothesisId: "H2_H5",
+            location: "app/auth/callback/page-content.tsx:180",
+            message: "admin callback failed",
+            data: {
+              message,
+            },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+        // #endregion
         setError(`La finalisation de la connexion Google a échoué : ${message}`);
       }
     };

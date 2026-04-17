@@ -9,17 +9,48 @@ type Body = {
 
 export async function POST(request: NextRequest) {
   let body: Body = {};
+  const debugRequested = request.headers.get("x-debug-session-id") === "cada68";
+  const startedAt = Date.now();
 
   try {
     body = (await request.json()) as Body;
   } catch {
-    return NextResponse.json({ ok: false, message: "Payload JSON invalide." }, { status: 400 });
+    return NextResponse.json(
+      {
+        ok: false,
+        message: "Payload JSON invalide.",
+        ...(debugRequested
+          ? {
+              debug: {
+                stage: "parse-body",
+                durationMs: Date.now() - startedAt,
+              },
+            }
+          : {}),
+      },
+      { status: 400 }
+    );
   }
 
   if (!body.accessToken) {
-    return NextResponse.json({ ok: false, message: "Token de session manquant." }, { status: 400 });
+    return NextResponse.json(
+      {
+        ok: false,
+        message: "Token de session manquant.",
+        ...(debugRequested
+          ? {
+              debug: {
+                stage: "missing-token",
+                durationMs: Date.now() - startedAt,
+              },
+            }
+          : {}),
+      },
+      { status: 400 }
+    );
   }
 
+  const validationStartedAt = Date.now();
   const {
     data: { user },
     error,
@@ -31,12 +62,40 @@ export async function POST(request: NextRequest) {
 
   if (error || !user?.email) {
     return NextResponse.json(
-      { ok: false, message: error?.message ?? "Token admin invalide." },
+      {
+        ok: false,
+        message: error?.message ?? "Token admin invalide.",
+        ...(debugRequested
+          ? {
+              debug: {
+                stage: "validate-token",
+                durationMs: Date.now() - startedAt,
+                validationDurationMs: Date.now() - validationStartedAt,
+                userFound: Boolean(user),
+              },
+            }
+          : {}),
+      },
       { status: 400 }
     );
   }
 
-  const response = NextResponse.json({ ok: true });
+  const response = NextResponse.json(
+    {
+      ok: true,
+      ...(debugRequested
+        ? {
+            debug: {
+              stage: "set-cookie",
+              durationMs: Date.now() - startedAt,
+              validationDurationMs: Date.now() - validationStartedAt,
+              userFound: true,
+            },
+          }
+        : {}),
+    },
+    { status: 200 }
+  );
   response.cookies.set(ADMIN_ACCESS_TOKEN_COOKIE, body.accessToken, {
     httpOnly: true,
     secure: true,
