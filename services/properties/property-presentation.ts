@@ -199,10 +199,20 @@ export const buildPropertyDerivedFields = (property: PropertyRow, priceAmount: n
   const hasBalcony =
     countAmenitiesMatch(rawPayload, ["balcony", "balcon"]) ||
     Boolean(getNestedNumber(rawPayload, ["sizes", "balcony_area", "size"]));
+  const storageRoomsCount = asNumber(rawPayload?.storage_rooms);
+  const cellarCount = asNumber(rawPayload?.cellars);
   const hasCellar =
-    countAmenitiesMatch(rawPayload, ["cave", "cellar", "storage"]) ||
+    countAmenitiesMatch(rawPayload, ["cave", "cellar", "storage", "basement"]) ||
     asBoolean(rawPayload?.cellar) === true ||
-    asBoolean(rawPayload?.cave) === true;
+    asBoolean(rawPayload?.cave) === true ||
+    asBoolean(rawPayload?.basement) === true ||
+    asBoolean(rawPayload?.has_cellar) === true ||
+    asBoolean(rawPayload?.has_basement) === true ||
+    (typeof storageRoomsCount === "number" && storageRoomsCount > 0) ||
+    (typeof cellarCount === "number" && cellarCount > 0) ||
+    Boolean(getNestedNumber(rawPayload, ["sizes", "cellar_area", "size"])) ||
+    Boolean(getNestedNumber(rawPayload, ["sizes", "basement_area", "size"])) ||
+    Boolean(getNestedNumber(rawPayload, ["sizes", "storage_area", "size"]));
   const seaView =
     asString(rawPayload?.sea_view) ??
     asString(rawPayload?.view) ??
