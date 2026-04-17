@@ -45,7 +45,6 @@ const cards = [
 export default async function AdminDashboardPage() {
   let warningMessage: string | null = null;
   let context = null;
-  const pageRunId = `admin-dashboard-${Date.now()}`;
 
   try {
     context = await withTimeout(
@@ -58,25 +57,6 @@ export default async function AdminDashboardPage() {
       error instanceof TimeoutError
         ? error.message
         : "Impossible de vérifier la session admin pour le moment.";
-    // #region agent log
-    fetch("http://127.0.0.1:7760/ingest/34db18ce-fe4a-4a99-91a2-c9c0aaded505", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "cada68" },
-      body: JSON.stringify({
-        sessionId: "cada68",
-        runId: pageRunId,
-        hypothesisId: "H7_H8",
-        location: "app/admin/page.tsx:58",
-        message: "admin dashboard context load failed",
-        data: {
-          warningMessage,
-          errorName: error instanceof Error ? error.name : "unknown",
-          errorMessage: error instanceof Error ? error.message : "unknown",
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
   }
 
   if (!context && !warningMessage) {

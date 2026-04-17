@@ -30,6 +30,8 @@ export function AuthCallbackPageContent() {
   useEffect(() => {
     let isActive = true;
     const runId = `admin-oauth-${Date.now()}`;
+    let authEventCount = 0;
+    let syncAttemptCount = 0;
     const nextPath = getSafeNextPath(
       searchParams.get("next") ??
         (() => {
@@ -68,6 +70,7 @@ export function AuthCallbackPageContent() {
     };
 
     const syncServerSession = async (accessToken: string) => {
+      syncAttemptCount += 1;
       if (isActive) {
         setStep("Synchronisation de la session serveur...");
       }
@@ -110,6 +113,57 @@ export function AuthCallbackPageContent() {
       if (!response.ok) {
         throw new Error(payload.message ?? "Synchronisation serveur impossible.");
       }
+
+      try {
+        const cookieCheck = await withTimeout(
+          fetch("/api/admin/auth/debug-context", {
+            headers: {
+              "Cache-Control": "no-store",
+            },
+          }),
+          4000
+        );
+        const cookiePayload = (await cookieCheck.json()) as Record<string, unknown>;
+        // #region agent log
+        fetch("http://127.0.0.1:7760/ingest/34db18ce-fe4a-4a99-91a2-c9c0aaded505", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "cada68" },
+          body: JSON.stringify({
+            sessionId: "cada68",
+            runId,
+            hypothesisId: "H6",
+            location: "app/auth/callback/page-content.tsx:103",
+            message: "post-sync cookie visibility check",
+            data: {
+              syncAttemptCount,
+              ok: cookieCheck.ok,
+              status: cookieCheck.status,
+              payload: cookiePayload,
+            },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+        // #endregion
+      } catch (cause) {
+        // #region agent log
+        fetch("http://127.0.0.1:7760/ingest/34db18ce-fe4a-4a99-91a2-c9c0aaded505", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "cada68" },
+          body: JSON.stringify({
+            sessionId: "cada68",
+            runId,
+            hypothesisId: "H6",
+            location: "app/auth/callback/page-content.tsx:121",
+            message: "post-sync cookie visibility check failed",
+            data: {
+              syncAttemptCount,
+              message: cause instanceof Error ? cause.message : "unknown_error",
+            },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+        // #endregion
+      }
     };
 
     const readSession = async () => {
@@ -149,6 +203,26 @@ export function AuthCallbackPageContent() {
         const {
           data: { subscription },
         } = supabase.auth.onAuthStateChange((event, session) => {
+          authEventCount += 1;
+          // #region agent log
+          fetch("http://127.0.0.1:7760/ingest/34db18ce-fe4a-4a99-91a2-c9c0aaded505", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "cada68" },
+            body: JSON.stringify({
+              sessionId: "cada68",
+              runId,
+              hypothesisId: "H6",
+              location: "app/auth/callback/page-content.tsx:149",
+              message: "admin auth state change observed",
+              data: {
+                authEventCount,
+                event,
+                hasSessionUser: Boolean(session?.user),
+              },
+              timestamp: Date.now(),
+            }),
+          }).catch(() => {});
+          // #endregion
           if ((event === "SIGNED_IN" || event === "TOKEN_REFRESHED") && session?.user) {
             void (async () => {
               try {
