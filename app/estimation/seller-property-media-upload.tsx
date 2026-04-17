@@ -113,7 +113,7 @@ export function SellerPropertyMediaUpload({
   };
 
   return (
-    <div className="sm:col-span-2 space-y-3 rounded-xl border border-[rgba(20,20,70,0.15)] bg-white/70 p-4">
+    <div className="sm:col-span-2 space-y-3 rounded-xl border border-[rgba(20,20,70,0.15)] bg-[#f4ece4] p-4">
       <div className="space-y-1">
         <p className="text-sm font-medium">{copy.title}</p>
         <p className="text-xs opacity-75">{copy.intro}</p>
