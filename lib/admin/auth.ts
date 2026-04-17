@@ -11,6 +11,29 @@ import { linkAdminProfileToAuthUser } from "@/services/admin/admin-user.service"
 import type { AdminPermission, AdminProfileSnapshot, AdminRole } from "@/types/domain/admin";
 import { ADMIN_ROLE_PERMISSIONS } from "@/types/domain/admin";
 
+const postAdminDebugLog = (
+  hypothesisId: string,
+  location: string,
+  message: string,
+  data: Record<string, unknown>
+) => {
+  // #region agent log
+  fetch("http://127.0.0.1:7760/ingest/34db18ce-fe4a-4a99-91a2-c9c0aaded505", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "cada68" },
+    body: JSON.stringify({
+      sessionId: "cada68",
+      runId: `admin-server-${Date.now()}`,
+      hypothesisId,
+      location,
+      message,
+      data,
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion
+};
+
 const hasExpectedValue = (value: string | null, expected: string) => {
   return Boolean(value && expected && value === expected);
 };
@@ -45,6 +68,7 @@ const buildContext = (
 });
 
 const getAdminContextByUser = async (user: User): Promise<AdminContext | null> => {
+  const profileStartedAt = Date.now();
   const { data: profileData, error: profileError } = await supabaseAdmin
     .from("admin_profiles")
     .select("id, auth_user_id, email, first_name, last_name, full_name, is_active, metadata")
@@ -52,6 +76,13 @@ const getAdminContextByUser = async (user: User): Promise<AdminContext | null> =
     .maybeSingle();
 
   if (profileError || !profileData || !profileData.is_active || !user.email) {
+    postAdminDebugLog("H4", "lib/admin/auth.ts:76", "admin profile lookup failed", {
+      durationMs: Date.now() - profileStartedAt,
+      profileFound: Boolean(profileData),
+      profileActive: Boolean(profileData?.is_active),
+      hasUserEmail: Boolean(user.email),
+      error: profileError?.message ?? null,
+    });
     return null;
   }
 
@@ -96,6 +127,11 @@ const getAdminContextByUser = async (user: User): Promise<AdminContext | null> =
     .maybeSingle();
 
   if (roleError || !roleData?.is_active) {
+    postAdminDebugLog("H4", "lib/admin/auth.ts:120", "admin role lookup failed", {
+      totalDurationMs: Date.now() - profileStartedAt,
+      roleActive: Boolean(roleData?.is_active),
+      error: roleError?.message ?? null,
+    });
     return null;
   }
 
@@ -137,31 +173,61 @@ export const getAdminRequestContext = async (request: Request): Promise<AdminCon
 };
 
 export const getAdminPageContext = async (): Promise<AdminContext | null> => {
+  const startedAt = Date.now();
   const requestHeaders = await headers();
   if (isAdminHeaders(requestHeaders)) {
+    postAdminDebugLog("H7", "lib/admin/auth.ts:166", "admin context resolved via secret header", {
+      durationMs: Date.now() - startedAt,
+    });
     return buildContext("secret", "administrateur", null);
   }
 
   const cookieStore = await cookies();
   const accessToken = cookieStore.get(ADMIN_ACCESS_TOKEN_COOKIE)?.value;
+  postAdminDebugLog("H7_H8", "lib/admin/auth.ts:174", "admin page context start", {
+    durationMs: Date.now() - startedAt,
+    hasAdminCookie: Boolean(accessToken),
+  });
 
   if (accessToken) {
+    const adminCookieStartedAt = Date.now();
     const {
       data: { user },
     } = await supabaseAdmin.auth.getUser(accessToken);
+    postAdminDebugLog("H3_H7", "lib/admin/auth.ts:183", "admin cookie user lookup finished", {
+      durationMs: Date.now() - adminCookieStartedAt,
+      totalDurationMs: Date.now() - startedAt,
+      userFound: Boolean(user),
+    });
 
     if (user) {
-      return getAdminContextByUser(user);
+      const context = await getAdminContextByUser(user);
+      postAdminDebugLog("H4_H7", "lib/admin/auth.ts:190", "admin context after admin cookie path", {
+        durationMs: Date.now() - startedAt,
+        contextFound: Boolean(context),
+      });
+      return context;
     }
   }
 
   const supabase = await createSupabaseServerClient();
+  const supabaseStartedAt = Date.now();
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  postAdminDebugLog("H1_H7_H8", "lib/admin/auth.ts:201", "supabase session fallback finished", {
+    durationMs: Date.now() - supabaseStartedAt,
+    totalDurationMs: Date.now() - startedAt,
+    userFound: Boolean(user),
+  });
 
   if (!user) return null;
-  return getAdminContextByUser(user);
+  const context = await getAdminContextByUser(user);
+  postAdminDebugLog("H4_H7", "lib/admin/auth.ts:208", "admin context after supabase fallback path", {
+    durationMs: Date.now() - startedAt,
+    contextFound: Boolean(context),
+  });
+  return context;
 };
 
 export const hasAdminPermission = (context: AdminContext, permission: AdminPermission) => {
