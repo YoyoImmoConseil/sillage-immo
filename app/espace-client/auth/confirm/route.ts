@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import type { EmailOtpType } from "@supabase/supabase-js";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { copyResponseCookies, createSupabaseRouteHandlerClient } from "@/lib/supabase/server";
 import { getSellerPortalClientByAuthUserId } from "@/services/clients/seller-portal.service";
 import { acceptInvitation } from "@/services/clients/client-project-invitation.service";
 import { touchClientProfileLastLogin } from "@/services/clients/client-profile.service";
@@ -28,12 +28,17 @@ const getSafeOtpType = (value: string | null): EmailOtpType | null => {
   return null;
 };
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const nextPath = getSafeNextPath(requestUrl.searchParams.get("next"));
   const tokenHash = requestUrl.searchParams.get("token_hash");
   const inviteToken = requestUrl.searchParams.get("inviteToken");
   const otpType = getSafeOtpType(requestUrl.searchParams.get("type")) ?? "email";
+  const authResponse = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  });
 
   // #region agent log
   fetch("http://127.0.0.1:7760/ingest/34db18ce-fe4a-4a99-91a2-c9c0aaded505", {
@@ -59,7 +64,7 @@ export async function GET(request: Request) {
   const redirectToLogin = (error: string) => {
     const loginUrl = new URL("/espace-client/login", requestUrl.origin);
     loginUrl.searchParams.set("error", error);
-    return NextResponse.redirect(loginUrl);
+    return copyResponseCookies(authResponse, NextResponse.redirect(loginUrl));
   };
 
   const redirectToInvitation = (error: string) => {
@@ -68,7 +73,7 @@ export async function GET(request: Request) {
       invitationUrl.searchParams.set("token", inviteToken);
     }
     invitationUrl.searchParams.set("error", error);
-    return NextResponse.redirect(invitationUrl);
+    return copyResponseCookies(authResponse, NextResponse.redirect(invitationUrl));
   };
 
   if (!tokenHash) {
@@ -94,7 +99,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const supabase = await createSupabaseServerClient();
+    const supabase = createSupabaseRouteHandlerClient(request, authResponse);
     const { error: verifyError } = await supabase.auth.verifyOtp({
       token_hash: tokenHash,
       type: otpType,
@@ -136,7 +141,7 @@ export async function GET(request: Request) {
       await touchClientProfileLastLogin(clientProfile.id);
     }
 
-    return NextResponse.redirect(new URL(nextPath, requestUrl.origin));
+    return copyResponseCookies(authResponse, NextResponse.redirect(new URL(nextPath, requestUrl.origin)));
   } catch {
     return inviteToken ? redirectToInvitation("magic_link_invalid") : redirectToLogin("magic_link_invalid");
   }

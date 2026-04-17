@@ -1,6 +1,9 @@
 import "server-only";
 
+import type { AppLocale } from "@/lib/i18n/config";
+import { resolveLocalizedText } from "@/lib/i18n/localized-content";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { getPropertyDetailById } from "@/services/properties/manual-property.service";
 import { parseAdminProfileMetadata } from "@/services/admin/admin-profile-metadata";
 import {
   getClientByAuthUserId,
@@ -102,6 +105,34 @@ export type SellerPortalProjectDetail = {
   advisor: SellerPortalAdvisorSummary | null;
   properties: SellerPortalPropertySummary[];
   events: SellerPortalEventSummary[];
+};
+
+export type SellerPortalPropertyDetail = {
+  client: SellerPortalClient;
+  linkedProjectId: string | null;
+  property: {
+    id: string;
+    title: string | null;
+    description: string | null;
+    formattedAddress: string | null;
+    city: string | null;
+    postalCode: string | null;
+    propertyType: string | null;
+    livingArea: number | null;
+    rooms: number | null;
+    bedrooms: number | null;
+    floor: number | null;
+    hasTerrace: boolean | null;
+    hasElevator: boolean | null;
+    appointmentServiceUrl: string | null;
+  };
+  listing: {
+    businessType: string | null;
+    priceAmount: number | null;
+    coverImageUrl: string | null;
+    isPublished: boolean;
+    canonicalPath: string | null;
+  } | null;
 };
 
 const toClient = (client: ClientProfileRow): SellerPortalClient => ({
@@ -459,5 +490,86 @@ export const getSellerPortalProjectDetail = async (input: {
       eventName: event.event_name,
       eventCategory: event.event_category,
     })),
+  };
+};
+
+export const getSellerPortalPropertyDetail = async (input: {
+  authUserId: string;
+  propertyId: string;
+  locale: AppLocale;
+}): Promise<SellerPortalPropertyDetail | null> => {
+  const client = await getClientByAuthUserId(input.authUserId);
+  if (!client) return null;
+
+  const { data: projectLinks } = await supabaseAdmin
+    .from("project_properties")
+    .select("client_project_id, is_primary")
+    .eq("property_id", input.propertyId)
+    .is("unlinked_at", null);
+
+  const projectIds = (projectLinks ?? []).map((link) => link.client_project_id);
+  if (projectIds.length === 0) return null;
+
+  const { data: clientProjects } = await supabaseAdmin
+    .from("client_projects")
+    .select("id, client_profile_id, project_type")
+    .in("id", projectIds)
+    .eq("client_profile_id", client.id)
+    .eq("project_type", "seller");
+
+  const ownedProjects = (clientProjects ?? []) as Array<{
+    id: string;
+    client_profile_id: string;
+    project_type: string;
+  }>;
+  if (ownedProjects.length === 0) return null;
+
+  const detail = await getPropertyDetailById(input.propertyId);
+  if (!detail) return null;
+
+  const ownedProjectIds = new Set(ownedProjects.map((project) => project.id));
+  const preferredLink =
+    (projectLinks ?? []).find((link) => link.is_primary && ownedProjectIds.has(link.client_project_id)) ??
+    (projectLinks ?? []).find((link) => ownedProjectIds.has(link.client_project_id)) ??
+    null;
+
+  return {
+    client: toClient(client),
+    linkedProjectId: preferredLink?.client_project_id ?? ownedProjects[0]?.id ?? null,
+    property: {
+      id: detail.property.id,
+      title: resolveLocalizedText({
+        locale: input.locale,
+        field: "title",
+        fallback: detail.listing?.title ?? detail.property.title ?? null,
+        sources: [detail.listing?.listing_metadata, detail.property.metadata, detail.property.raw_payload],
+      }),
+      description: resolveLocalizedText({
+        locale: input.locale,
+        field: "description",
+        fallback: detail.property.description ?? null,
+        sources: [detail.property.metadata, detail.property.raw_payload],
+      }),
+      formattedAddress: detail.property.formatted_address,
+      city: detail.property.city,
+      postalCode: detail.property.postal_code,
+      propertyType: detail.property.property_type,
+      livingArea: detail.property.living_area,
+      rooms: detail.property.rooms,
+      bedrooms: detail.property.bedrooms,
+      floor: detail.property.floor,
+      hasTerrace: detail.property.has_terrace,
+      hasElevator: detail.property.has_elevator,
+      appointmentServiceUrl: detail.property.appointment_service_url,
+    },
+    listing: detail.listing
+      ? {
+          businessType: detail.listing.business_type,
+          priceAmount: detail.listing.price_amount,
+          coverImageUrl: detail.listing.cover_image_url,
+          isPublished: detail.listing.is_published,
+          canonicalPath: detail.listing.canonical_path,
+        }
+      : null,
   };
 };

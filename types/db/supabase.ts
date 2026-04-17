@@ -712,7 +712,7 @@ export type Database = {
           updated_at: string;
           property_id: string;
           remote_media_id: string;
-          kind: "image" | "plan" | "document";
+          kind: "image" | "plan" | "document" | "video";
           ordinal: number;
           title: string | null;
           description: string | null;
@@ -728,7 +728,7 @@ export type Database = {
           updated_at?: string;
           property_id: string;
           remote_media_id: string;
-          kind: "image" | "plan" | "document";
+          kind: "image" | "plan" | "document" | "video";
           ordinal?: number;
           title?: string | null;
           description?: string | null;
@@ -744,7 +744,7 @@ export type Database = {
           updated_at?: string;
           property_id?: string;
           remote_media_id?: string;
-          kind?: "image" | "plan" | "document";
+          kind?: "image" | "plan" | "document" | "video";
           ordinal?: number;
           title?: string | null;
           description?: string | null;

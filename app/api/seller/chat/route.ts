@@ -5,6 +5,7 @@ import { askSellerChat } from "@/services/sellers/seller-chat.service";
 type Body = {
   accessToken?: string;
   message?: string;
+  locale?: "fr" | "en" | "es" | "ru";
 };
 
 export const POST = async (request: Request) => {
@@ -33,7 +34,7 @@ export const POST = async (request: Request) => {
   }
 
   try {
-    const data = await askSellerChat(access.leadId, message);
+    const data = await askSellerChat(access.leadId, message, body?.locale ?? "fr");
     return NextResponse.json({ ok: true, data });
   } catch (error) {
     const message =

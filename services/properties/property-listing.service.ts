@@ -1,5 +1,8 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import type { AppLocale } from "@/lib/i18n/config";
+import { formatCurrency } from "@/lib/i18n/format";
+import { resolveLocalizedText } from "@/lib/i18n/localized-content";
 import type { Database } from "@/types/db/supabase";
 import type {
   PropertyBusinessType,
@@ -23,7 +26,12 @@ const isMissingRelationError = (message: string) => {
   );
 };
 
-const mapPropertySnapshot = (property: PropertyRow, media: MediaRow[], priceAmount: number | null) => {
+const mapPropertySnapshot = (
+  property: PropertyRow,
+  media: MediaRow[],
+  priceAmount: number | null,
+  locale: AppLocale
+) => {
   const derived = buildPropertyDerivedFields(property, priceAmount);
   return {
     id: property.id,
@@ -34,8 +42,18 @@ const mapPropertySnapshot = (property: PropertyRow, media: MediaRow[], priceAmou
     isProject: property.is_project,
     kind: property.kind,
     negotiation: property.negotiation,
-    title: property.title,
-    description: property.description,
+    title: resolveLocalizedText({
+      locale,
+      field: "title",
+      fallback: property.title,
+      sources: [property.metadata, property.raw_payload],
+    }),
+    description: resolveLocalizedText({
+      locale,
+      field: "description",
+      fallback: property.description,
+      sources: [property.metadata, property.raw_payload],
+    }),
     propertyType: property.property_type,
     subType: property.sub_type,
     availabilityStatus: property.availability_status,
@@ -84,7 +102,8 @@ const mapPropertySnapshot = (property: PropertyRow, media: MediaRow[], priceAmou
 const mapListingSnapshot = (
   listing: ListingRow,
   property: PropertyRow,
-  media: MediaRow[]
+  media: MediaRow[],
+  locale: AppLocale
 ): PropertyListingSnapshot => {
   const derived = buildPropertyDerivedFields(property, listing.price_amount);
   return {
@@ -95,7 +114,12 @@ const mapListingSnapshot = (
     isPublished: listing.is_published,
     slug: listing.slug,
     canonicalPath: listing.canonical_path,
-    title: listing.title,
+    title: resolveLocalizedText({
+      locale,
+      field: "title",
+      fallback: listing.title ?? property.title,
+      sources: [listing.listing_metadata, property.metadata, property.raw_payload],
+    }),
     city: listing.city,
     postalCode: listing.postal_code,
     propertyType: listing.property_type,
@@ -113,11 +137,11 @@ const mapListingSnapshot = (
     priceCurrency: listing.price_currency,
     publishedAt: listing.published_at,
     unpublishedAt: listing.unpublished_at,
-    property: mapPropertySnapshot(property, media, listing.price_amount),
+    property: mapPropertySnapshot(property, media, listing.price_amount, locale),
   };
 };
 
-const hydrateListingSnapshot = async (listing: ListingRow) => {
+const hydrateListingSnapshot = async (listing: ListingRow, locale: AppLocale) => {
   const { data: propertyData, error: propertyError } = await supabaseAdmin
     .from("properties")
     .select("*")
@@ -139,18 +163,26 @@ const hydrateListingSnapshot = async (listing: ListingRow) => {
     throw new Error(mediaError.message);
   }
 
-  return mapListingSnapshot(listing, propertyData as PropertyRow, (mediaData ?? []) as MediaRow[]);
+  return mapListingSnapshot(listing, propertyData as PropertyRow, (mediaData ?? []) as MediaRow[], locale);
 };
 
 const normalizePostalCode = (value: string) => value.trim().replace(/\s+/g, "");
 
-export const formatListingPrice = (input: { amount: number | null; currency: string }) => {
-  if (typeof input.amount !== "number") return "Prix sur demande";
-  return new Intl.NumberFormat("fr-FR", {
-    style: "currency",
-    currency: input.currency || "EUR",
-    maximumFractionDigits: 0,
-  }).format(input.amount);
+export const formatListingPrice = (input: {
+  amount: number | null;
+  currency: string;
+  locale?: AppLocale;
+}) => {
+  if (typeof input.amount !== "number") {
+    return input.locale === "en"
+      ? "Price on request"
+      : input.locale === "es"
+        ? "Precio a consultar"
+        : input.locale === "ru"
+          ? "Цена по запросу"
+          : "Prix sur demande";
+  }
+  return formatCurrency(input.amount, input.locale ?? "fr", input.currency || "EUR");
 };
 
 export const toPublicPropertyListingSummary = (
@@ -176,6 +208,7 @@ export const toPublicPropertyListingSummary = (
 });
 
 export const listPublicPropertyListings = async (input: {
+  locale?: AppLocale;
   businessType: PropertyBusinessType;
   city?: string;
   propertyType?: string;
@@ -190,6 +223,7 @@ export const listPublicPropertyListings = async (input: {
   terrace?: boolean;
   elevator?: boolean;
 }): Promise<PropertyListingSnapshot[]> => {
+  const locale = input.locale ?? "fr";
   let query = supabaseAdmin
     .from("property_listings")
     .select("*")
@@ -244,13 +278,13 @@ export const listPublicPropertyListings = async (input: {
   }
 
   const snapshots = await Promise.all(
-    ((data ?? []) as ListingRow[]).map(async (listing) => hydrateListingSnapshot(listing))
+    ((data ?? []) as ListingRow[]).map(async (listing) => hydrateListingSnapshot(listing, locale))
   );
 
   return snapshots.filter((listing): listing is PropertyListingSnapshot => Boolean(listing));
 };
 
-export const getPublicPropertyListingBySlug = async (slug: string) => {
+export const getPublicPropertyListingBySlug = async (slug: string, locale: AppLocale = "fr") => {
   const { data: listingData, error: listingError } = await supabaseAdmin
     .from("property_listings")
     .select("*")
@@ -266,13 +300,15 @@ export const getPublicPropertyListingBySlug = async (slug: string) => {
   }
   if (!listingData) return null;
 
-  return hydrateListingSnapshot(listingData as ListingRow);
+  return hydrateListingSnapshot(listingData as ListingRow, locale);
 };
 
 export const getPublicPropertyListingByExternalId = async (input: {
   postalCode: string;
   propertyId: string;
+  locale?: AppLocale;
 }) => {
+  const locale = input.locale ?? "fr";
   const normalizedPostalCode = normalizePostalCode(input.postalCode);
   const externalId = input.propertyId.trim();
   if (!normalizedPostalCode || !externalId) {
@@ -311,7 +347,7 @@ export const getPublicPropertyListingByExternalId = async (input: {
   }
   if (!listingData) return null;
 
-  return hydrateListingSnapshot(listingData as ListingRow);
+  return hydrateListingSnapshot(listingData as ListingRow, locale);
 };
 
 export const listPropertyTypesForBusinessType = async (businessType: PropertyBusinessType) => {

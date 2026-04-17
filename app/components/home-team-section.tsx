@@ -1,13 +1,48 @@
+/* eslint-disable @next/next/no-img-element */
 import { listPublicTeamMembers } from "@/services/home/team.service";
 import { withTimeout } from "@/lib/async/timeout";
+import type { AppLocale } from "@/lib/i18n/config";
+import { getAdminRoleLabel, getAdminTeamTitleLabel } from "@/lib/i18n/domain";
 
-export async function HomeTeamSection() {
+const COPY = {
+  fr: {
+    loadingError: "Le chargement de l'équipe est trop lent.",
+    eyebrow: "Notre équipe",
+    title: "Des conseillers identifiés et joignables",
+    intro: "Une équipe locale, visible et accessible, avec un interlocuteur clair pour chaque projet.",
+    portraitComingSoon: "Portrait à venir",
+  },
+  en: {
+    loadingError: "The team section is loading too slowly.",
+    eyebrow: "Our team",
+    title: "Visible and reachable advisors",
+    intro: "A local, accessible team, with a clear point of contact for every project.",
+    portraitComingSoon: "Portrait coming soon",
+  },
+  es: {
+    loadingError: "La sección del equipo tarda demasiado en cargarse.",
+    eyebrow: "Nuestro equipo",
+    title: "Asesores identificados y disponibles",
+    intro: "Un equipo local, visible y accesible, con un interlocutor claro para cada proyecto.",
+    portraitComingSoon: "Retrato próximamente",
+  },
+  ru: {
+    loadingError: "Раздел команды загружается слишком медленно.",
+    eyebrow: "Наша команда",
+    title: "Консультанты, которых легко узнать и с которыми легко связаться",
+    intro: "Локальная, открытая и доступная команда с понятным контактным лицом по каждому проекту.",
+    portraitComingSoon: "Фото скоро появится",
+  },
+} satisfies Record<AppLocale, Record<string, string>>;
+
+export async function HomeTeamSection({ locale = "fr" }: { locale?: AppLocale }) {
+  const copy = COPY[locale];
   let members = [];
   try {
     members = await withTimeout(
-      listPublicTeamMembers(),
+      listPublicTeamMembers(locale),
       4000,
-      "Le chargement de l'équipe est trop lent."
+      copy.loadingError
     );
   } catch {
     return null;
@@ -21,11 +56,9 @@ export async function HomeTeamSection() {
     <section className="sillage-section-light">
       <div className="w-full px-6 py-10 md:px-10 md:py-14 xl:px-14 2xl:px-20 space-y-6">
         <div className="space-y-3">
-          <p className="text-xs uppercase tracking-[0.16em] opacity-70">Notre équipe</p>
-          <h2 className="sillage-section-title">Des conseillers identifiés et joignables</h2>
-          <p className="sillage-editorial-text max-w-3xl opacity-75">
-            Une équipe locale, visible et accessible, avec un interlocuteur clair pour chaque projet.
-          </p>
+          <p className="text-xs uppercase tracking-[0.16em] opacity-70">{copy.eyebrow}</p>
+          <h2 className="sillage-section-title">{copy.title}</h2>
+          <p className="sillage-editorial-text max-w-3xl opacity-75">{copy.intro}</p>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
@@ -36,15 +69,21 @@ export async function HomeTeamSection() {
                   <img src={member.avatarUrl} alt={member.fullName} className="h-full w-full object-cover" />
                 ) : (
                   <div className="flex h-full items-center justify-center px-6 text-center text-sm text-[#141446]/55">
-                    Portrait à venir
+                    {copy.portraitComingSoon}
                   </div>
                 )}
               </div>
               <div className="space-y-3 p-6 text-[#141446]">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.16em] text-[#141446]/55">{member.roleLabel}</p>
+                  <p className="text-xs uppercase tracking-[0.16em] text-[#141446]/55">
+                    {getAdminRoleLabel(member.role, locale)}
+                  </p>
                   <h3 className="mt-2 text-xl font-semibold">{member.fullName}</h3>
-                  {member.title ? <p className="mt-1 text-sm text-[#141446]/70">{member.title}</p> : null}
+                  {member.title ? (
+                    <p className="mt-1 text-sm text-[#141446]/70">
+                      {getAdminTeamTitleLabel(member.title, locale)}
+                    </p>
+                  ) : null}
                 </div>
                 <div className="space-y-1 text-sm">
                   {member.phone ? (

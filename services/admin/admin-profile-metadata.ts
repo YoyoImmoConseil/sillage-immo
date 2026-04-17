@@ -1,5 +1,11 @@
 import "server-only";
 
+import type { AppLocale } from "@/lib/i18n/config";
+import {
+  mergeLocalizedText,
+  resolveLocalizedText,
+  type LocalizedTextMap,
+} from "@/lib/i18n/localized-content";
 import { ADMIN_TEAM_TITLES, type AdminTeamTitle } from "@/types/domain/admin";
 
 export type AdminProfileMetadata = {
@@ -8,6 +14,7 @@ export type AdminProfileMetadata = {
   bio: string | null;
   avatarUrl: string | null;
   bookingUrl: string | null;
+  bioTranslations: Partial<Record<AppLocale, string | null | undefined>>;
 };
 
 const asRecord = (value: unknown): Record<string, unknown> | null => {
@@ -39,15 +46,23 @@ export const parseAdminProfileMetadata = (value: unknown): AdminProfileMetadata 
     bio: toStringOrNull(metadata?.bio),
     avatarUrl: toStringOrNull(metadata?.avatar_url),
     bookingUrl: toStringOrNull(metadata?.booking_url),
+    bioTranslations: {
+      fr: resolveLocalizedText({ locale: "fr", field: "bio", fallback: null, sources: [metadata] }) ?? undefined,
+      en: resolveLocalizedText({ locale: "en", field: "bio", fallback: null, sources: [metadata] }) ?? undefined,
+      es: resolveLocalizedText({ locale: "es", field: "bio", fallback: null, sources: [metadata] }) ?? undefined,
+      ru: resolveLocalizedText({ locale: "ru", field: "bio", fallback: null, sources: [metadata] }) ?? undefined,
+    },
   };
 };
 
 export const buildAdminProfileMetadata = (
   current: unknown,
-  patch: Partial<AdminProfileMetadata>
+  patch: Partial<AdminProfileMetadata> & {
+    bioTranslations?: LocalizedTextMap;
+  }
 ): Record<string, unknown> => {
   const currentMetadata = asRecord(current) ?? {};
-  return {
+  const baseMetadata = {
     ...currentMetadata,
     ...(patch.title !== undefined ? { title: patch.title } : {}),
     ...(patch.phone !== undefined ? { phone: patch.phone } : {}),
@@ -55,4 +70,6 @@ export const buildAdminProfileMetadata = (
     ...(patch.avatarUrl !== undefined ? { avatar_url: patch.avatarUrl } : {}),
     ...(patch.bookingUrl !== undefined ? { booking_url: patch.bookingUrl } : {}),
   };
+
+  return mergeLocalizedText(baseMetadata, "bio", patch.bioTranslations);
 };

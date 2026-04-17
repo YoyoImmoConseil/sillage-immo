@@ -1,3 +1,4 @@
+import type { AppLocale } from "@/lib/i18n/config";
 import { NextResponse } from "next/server";
 import { getAdminRequestContext, hasAdminPermission } from "@/lib/admin/auth";
 import { getAdminUserById, updateAdminUserProfile } from "@/services/admin/admin-user.service";
@@ -12,6 +13,7 @@ type PatchBody = {
   title?: string;
   phone?: string;
   bio?: string;
+  bioTranslations?: Partial<Record<AppLocale, string | null | undefined>>;
   avatarUrl?: string | null;
   bookingUrl?: string;
 };
@@ -68,6 +70,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       title: body?.title,
       phone: body?.phone,
       bio: body?.bio,
+      bioTranslations: body?.bioTranslations,
       avatarUrl: body?.avatarUrl,
       bookingUrl: body?.bookingUrl,
     });

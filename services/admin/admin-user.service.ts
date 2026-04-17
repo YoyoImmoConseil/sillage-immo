@@ -1,4 +1,5 @@
 import "server-only";
+import type { AppLocale } from "@/lib/i18n/config";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import {
   buildAdminProfileMetadata,
@@ -421,6 +422,7 @@ export const updateAdminUserProfile = async (input: {
   title?: string;
   phone?: string;
   bio?: string;
+  bioTranslations?: Partial<Record<AppLocale, string | null | undefined>>;
   avatarUrl?: string | null;
   bookingUrl?: string;
 }) => {
@@ -471,6 +473,7 @@ export const updateAdminUserProfile = async (input: {
     title,
     phone,
     bio,
+    bioTranslations: input.bioTranslations,
     avatarUrl: input.avatarUrl === undefined ? currentMetadata.avatarUrl : input.avatarUrl,
     bookingUrl,
   });
@@ -501,6 +504,7 @@ export const updateAdminUserProfile = async (input: {
       title,
       phone,
       bio,
+      bioTranslations: input.bioTranslations,
       avatarUrl: input.avatarUrl === undefined ? undefined : input.avatarUrl,
       bookingUrl,
     }

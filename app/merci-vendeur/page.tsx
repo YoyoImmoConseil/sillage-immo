@@ -1,4 +1,7 @@
 import Link from "next/link";
+import { getRequestLocale } from "@/lib/i18n/request";
+import { formatCurrency } from "@/lib/i18n/format";
+import { localizePath } from "@/lib/i18n/routing";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { readMerciVendeurAccessToken } from "@/lib/sellers/merci-vendeur-access";
 import { getSellerMetadataSections } from "@/services/sellers/seller-metadata";
@@ -7,14 +10,8 @@ type MerciVendeurPageProps = {
   searchParams: Promise<{ access?: string; leadId?: string }>;
 };
 
-const formatEur = (value: number) =>
-  new Intl.NumberFormat("fr-FR", {
-    style: "currency",
-    currency: "EUR",
-    maximumFractionDigits: 0,
-  }).format(value);
-
 export default async function MerciVendeurPage({ searchParams }: MerciVendeurPageProps) {
+  const locale = await getRequestLocale();
   const params = await searchParams;
   const access = readMerciVendeurAccessToken(params.access ?? null);
   let valuation: {
@@ -61,11 +58,59 @@ export default async function MerciVendeurPage({ searchParams }: MerciVendeurPag
     }
   }
 
+  const copy = {
+    fr: {
+      title: "Merci, votre demande est bien enregistrée.",
+      property: "Votre bien",
+      range: "Fourchette estimée",
+      value: "Valeur estimée indicative",
+      pending:
+        "Votre estimation automatique est en cours de finalisation. Un conseiller Sillage Immo vous partage très rapidement une fourchette fiable et contextualisée.",
+      body:
+        "Un conseiller Sillage Immo vous recontacte rapidement pour cadrer la mise en vente et vous accompagner pas à pas jusqu'à la concrétisation de votre projet.",
+      back: "Revenir au parcours vendeur",
+    },
+    en: {
+      title: "Thank you, your request has been recorded.",
+      property: "Your property",
+      range: "Estimated range",
+      value: "Indicative estimated value",
+      pending:
+        "Your automatic valuation is being finalized. A Sillage Immo advisor will very soon share a reliable and contextualized range with you.",
+      body:
+        "A Sillage Immo advisor will contact you shortly to frame the sale and guide you step by step toward a successful outcome.",
+      back: "Return to the seller journey",
+    },
+    es: {
+      title: "Gracias, su solicitud ha quedado registrada.",
+      property: "Su inmueble",
+      range: "Rango estimado",
+      value: "Valor estimado orientativo",
+      pending:
+        "Su valoración automática se está finalizando. Un asesor de Sillage Immo le compartirá muy pronto una horquilla fiable y contextualizada.",
+      body:
+        "Un asesor de Sillage Immo se pondrá en contacto con usted rápidamente para estructurar la venta y acompañarle paso a paso hasta la concreción de su proyecto.",
+      back: "Volver al recorrido vendedor",
+    },
+    ru: {
+      title: "Спасибо, ваша заявка успешно зарегистрирована.",
+      property: "Ваш объект",
+      range: "Оценочный диапазон",
+      value: "Ориентировочная стоимость",
+      pending:
+        "Автоматическая оценка находится на финальной стадии. Консультант Sillage Immo очень скоро сообщит вам надежный и контекстный диапазон стоимости.",
+      body:
+        "Консультант Sillage Immo свяжется с вами в ближайшее время, чтобы структурировать продажу и сопровождать вас шаг за шагом до успешного завершения проекта.",
+      back: "Вернуться к сценарию продавца",
+    },
+  }[locale];
+  const formatEur = (value: number) => formatCurrency(value, locale, "EUR");
+
   return (
     <main className="min-h-screen">
       <section className="bg-[#141446] text-[#f4ece4]">
         <div className="w-full px-6 py-12 md:px-10 xl:px-14 2xl:px-20">
-          <h1 className="text-2xl font-semibold">Merci, votre demande est bien enregistrée.</h1>
+          <h1 className="text-2xl font-semibold">{copy.title}</h1>
         </div>
       </section>
       <section className="bg-[#f4ece4]">
@@ -73,7 +118,7 @@ export default async function MerciVendeurPage({ searchParams }: MerciVendeurPag
           <div className="rounded-2xl border border-[rgba(20,20,70,0.22)] p-6 space-y-5">
             {valuation ? (
               <div className="rounded-xl border border-[rgba(20,20,70,0.16)] bg-white/60 p-4 space-y-2">
-                <p className="text-sm opacity-70">Votre bien</p>
+                <p className="text-sm opacity-70">{copy.property}</p>
                 <p className="font-medium text-[#141446]">
                   {[valuation.addressLabel, valuation.cityZipCode, valuation.cityName]
                     .filter(Boolean)
@@ -82,7 +127,7 @@ export default async function MerciVendeurPage({ searchParams }: MerciVendeurPag
                 <p className="sillage-editorial-text text-[#141446]">
                   {valuation.valuationPriceLow !== null || valuation.valuationPriceHigh !== null ? (
                     <>
-                      Fourchette estimée :{" "}
+                      {copy.range} :{" "}
                       <strong>
                         {valuation.valuationPriceLow !== null
                           ? formatEur(valuation.valuationPriceLow)
@@ -95,20 +140,17 @@ export default async function MerciVendeurPage({ searchParams }: MerciVendeurPag
                     </>
                   ) : valuation.valuationPrice !== null ? (
                     <>
-                      Valeur estimée indicative : <strong>{formatEur(valuation.valuationPrice)}</strong>
+                      {copy.value} : <strong>{formatEur(valuation.valuationPrice)}</strong>
                     </>
                   ) : (
-                    "Votre estimation automatique est en cours de finalisation. Un conseiller Sillage Immo vous partage très rapidement une fourchette fiable et contextualisée."
+                    copy.pending
                   )}
                 </p>
               </div>
             ) : null}
-            <p className="sillage-editorial-text opacity-75">
-              Un conseiller Sillage Immo vous recontacte rapidement pour cadrer la mise en vente
-              et vous accompagner pas à pas jusqu&apos;à la concrétisation de votre projet.
-            </p>
-            <Link className="sillage-btn inline-block rounded px-4 py-2" href="/estimation">
-              Revenir au parcours vendeur
+            <p className="sillage-editorial-text opacity-75">{copy.body}</p>
+            <Link className="sillage-btn inline-block rounded px-4 py-2" href={localizePath("/estimation", locale)}>
+              {copy.back}
             </Link>
           </div>
         </div>

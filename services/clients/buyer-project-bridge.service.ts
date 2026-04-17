@@ -1,5 +1,8 @@
 import "server-only";
 
+import type { AppLocale } from "@/lib/i18n/config";
+import { formatCurrency } from "@/lib/i18n/format";
+import { translateGenericStatus } from "@/lib/i18n/domain";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export type BuyerProjectBridgeStatus = "search_profile_ready" | "project_shell_only";
@@ -61,30 +64,61 @@ export type BuyerPortalProjectPlaceholderDetail = {
   preferredContactChannel: string | null;
 };
 
-const formatBudgetLabel = (min: number | null, max: number | null) => {
+const formatBudgetLabel = (min: number | null, max: number | null, locale: AppLocale) => {
   if (typeof min === "number" && typeof max === "number") {
-    return `${min.toLocaleString("fr-FR")} - ${max.toLocaleString("fr-FR")} EUR`;
+    return `${formatCurrency(min, locale, "EUR")} - ${formatCurrency(max, locale, "EUR")}`;
   }
   if (typeof min === "number") {
-    return `A partir de ${min.toLocaleString("fr-FR")} EUR`;
+    return locale === "en"
+      ? `From ${formatCurrency(min, locale, "EUR")}`
+      : locale === "es"
+        ? `A partir de ${formatCurrency(min, locale, "EUR")}`
+        : locale === "ru"
+          ? `От ${formatCurrency(min, locale, "EUR")}`
+          : `A partir de ${formatCurrency(min, locale, "EUR")}`;
   }
   if (typeof max === "number") {
-    return `Jusqu'a ${max.toLocaleString("fr-FR")} EUR`;
+    return locale === "en"
+      ? `Up to ${formatCurrency(max, locale, "EUR")}`
+      : locale === "es"
+        ? `Hasta ${formatCurrency(max, locale, "EUR")}`
+        : locale === "ru"
+          ? `До ${formatCurrency(max, locale, "EUR")}`
+          : `Jusqu'a ${formatCurrency(max, locale, "EUR")}`;
   }
   return null;
 };
 
-const buildSummaryText = (project: BuyerProjectLike, bridge: BuyerBridgeData) => {
+const buildSummaryText = (project: BuyerProjectLike, bridge: BuyerBridgeData, locale: AppLocale) => {
   if (bridge.searchProfile?.locationText) return bridge.searchProfile.locationText;
   if (bridge.searchProfile?.cities.length) return bridge.searchProfile.cities.join(", ");
-  return project.title ?? "Projet acquereur en qualification";
+  if (project.title) return project.title;
+  return locale === "en"
+    ? "Buyer project being qualified"
+    : locale === "es"
+      ? "Proyecto comprador en cualificación"
+      : locale === "ru"
+        ? "Проект покупателя в процессе квалификации"
+        : "Projet acquereur en qualification";
 };
 
-const buildNextAction = (bridge: BuyerBridgeData) => {
+const buildNextAction = (bridge: BuyerBridgeData, locale: AppLocale) => {
   if (bridge.searchProfile) {
-    return "Ouvrir le projet pour revoir vos criteres et suivre votre recherche";
+    return locale === "en"
+      ? "Open the project to review your criteria and track your search"
+      : locale === "es"
+        ? "Abra el proyecto para revisar sus criterios y seguir su búsqueda"
+        : locale === "ru"
+          ? "Откройте проект, чтобы пересмотреть критерии и следить за поиском"
+          : "Ouvrir le projet pour revoir vos criteres et suivre votre recherche";
   }
-  return "Ouvrir le projet pour completer votre recherche";
+  return locale === "en"
+    ? "Open the project to complete your search"
+    : locale === "es"
+      ? "Abra el proyecto para completar su búsqueda"
+      : locale === "ru"
+        ? "Откройте проект, чтобы дополнить ваш запрос"
+        : "Ouvrir le projet pour completer votre recherche";
 };
 
 const buildBuyerBridgeMap = async (projectIds: string[]) => {
@@ -201,13 +235,14 @@ export const listBuyerPortalProjectBridge = async (projectIds: string[]) => {
 
 export const buildBuyerPortalProjectSummary = (
   project: BuyerProjectLike,
-  bridge: BuyerBridgeData | null
+  bridge: BuyerBridgeData | null,
+  locale: AppLocale = "fr"
 ): BuyerPortalProjectSummary => {
   const resolvedBridge = bridge ?? { searchProfile: null, buyerLead: null };
   return {
     bridgeStatus: resolvedBridge.searchProfile ? "search_profile_ready" : "project_shell_only",
-    summary: buildSummaryText(project, resolvedBridge),
-    nextAction: buildNextAction(resolvedBridge),
+    summary: buildSummaryText(project, resolvedBridge, locale),
+    nextAction: buildNextAction(resolvedBridge, locale),
     locationLabel:
       resolvedBridge.searchProfile?.locationText ??
       (resolvedBridge.searchProfile?.cities.length
@@ -216,27 +251,41 @@ export const buildBuyerPortalProjectSummary = (
     budgetLabel: resolvedBridge.searchProfile
       ? formatBudgetLabel(
           resolvedBridge.searchProfile.budgetMin,
-          resolvedBridge.searchProfile.budgetMax
+          resolvedBridge.searchProfile.budgetMax,
+          locale
         )
       : null,
-    searchStatus: resolvedBridge.searchProfile?.status ?? null,
+    searchStatus: translateGenericStatus(resolvedBridge.searchProfile?.status ?? null, locale),
   };
 };
 
 export const buildBuyerPortalProjectPlaceholderDetail = (
   project: BuyerProjectLike,
-  bridge: BuyerBridgeData | null
+  bridge: BuyerBridgeData | null,
+  locale: AppLocale = "fr"
 ): BuyerPortalProjectPlaceholderDetail => {
   const resolvedBridge = bridge ?? { searchProfile: null, buyerLead: null };
-  const summary = buildBuyerPortalProjectSummary(project, resolvedBridge);
+  const summary = buildBuyerPortalProjectSummary(project, resolvedBridge, locale);
   return {
     title: project.title,
     status: project.status,
     createdAt: project.createdAt,
     bridgeStatus: summary.bridgeStatus,
     message: resolvedBridge.searchProfile
-      ? "Votre recherche acquereur est deja rattachee a ce projet client."
-      : "Ce projet acquereur existe deja dans votre espace, mais certains criteres restent a completer.",
+      ? locale === "en"
+        ? "Your buyer search is already linked to this client project."
+        : locale === "es"
+          ? "Su búsqueda de compra ya está vinculada a este proyecto cliente."
+          : locale === "ru"
+            ? "Ваш поисковый запрос покупателя уже привязан к этому клиентскому проекту."
+            : "Votre recherche acquereur est deja rattachee a ce projet client."
+      : locale === "en"
+        ? "This buyer project already exists in your portal, but some criteria still need to be completed."
+        : locale === "es"
+          ? "Este proyecto comprador ya existe en su espacio, pero algunos criterios aún deben completarse."
+          : locale === "ru"
+            ? "Этот проект покупателя уже существует в вашем пространстве, но некоторые критерии еще нужно заполнить."
+            : "Ce projet acquereur existe deja dans votre espace, mais certains criteres restent a completer.",
     locationLabel: summary.locationLabel,
     budgetLabel: summary.budgetLabel,
     searchStatus: summary.searchStatus,
@@ -245,7 +294,7 @@ export const buildBuyerPortalProjectPlaceholderDetail = (
     cities: resolvedBridge.searchProfile?.cities ?? [],
     roomsMin: resolvedBridge.searchProfile?.roomsMin ?? null,
     livingAreaMin: resolvedBridge.searchProfile?.livingAreaMin ?? null,
-    leadStatus: resolvedBridge.buyerLead?.status ?? null,
+    leadStatus: translateGenericStatus(resolvedBridge.buyerLead?.status ?? null, locale),
     financingStatus: resolvedBridge.buyerLead?.financingStatus ?? null,
     preferredContactChannel: resolvedBridge.buyerLead?.preferredContactChannel ?? null,
   };

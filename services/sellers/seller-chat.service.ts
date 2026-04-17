@@ -1,4 +1,5 @@
 import "server-only";
+import type { AppLocale } from "@/lib/i18n/config";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { emitDomainEvent } from "@/lib/events/domain-events";
 import { invokeMcpToolInternal } from "@/lib/mcp/invoke-internal";
@@ -77,7 +78,8 @@ const confidenceFromSignals = (input: {
 
 export const askSellerChat = async (
   sellerLeadId: string,
-  userMessage: string
+  userMessage: string,
+  locale: AppLocale = "fr"
 ): Promise<SellerChatResult> => {
   const openAiApiKey = process.env.OPENAI_API_KEY;
   if (!openAiApiKey) {
@@ -121,7 +123,16 @@ export const askSellerChat = async (
       messages: [
         {
           role: "system",
-          content: SELLER_CHAT_SYSTEM_PROMPT,
+          content:
+            SELLER_CHAT_SYSTEM_PROMPT +
+            " " +
+            (locale === "en"
+              ? "Respond in English."
+              : locale === "es"
+                ? "Responde en español."
+                : locale === "ru"
+                  ? "Отвечай по-русски."
+                  : "Réponds en français."),
         },
         {
           role: "user",

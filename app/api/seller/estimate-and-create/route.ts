@@ -7,6 +7,7 @@ import { emitClientProjectEvent } from "@/services/clients/client-project.servic
 import { ensureSellerPortalAccessFromLead } from "@/services/clients/seller-project.service";
 import { buildSellerPropertyDetails } from "@/services/sellers/seller-metadata";
 import { ensureEstimationProperty } from "@/services/properties/estimation-property.service";
+import { attachEstimationPropertyMedia } from "@/services/properties/estimation-property-media.service";
 import { createValuationRecord } from "@/services/valuation/valuation-record.service";
 import { computeLoupeValuation } from "@/services/valuation/loupe-valuation.service";
 import { consumeSellerEmailVerificationToken } from "@/services/sellers/seller-email-verification.service";
@@ -25,6 +26,7 @@ import {
 import type {
   SellerApiErrorResponse,
   SellerEstimateAndCreateSuccessResponse,
+  SellerUploadedPropertyMedia,
 } from "@/types/api/seller";
 
 type EstimateAndCreateInput = {
@@ -70,6 +72,7 @@ type EstimateAndCreateInput = {
   syndicDocsReady?: boolean;
   syndicSupportNeeded?: boolean;
   message?: string;
+  uploadedMedia?: SellerUploadedPropertyMedia[];
   verificationToken: string;
 };
 
@@ -88,6 +91,34 @@ const isAllowedString = (value: unknown, allowed: string[]) => {
 
 const isRequiredAllowedString = (value: unknown, allowed: string[]) => {
   return typeof value === "string" && allowed.includes(value);
+};
+
+const isUploadedMedia = (value: unknown): value is SellerUploadedPropertyMedia => {
+  if (!value || typeof value !== "object") return false;
+  const input = value as Record<string, unknown>;
+  return (
+    typeof input.uploadId === "string" &&
+    (input.kind === "image" || input.kind === "video") &&
+    typeof input.fileName === "string" &&
+    typeof input.contentType === "string" &&
+    typeof input.sizeBytes === "number" &&
+    Number.isFinite(input.sizeBytes) &&
+    typeof input.storageBucket === "string" &&
+    typeof input.storagePath === "string" &&
+    typeof input.previewUrl === "string"
+  );
+};
+
+const hasValidUploadedMediaInput = (value: unknown) => {
+  if (value === undefined) return true;
+  if (!Array.isArray(value)) return false;
+  const imageCount = value.filter(
+    (item) => item && typeof item === "object" && (item as { kind?: unknown }).kind === "image"
+  ).length;
+  const videoCount = value.filter(
+    (item) => item && typeof item === "object" && (item as { kind?: unknown }).kind === "video"
+  ).length;
+  return value.every((item) => isUploadedMedia(item)) && imageCount <= 20 && videoCount <= 5;
 };
 
 const hasIdentityInput = (input: Record<string, unknown>) => {
@@ -127,7 +158,8 @@ const validate = (payload: unknown): payload is EstimateAndCreateInput => {
     isOptionalBoolean(input.diagnosticsSupportNeeded) &&
     isOptionalBoolean(input.syndicDocsReady) &&
     isOptionalBoolean(input.syndicSupportNeeded) &&
-    (input.message === undefined || typeof input.message === "string")
+    (input.message === undefined || typeof input.message === "string") &&
+    hasValidUploadedMediaInput(input.uploadedMedia)
   );
 };
 
@@ -260,6 +292,16 @@ export const POST = async (request: Request) => {
     verification: {
       email_verified_at: new Date().toISOString(),
     },
+    uploaded_media:
+      input.uploadedMedia?.map((item) => ({
+        upload_id: item.uploadId,
+        kind: item.kind,
+        file_name: item.fileName,
+        content_type: item.contentType,
+        size_bytes: item.sizeBytes,
+        storage_bucket: item.storageBucket,
+        storage_path: item.storagePath,
+      })) ?? [],
   };
 
   const created = await createSellerLead({
@@ -332,6 +374,12 @@ export const POST = async (request: Request) => {
     const ensuredProperty = await ensureEstimationProperty({
       sellerLeadId,
       clientProjectId: provisionedPortal?.clientProjectId ?? null,
+    });
+
+    await attachEstimationPropertyMedia({
+      propertyId: ensuredProperty.propertyId,
+      sellerLeadId,
+      media: input.uploadedMedia ?? [],
     });
 
     const valuationRecord = await createValuationRecord({

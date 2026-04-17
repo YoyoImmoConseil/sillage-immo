@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AdminShell } from "@/app/components/admin-shell";
 import { requireAdminPagePermission, hasAdminPermission } from "@/lib/admin/auth";
+import { isClientPortalDirectAccessEnabled } from "@/lib/client-space/direct-access";
+import { serverEnv } from "@/lib/env/server";
 import { getClientById } from "@/services/clients/client-profile.service";
 import { getClientProjectById } from "@/services/clients/client-project.service";
 import {
@@ -51,6 +53,11 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
   const canEdit = hasAdminPermission(context, "clients.edit");
   const canInvite = hasAdminPermission(context, "clients.invite");
   const canAssignAdvisor = hasAdminPermission(context, "clients.assign_advisor");
+  const canUseDirectAccessLink = isClientPortalDirectAccessEnabled(
+    serverEnv.PUBLIC_SITE_URL,
+    process.env.VERCEL_URL,
+    process.env.VERCEL_BRANCH_URL
+  );
 
   const sellerProjectRow = await getSellerProjectByClientProjectId(projectId);
 
@@ -218,6 +225,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
                 clientId={clientId}
                 projectId={projectId}
                 latestInvitation={detail.latestInvitation}
+                showDirectAccessButton={canUseDirectAccessLink}
               />
             </div>
           )}

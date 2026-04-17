@@ -1,3 +1,4 @@
+import type { AppLocale } from "@/lib/i18n/config";
 import { NextResponse } from "next/server";
 import { getAdminRequestContext, hasAdminPermission } from "@/lib/admin/auth";
 import { updateManualProperty } from "@/services/properties/manual-property.service";
@@ -6,6 +7,8 @@ import type { PropertyBusinessType } from "@/types/domain/properties";
 type UpdatePropertyBody = {
   title?: string;
   description?: string;
+  titleTranslations?: Partial<Record<AppLocale, string | null | undefined>>;
+  descriptionTranslations?: Partial<Record<AppLocale, string | null | undefined>>;
   propertyType?: string;
   city?: string;
   postalCode?: string;
@@ -47,6 +50,8 @@ export async function PATCH(
       propertyId: id,
       title: body.title,
       description: body.description,
+      titleTranslations: body.titleTranslations,
+      descriptionTranslations: body.descriptionTranslations,
       propertyType: body.propertyType,
       city: body.city,
       postalCode: body.postalCode,

@@ -39,6 +39,24 @@ export type SellerPortalAccessData = {
   inviteToken: string | null;
 };
 
+export type SellerUploadedPropertyMedia = {
+  uploadId: string;
+  kind: "image" | "video";
+  fileName: string;
+  contentType: string;
+  sizeBytes: number;
+  storageBucket: string;
+  storagePath: string;
+  previewUrl: string;
+};
+
+export type SellerPropertyMediaUploadSuccessResponse = {
+  ok: true;
+  data: {
+    files: SellerUploadedPropertyMedia[];
+  };
+};
+
 export type SellerEstimateAndCreateSuccessResponse = {
   ok: true;
   data: {
@@ -81,6 +99,9 @@ export type SellerLeadCreateDuplicateResponse = {
 
 export type SellerSendOtpResponse = SellerSendOtpSuccessResponse | SellerApiErrorResponse;
 export type SellerVerifyOtpResponse = SellerVerifyOtpSuccessResponse | SellerApiErrorResponse;
+export type SellerPropertyMediaUploadResponse =
+  | SellerPropertyMediaUploadSuccessResponse
+  | SellerApiErrorResponse;
 export type SellerEstimateAndCreateResponse =
   | SellerEstimateAndCreateSuccessResponse
   | SellerEstimateAndCreateDuplicateResponse

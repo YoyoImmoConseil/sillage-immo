@@ -22,6 +22,10 @@ body {
   font-family: var(--font-hk-grotesk), var(--font-open-sans), Arial, Helvetica, sans-serif;
 }
 
+html[lang="ru"] body {
+  font-family: var(--font-open-sans), Arial, Helvetica, sans-serif;
+}
+
 a,
 button {
   transition:
@@ -47,6 +51,14 @@ button:not(.sillage-btn):not(.sillage-btn-secondary):focus-visible {
 
 h1 {
   font-family: var(--font-montagna), var(--font-libre-baskerville), serif;
+}
+
+html[lang="ru"] h1,
+html[lang="ru"] h2,
+html[lang="ru"] h3,
+html[lang="ru"] .sillage-section-title,
+html[lang="ru"] .sillage-section-title-font {
+  font-family: var(--font-montserrat), var(--font-open-sans), Arial, Helvetica, sans-serif;
 }
 
 h2,
