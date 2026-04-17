@@ -92,28 +92,6 @@ const generatePortalLink = async (input: {
   confirmUrl.searchParams.set("token_hash", data.properties.hashed_token);
   confirmUrl.searchParams.set("type", data.properties.verification_type);
 
-  // #region agent log
-  fetch("http://127.0.0.1:7760/ingest/34db18ce-fe4a-4a99-91a2-c9c0aaded505", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "cada68" },
-    body: JSON.stringify({
-      sessionId: "cada68",
-      runId: "pre-fix",
-      hypothesisId: "H2",
-      location: "services/clients/client-portal-magic-link.service.ts:71",
-      message: "portal link generated",
-      data: {
-        requestedType: input.type,
-        verificationType: data.properties.verification_type,
-        hasInviteToken: Boolean(input.inviteToken),
-        hasTokenHash: confirmUrl.searchParams.has("token_hash"),
-        hasNext: confirmUrl.searchParams.has("next"),
-      },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  // #endregion
-
   return confirmUrl.toString();
 };
 
@@ -131,24 +109,6 @@ const resolveClientPortalAccessLink = async (
 
   if (input.inviteToken) {
     const invitation = await getInvitationByToken(input.inviteToken);
-
-    // #region agent log
-    fetch("http://127.0.0.1:7760/ingest/34db18ce-fe4a-4a99-91a2-c9c0aaded505", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "cada68" },
-      body: JSON.stringify({
-        sessionId: "cada68",
-        runId: "pre-fix",
-        hypothesisId: "H1",
-        location: "services/clients/client-portal-magic-link.service.ts:95",
-        message: "invitation token lookup",
-        data: {
-          invitationStatus: invitation?.status ?? "invalid",
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
 
     if (!invitation || invitation.status === "invalid") {
       return { ok: false as const, code: "invalid", message: "Cette invitation est introuvable." };
@@ -259,27 +219,6 @@ export const sendClientPortalMagicLink = async (input: SendClientPortalMagicLink
     accessLink: resolved.data.link,
     context: resolved.data.context,
   });
-
-  // #region agent log
-  fetch("http://127.0.0.1:7760/ingest/34db18ce-fe4a-4a99-91a2-c9c0aaded505", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "cada68" },
-    body: JSON.stringify({
-      sessionId: "cada68",
-      runId: "pre-fix",
-      hypothesisId: "H4",
-      location: "services/clients/client-portal-magic-link.service.ts:209",
-      message: "portal access email send result",
-      data: {
-        context: resolved.data.context,
-        sent: sent.sent,
-        provider: "provider" in sent ? sent.provider : null,
-        reason: "reason" in sent ? sent.reason : null,
-      },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  // #endregion
 
   if (!sent.sent) {
     return {

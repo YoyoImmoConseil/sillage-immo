@@ -1,26 +1,25 @@
 # Runbook Release Main (Client Space)
 
-Ce document prepare le passage du lot `client-space` / `solidify data model` de `staging` vers `main`.
+Ce document prepare le passage du lot `client-space` / `solidify data model` de `feature/client-space-v1` vers `main`.
 
 ## 1. Perimetre Exact De Release
 
-Source de release attendue : branche `staging`.
+Source de release attendue : branche `feature/client-space-v1`.
 
 Constat git au moment de la preparation :
 
-- `staging` est propre localement.
-- `staging` est en avance sur `main`.
-- `git diff --stat main...staging` remonte 93 fichiers modifies pour plus de 10k lignes ajoutees.
+- `feature/client-space-v1` est propre localement.
+- `feature/client-space-v1` est en avance sur `main`.
+- `git diff --stat main...feature/client-space-v1` remonte un lot large et transversal : portail client, i18n, auth, owner property sheets, advisor booking, estimation media, data model.
 
-Commits structurants a embarquer :
+Lots structurants a embarquer :
 
-- `9e9577a` `feat: add admin seller client space workflows`
-- `82024c2` `fix: harden seller client space staging flows`
-- `366e48e` `feat: add seller portal access foundation`
-- `1abfca6` `feat: harden seller portal and prepare multi-project hub`
-- `5e8983b` `fix: backfill seller portal access during login`
-- `5e1ca97` `fix: restore seller hub address and valuation summary`
-- `6631620` `feat: solidify client identity and project data model`
+- portail client vendeur / invitation / magic links
+- experience multilingue sur le site public et le portail client
+- fiches bien proprietaire dans le portail
+- advisor booking depuis l'espace client
+- estimation vendeur enrichie avec upload photo / video interne Sillage
+- solidification du data model (`contact_identities`, `buyer_projects`, `valuations`, RLS portail, `property_media.kind = video`)
 
 Surfaces applicatives sensibles incluses dans la release :
 
@@ -37,6 +36,7 @@ Surfaces applicatives sensibles incluses dans la release :
 - Data model et backfills :
   - `/Users/yoannuzzan/sillage-immo-workspace/sillage-immo/services/contacts/contact-identity.service.ts`
   - `/Users/yoannuzzan/sillage-immo-workspace/sillage-immo/services/properties/estimation-property.service.ts`
+  - `/Users/yoannuzzan/sillage-immo-workspace/sillage-immo/services/properties/estimation-property-media.service.ts`
   - `/Users/yoannuzzan/sillage-immo-workspace/sillage-immo/services/valuation/valuation-record.service.ts`
   - `/Users/yoannuzzan/sillage-immo-workspace/sillage-immo/services/clients/buyer-project.service.ts`
 - Migrations / schema :
@@ -44,15 +44,17 @@ Surfaces applicatives sensibles incluses dans la release :
   - `/Users/yoannuzzan/sillage-immo-workspace/sillage-immo/db/migrations/20260319_016_harden_client_space_invariants.sql`
   - `/Users/yoannuzzan/sillage-immo-workspace/sillage-immo/db/migrations/20260326_017_secure_client_space_portal_rls.sql`
   - `/Users/yoannuzzan/sillage-immo-workspace/sillage-immo/db/migrations/20260402_018_solidify_data_model.sql`
+  - `/Users/yoannuzzan/sillage-immo-workspace/sillage-immo/db/migrations/20260416_019_add_property_media_video_kind.sql`
   - `/Users/yoannuzzan/sillage-immo-workspace/sillage-immo/db/install.sql`
 
 Decision de perimetre avant merge :
 
 1. Faire `git fetch origin`.
-2. Refaire `git diff --stat origin/main...origin/staging`.
-3. Refaire `git log --oneline origin/main..origin/staging`.
-4. Verifier qu'aucun commit de debug ou de staging-only non voulu n'est present.
-5. Si besoin, preferer une PR `staging -> main` avec review plutot qu'un merge direct.
+2. Refaire `git diff --stat origin/main...origin/feature/client-space-v1`.
+3. Refaire `git log --oneline origin/main..origin/feature/client-space-v1`.
+4. Verifier qu'aucun commit de debug, instrumentation localhost ou comportement preview-only non voulu n'est present.
+5. Verifier explicitement que les acces directs portail restent limites au host preview (`feature-client-space-v1-sillage-immo`) et ne s'activent pas sur `main`.
+6. Preferer une PR `feature/client-space-v1 -> main` avec review plutot qu'un merge direct.
 
 ## 2. Preflight Production Avant SQL
 
@@ -130,11 +132,12 @@ L'ordre doit rester strict :
 2. `20260319_016_harden_client_space_invariants.sql`
 3. `20260326_017_secure_client_space_portal_rls.sql`
 4. `20260402_018_solidify_data_model.sql`
+5. `20260416_019_add_property_media_video_kind.sql`
 
 Regles d'execution :
 
 1. Stopper a la premiere erreur.
-2. Ne pas deployer l'app `main` tant que les 4 migrations ne sont pas passees.
+2. Ne pas deployer l'app `main` tant que les 5 migrations ne sont pas passees.
 3. Garder `/Users/yoannuzzan/sillage-immo-workspace/sillage-immo/db/install.sql` comme schema cible de reference.
 4. Si la prod a deja une partie du lot, reutiliser les scripts tels quels : ils ont ete ecrits de facon idempotente.
 
@@ -187,6 +190,15 @@ union all
 select 'seller_projects_with_latest_valuation', count(*)::int from public.seller_projects where latest_valuation_id is not null;
 ```
 
+Verifier ensuite le support media attendu :
+
+```sql
+select kind, count(*)::int as count
+from public.property_media
+group by kind
+order by kind asc;
+```
+
 Verifier qu'aucune erreur RLS evidente n'apparait ensuite sur les parcours portail/admin.
 
 ## 5. Configuration Production A Geler
@@ -210,6 +222,8 @@ Points de controle :
 - `NEXT_PUBLIC_SUPABASE_URL` doit pointer vers le projet Supabase prod, jamais vers `ywmafyhnbcfsscyezoux`.
 - `PUBLIC_SITE_URL` doit etre l'URL canonique de production.
 - Les secrets mail et admin doivent etre propres a la prod.
+- `SUPABASE_SERVICE_ROLE_KEY` doit permettre les operations storage attendues pour le bucket `seller-estimation-property-media`.
+- Si le bucket `seller-estimation-property-media` n'existe pas encore, confirmer que sa creation via l'app est autorisee en prod.
 
 ### Supabase Auth
 
@@ -256,10 +270,19 @@ Executer juste apres migration + deploiement app.
 4. Verifier la redirection vers `/admin`.
 5. Ouvrir une page admin protegee, par exemple `/admin/clients`.
 
+### Reponse plateforme
+
+1. Verifier `GET /api/internal/readyz`.
+2. Si `503`, suivre `/Users/yoannuzzan/sillage-immo-workspace/sillage-immo/docs/ops/readyz-runbook.md` avant d'aller plus loin.
+
 ### Seller
 
 1. Lancer une estimation vendeur complete avec un email test neuf.
-2. Verifier la creation en base de :
+2. Rejouer une estimation vendeur complete sans media pour confirmer qu'aucun upload n'est requis.
+3. Rejouer une estimation vendeur avec photos.
+4. Rejouer une estimation vendeur avec au moins une video.
+5. Verifier que la valorisation La Loupe est toujours produite normalement et que les media restent internes a Sillage.
+6. Verifier la creation en base de :
    - `seller_leads`
    - `client_profiles`
    - `client_projects`
@@ -267,7 +290,8 @@ Executer juste apres migration + deploiement app.
    - `properties`
    - `project_properties`
    - `valuations`
-3. Verifier sur le hub client :
+   - `property_media` avec `kind = image` et/ou `kind = video` selon le cas de test
+7. Verifier sur le hub client :
    - adresse visible,
    - estimation visible,
    - detail projet avec bien rattache.
@@ -301,20 +325,23 @@ Verifier :
 - Magic link client recu.
 - Pas de redirection parasite vers Vercel login.
 - Pas de redirection vers un host preview.
+- Les acces directs preview-only renvoient bien le comportement attendu sur preview, mais ne doivent pas etre actifs sur le host prod.
 
 ## 7. Sequence Operatoire Recommandee
 
-1. Geler les merges sur `staging` et `main`.
+1. Geler les merges sur `feature/client-space-v1` et `main`.
 2. Faire `git fetch origin`.
-3. Revalider le diff `origin/main...origin/staging`.
-4. Verifier la configuration prod Vercel + Supabase + Google.
-5. Verifier les prechecks SQL production.
-6. Appliquer les migrations `015 -> 016 -> 017 -> 018`.
-7. Verifier les controles SQL post-migration.
-8. Ouvrir la PR `staging -> main` ou merger selon le process retenu.
-9. Deployer `main`.
-10. Executer la smoke test go live.
-11. Garder une surveillance rapprochee des logs Vercel et Supabase pendant la premiere fenetre de trafic.
+3. Revalider le diff `origin/main...origin/feature/client-space-v1`.
+4. Executer `npm run lint`, `npm run typecheck` et `npm run build` sur la branche de release.
+5. Verifier la configuration prod Vercel + Supabase + Google.
+6. Verifier les prechecks SQL production.
+7. Appliquer les migrations `015 -> 016 -> 017 -> 018 -> 019`.
+8. Verifier les controles SQL post-migration.
+9. Ouvrir la PR `feature/client-space-v1 -> main` ou merger selon le process retenu.
+10. Deployer `main`.
+11. Verifier `readyz`.
+12. Executer la smoke test go live.
+13. Garder une surveillance rapprochee des logs Vercel, Supabase et Storage pendant la premiere fenetre de trafic.
 
 ## 8. Rollback Et Garde-Fous
 
