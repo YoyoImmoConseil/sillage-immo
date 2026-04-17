@@ -29,9 +29,6 @@ export function AuthCallbackPageContent() {
 
   useEffect(() => {
     let isActive = true;
-    const runId = `admin-oauth-${Date.now()}`;
-    let authEventCount = 0;
-    let syncAttemptCount = 0;
     let hasFinalized = false;
     let activeSubscription: { unsubscribe: () => void } | null = null;
     const nextPath = getSafeNextPath(
@@ -44,25 +41,6 @@ export function AuthCallbackPageContent() {
           }
         })()
     );
-    // #region agent log
-    fetch("http://127.0.0.1:7760/ingest/34db18ce-fe4a-4a99-91a2-c9c0aaded505", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "cada68" },
-      body: JSON.stringify({
-        sessionId: "cada68",
-        runId,
-        hypothesisId: "H2_H5",
-        location: "app/auth/callback/page-content.tsx:42",
-        message: "admin callback initialized",
-        data: {
-          hasCode: Boolean(searchParams.get("code")),
-          hasErrorDescription: Boolean(searchParams.get("error_description")),
-          nextPath,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
     const redirectWithUser = (email?: string | null) => {
       if (!isActive) {
         return;
@@ -76,63 +54,24 @@ export function AuthCallbackPageContent() {
       session: { access_token: string; user: { email?: string | null } }
     ) => {
       if (hasFinalized) {
-        // #region agent log
-        fetch("http://127.0.0.1:7760/ingest/34db18ce-fe4a-4a99-91a2-c9c0aaded505", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "cada68" },
-          body: JSON.stringify({
-            sessionId: "cada68",
-            runId,
-            hypothesisId: "H6_fix",
-            location: "app/auth/callback/page-content.tsx:67",
-            message: "duplicate admin session finalize skipped",
-            data: {
-              source,
-              syncAttemptCount,
-            },
-            timestamp: Date.now(),
-          }),
-        }).catch(() => {});
-        // #endregion
         return;
       }
 
       hasFinalized = true;
       activeSubscription?.unsubscribe();
-      // #region agent log
-      fetch("http://127.0.0.1:7760/ingest/34db18ce-fe4a-4a99-91a2-c9c0aaded505", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "cada68" },
-        body: JSON.stringify({
-          sessionId: "cada68",
-          runId,
-          hypothesisId: "H6_fix",
-          location: "app/auth/callback/page-content.tsx:90",
-          message: "admin session finalize started",
-          data: {
-            source,
-            syncAttemptCount,
-          },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion
       await syncServerSession(session.access_token);
       redirectWithUser(session.user.email ?? null);
     };
 
     const syncServerSession = async (accessToken: string) => {
-      syncAttemptCount += 1;
       if (isActive) {
         setStep("Synchronisation de la session serveur...");
       }
-      const startedAt = Date.now();
       const response = await withTimeout(
         fetch("/api/admin/auth/session", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "X-Debug-Session-Id": "cada68",
           },
           body: JSON.stringify({
             accessToken,
@@ -140,81 +79,9 @@ export function AuthCallbackPageContent() {
         }),
         7000
       );
-      const payload = (await response.json()) as { message?: string; debug?: unknown };
-      // #region agent log
-      fetch("http://127.0.0.1:7760/ingest/34db18ce-fe4a-4a99-91a2-c9c0aaded505", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "cada68" },
-        body: JSON.stringify({
-          sessionId: "cada68",
-          runId,
-          hypothesisId: "H2",
-          location: "app/auth/callback/page-content.tsx:71",
-          message: "admin session sync response",
-          data: {
-            ok: response.ok,
-            status: response.status,
-            durationMs: Date.now() - startedAt,
-            debug: payload.debug ?? null,
-            message: payload.message ?? null,
-          },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion
+      const payload = (await response.json()) as { message?: string };
       if (!response.ok) {
         throw new Error(payload.message ?? "Synchronisation serveur impossible.");
-      }
-
-      try {
-        const cookieCheck = await withTimeout(
-          fetch("/api/admin/auth/debug-context", {
-            headers: {
-              "Cache-Control": "no-store",
-            },
-          }),
-          4000
-        );
-        const cookiePayload = (await cookieCheck.json()) as Record<string, unknown>;
-        // #region agent log
-        fetch("http://127.0.0.1:7760/ingest/34db18ce-fe4a-4a99-91a2-c9c0aaded505", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "cada68" },
-          body: JSON.stringify({
-            sessionId: "cada68",
-            runId,
-            hypothesisId: "H6",
-            location: "app/auth/callback/page-content.tsx:103",
-            message: "post-sync cookie visibility check",
-            data: {
-              syncAttemptCount,
-              ok: cookieCheck.ok,
-              status: cookieCheck.status,
-              payload: cookiePayload,
-            },
-            timestamp: Date.now(),
-          }),
-        }).catch(() => {});
-        // #endregion
-      } catch (cause) {
-        // #region agent log
-        fetch("http://127.0.0.1:7760/ingest/34db18ce-fe4a-4a99-91a2-c9c0aaded505", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "cada68" },
-          body: JSON.stringify({
-            sessionId: "cada68",
-            runId,
-            hypothesisId: "H6",
-            location: "app/auth/callback/page-content.tsx:121",
-            message: "post-sync cookie visibility check failed",
-            data: {
-              syncAttemptCount,
-              message: cause instanceof Error ? cause.message : "unknown_error",
-            },
-            timestamp: Date.now(),
-          }),
-        }).catch(() => {});
-        // #endregion
       }
     };
 
@@ -256,26 +123,6 @@ export function AuthCallbackPageContent() {
           data: { subscription },
         } = supabase.auth.onAuthStateChange((event, session) => {
           activeSubscription = subscription;
-          authEventCount += 1;
-          // #region agent log
-          fetch("http://127.0.0.1:7760/ingest/34db18ce-fe4a-4a99-91a2-c9c0aaded505", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "cada68" },
-            body: JSON.stringify({
-              sessionId: "cada68",
-              runId,
-              hypothesisId: "H6",
-              location: "app/auth/callback/page-content.tsx:149",
-              message: "admin auth state change observed",
-              data: {
-                authEventCount,
-                event,
-                hasSessionUser: Boolean(session?.user),
-              },
-              timestamp: Date.now(),
-            }),
-          }).catch(() => {});
-          // #endregion
           if ((event === "SIGNED_IN" || event === "TOKEN_REFRESHED") && session?.user) {
             void (async () => {
               try {
@@ -296,24 +143,6 @@ export function AuthCallbackPageContent() {
         for (let attempt = 0; attempt < 8; attempt += 1) {
           const session = await readSession();
           if (session?.user) {
-            // #region agent log
-            fetch("http://127.0.0.1:7760/ingest/34db18ce-fe4a-4a99-91a2-c9c0aaded505", {
-              method: "POST",
-              headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "cada68" },
-              body: JSON.stringify({
-                sessionId: "cada68",
-                runId,
-                hypothesisId: "H5",
-                location: "app/auth/callback/page-content.tsx:152",
-                message: "admin callback session detected",
-                data: {
-                  attempt,
-                  hasAccessToken: Boolean(session.access_token),
-                },
-                timestamp: Date.now(),
-              }),
-            }).catch(() => {});
-            // #endregion
             await finalizeSession("session-poll", session);
             return;
           }
@@ -330,23 +159,6 @@ export function AuthCallbackPageContent() {
         }
 
         const message = cause instanceof Error ? cause.message : "Erreur inconnue.";
-        // #region agent log
-        fetch("http://127.0.0.1:7760/ingest/34db18ce-fe4a-4a99-91a2-c9c0aaded505", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "cada68" },
-          body: JSON.stringify({
-            sessionId: "cada68",
-            runId,
-            hypothesisId: "H2_H5",
-            location: "app/auth/callback/page-content.tsx:180",
-            message: "admin callback failed",
-            data: {
-              message,
-            },
-            timestamp: Date.now(),
-          }),
-        }).catch(() => {});
-        // #endregion
         setError(`La finalisation de la connexion Google a échoué : ${message}`);
       }
     };

@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AdminShell } from "@/app/components/admin-shell";
-import { AdminAuthDebugProbe } from "./admin-auth-debug-probe";
 import { getAdminPageContext, hasAdminPermission } from "@/lib/admin/auth";
 import { TimeoutError, withTimeout } from "@/lib/async/timeout";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -87,7 +86,6 @@ export default async function AdminDashboardPage() {
   if (!context) {
     return (
       <main className="min-h-screen bg-[#f4ece4] px-6 py-10 md:px-10 xl:px-14 2xl:px-20">
-        <AdminAuthDebugProbe serverSawContext={false} warningMessage={warningMessage} />
         <section className="mx-auto max-w-3xl rounded-3xl border border-[rgba(20,20,70,0.18)] bg-white/70 p-8">
           <h1 className="text-3xl font-semibold text-[#141446]">Dashboard admin</h1>
           <p className="mt-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
@@ -110,7 +108,6 @@ export default async function AdminDashboardPage() {
       role={context.role}
       profileName={context.profile?.fullName ?? context.profile?.email ?? "Mode admin"}
     >
-      <AdminAuthDebugProbe serverSawContext warningMessage={warningMessage} />
       <section className="grid gap-4 md:grid-cols-2">
         {visibleCards.map((card) => (
           <Link
