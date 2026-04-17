@@ -32,6 +32,8 @@ export function AuthCallbackPageContent() {
     const runId = `admin-oauth-${Date.now()}`;
     let authEventCount = 0;
     let syncAttemptCount = 0;
+    let hasFinalized = false;
+    let activeSubscription: { unsubscribe: () => void } | null = null;
     const nextPath = getSafeNextPath(
       searchParams.get("next") ??
         (() => {
@@ -67,6 +69,56 @@ export function AuthCallbackPageContent() {
       }
       setStep(`Session validée${email ? ` pour ${email}` : ""}. Redirection vers l'administration...`);
       window.location.replace(nextPath);
+    };
+
+    const finalizeSession = async (
+      source: "auth-state-change" | "session-poll",
+      session: { access_token: string; user: { email?: string | null } }
+    ) => {
+      if (hasFinalized) {
+        // #region agent log
+        fetch("http://127.0.0.1:7760/ingest/34db18ce-fe4a-4a99-91a2-c9c0aaded505", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "cada68" },
+          body: JSON.stringify({
+            sessionId: "cada68",
+            runId,
+            hypothesisId: "H6_fix",
+            location: "app/auth/callback/page-content.tsx:67",
+            message: "duplicate admin session finalize skipped",
+            data: {
+              source,
+              syncAttemptCount,
+            },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+        // #endregion
+        return;
+      }
+
+      hasFinalized = true;
+      activeSubscription?.unsubscribe();
+      // #region agent log
+      fetch("http://127.0.0.1:7760/ingest/34db18ce-fe4a-4a99-91a2-c9c0aaded505", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "cada68" },
+        body: JSON.stringify({
+          sessionId: "cada68",
+          runId,
+          hypothesisId: "H6_fix",
+          location: "app/auth/callback/page-content.tsx:90",
+          message: "admin session finalize started",
+          data: {
+            source,
+            syncAttemptCount,
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
+      await syncServerSession(session.access_token);
+      redirectWithUser(session.user.email ?? null);
     };
 
     const syncServerSession = async (accessToken: string) => {
@@ -203,6 +255,7 @@ export function AuthCallbackPageContent() {
         const {
           data: { subscription },
         } = supabase.auth.onAuthStateChange((event, session) => {
+          activeSubscription = subscription;
           authEventCount += 1;
           // #region agent log
           fetch("http://127.0.0.1:7760/ingest/34db18ce-fe4a-4a99-91a2-c9c0aaded505", {
@@ -226,8 +279,7 @@ export function AuthCallbackPageContent() {
           if ((event === "SIGNED_IN" || event === "TOKEN_REFRESHED") && session?.user) {
             void (async () => {
               try {
-                await syncServerSession(session.access_token);
-                redirectWithUser(session.user.email ?? null);
+                await finalizeSession("auth-state-change", session);
               } catch (cause) {
                 if (!isActive) return;
                 const message = cause instanceof Error ? cause.message : "Erreur inconnue.";
@@ -262,9 +314,7 @@ export function AuthCallbackPageContent() {
               }),
             }).catch(() => {});
             // #endregion
-            subscription.unsubscribe();
-            await syncServerSession(session.access_token);
-            redirectWithUser(session.user.email ?? null);
+            await finalizeSession("session-poll", session);
             return;
           }
 
