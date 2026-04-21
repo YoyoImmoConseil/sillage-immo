@@ -5,6 +5,7 @@ import { formatCurrency } from "@/lib/i18n/format";
 import { localizePath } from "@/lib/i18n/routing";
 import { formatPropertyTypeLabel } from "@/lib/properties/property-type-label";
 import type { PropertySaleSnapshot, PublicPropertyListingSummary } from "@/types/domain/properties";
+import { ListingStatusBanner } from "./listing-status-banner";
 import { PropertyEnergyScale } from "./property-energy-scale";
 
 type PropertyCardProps = {
@@ -75,7 +76,7 @@ export function PropertyCard({ listing, locale = "fr" }: PropertyCardProps) {
   return (
     <article className="overflow-hidden rounded-2xl border border-[rgba(20,20,70,0.18)] bg-[#f4ece4]">
       <Link href={localizePath(listing.canonicalPath, locale)} className="block">
-        <div className="aspect-[4/3] w-full overflow-hidden bg-[rgba(20,20,70,0.08)]">
+        <div className="relative aspect-[4/3] w-full overflow-hidden bg-[rgba(20,20,70,0.08)]">
           {listing.coverImageUrl ? (
             <img
               src={listing.coverImageUrl}
@@ -87,6 +88,11 @@ export function PropertyCard({ listing, locale = "fr" }: PropertyCardProps) {
               {copy.photoSoon}
             </div>
           )}
+          <ListingStatusBanner
+            availabilityStatus={listing.availabilityStatus}
+            locale={locale}
+            compact
+          />
         </div>
         <div className="space-y-3 p-5 text-[#141446]">
           <div className="space-y-1">

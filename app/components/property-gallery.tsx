@@ -2,19 +2,29 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import type { AppLocale } from "@/lib/i18n/config";
 import type { PropertyMediaSnapshot } from "@/types/domain/properties";
+import { ListingStatusBanner } from "./listing-status-banner";
 
 type PropertyGalleryProps = {
   images: PropertyMediaSnapshot[];
   title: string;
   showThumbnails?: boolean;
+  availabilityStatus?: string | null;
+  locale?: AppLocale;
 };
 
 const getImageUrl = (image: PropertyMediaSnapshot) => {
   return image.cachedUrl ?? image.remoteUrl ?? null;
 };
 
-export function PropertyGallery({ images, title, showThumbnails = true }: PropertyGalleryProps) {
+export function PropertyGallery({
+  images,
+  title,
+  showThumbnails = true,
+  availabilityStatus = null,
+  locale = "fr",
+}: PropertyGalleryProps) {
   const validImages = useMemo(
     // This component is intentionally image-only; callers may pass the full
     // property media array, but videos and documents are ignored here.
@@ -78,6 +88,7 @@ export function PropertyGallery({ images, title, showThumbnails = true }: Proper
             alt={activeImage.description ?? title}
             className="aspect-[4/3] h-full w-full object-cover"
           />
+          <ListingStatusBanner availabilityStatus={availabilityStatus} locale={locale} />
           {validImages.length > 1 ? (
             <>
               <button

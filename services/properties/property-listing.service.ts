@@ -195,6 +195,7 @@ export const toPublicPropertyListingSummary = (
   postalCode: listing.postalCode,
   coverImageUrl: listing.coverImageUrl,
   propertyType: listing.propertyType,
+  availabilityStatus: listing.property.availabilityStatus,
   priceAmount: listing.priceAmount,
   priceCurrency: listing.priceCurrency,
   bedrooms: listing.bedrooms,

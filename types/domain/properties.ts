@@ -137,6 +137,7 @@ export type PublicPropertyListingSummary = {
   postalCode: string | null;
   coverImageUrl: string | null;
   propertyType: string | null;
+  availabilityStatus: string | null;
   priceAmount: number | null;
   priceCurrency: string;
   bedrooms: number | null;
