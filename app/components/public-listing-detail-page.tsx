@@ -195,6 +195,8 @@ export async function PublicListingDetailPage({
               images={gallery}
               title={listing.title ?? "Bien immobilier"}
               showThumbnails={false}
+              availabilityStatus={listing.property.availabilityStatus}
+              locale={locale}
             />
 
             <section className="grid gap-4 lg:grid-cols-2">
