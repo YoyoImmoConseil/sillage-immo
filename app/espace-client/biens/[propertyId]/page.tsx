@@ -5,6 +5,7 @@ import { localizePath } from "@/lib/i18n/routing";
 import { formatCurrency } from "@/lib/i18n/format";
 import { formatPropertyTypeLabel } from "@/lib/i18n/domain";
 import { requireClientSpacePageContext } from "@/lib/client-space/auth";
+import { PropertyLocationMap } from "@/app/components/property-location-map";
 import { getSellerPortalPropertyDetail } from "@/services/clients/seller-portal.service";
 
 type OwnerPropertyPageProps = {
@@ -87,6 +88,7 @@ export default async function OwnerPropertyPage({ params }: OwnerPropertyPagePro
       terrace: "Terrasse",
       elevator: "Ascenseur",
       address: "Adresse",
+      location: "Emplacement",
       unavailable: "Non disponible",
       noDescription: "La description détaillée du bien n'est pas encore disponible.",
       publicListing: "Voir la fiche publique",
@@ -110,6 +112,7 @@ export default async function OwnerPropertyPage({ params }: OwnerPropertyPagePro
       terrace: "Terrace",
       elevator: "Elevator",
       address: "Address",
+      location: "Location",
       unavailable: "Unavailable",
       noDescription: "The detailed property description is not available yet.",
       publicListing: "View public listing",
@@ -133,6 +136,7 @@ export default async function OwnerPropertyPage({ params }: OwnerPropertyPagePro
       terrace: "Terraza",
       elevator: "Ascensor",
       address: "Dirección",
+      location: "Ubicación",
       unavailable: "No disponible",
       noDescription: "La descripción detallada del inmueble aún no está disponible.",
       publicListing: "Ver ficha pública",
@@ -156,6 +160,7 @@ export default async function OwnerPropertyPage({ params }: OwnerPropertyPagePro
       terrace: "Терраса",
       elevator: "Лифт",
       address: "Адрес",
+      location: "Расположение",
       unavailable: "Недоступно",
       noDescription: "Подробное описание объекта пока недоступно.",
       publicListing: "Открыть публичную карточку",
@@ -169,6 +174,19 @@ export default async function OwnerPropertyPage({ params }: OwnerPropertyPagePro
     : localizePath("/espace-client", locale);
   const secondaryAddress = [detail.property.postalCode, detail.property.city].filter(Boolean).join(" ");
   const displayAddress = detail.property.formattedAddress ?? (secondaryAddress || copy.unavailable);
+  const fullAddress =
+    detail.property.formattedAddress ??
+    [
+      detail.property.streetNumber,
+      detail.property.street,
+      detail.property.postalCode,
+      detail.property.city,
+      detail.property.country,
+    ]
+      .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+      .join(" ");
+  const hasLocationMap =
+    typeof detail.property.latitude === "number" && typeof detail.property.longitude === "number";
 
   return (
     <div className="space-y-6">
@@ -258,6 +276,20 @@ export default async function OwnerPropertyPage({ params }: OwnerPropertyPagePro
               {detail.property.description ?? copy.noDescription}
             </p>
           </section>
+
+          {hasLocationMap ? (
+            <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-8">
+              <h3 className="text-xl font-semibold text-[#141446]">{copy.location}</h3>
+              <div className="mt-4">
+                <PropertyLocationMap
+                  latitude={detail.property.latitude}
+                  longitude={detail.property.longitude}
+                  address={fullAddress || null}
+                  title={title}
+                />
+              </div>
+            </section>
+          ) : null}
         </div>
 
         <div className="space-y-6">

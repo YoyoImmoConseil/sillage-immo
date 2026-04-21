@@ -115,8 +115,13 @@ export type SellerPortalPropertyDetail = {
     title: string | null;
     description: string | null;
     formattedAddress: string | null;
+    street: string | null;
+    streetNumber: string | null;
     city: string | null;
     postalCode: string | null;
+    country: string | null;
+    latitude: number | null;
+    longitude: number | null;
     propertyType: string | null;
     livingArea: number | null;
     rooms: number | null;
@@ -551,8 +556,13 @@ export const getSellerPortalPropertyDetail = async (input: {
         sources: [detail.property.metadata, detail.property.raw_payload],
       }),
       formattedAddress: detail.property.formatted_address,
+      street: detail.property.street,
+      streetNumber: detail.property.street_number,
       city: detail.property.city,
       postalCode: detail.property.postal_code,
+      country: detail.property.country,
+      latitude: detail.property.latitude,
+      longitude: detail.property.longitude,
       propertyType: detail.property.property_type,
       livingArea: detail.property.living_area,
       rooms: detail.property.rooms,

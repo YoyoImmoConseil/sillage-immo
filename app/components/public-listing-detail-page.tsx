@@ -10,6 +10,7 @@ import type { PropertyListingSnapshot } from "@/types/domain/properties";
 import { formatListingPrice } from "@/services/properties/property-listing.service";
 import { PropertyEnergyScale } from "./property-energy-scale";
 import { PropertyGallery } from "./property-gallery";
+import { PropertyLocationMap } from "./property-location-map";
 
 export const buildPublicListingMetadata = (
   listing: PropertyListingSnapshot | null,
@@ -60,6 +61,7 @@ export async function PublicListingDetailPage({
       highlights: "A retenir",
       description: "Description détaillée",
       descriptionFallback: "Description bientôt disponible.",
+      location: "Emplacement",
       video: "Vidéo",
       watchVideo: "Voir la vidéo",
     },
@@ -73,6 +75,7 @@ export async function PublicListingDetailPage({
       highlights: "Key facts",
       description: "Detailed description",
       descriptionFallback: "Description coming soon.",
+      location: "Location",
       video: "Video",
       watchVideo: "Watch the video",
     },
@@ -86,6 +89,7 @@ export async function PublicListingDetailPage({
       highlights: "Puntos clave",
       description: "Descripción detallada",
       descriptionFallback: "Descripción próximamente disponible.",
+      location: "Ubicación",
       video: "Vídeo",
       watchVideo: "Ver el vídeo",
     },
@@ -99,6 +103,7 @@ export async function PublicListingDetailPage({
       highlights: "Ключевые факты",
       description: "Подробное описание",
       descriptionFallback: "Описание скоро появится.",
+      location: "Расположение",
       video: "Видео",
       watchVideo: "Смотреть видео",
     },
@@ -140,6 +145,19 @@ export async function PublicListingDetailPage({
         ? `${listing.property.rooms.floor} / ${listing.property.rooms.totalFloors}`
         : String(listing.property.rooms.floor)
       : "-";
+  const fullAddress =
+    listing.property.address.formattedAddress ??
+    [
+      listing.property.address.streetNumber,
+      listing.property.address.street,
+      listing.property.address.postalCode,
+      listing.property.address.city,
+      listing.property.address.country,
+    ]
+      .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+      .join(" ");
+  const hasLocationMap =
+    typeof listing.property.address.latitude === "number" && typeof listing.property.address.longitude === "number";
 
   return (
     <main className="min-h-screen">
@@ -303,6 +321,18 @@ export async function PublicListingDetailPage({
                 </div>
               </dl>
             </section>
+
+            {hasLocationMap ? (
+              <section className="rounded-2xl border border-[rgba(20,20,70,0.18)] p-6 space-y-4">
+                <h2 className="sillage-section-title">{copy.location}</h2>
+                <PropertyLocationMap
+                  latitude={listing.property.address.latitude}
+                  longitude={listing.property.address.longitude}
+                  address={fullAddress || null}
+                  title={listing.title ?? "Bien immobilier"}
+                />
+              </section>
+            ) : null}
 
             {gallery.length > 1 ? (
               <section className="rounded-2xl border border-[rgba(20,20,70,0.18)] p-6 space-y-4">

@@ -29,6 +29,8 @@ export function AuthCallbackPageContent() {
 
   useEffect(() => {
     let isActive = true;
+    let hasFinalized = false;
+    let activeSubscription: { unsubscribe: () => void } | null = null;
     const nextPath = getSafeNextPath(
       searchParams.get("next") ??
         (() => {
@@ -47,6 +49,20 @@ export function AuthCallbackPageContent() {
       window.location.replace(nextPath);
     };
 
+    const finalizeSession = async (
+      source: "auth-state-change" | "session-poll",
+      session: { access_token: string; user: { email?: string | null } }
+    ) => {
+      if (hasFinalized) {
+        return;
+      }
+
+      hasFinalized = true;
+      activeSubscription?.unsubscribe();
+      await syncServerSession(session.access_token);
+      redirectWithUser(session.user.email ?? null);
+    };
+
     const syncServerSession = async (accessToken: string) => {
       if (isActive) {
         setStep("Synchronisation de la session serveur...");
@@ -63,8 +79,8 @@ export function AuthCallbackPageContent() {
         }),
         7000
       );
+      const payload = (await response.json()) as { message?: string };
       if (!response.ok) {
-        const payload = (await response.json()) as { message?: string };
         throw new Error(payload.message ?? "Synchronisation serveur impossible.");
       }
     };
@@ -106,11 +122,11 @@ export function AuthCallbackPageContent() {
         const {
           data: { subscription },
         } = supabase.auth.onAuthStateChange((event, session) => {
+          activeSubscription = subscription;
           if ((event === "SIGNED_IN" || event === "TOKEN_REFRESHED") && session?.user) {
             void (async () => {
               try {
-                await syncServerSession(session.access_token);
-                redirectWithUser(session.user.email ?? null);
+                await finalizeSession("auth-state-change", session);
               } catch (cause) {
                 if (!isActive) return;
                 const message = cause instanceof Error ? cause.message : "Erreur inconnue.";
@@ -127,9 +143,7 @@ export function AuthCallbackPageContent() {
         for (let attempt = 0; attempt < 8; attempt += 1) {
           const session = await readSession();
           if (session?.user) {
-            subscription.unsubscribe();
-            await syncServerSession(session.access_token);
-            redirectWithUser(session.user.email ?? null);
+            await finalizeSession("session-poll", session);
             return;
           }
 

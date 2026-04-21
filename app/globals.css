@@ -1,3 +1,4 @@
+@import "leaflet/dist/leaflet.css";
 @import "tailwindcss";
 
 :root {
@@ -154,4 +155,19 @@ select:focus,
 textarea:focus {
   outline: 2px solid rgba(20, 20, 70, 0.25);
   outline-offset: 1px;
+}
+
+.sillage-map-pin-wrapper {
+  background: transparent;
+  border: 0;
+}
+
+.sillage-map-pin {
+  display: block;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #141446;
+  border: 3px solid #f4ece4;
+  box-shadow: 0 0 0 3px rgba(20, 20, 70, 0.18);
 }

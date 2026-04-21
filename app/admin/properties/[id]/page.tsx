@@ -7,6 +7,7 @@ import { getAdminPropertyDetail } from "@/services/properties/manual-property.se
 import { PropertyForm } from "../property-form";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { AttachPropertyToProjectButton } from "./attach-property-to-project-button";
+import { PropertyLocationMap } from "@/app/components/property-location-map";
 
 export const dynamic = "force-dynamic";
 
@@ -62,6 +63,19 @@ export default async function AdminPropertyDetailPage({ params }: AdminPropertyD
   }
 
   const canEditClients = hasAdminPermission(context, "clients.edit");
+  const fullAddress =
+    detail.property.formatted_address ??
+    [
+      detail.property.street_number,
+      detail.property.street,
+      detail.property.postal_code,
+      detail.property.city,
+      detail.property.country,
+    ]
+      .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+      .join(" ");
+  const hasLocationMap =
+    typeof detail.property.latitude === "number" && typeof detail.property.longitude === "number";
 
   return (
     <AdminShell
@@ -106,6 +120,20 @@ export default async function AdminPropertyDetailPage({ params }: AdminPropertyD
             isPublished: detail.listing?.is_published ?? false,
           }}
         />
+
+        {hasLocationMap ? (
+          <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6">
+            <h2 className="text-xl font-semibold text-[#141446]">Emplacement</h2>
+            <div className="mt-4">
+              <PropertyLocationMap
+                latitude={detail.property.latitude}
+                longitude={detail.property.longitude}
+                address={fullAddress || null}
+                title={detail.property.title ?? "Bien"}
+              />
+            </div>
+          </section>
+        ) : null}
 
         {(canEditClients || projectDetails.length > 0) && (
           <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6">
