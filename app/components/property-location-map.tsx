@@ -9,8 +9,11 @@ type PropertyLocationMapProps = {
   title: string;
 };
 
+const TILE_URL =
+  "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
+const TILE_SUBDOMAINS = "abcd";
 const ATTRIBUTION =
-  '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors';
+  '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions" target="_blank" rel="noreferrer">CARTO</a>';
 
 export function PropertyLocationMap({
   latitude,
@@ -38,8 +41,9 @@ export function PropertyLocationMap({
         scrollWheelZoom: false,
       });
 
-      L.tileLayer("https://tiles.openfreemap.org/styles/liberty/{z}/{x}/{y}.png", {
+      L.tileLayer(TILE_URL, {
         attribution: ATTRIBUTION,
+        subdomains: TILE_SUBDOMAINS,
         maxZoom: 19,
       }).addTo(mapInstance);
 
