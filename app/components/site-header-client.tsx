@@ -63,12 +63,8 @@ export function SiteHeaderClient({ isMobileOs }: SiteHeaderClientProps) {
     { href: localizePath("/vente", locale), label: copy.sale },
     { href: localizePath("/location", locale), label: copy.rental },
     { href: localizePath("/estimation", locale), label: copy.valuation },
+    { href: localizePath("/recherche/nouvelle", locale), label: copy.buy },
   ] as const;
-
-  const buyItem = {
-    href: localizePath("/recherche/nouvelle", locale),
-    label: copy.buy,
-  } as const;
 
   const clientSpaceItem = {
     href: localizePath("/espace-client/login", locale),
@@ -115,13 +111,6 @@ export function SiteHeaderClient({ isMobileOs }: SiteHeaderClientProps) {
                     </Link>
                   ))}
                   <Link
-                    href={buyItem.href}
-                    className="rounded-xl border border-[#f4c47a] bg-[#f4c47a]/20 px-3 py-2 font-semibold text-[#f4c47a]"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    {buyItem.label}
-                  </Link>
-                  <Link
                     href={clientSpaceItem.href}
                     className="rounded-xl border border-white/16 px-3 py-2"
                     onClick={() => setIsOpen(false)}
@@ -140,12 +129,6 @@ export function SiteHeaderClient({ isMobileOs }: SiteHeaderClientProps) {
                 {item.label}
               </Link>
             ))}
-            <Link
-              href={buyItem.href}
-              className="rounded border border-[#f4c47a] bg-[#f4c47a]/15 px-3 py-2 font-semibold text-[#f4c47a] transition-colors hover:bg-[#f4c47a]/25"
-            >
-              {buyItem.label}
-            </Link>
             <Link
               href={clientSpaceItem.href}
               className="rounded border border-white/16 px-3 py-2 text-[#f4ece4] transition-opacity hover:opacity-80"
