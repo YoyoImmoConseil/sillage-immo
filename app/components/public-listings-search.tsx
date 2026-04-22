@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { AppLocale } from "@/lib/i18n/config";
+import { localizePath } from "@/lib/i18n/routing";
 import { formatPropertyTypeLabel } from "@/lib/properties/property-type-label";
 import { PropertyCard } from "./property-card";
 import type { PropertyBusinessType, PublicPropertyListingSummary } from "@/types/domain/properties";
@@ -54,6 +56,9 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
       yes: "Oui",
       no: "Non",
       reset: "Réinitialiser",
+      saveSearch: "Sauvegarder cette recherche",
+      saveSearchHint:
+        "Recevez une alerte dès qu'un bien correspondant est publié et retrouvez-la dans Mon Espace Sillage.",
       updating: "Mise à jour des résultats...",
       available: "disponible",
       availablePlural: "disponibles",
@@ -80,6 +85,9 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
       yes: "Yes",
       no: "No",
       reset: "Reset",
+      saveSearch: "Save this search",
+      saveSearchHint:
+        "Get instant email alerts when a matching property is listed and keep it safe in your Sillage account.",
       updating: "Updating results...",
       available: "available",
       availablePlural: "available",
@@ -106,6 +114,9 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
       yes: "Sí",
       no: "No",
       reset: "Restablecer",
+      saveSearch: "Guardar esta búsqueda",
+      saveSearchHint:
+        "Reciba alertas por email cuando se publique un inmueble que le encaje y consérvela en su espacio Sillage.",
       updating: "Actualizando resultados...",
       available: "disponible",
       availablePlural: "disponibles",
@@ -132,6 +143,9 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
       yes: "Да",
       no: "Нет",
       reset: "Сбросить",
+      saveSearch: "Сохранить этот запрос",
+      saveSearchHint:
+        "Получайте моментальные уведомления по email о новых объектах и сохраняйте запрос в кабинете Sillage.",
       updating: "Обновление результатов...",
       available: "доступен",
       availablePlural: "доступно",
@@ -153,6 +167,17 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
     }
     return params.toString();
   }, [filters, props.businessType]);
+
+  const saveSearchHref = useMemo(() => {
+    const params = new URLSearchParams();
+    params.set("businessType", props.businessType);
+    for (const [key, value] of filterEntries(filters)) {
+      params.set(key, value);
+    }
+    const query = params.toString();
+    const path = localizePath("/recherche/nouvelle", props.locale);
+    return query ? `${path}?${query}` : path;
+  }, [filters, props.businessType, props.locale]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -359,9 +384,17 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
         </label>
 
         <div className="md:col-span-4 flex flex-wrap items-center gap-3">
-          <button type="button" className="sillage-btn rounded px-4 py-2 text-sm" onClick={resetFilters}>
+          <button type="button" className="sillage-btn-secondary rounded px-4 py-2 text-sm" onClick={resetFilters}>
             {copy.reset}
           </button>
+          <Link
+            href={saveSearchHref}
+            className="sillage-btn rounded px-4 py-2 text-sm"
+            data-testid="save-search-cta"
+          >
+            {copy.saveSearch}
+          </Link>
+          <p className="text-xs opacity-70 md:ml-2 md:max-w-xl">{copy.saveSearchHint}</p>
           {isLoading ? <p className="text-sm opacity-70">{copy.updating}</p> : null}
           {error ? <p className="text-sm text-red-700">{error}</p> : null}
         </div>

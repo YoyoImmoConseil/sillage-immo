@@ -22,6 +22,15 @@ export type BuyerLeadDetail = {
   searchProfile: BuyerSearchProfileSnapshot | null;
 };
 
+export type BuyerLeadAdminProject = {
+  clientProjectId: string;
+  title: string | null;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  searchProfile: BuyerSearchProfileSnapshot | null;
+};
+
 const normalizeStringArray = (value: string) => {
   return Array.from(
     new Set(
@@ -33,22 +42,34 @@ const normalizeStringArray = (value: string) => {
   );
 };
 
-const mapBuyerLead = (row: BuyerLeadRow): BuyerLeadSnapshot => ({
-  id: row.id,
-  createdAt: row.created_at,
-  updatedAt: row.updated_at,
-  fullName: row.full_name,
-  email: row.email,
-  phone: row.phone,
-  source: row.source,
-  status: row.status as BuyerLeadSnapshot["status"],
-  timeline: row.timeline,
-  financingStatus: row.financing_status,
-  preferredContactChannel: row.preferred_contact_channel,
-  notes: row.notes,
-  assignedAdminProfileId: row.assigned_admin_profile_id,
-  metadata: row.metadata,
-});
+const mapBuyerLead = (row: BuyerLeadRow): BuyerLeadSnapshot => {
+  const metadata = (row.metadata ?? {}) as Record<string, unknown>;
+  const originValue = metadata?.origin;
+  return {
+    id: row.id,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    fullName: row.full_name,
+    email: row.email,
+    phone: row.phone,
+    source: row.source,
+    status: row.status as BuyerLeadSnapshot["status"],
+    timeline: row.timeline,
+    financingStatus: row.financing_status,
+    preferredContactChannel: row.preferred_contact_channel,
+    notes: row.notes,
+    assignedAdminProfileId: row.assigned_admin_profile_id,
+    metadata,
+    origin: typeof originValue === "string" ? originValue : null,
+    emailVerifiedAt: (row as { email_verified_at?: string | null }).email_verified_at ?? null,
+    sweepbrightContactId:
+      (row as { sweepbright_contact_id?: string | null }).sweepbright_contact_id ?? null,
+    sweepbrightSyncedAt:
+      (row as { sweepbright_synced_at?: string | null }).sweepbright_synced_at ?? null,
+    sweepbrightLastError:
+      (row as { sweepbright_last_error?: string | null }).sweepbright_last_error ?? null,
+  };
+};
 
 const mapSearchProfile = (row: BuyerSearchProfileRow): BuyerSearchProfileSnapshot => ({
   id: row.id,
@@ -221,6 +242,8 @@ export const getBuyerLeadDetailForAdmin = async (buyerLeadId: string): Promise<B
         .from("buyer_search_profiles")
         .select("*")
         .eq("buyer_lead_id", buyerLeadId)
+        .order("updated_at", { ascending: false })
+        .limit(1)
         .maybeSingle(),
     ]);
 
@@ -236,6 +259,62 @@ export const getBuyerLeadDetailForAdmin = async (buyerLeadId: string): Promise<B
     lead: mapBuyerLead(leadData as BuyerLeadRow),
     searchProfile: searchProfileData ? mapSearchProfile(searchProfileData as BuyerSearchProfileRow) : null,
   };
+};
+
+export const listBuyerLeadAdminProjects = async (
+  buyerLeadId: string
+): Promise<BuyerLeadAdminProject[]> => {
+  const { data: buyerProjects, error: buyerProjectsError } = await supabaseAdmin
+    .from("buyer_projects")
+    .select("client_project_id")
+    .eq("buyer_lead_id", buyerLeadId);
+  if (buyerProjectsError) throw new Error(buyerProjectsError.message);
+
+  const clientProjectIds = Array.from(
+    new Set(
+      ((buyerProjects ?? []) as Array<{ client_project_id: string | null }>)
+        .map((row) => row.client_project_id)
+        .filter((value): value is string => Boolean(value))
+    )
+  );
+
+  if (clientProjectIds.length === 0) return [];
+
+  const [{ data: projects, error: projectsError }, { data: profiles, error: profilesError }] =
+    await Promise.all([
+      supabaseAdmin.from("client_projects").select("*").in("id", clientProjectIds),
+      supabaseAdmin.from("buyer_search_profiles").select("*").in("client_project_id", clientProjectIds),
+    ]);
+  if (projectsError) throw new Error(projectsError.message);
+  if (profilesError) throw new Error(profilesError.message);
+
+  const profilesByProject = new Map<string, BuyerSearchProfileRow>();
+  for (const row of (profiles ?? []) as BuyerSearchProfileRow[]) {
+    if (row.client_project_id) {
+      const existing = profilesByProject.get(row.client_project_id);
+      if (!existing || new Date(row.updated_at) > new Date(existing.updated_at)) {
+        profilesByProject.set(row.client_project_id, row);
+      }
+    }
+  }
+
+  const result: BuyerLeadAdminProject[] = [];
+  for (const projectRow of (projects ?? []) as Array<
+    Database["public"]["Tables"]["client_projects"]["Row"]
+  >) {
+    const profile = profilesByProject.get(projectRow.id);
+    result.push({
+      clientProjectId: projectRow.id,
+      title: projectRow.title,
+      status: projectRow.status,
+      createdAt: projectRow.created_at,
+      updatedAt: projectRow.updated_at,
+      searchProfile: profile ? mapSearchProfile(profile) : null,
+    });
+  }
+
+  result.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+  return result;
 };
 
 export const updateBuyerLeadForAdmin = async (input: {

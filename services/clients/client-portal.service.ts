@@ -18,6 +18,7 @@ import {
   type BuyerPortalProjectPlaceholderDetail,
   type BuyerPortalProjectSummary,
 } from "./buyer-project-bridge.service";
+import { countUnreadMatchesByClientProjectIds } from "@/services/buyers/buyer-portal.service";
 import { getClientByAuthUserId, type ClientProfileRow } from "./client-profile.service";
 import {
   getClientProjectById,
@@ -206,7 +207,7 @@ const mapNonSellerProjectSummary = (
     const buyerSummary = buyerBridge ?? buildBuyerPortalProjectSummary(project, null, locale);
     return {
       id: project.id,
-      href: `/espace-client/projets/${project.id}`,
+      href: `/espace-client/recherches/${project.id}`,
       title: project.title,
       createdAt: project.createdAt,
       projectType: "buyer",
@@ -281,14 +282,22 @@ export const listClientPortalProjects = async (
   const buyerProjectIds = projects
     .filter((project) => project.projectType === "buyer")
     .map((project) => project.id);
-  const buyerBridgeByProjectId = await listBuyerPortalProjectBridge(buyerProjectIds);
+  const [buyerBridgeByProjectId, unreadMatchCountByProject] = await Promise.all([
+    listBuyerPortalProjectBridge(buyerProjectIds),
+    countUnreadMatchesByClientProjectIds(buyerProjectIds),
+  ]);
 
   return projects.map((project) => {
     const sellerProject = sellerProjectById.get(project.id);
     if (sellerProject) return mapSellerProjectSummary(sellerProject, locale);
     const buyerBridge =
       project.projectType === "buyer"
-        ? buildBuyerPortalProjectSummary(project, buyerBridgeByProjectId.get(project.id) ?? null, locale)
+        ? buildBuyerPortalProjectSummary(
+            project,
+            buyerBridgeByProjectId.get(project.id) ?? null,
+            locale,
+            { unreadMatchCount: unreadMatchCountByProject[project.id] ?? 0 }
+          )
         : null;
     return mapNonSellerProjectSummary(project, locale, buyerBridge);
   });

@@ -34,6 +34,8 @@ export default async function SellerPortalHomePage() {
       projectInQualification: "Projet en cours de qualification",
       sellerProject: "Projet vendeur",
       clientProject: "Projet client",
+      newMatchesSingular: "nouveau bien",
+      newMatchesPlural: "nouveaux biens",
     },
     en: {
       greeting: "Hello",
@@ -53,6 +55,8 @@ export default async function SellerPortalHomePage() {
       projectInQualification: "Project being qualified",
       sellerProject: "Seller project",
       clientProject: "Client project",
+      newMatchesSingular: "new property",
+      newMatchesPlural: "new properties",
     },
     es: {
       greeting: "Hola",
@@ -72,6 +76,8 @@ export default async function SellerPortalHomePage() {
       projectInQualification: "Proyecto en fase de cualificación",
       sellerProject: "Proyecto vendedor",
       clientProject: "Proyecto cliente",
+      newMatchesSingular: "inmueble nuevo",
+      newMatchesPlural: "inmuebles nuevos",
     },
     ru: {
       greeting: "Здравствуйте",
@@ -91,6 +97,8 @@ export default async function SellerPortalHomePage() {
       projectInQualification: "Проект в процессе квалификации",
       sellerProject: "Проект продавца",
       clientProject: "Клиентский проект",
+      newMatchesSingular: "новый объект",
+      newMatchesPlural: "новых объектов",
     },
   }[locale];
   const formatPortalDate = (value: string) => formatDate(value, locale);
@@ -151,8 +159,16 @@ export default async function SellerPortalHomePage() {
                     <Link
                       key={project.id}
                       href={localizePath(project.href, locale)}
-                      className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-5 transition hover:border-[rgba(20,20,70,0.28)]"
+                      className="relative rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-5 transition hover:border-[rgba(20,20,70,0.28)]"
                     >
+                      {project.buyer && project.buyer.unreadMatchCount > 0 ? (
+                        <span className="absolute right-4 top-4 inline-flex items-center gap-1 rounded-full bg-[#141446] px-3 py-1 text-xs font-semibold text-[#f4ece4]">
+                          {project.buyer.unreadMatchCount}{" "}
+                          {project.buyer.unreadMatchCount > 1
+                            ? copy.newMatchesPlural
+                            : copy.newMatchesSingular}
+                        </span>
+                      ) : null}
                       <p className="text-xs uppercase tracking-[0.16em] text-[#141446]/55">
                         {project.projectTypeLabel}
                       </p>
