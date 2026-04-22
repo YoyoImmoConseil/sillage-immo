@@ -88,7 +88,19 @@ const COPY: Record<
 };
 
 type LMod = typeof import("leaflet");
-type LDMod = typeof import("leaflet-draw");
+
+const loadLeafletWithDraw = async (): Promise<LMod> => {
+  const leafletNamespace = (await import("leaflet")) as unknown as
+    | LMod
+    | { default: LMod };
+  const L = ((leafletNamespace as { default?: LMod }).default ??
+    leafletNamespace) as LMod;
+  if (typeof window !== "undefined") {
+    (window as unknown as { L: LMod }).L = L;
+  }
+  await import("leaflet-draw");
+  return L;
+};
 
 export function BuyerSearchZoneMap({
   locale,
@@ -119,9 +131,13 @@ export function BuyerSearchZoneMap({
     let disposed = false;
 
     void (async () => {
-      const L = (await import("leaflet")) as unknown as LMod;
-      // Importing leaflet-draw augments L with L.Control.Draw / L.Draw.Polygon.
-      await (import("leaflet-draw") as unknown as Promise<LDMod>);
+      let L: LMod;
+      try {
+        L = await loadLeafletWithDraw();
+      } catch (error) {
+        console.error("[buyer-search-zone-map] failed to load leaflet/leaflet-draw", error);
+        return;
+      }
       if (disposed || !mapRef.current) return;
 
       LRef.current = L;
@@ -152,8 +168,12 @@ export function BuyerSearchZoneMap({
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const LAny = L as any;
+      const createdEvent: string =
+        LAny?.Draw?.Event?.CREATED ?? "draw:created";
+      const drawStopEvent: string =
+        LAny?.Draw?.Event?.DRAWSTOP ?? "draw:drawstop";
 
-      map.on(LAny.Draw.Event.CREATED, (event: { layer: import("leaflet").Layer }) => {
+      map.on(createdEvent, (event: { layer: import("leaflet").Layer }) => {
         const layer = event.layer as import("leaflet").Polygon;
         drawnItems.clearLayers();
         polygonLayerRef.current = layer;
@@ -169,7 +189,7 @@ export function BuyerSearchZoneMap({
         onChangeRef.current(points);
       });
 
-      map.on(LAny.Draw.Event.DRAWSTOP, () => {
+      map.on(drawStopEvent, () => {
         setIsDrawing(false);
         activeDrawerRef.current = null;
       });
@@ -210,18 +230,28 @@ export function BuyerSearchZoneMap({
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const LAny = L as any;
-    const drawer = new LAny.Draw.Polygon(map, {
-      allowIntersection: false,
-      showArea: false,
-      shapeOptions: {
-        color: "#f4c47a",
-        weight: 2,
-        fillOpacity: 0.2,
-      },
-    });
-    drawer.enable();
-    activeDrawerRef.current = drawer;
-    setIsDrawing(true);
+    if (!LAny?.Draw?.Polygon) {
+      console.error(
+        "[buyer-search-zone-map] L.Draw.Polygon is not available — leaflet-draw may not have loaded properly"
+      );
+      return;
+    }
+    try {
+      const drawer = new LAny.Draw.Polygon(map, {
+        allowIntersection: false,
+        showArea: false,
+        shapeOptions: {
+          color: "#f4c47a",
+          weight: 2,
+          fillOpacity: 0.2,
+        },
+      });
+      drawer.enable();
+      activeDrawerRef.current = drawer;
+      setIsDrawing(true);
+    } catch (error) {
+      console.error("[buyer-search-zone-map] failed to enable polygon drawer", error);
+    }
   };
 
   const handleCancelDrawing = () => {
