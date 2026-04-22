@@ -33,6 +33,7 @@ export type BuyerSignupCriteriaInput = {
   floorMax?: number | null;
   requiresTerrace?: boolean | null;
   requiresElevator?: boolean | null;
+  zonePolygon?: Array<[number, number]> | null;
 };
 
 export type BuyerSignupInput = {
@@ -215,6 +216,9 @@ export const createBuyerSearchSignup = async (
       requires_elevator: input.criteria.requiresElevator ?? null,
       criteria: {
         source: origin,
+        ...(input.criteria.zonePolygon && input.criteria.zonePolygon.length >= 3
+          ? { zonePolygon: input.criteria.zonePolygon }
+          : {}),
       },
     })
     .select("id")

@@ -273,6 +273,7 @@ export type UpdateBuyerSearchInput = {
     requiresTerrace: boolean | null;
     requiresElevator: boolean | null;
     status: "active" | "paused" | "closed";
+    zonePolygon: Array<[number, number]> | null;
   }>;
 };
 
@@ -329,6 +330,17 @@ export const updateBuyerSearch = async (
   if (input.patch.requiresTerrace !== undefined) updates.requires_terrace = input.patch.requiresTerrace;
   if (input.patch.requiresElevator !== undefined) updates.requires_elevator = input.patch.requiresElevator;
   if (input.patch.status !== undefined) updates.status = input.patch.status;
+  if (input.patch.zonePolygon !== undefined) {
+    const existingCriteria =
+      (profile.criteria as Record<string, unknown> | null) ?? {};
+    const nextCriteria: Record<string, unknown> = { ...existingCriteria };
+    if (input.patch.zonePolygon && input.patch.zonePolygon.length >= 3) {
+      nextCriteria.zonePolygon = input.patch.zonePolygon;
+    } else {
+      delete nextCriteria.zonePolygon;
+    }
+    updates.criteria = nextCriteria;
+  }
 
   const { data, error } = await supabaseAdmin
     .from("buyer_search_profiles")

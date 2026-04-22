@@ -1,16 +1,55 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { AppLocale } from "@/lib/i18n/config";
 import type { BuyerSearchProfileSnapshot } from "@/types/domain/buyers";
 import type { BuyerSearchMatchListItem } from "@/services/buyers/buyer-portal.service";
+import type { ZonePolygon } from "@/app/components/buyer-search-zone-map";
+
+const BuyerSearchZoneMap = dynamic(
+  () =>
+    import("@/app/components/buyer-search-zone-map").then(
+      (mod) => mod.BuyerSearchZoneMap
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[360px] w-full animate-pulse rounded-xl border border-[rgba(20,20,70,0.18)] bg-[#e9e1d8]" />
+    ),
+  }
+);
+
+const extractZonePolygon = (
+  criteria: Record<string, unknown>
+): ZonePolygon | null => {
+  const raw = criteria?.zonePolygon;
+  if (!Array.isArray(raw)) return null;
+  const polygon: ZonePolygon = [];
+  for (const point of raw) {
+    if (
+      Array.isArray(point) &&
+      point.length === 2 &&
+      typeof point[0] === "number" &&
+      typeof point[1] === "number"
+    ) {
+      polygon.push([point[0], point[1]]);
+    } else {
+      return null;
+    }
+  }
+  return polygon.length >= 3 ? polygon : null;
+};
 
 type CriteriaRow = { label: string; value: string };
 
 type DashboardCopy = {
   sectionSummary: string;
+  sectionZone: string;
+  sectionZoneHint: string;
+  zoneNotSet: string;
   sectionMatches: string;
   sectionActions: string;
   pause: string;
@@ -96,6 +135,13 @@ export function BuyerSearchDashboard(props: Props) {
   const [actionError, setActionError] = useState<string | null>(null);
   const hasMarkedRef = useRef(false);
 
+  const initialZone = useMemo(
+    () => extractZonePolygon(props.searchProfile.criteria ?? {}),
+    [props.searchProfile.criteria]
+  );
+  const [zone, setZone] = useState<ZonePolygon | null>(initialZone);
+  const [isEditingZone, setIsEditingZone] = useState(false);
+
   const [edit, setEdit] = useState<EditState>({
     businessType: props.searchProfile.businessType,
     locationText:
@@ -180,6 +226,24 @@ export function BuyerSearchDashboard(props: Props) {
       })
     );
     setIsEditing(false);
+  };
+
+  const saveZone = async () => {
+    await runAction(() =>
+      fetch(`/api/espace-client/buyer-searches/${encodeURIComponent(props.projectId)}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          zonePolygon: zone && zone.length >= 3 ? zone : null,
+        }),
+      })
+    );
+    setIsEditingZone(false);
+  };
+
+  const cancelZoneEdit = () => {
+    setZone(initialZone);
+    setIsEditingZone(false);
   };
 
   const pauseOrResume = () => {
@@ -425,6 +489,66 @@ export function BuyerSearchDashboard(props: Props) {
               </button>
             </div>
           </form>
+        )}
+      </section>
+
+      <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-8">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-xl font-semibold text-[#141446]">{props.copy.sectionZone}</h2>
+          {!props.archived ? (
+            <div className="flex gap-2">
+              {isEditingZone ? (
+                <>
+                  <button
+                    type="button"
+                    className="sillage-btn rounded px-3 py-1.5 text-sm"
+                    onClick={() => void saveZone()}
+                    disabled={isPending}
+                  >
+                    {props.copy.save}
+                  </button>
+                  <button
+                    type="button"
+                    className="sillage-btn-secondary rounded px-3 py-1.5 text-sm"
+                    onClick={cancelZoneEdit}
+                    disabled={isPending}
+                  >
+                    {props.copy.cancel}
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  className="sillage-btn-secondary rounded px-3 py-1.5 text-sm"
+                  onClick={() => setIsEditingZone(true)}
+                  disabled={isPending}
+                >
+                  {props.copy.edit}
+                </button>
+              )}
+            </div>
+          ) : null}
+        </div>
+        <p className="mt-1 text-xs text-[#141446]/70">{props.copy.sectionZoneHint}</p>
+        {isEditingZone ? (
+          <div className="mt-4">
+            <BuyerSearchZoneMap
+              locale={props.locale}
+              value={zone}
+              onChange={(polygon) => setZone(polygon)}
+            />
+          </div>
+        ) : zone && zone.length >= 3 ? (
+          <div className="mt-4">
+            <BuyerSearchZoneMap
+              key={`readonly-${zone.length}-${zone[0]?.[0] ?? 0}`}
+              locale={props.locale}
+              value={zone}
+              onChange={() => {}}
+            />
+          </div>
+        ) : (
+          <p className="mt-4 text-sm text-[#141446]/70">{props.copy.zoneNotSet}</p>
         )}
       </section>
 

@@ -22,6 +22,17 @@ const patchSchema = z.object({
   floorMax: z.number().int().min(-5).max(200).nullable().optional(),
   requiresTerrace: z.boolean().nullable().optional(),
   requiresElevator: z.boolean().nullable().optional(),
+  zonePolygon: z
+    .array(
+      z.tuple([
+        z.number().min(-90).max(90),
+        z.number().min(-180).max(180),
+      ])
+    )
+    .min(3)
+    .max(200)
+    .nullable()
+    .optional(),
 });
 
 type RouteContext = {

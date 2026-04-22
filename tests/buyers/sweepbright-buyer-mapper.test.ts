@@ -102,6 +102,52 @@ describe("mapBuyerSearchProfileToSweepBrightPreferences", () => {
     expect(textOnly.locationPreference).toEqual({ note: "Arrière-pays niçois" });
   });
 
+  it("includes the drawn zone polygon inside locationPreference.custom_zone", () => {
+    const polygon: Array<[number, number]> = [
+      [43.71, 7.26],
+      [43.72, 7.27],
+      [43.7, 7.28],
+    ];
+    const result = mapBuyerSearchProfileToSweepBrightPreferences({
+      ...baseProfile,
+      cities: ["Nice"],
+      locationText: "Centre-ville",
+      criteria: { zonePolygon: polygon },
+    });
+
+    expect(result.locationPreference).toBeDefined();
+    expect(result.locationPreference?.cities).toEqual(["Nice"]);
+    const customZone = result.locationPreference?.custom_zone as
+      | {
+          points: Array<{ lat: number; lng: number }>;
+          polygon: Array<[number, number]>;
+          geojson: { type: "Polygon"; coordinates: number[][][] };
+        }
+      | undefined;
+    expect(customZone).toBeDefined();
+    expect(customZone?.polygon).toEqual(polygon);
+    expect(customZone?.points).toEqual([
+      { lat: 43.71, lng: 7.26 },
+      { lat: 43.72, lng: 7.27 },
+      { lat: 43.7, lng: 7.28 },
+    ]);
+    // First coordinate must be repeated at the end of a GeoJSON linear ring.
+    expect(customZone?.geojson.type).toBe("Polygon");
+    expect(customZone?.geojson.coordinates[0][0]).toEqual([7.26, 43.71]);
+    expect(customZone?.geojson.coordinates[0].at(-1)).toEqual([7.26, 43.71]);
+    // Note should preserve the existing locationText and append the zone note.
+    expect(String(result.locationPreference?.note)).toContain("Centre-ville");
+    expect(String(result.locationPreference?.note)).toContain("Zone dessinée");
+  });
+
+  it("ignores a polygon that does not have at least 3 valid points", () => {
+    const result = mapBuyerSearchProfileToSweepBrightPreferences({
+      ...baseProfile,
+      criteria: { zonePolygon: [[43.7, 7.2]] },
+    });
+    expect(result.locationPreference).toBeUndefined();
+  });
+
   it("supports partial ranges where only min or max is set", () => {
     const minOnly = mapBuyerSearchProfileToSweepBrightPreferences({
       ...baseProfile,

@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { getRequestLocale } from "@/lib/i18n/request";
+import { localizePath } from "@/lib/i18n/routing";
 import { listPropertyTypesForBusinessType } from "@/services/properties/property-listing.service";
 import type { PropertyBusinessType } from "@/types/domain/properties";
 import { BuyerSignupForm } from "./_components/buyer-signup-form";
@@ -67,45 +69,75 @@ export default async function NouvelleRecherchePage({ searchParams }: NouvelleRe
   const copy = {
     fr: {
       kicker: "Votre espace acquéreur Sillage",
-      title: "Sauvegardez votre recherche et restez alerté",
+      title: "Créez votre recherche et recevez des alertes",
       intro:
-        "En quelques minutes, créez votre compte Sillage, enregistrez vos critères et recevez un email dès qu'un bien correspondant est publié. Vous pourrez ensuite gérer vos recherches depuis Mon Espace Sillage.",
+        "Définissez vos critères et la zone sur la carte. Nous vous préviendrons par email dès qu'un bien correspond à votre recherche.",
+      existingAccountTitle: "Déjà un Espace Sillage (vendeur ou acheteur) ?",
+      existingAccountBody:
+        "Connectez-vous pour associer cette nouvelle recherche à votre espace existant.",
+      existingAccountCta: "Me connecter",
+      newAccountTitle: "Je n'ai pas encore de compte",
+      newAccountBody:
+        "Remplissez le formulaire ci-dessous. Nous créerons votre espace Sillage et vous enverrons un lien magique par email pour l'activer.",
       steps: [
-        { label: "Vos critères", hint: "Localisation, type de bien, budget..." },
+        { label: "Vos critères", hint: "Localisation, zone sur carte, budget..." },
         { label: "Vos coordonnées", hint: "Nom, email, téléphone pour l'alerte" },
       ],
     },
     en: {
       kicker: "Your Sillage buyer account",
-      title: "Save your search and stay alerted",
+      title: "Create your search and get alerts",
       intro:
-        "In a few minutes, create your Sillage account, save your criteria and get notified as soon as a matching property is listed. You'll then be able to manage your searches from your Sillage account.",
+        "Set your criteria and draw the area on the map. We'll email you as soon as a matching property is listed.",
+      existingAccountTitle: "Already have a Sillage Space (seller or buyer)?",
+      existingAccountBody:
+        "Sign in to attach this new search to your existing space.",
+      existingAccountCta: "Sign in",
+      newAccountTitle: "I don't have an account yet",
+      newAccountBody:
+        "Fill out the form below. We'll create your Sillage account and send you a magic login link by email.",
       steps: [
-        { label: "Your criteria", hint: "Location, property type, budget..." },
+        { label: "Your criteria", hint: "Location, area on map, budget..." },
         { label: "Your contact details", hint: "Name, email, phone for alerts" },
       ],
     },
     es: {
       kicker: "Su espacio comprador Sillage",
-      title: "Guarde su búsqueda y reciba alertas",
+      title: "Cree su búsqueda y reciba alertas",
       intro:
-        "En pocos minutos cree su espacio Sillage, guarde sus criterios y reciba una alerta en cuanto se publique un inmueble que coincida. Después podrá gestionar sus búsquedas desde Mi Espacio Sillage.",
+        "Defina sus criterios y dibuje la zona en el mapa. Le avisaremos por email en cuanto se publique un inmueble que coincida.",
+      existingAccountTitle: "¿Ya tiene un Espacio Sillage (vendedor o comprador)?",
+      existingAccountBody:
+        "Inicie sesión para añadir esta búsqueda a su espacio existente.",
+      existingAccountCta: "Iniciar sesión",
+      newAccountTitle: "Aún no tengo cuenta",
+      newAccountBody:
+        "Complete el formulario de abajo. Crearemos su espacio Sillage y le enviaremos un enlace mágico por email para activarlo.",
       steps: [
-        { label: "Sus criterios", hint: "Localización, tipo, presupuesto..." },
+        { label: "Sus criterios", hint: "Localización, zona en mapa, presupuesto..." },
         { label: "Sus datos", hint: "Nombre, email y teléfono para las alertas" },
       ],
     },
     ru: {
       kicker: "Ваш кабинет покупателя Sillage",
-      title: "Сохраните запрос и получайте уведомления",
+      title: "Создайте запрос и получайте уведомления",
       intro:
-        "За несколько минут создайте кабинет Sillage, сохраните критерии и получайте уведомления, как только появится подходящий объект. Все запросы можно будет менять в личном кабинете Sillage.",
+        "Укажите критерии и нарисуйте зону на карте. Мы сообщим по email, как только появится подходящий объект.",
+      existingAccountTitle: "Уже есть кабинет Sillage (продавец или покупатель)?",
+      existingAccountBody:
+        "Войдите, чтобы привязать этот запрос к существующему кабинету.",
+      existingAccountCta: "Войти",
+      newAccountTitle: "У меня ещё нет аккаунта",
+      newAccountBody:
+        "Заполните форму ниже. Мы создадим ваш кабинет Sillage и отправим ссылку для входа.",
       steps: [
-        { label: "Ваши критерии", hint: "Район, тип объекта, бюджет..." },
+        { label: "Ваши критерии", hint: "Район, зона на карте, бюджет..." },
         { label: "Ваши контакты", hint: "Имя, email и телефон для уведомлений" },
       ],
     },
   }[locale];
+
+  const loginHref = localizePath("/espace-client/login", locale);
 
   return (
     <main className="min-h-screen">
@@ -131,7 +163,28 @@ export default async function NouvelleRecherchePage({ searchParams }: NouvelleRe
       </section>
 
       <section className="bg-[#f4ece4] text-[#141446]">
-        <div className="w-full px-6 py-10 md:px-10 xl:px-14 2xl:px-20">
+        <div className="w-full px-6 py-10 md:px-10 xl:px-14 2xl:px-20 space-y-8">
+          <div className="grid gap-4 md:grid-cols-2">
+            <article className="rounded-2xl border border-[rgba(20,20,70,0.18)] bg-white/70 p-5 shadow-sm">
+              <h2 className="text-base font-semibold uppercase tracking-[0.12em] text-[#141446]">
+                {copy.existingAccountTitle}
+              </h2>
+              <p className="mt-2 text-sm text-[#141446]/80">{copy.existingAccountBody}</p>
+              <Link
+                href={loginHref}
+                className="sillage-btn-secondary mt-4 inline-flex rounded px-4 py-2 text-sm"
+              >
+                {copy.existingAccountCta}
+              </Link>
+            </article>
+            <article className="rounded-2xl border border-[#141446] bg-[#141446] p-5 text-[#f4ece4] shadow-sm">
+              <h2 className="text-base font-semibold uppercase tracking-[0.12em] text-[#f4c47a]">
+                {copy.newAccountTitle}
+              </h2>
+              <p className="mt-2 text-sm text-[#f4ece4]/82">{copy.newAccountBody}</p>
+            </article>
+          </div>
+
           <BuyerSignupForm
             locale={locale}
             initialBusinessType={businessType}

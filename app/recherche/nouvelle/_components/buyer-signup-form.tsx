@@ -1,11 +1,26 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
 import type { AppLocale } from "@/lib/i18n/config";
 import { localizePath } from "@/lib/i18n/routing";
 import { formatPropertyTypeLabel } from "@/lib/properties/property-type-label";
 import type { PropertyBusinessType } from "@/types/domain/properties";
+import type { ZonePolygon } from "@/app/components/buyer-search-zone-map";
+
+const BuyerSearchZoneMap = dynamic(
+  () =>
+    import("@/app/components/buyer-search-zone-map").then(
+      (mod) => mod.BuyerSearchZoneMap
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[360px] w-full animate-pulse rounded-xl border border-[rgba(20,20,70,0.18)] bg-[#e9e1d8]" />
+    ),
+  }
+);
 
 type InitialFilters = {
   city: string;
@@ -44,6 +59,7 @@ type FormState = {
   maxFloor: string;
   terrace: "" | "true" | "false";
   elevator: "" | "true" | "false";
+  zonePolygon: ZonePolygon | null;
   firstName: string;
   lastName: string;
   email: string;
@@ -80,6 +96,9 @@ export function BuyerSignupForm(props: BuyerSignupFormProps) {
       steps: ["Critères", "Contact"],
       sections: {
         criteria: "Vos critères de recherche",
+        zone: "Votre zone de recherche",
+        zoneHint:
+          "Dessinez précisément le périmètre qui vous intéresse. Cette zone sera transmise à notre logiciel immobilier pour cibler les biens pertinents.",
         contact: "Vos coordonnées",
       },
       fields: {
@@ -140,6 +159,9 @@ export function BuyerSignupForm(props: BuyerSignupFormProps) {
       steps: ["Criteria", "Contact"],
       sections: {
         criteria: "Your search criteria",
+        zone: "Your search area",
+        zoneHint:
+          "Draw the exact area you're interested in. This zone will be pushed to our CRM to target relevant listings.",
         contact: "Your contact details",
       },
       fields: {
@@ -200,6 +222,9 @@ export function BuyerSignupForm(props: BuyerSignupFormProps) {
       steps: ["Criterios", "Contacto"],
       sections: {
         criteria: "Sus criterios de búsqueda",
+        zone: "Su zona de búsqueda",
+        zoneHint:
+          "Dibuje el perímetro exacto que le interesa. Esta zona se transmitirá a nuestro CRM para dirigir las propiedades relevantes.",
         contact: "Sus datos de contacto",
       },
       fields: {
@@ -260,6 +285,9 @@ export function BuyerSignupForm(props: BuyerSignupFormProps) {
       steps: ["Критерии", "Контакты"],
       sections: {
         criteria: "Критерии поиска",
+        zone: "Ваша зона поиска",
+        zoneHint:
+          "Нарисуйте точный периметр, который вас интересует. Зона будет передана в CRM для подбора релевантных объектов.",
         contact: "Контактные данные",
       },
       fields: {
@@ -334,6 +362,7 @@ export function BuyerSignupForm(props: BuyerSignupFormProps) {
     maxFloor: props.initialFilters.maxFloor,
     terrace: normalizeTerrace(props.initialFilters.terrace),
     elevator: normalizeTerrace(props.initialFilters.elevator),
+    zonePolygon: null,
     firstName: "",
     lastName: "",
     email: "",
@@ -417,6 +446,8 @@ export function BuyerSignupForm(props: BuyerSignupFormProps) {
         floorMax: parseNumber(form.maxFloor),
         requiresTerrace: parseBool(form.terrace),
         requiresElevator: parseBool(form.elevator),
+        zonePolygon:
+          form.zonePolygon && form.zonePolygon.length >= 3 ? form.zonePolygon : null,
       },
     };
 
@@ -657,6 +688,18 @@ export function BuyerSignupForm(props: BuyerSignupFormProps) {
                 <option value="false">{copy.fields.no}</option>
               </select>
             </label>
+          </div>
+
+          <div className="mt-8 space-y-3 rounded-2xl border border-[rgba(20,20,70,0.18)] bg-white/60 p-5">
+            <div>
+              <h3 className="text-lg font-semibold">{copy.sections.zone}</h3>
+              <p className="mt-1 text-xs opacity-75">{copy.sections.zoneHint}</p>
+            </div>
+            <BuyerSearchZoneMap
+              locale={props.locale}
+              value={form.zonePolygon}
+              onChange={(polygon) => updateField("zonePolygon", polygon)}
+            />
           </div>
 
           <div className="flex justify-end">

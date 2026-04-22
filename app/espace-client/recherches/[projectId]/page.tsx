@@ -40,6 +40,10 @@ export default async function SavedBuyerSearchPage(props: SavedBuyerSearchPagePr
       back: "Retour à Mon Espace",
       createAnother: "Créer une nouvelle recherche",
       sectionSummary: "Vos critères",
+      sectionZone: "Votre zone sur la carte",
+      sectionZoneHint:
+        "Zone géographique utilisée pour le matching et transmise à notre logiciel immobilier.",
+      zoneNotSet: "Aucune zone n'a été dessinée sur la carte pour cette recherche.",
       sectionMatches: "Biens compatibles",
       sectionActions: "Gérer cette recherche",
       pause: "Mettre en pause",
@@ -85,6 +89,10 @@ export default async function SavedBuyerSearchPage(props: SavedBuyerSearchPagePr
       back: "Back to My Account",
       createAnother: "Create another search",
       sectionSummary: "Your criteria",
+      sectionZone: "Your area on the map",
+      sectionZoneHint:
+        "Geographical zone used for matching and pushed to our CRM to target relevant listings.",
+      zoneNotSet: "No area has been drawn on the map for this search yet.",
       sectionMatches: "Matching properties",
       sectionActions: "Manage this search",
       pause: "Pause",
@@ -130,6 +138,10 @@ export default async function SavedBuyerSearchPage(props: SavedBuyerSearchPagePr
       back: "Volver a mi espacio",
       createAnother: "Crear otra búsqueda",
       sectionSummary: "Sus criterios",
+      sectionZone: "Su zona en el mapa",
+      sectionZoneHint:
+        "Zona geográfica usada para el matching y transmitida a nuestro CRM para dirigir las propiedades relevantes.",
+      zoneNotSet: "Aún no se ha dibujado ninguna zona en el mapa para esta búsqueda.",
       sectionMatches: "Inmuebles compatibles",
       sectionActions: "Gestionar esta búsqueda",
       pause: "Pausar",
@@ -175,6 +187,10 @@ export default async function SavedBuyerSearchPage(props: SavedBuyerSearchPagePr
       back: "Назад в кабинет",
       createAnother: "Создать новый запрос",
       sectionSummary: "Ваши критерии",
+      sectionZone: "Зона на карте",
+      sectionZoneHint:
+        "Географическая зона, используемая для подбора и передачи в CRM.",
+      zoneNotSet: "Зона на карте для этого запроса ещё не нарисована.",
       sectionMatches: "Подходящие объекты",
       sectionActions: "Управление запросом",
       pause: "Приостановить",
@@ -339,6 +355,9 @@ export default async function SavedBuyerSearchPage(props: SavedBuyerSearchPagePr
         matches={detail.matches}
         copy={{
           sectionSummary: copy.sectionSummary,
+          sectionZone: copy.sectionZone,
+          sectionZoneHint: copy.sectionZoneHint,
+          zoneNotSet: copy.zoneNotSet,
           sectionMatches: copy.sectionMatches,
           sectionActions: copy.sectionActions,
           pause: copy.pause,

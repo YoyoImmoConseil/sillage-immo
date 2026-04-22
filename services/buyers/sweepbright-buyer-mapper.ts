@@ -57,6 +57,41 @@ export const mapBuyerSearchProfileToSweepBrightPreferences = (
     preferences.features = features;
   }
 
+  const rawZone = (profile.criteria as Record<string, unknown> | null)?.zonePolygon;
+  const zonePolygon = (() => {
+    if (!Array.isArray(rawZone)) return null;
+    const polygon: Array<[number, number]> = [];
+    for (const point of rawZone) {
+      if (
+        Array.isArray(point) &&
+        point.length === 2 &&
+        typeof point[0] === "number" &&
+        typeof point[1] === "number"
+      ) {
+        polygon.push([point[0], point[1]]);
+      } else {
+        return null;
+      }
+    }
+    return polygon.length >= 3 ? polygon : null;
+  })();
+
+  const zoneNote = zonePolygon
+    ? `Zone dessinée sur carte (${zonePolygon.length} points). GeoJSON disponible.`
+    : null;
+  const geoJsonPolygon = zonePolygon
+    ? {
+        type: "Polygon" as const,
+        // GeoJSON expects [lng, lat] order; we store [lat, lng] internally.
+        coordinates: [
+          [
+            ...zonePolygon.map(([lat, lng]) => [lng, lat] as [number, number]),
+            [zonePolygon[0][1], zonePolygon[0][0]] as [number, number],
+          ],
+        ],
+      }
+    : null;
+
   let locationPreference: Record<string, unknown> | undefined;
   if (profile.cities.length > 0) {
     locationPreference = {
@@ -66,6 +101,18 @@ export const mapBuyerSearchProfileToSweepBrightPreferences = (
   } else if (profile.locationText) {
     locationPreference = {
       note: profile.locationText,
+    };
+  }
+
+  if (zonePolygon) {
+    locationPreference = {
+      ...(locationPreference ?? {}),
+      custom_zone: {
+        points: zonePolygon.map(([lat, lng]) => ({ lat, lng })),
+        polygon: zonePolygon,
+        geojson: geoJsonPolygon,
+      },
+      note: [locationPreference?.note, zoneNote].filter(Boolean).join(" — ") || zoneNote,
     };
   }
 

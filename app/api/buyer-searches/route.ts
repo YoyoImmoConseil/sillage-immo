@@ -5,6 +5,19 @@ import { isClientPortalDirectAccessEnabled } from "@/lib/client-space/direct-acc
 import { sendClientPortalMagicLink } from "@/services/clients/client-portal-magic-link.service";
 import { createBuyerSearchSignup } from "@/services/buyers/buyer-signup.service";
 
+const zonePolygonSchema = z
+  .array(
+    z
+      .tuple([
+        z.number().min(-90).max(90),
+        z.number().min(-180).max(180),
+      ])
+  )
+  .min(3)
+  .max(200)
+  .nullable()
+  .optional();
+
 const criteriaSchema = z.object({
   businessType: z.enum(["sale", "rental"]),
   cities: z.array(z.string().min(1)).max(20).default([]),
@@ -21,6 +34,7 @@ const criteriaSchema = z.object({
   floorMax: z.number().int().min(-5).max(200).nullable().optional(),
   requiresTerrace: z.boolean().nullable().optional(),
   requiresElevator: z.boolean().nullable().optional(),
+  zonePolygon: zonePolygonSchema,
 });
 
 const payloadSchema = z.object({
@@ -115,6 +129,7 @@ export const POST = async (request: Request) => {
         floorMax: input.criteria.floorMax ?? null,
         requiresTerrace: input.criteria.requiresTerrace ?? null,
         requiresElevator: input.criteria.requiresElevator ?? null,
+        zonePolygon: input.criteria.zonePolygon ?? null,
       },
     });
 

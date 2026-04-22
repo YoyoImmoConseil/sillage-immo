@@ -22,6 +22,7 @@ export function SiteHeaderClient({ isMobileOs }: SiteHeaderClientProps) {
       sale: "Vente",
       rental: "Location",
       valuation: "Estimation",
+      buy: "Acheter",
       clientSpace: "Mon Espace Sillage",
       openMenu: "Ouvrir le menu",
       closeMenu: "Fermer le menu",
@@ -31,6 +32,7 @@ export function SiteHeaderClient({ isMobileOs }: SiteHeaderClientProps) {
       sale: "Sales",
       rental: "Rentals",
       valuation: "Valuation",
+      buy: "Buy",
       clientSpace: "My Sillage Space",
       openMenu: "Open menu",
       closeMenu: "Close menu",
@@ -40,6 +42,7 @@ export function SiteHeaderClient({ isMobileOs }: SiteHeaderClientProps) {
       sale: "Venta",
       rental: "Alquiler",
       valuation: "Valoración",
+      buy: "Comprar",
       clientSpace: "Mi Espacio Sillage",
       openMenu: "Abrir el menú",
       closeMenu: "Cerrar el menú",
@@ -49,6 +52,7 @@ export function SiteHeaderClient({ isMobileOs }: SiteHeaderClientProps) {
       sale: "Продажа",
       rental: "Аренда",
       valuation: "Оценка",
+      buy: "Купить",
       clientSpace: "Моё пространство Sillage",
       openMenu: "Открыть меню",
       closeMenu: "Закрыть меню",
@@ -60,6 +64,11 @@ export function SiteHeaderClient({ isMobileOs }: SiteHeaderClientProps) {
     { href: localizePath("/location", locale), label: copy.rental },
     { href: localizePath("/estimation", locale), label: copy.valuation },
   ] as const;
+
+  const buyItem = {
+    href: localizePath("/recherche/nouvelle", locale),
+    label: copy.buy,
+  } as const;
 
   const clientSpaceItem = {
     href: localizePath("/espace-client/login", locale),
@@ -106,6 +115,13 @@ export function SiteHeaderClient({ isMobileOs }: SiteHeaderClientProps) {
                     </Link>
                   ))}
                   <Link
+                    href={buyItem.href}
+                    className="rounded-xl border border-[#f4c47a] bg-[#f4c47a]/20 px-3 py-2 font-semibold text-[#f4c47a]"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    {buyItem.label}
+                  </Link>
+                  <Link
                     href={clientSpaceItem.href}
                     className="rounded-xl border border-white/16 px-3 py-2"
                     onClick={() => setIsOpen(false)}
@@ -124,6 +140,12 @@ export function SiteHeaderClient({ isMobileOs }: SiteHeaderClientProps) {
                 {item.label}
               </Link>
             ))}
+            <Link
+              href={buyItem.href}
+              className="rounded border border-[#f4c47a] bg-[#f4c47a]/15 px-3 py-2 font-semibold text-[#f4c47a] transition-colors hover:bg-[#f4c47a]/25"
+            >
+              {buyItem.label}
+            </Link>
             <Link
               href={clientSpaceItem.href}
               className="rounded border border-white/16 px-3 py-2 text-[#f4ece4] transition-opacity hover:opacity-80"
