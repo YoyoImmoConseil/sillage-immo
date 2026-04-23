@@ -90,18 +90,33 @@ export const getClientBuyerSearchDetail = async (input: {
   clientProfileId: string;
   clientProjectId: string;
 }): Promise<ClientBuyerSearchDetail | null> => {
-  const { data: projectData, error: projectError } = await supabaseAdmin
-    .from("client_projects")
-    .select("*")
-    .eq("id", input.clientProjectId)
-    .eq("client_profile_id", input.clientProfileId)
-    .eq("project_type", "buyer")
-    .maybeSingle();
-  if (projectError) throw projectError;
-  const project = projectData as ClientProjectRow | null;
-  if (!project) return null;
+  // client_projects + buyer_projects can be resolved in parallel: both
+  // filter on the same client_project_id and do not depend on each other.
+  const [projectResult, buyerProjectResult] = await Promise.all([
+    supabaseAdmin
+      .from("client_projects")
+      .select(
+        "id, client_profile_id, project_type, title, status, created_at"
+      )
+      .eq("id", input.clientProjectId)
+      .eq("client_profile_id", input.clientProfileId)
+      .eq("project_type", "buyer")
+      .maybeSingle(),
+    supabaseAdmin
+      .from("buyer_projects")
+      .select("*")
+      .eq("client_project_id", input.clientProjectId)
+      .maybeSingle(),
+  ]);
+  if (projectResult.error) throw projectResult.error;
+  if (buyerProjectResult.error) throw buyerProjectResult.error;
 
-  const buyerProject = await loadBuyerProjectRowByClientProjectId(project.id);
+  const project = projectResult.data as Pick<
+    ClientProjectRow,
+    "id" | "client_profile_id" | "project_type" | "title" | "status" | "created_at"
+  > | null;
+  if (!project) return null;
+  const buyerProject = (buyerProjectResult.data as BuyerProjectRow | null) ?? null;
 
   let searchProfileRow: BuyerSearchProfileRow | null = null;
   if (buyerProject?.active_search_profile_id) {
@@ -131,36 +146,79 @@ export const getClientBuyerSearchDetail = async (input: {
   }
 
   const buyerLeadId = buyerProject?.buyer_lead_id ?? searchProfileRow.buyer_lead_id;
-  let buyerLeadRow: BuyerLeadRow | null = null;
-  if (buyerLeadId) {
-    const { data, error } = await supabaseAdmin
-      .from("buyer_leads")
-      .select("*")
-      .eq("id", buyerLeadId)
-      .maybeSingle();
-    if (error) throw error;
-    buyerLeadRow = (data as BuyerLeadRow | null) ?? null;
-  }
 
-  const { data: matchesData, error: matchesError } = await supabaseAdmin
-    .from("buyer_property_matches")
-    .select("*")
-    .eq("buyer_search_profile_id", searchProfileRow.id)
-    .order("score", { ascending: false })
-    .limit(100);
-  if (matchesError) throw matchesError;
-  const matchRows = (matchesData ?? []) as BuyerPropertyMatchRow[];
+  // buyer_lead, matches + their listings can all run in parallel once the
+  // search profile id is known. Matches then drives a final listings IN(...)
+  // lookup only when matches are present.
+  const [buyerLeadResult, matchesResult] = await Promise.all([
+    buyerLeadId
+      ? supabaseAdmin
+          .from("buyer_leads")
+          .select("id, email, phone, full_name, email_verified_at")
+          .eq("id", buyerLeadId)
+          .maybeSingle()
+      : Promise.resolve({ data: null, error: null } as {
+          data: Pick<
+            BuyerLeadRow,
+            "id" | "email" | "phone" | "full_name" | "email_verified_at"
+          > | null;
+          error: null;
+        }),
+    supabaseAdmin
+      .from("buyer_property_matches")
+      .select(
+        "id, score, status, computed_at, first_seen_at, created_at, read_at, notified_at, property_listing_id"
+      )
+      .eq("buyer_search_profile_id", searchProfileRow.id)
+      .order("score", { ascending: false })
+      .limit(100),
+  ]);
+  if (buyerLeadResult.error) throw buyerLeadResult.error;
+  if (matchesResult.error) throw matchesResult.error;
+
+  const buyerLeadRow = buyerLeadResult.data as Pick<
+    BuyerLeadRow,
+    "id" | "email" | "phone" | "full_name" | "email_verified_at"
+  > | null;
+
+  const matchRows = (matchesResult.data ?? []) as Array<
+    Pick<
+      BuyerPropertyMatchRow,
+      | "id"
+      | "score"
+      | "status"
+      | "computed_at"
+      | "first_seen_at"
+      | "created_at"
+      | "read_at"
+      | "notified_at"
+      | "property_listing_id"
+    >
+  >;
 
   const listingIds = matchRows.map((row) => row.property_listing_id);
-  let listingById = new Map<string, PropertyListingRow>();
+  let listingById = new Map<
+    string,
+    Pick<
+      PropertyListingRow,
+      "id" | "property_id" | "title" | "city" | "property_type" | "price_amount" | "canonical_path"
+    >
+  >();
   if (listingIds.length > 0) {
     const { data, error } = await supabaseAdmin
       .from("property_listings")
-      .select("*")
+      .select("id, property_id, title, city, property_type, price_amount, canonical_path")
       .in("id", listingIds);
     if (error) throw error;
     listingById = new Map(
-      ((data ?? []) as PropertyListingRow[]).map((row) => [row.id, row])
+      (
+        (data ?? []) as Array<
+          Pick<
+            PropertyListingRow,
+            "id" | "property_id" | "title" | "city" | "property_type" | "price_amount" | "canonical_path"
+          >
+        >
+      ).map((row) => [row.id, row])
     );
   }
 

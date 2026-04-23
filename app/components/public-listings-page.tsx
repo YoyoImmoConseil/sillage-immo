@@ -22,6 +22,7 @@ type ListingSearchParams = {
   maxFloor?: string;
   terrace?: string;
   elevator?: string;
+  page?: string;
 };
 
 type PublicListingsPageProps = {
@@ -91,6 +92,7 @@ async function PublicListingsContent(props: PublicListingsPageProps) {
       maxFloor: toNumber(props.searchParams.maxFloor),
       terrace: toBoolean(props.searchParams.terrace),
       elevator: toBoolean(props.searchParams.elevator),
+      page: toNumber(props.searchParams.page),
     }),
     listPropertyTypesForBusinessType(props.businessType),
   ]);

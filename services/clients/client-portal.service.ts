@@ -274,18 +274,22 @@ export const listClientPortalProjects = async (
   clientProfileId: string,
   locale: AppLocale = "fr"
 ): Promise<ClientPortalProjectSummary[]> => {
+  // Single pass over client_projects (all types). listSellerPortalProjects
+  // reuses this result instead of refetching with projectTypes: ["seller"].
   const projects = await getClientProjectsByClientId(clientProfileId, {
     projectTypes: ["seller", "buyer", "rental", "wealth"],
   });
-  const sellerProjects = await listSellerPortalProjects(clientProfileId);
-  const sellerProjectById = new Map(sellerProjects.map((project) => [project.id, project]));
   const buyerProjectIds = projects
     .filter((project) => project.projectType === "buyer")
     .map((project) => project.id);
-  const [buyerBridgeByProjectId, unreadMatchCountByProject] = await Promise.all([
-    listBuyerPortalProjectBridge(buyerProjectIds),
-    countUnreadMatchesByClientProjectIds(buyerProjectIds),
-  ]);
+
+  const [sellerProjects, buyerBridgeByProjectId, unreadMatchCountByProject] =
+    await Promise.all([
+      listSellerPortalProjects(clientProfileId, { preloadedProjects: projects }),
+      listBuyerPortalProjectBridge(buyerProjectIds),
+      countUnreadMatchesByClientProjectIds(buyerProjectIds),
+    ]);
+  const sellerProjectById = new Map(sellerProjects.map((project) => [project.id, project]));
 
   return projects.map((project) => {
     const sellerProject = sellerProjectById.get(project.id);

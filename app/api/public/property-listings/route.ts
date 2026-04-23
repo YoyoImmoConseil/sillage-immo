@@ -53,6 +53,8 @@ export async function GET(request: Request) {
       maxFloor: toNumber(searchParams.get("maxFloor")),
       terrace: toBoolean(searchParams.get("terrace")),
       elevator: toBoolean(searchParams.get("elevator")),
+      page: toNumber(searchParams.get("page")),
+      pageSize: toNumber(searchParams.get("pageSize")),
     }),
     listPropertyTypesForBusinessType(businessTypeParam),
   ]);

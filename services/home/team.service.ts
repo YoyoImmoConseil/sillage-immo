@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 
 import type { AppLocale } from "@/lib/i18n/config";
 import { resolveLocalizedText } from "@/lib/i18n/localized-content";
@@ -65,70 +66,85 @@ const mapPublicTeamMember = (
   };
 };
 
-export const listPublicTeamMembers = async (locale: AppLocale = "fr"): Promise<PublicTeamMember[]> => {
-  const [{ data: profiles, error: profilesError }, { data: roles, error: rolesError }] =
-    await Promise.all([
-      supabaseAdmin
-        .from("admin_profiles")
-        .select("id, email, first_name, last_name, full_name, is_active, metadata")
-        .eq("is_active", true),
-      supabaseAdmin
-        .from("admin_role_assignments")
-        .select("admin_profile_id, role, is_active")
-        .eq("is_active", true),
-    ]);
+export const listPublicTeamMembers = cache(
+  async (locale: AppLocale = "fr"): Promise<PublicTeamMember[]> => {
+    const { data: profiles, error: profilesError } = await supabaseAdmin
+      .from("admin_profiles")
+      .select("id, email, first_name, last_name, full_name, is_active, metadata")
+      .eq("is_active", true);
 
-  if (profilesError) {
-    throw new Error(profilesError.message);
+    if (profilesError) {
+      throw new Error(profilesError.message);
+    }
+    const profileRows = (profiles ?? []) as TeamMemberRow[];
+    if (profileRows.length === 0) return [];
+
+    // Fetch role assignments only for the profiles we already hold, instead
+    // of the whole admin_role_assignments table.
+    const { data: roles, error: rolesError } = await supabaseAdmin
+      .from("admin_role_assignments")
+      .select("admin_profile_id, role, is_active")
+      .eq("is_active", true)
+      .in(
+        "admin_profile_id",
+        profileRows.map((row) => row.id)
+      );
+
+    if (rolesError) {
+      throw new Error(rolesError.message);
+    }
+
+    const roleByProfileId = new Map(
+      ((roles ?? []) as TeamRoleRow[]).map((role) => [role.admin_profile_id, role])
+    );
+
+    return profileRows
+      .filter((row) => roleByProfileId.has(row.id))
+      .map((row) => mapPublicTeamMember(row, roleByProfileId, locale))
+      .sort((left, right) => ROLE_ORDER.indexOf(left.role) - ROLE_ORDER.indexOf(right.role));
   }
-  if (rolesError) {
-    throw new Error(rolesError.message);
-  }
+);
 
-  const roleByProfileId = new Map(
-    ((roles ?? []) as TeamRoleRow[]).map((role) => [role.admin_profile_id, role])
-  );
+export const getPublicTeamMemberByEmail = cache(
+  async (
+    email: string,
+    locale: AppLocale = "fr"
+  ): Promise<PublicTeamMember | null> => {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) return null;
 
-  return ((profiles ?? []) as TeamMemberRow[])
-    .filter((row) => roleByProfileId.has(row.id))
-    .map((row) => mapPublicTeamMember(row, roleByProfileId, locale))
-    .sort((left, right) => ROLE_ORDER.indexOf(left.role) - ROLE_ORDER.indexOf(right.role));
-};
-
-export const getPublicTeamMemberByEmail = async (
-  email: string,
-  locale: AppLocale = "fr"
-): Promise<PublicTeamMember | null> => {
-  const normalizedEmail = email.trim().toLowerCase();
-  if (!normalizedEmail) return null;
-
-  const [{ data: profile, error: profileError }, { data: role, error: roleError }] = await Promise.all([
-    supabaseAdmin
+    const { data: profile, error: profileError } = await supabaseAdmin
       .from("admin_profiles")
       .select("id, email, first_name, last_name, full_name, is_active, metadata")
       .eq("email", normalizedEmail)
       .eq("is_active", true)
-      .maybeSingle(),
-    supabaseAdmin
+      .maybeSingle();
+
+    if (profileError) {
+      throw new Error(profileError.message);
+    }
+    if (!profile) {
+      return null;
+    }
+
+    // Previously loaded the entire admin_role_assignments table on every
+    // listing page. Now scoped to the specific profile we just resolved.
+    const { data: role, error: roleError } = await supabaseAdmin
       .from("admin_role_assignments")
       .select("admin_profile_id, role, is_active")
-      .eq("is_active", true),
-  ]);
+      .eq("is_active", true)
+      .eq("admin_profile_id", profile.id)
+      .maybeSingle();
 
-  if (profileError) {
-    throw new Error(profileError.message);
-  }
-  if (roleError) {
-    throw new Error(roleError.message);
-  }
-  if (!profile) {
-    return null;
-  }
+    if (roleError) {
+      throw new Error(roleError.message);
+    }
+    if (!role) {
+      return null;
+    }
 
-  const roleByProfileId = new Map(((role ?? []) as TeamRoleRow[]).map((item) => [item.admin_profile_id, item]));
-  if (!roleByProfileId.has(profile.id)) {
-    return null;
+    const roleByProfileId = new Map<string, TeamRoleRow>();
+    roleByProfileId.set((role as TeamRoleRow).admin_profile_id, role as TeamRoleRow);
+    return mapPublicTeamMember(profile as TeamMemberRow, roleByProfileId, locale);
   }
-
-  return mapPublicTeamMember(profile as TeamMemberRow, roleByProfileId, locale);
-};
+);
