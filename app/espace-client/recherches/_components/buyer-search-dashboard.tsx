@@ -271,7 +271,7 @@ export function BuyerSearchDashboard(props: Props) {
 
   return (
     <>
-      <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-8">
+      <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-[#f4ece4] p-8">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-xl font-semibold text-[#141446]">{props.copy.sectionSummary}</h2>
           {!props.archived ? (
@@ -492,7 +492,7 @@ export function BuyerSearchDashboard(props: Props) {
         )}
       </section>
 
-      <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-8">
+      <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-[#f4ece4] p-8">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-xl font-semibold text-[#141446]">{props.copy.sectionZone}</h2>
           {!props.archived ? (
@@ -552,7 +552,7 @@ export function BuyerSearchDashboard(props: Props) {
         )}
       </section>
 
-      <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-8">
+      <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-[#f4ece4] p-8">
         <h2 className="text-xl font-semibold text-[#141446]">{props.copy.sectionMatches}</h2>
         {matchListItems.length === 0 ? (
           <p className="mt-3 text-sm text-[#141446]/70">{props.copy.noMatches}</p>
@@ -604,7 +604,7 @@ export function BuyerSearchDashboard(props: Props) {
       </section>
 
       {!props.archived ? (
-        <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-8">
+        <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-[#f4ece4] p-8">
           <h2 className="text-xl font-semibold text-[#141446]">{props.copy.sectionActions}</h2>
           <div className="mt-4 flex flex-wrap gap-3">
             <button

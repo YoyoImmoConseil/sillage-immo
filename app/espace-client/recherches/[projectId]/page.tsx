@@ -308,7 +308,7 @@ export default async function SavedBuyerSearchPage(props: SavedBuyerSearchPagePr
 
   return (
     <section className="space-y-6">
-      <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-8">
+      <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-[#f4ece4] p-8">
         <p className="text-xs uppercase tracking-[0.18em] text-[#141446]/60">
           {copy.kicker}
         </p>
