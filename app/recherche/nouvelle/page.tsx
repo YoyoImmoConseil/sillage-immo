@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getRequestLocale } from "@/lib/i18n/request";
 import { localizePath } from "@/lib/i18n/routing";
 import { listPropertyTypesForBusinessType } from "@/services/properties/property-listing.service";
+import { mergeWithCanonicalPropertyTypes } from "@/lib/properties/canonical-types";
 import type { PropertyBusinessType } from "@/types/domain/properties";
 import { BuyerSignupForm } from "./_components/buyer-signup-form";
 
@@ -61,10 +62,15 @@ export default async function NouvelleRecherchePage({ searchParams }: NouvelleRe
   const locale = await getRequestLocale();
   const resolvedParams = (await searchParams) ?? {};
   const businessType = resolveBusinessType(resolvedParams.businessType);
-  const [saleTypes, rentalTypes] = await Promise.all([
-    listPropertyTypesForBusinessType("sale"),
-    listPropertyTypesForBusinessType("rental"),
+  // A buyer must be able to express intent regardless of the current stock,
+  // so we start from a canonical list and enrich it with anything currently
+  // in the DB that the canonical list does not already cover.
+  const [dbSaleTypes, dbRentalTypes] = await Promise.all([
+    listPropertyTypesForBusinessType("sale").catch(() => [] as string[]),
+    listPropertyTypesForBusinessType("rental").catch(() => [] as string[]),
   ]);
+  const saleTypes = mergeWithCanonicalPropertyTypes("sale", dbSaleTypes);
+  const rentalTypes = mergeWithCanonicalPropertyTypes("rental", dbRentalTypes);
 
   const copy = {
     fr: {
