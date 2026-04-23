@@ -6,11 +6,7 @@ import { usePathname } from "next/navigation";
 import { LanguageSwitcher } from "./language-switcher";
 import { getPathLocale, localizePath } from "@/lib/i18n/routing";
 
-type SiteHeaderClientProps = {
-  isMobileOs: boolean;
-};
-
-export function SiteHeaderClient({ isMobileOs }: SiteHeaderClientProps) {
+export function SiteHeaderClient() {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname() ?? "/";
   const locale = getPathLocale(pathname);
@@ -81,63 +77,63 @@ export function SiteHeaderClient({ isMobileOs }: SiteHeaderClientProps) {
           {copy.home}
         </Link>
 
-        {isMobileOs ? (
-          <div className="relative">
-            <button
-              type="button"
-              className="inline-flex h-11 w-11 items-center justify-center text-[#f4ece4]"
-              aria-label={isOpen ? copy.closeMenu : copy.openMenu}
-              aria-expanded={isOpen}
-              onClick={() => setIsOpen((current) => !current)}
-            >
-              <span className="flex flex-col gap-1.5">
-                <span className="block h-0.5 w-5 rounded-full bg-current" />
-                <span className="block h-0.5 w-5 rounded-full bg-current" />
-                <span className="block h-0.5 w-5 rounded-full bg-current" />
-              </span>
-            </button>
+        {/* Mobile nav (hamburger) - visible below md breakpoint */}
+        <div className="relative md:hidden">
+          <button
+            type="button"
+            className="inline-flex h-11 w-11 items-center justify-center text-[#f4ece4]"
+            aria-label={isOpen ? copy.closeMenu : copy.openMenu}
+            aria-expanded={isOpen}
+            onClick={() => setIsOpen((current) => !current)}
+          >
+            <span className="flex flex-col gap-1.5">
+              <span className="block h-0.5 w-5 rounded-full bg-current" />
+              <span className="block h-0.5 w-5 rounded-full bg-current" />
+              <span className="block h-0.5 w-5 rounded-full bg-current" />
+            </span>
+          </button>
 
-            {isOpen ? (
-              <nav className="absolute right-0 top-[calc(100%+0.5rem)] min-w-[13rem] rounded-2xl border border-white/12 bg-[#1b1b56] p-3 shadow-[0_16px_40px_rgba(0,0,0,0.22)]">
-                <div className="flex flex-col gap-1 text-sm uppercase tracking-[0.14em] text-[#f4ece4]/92">
-                  {navItems.map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className="rounded-xl px-3 py-2"
-                      onClick={() => setIsOpen(false)}
-                    >
-                      {item.label}
-                    </Link>
-                  ))}
+          {isOpen ? (
+            <nav className="absolute right-0 top-[calc(100%+0.5rem)] min-w-[13rem] rounded-2xl border border-white/12 bg-[#1b1b56] p-3 shadow-[0_16px_40px_rgba(0,0,0,0.22)]">
+              <div className="flex flex-col gap-1 text-sm uppercase tracking-[0.14em] text-[#f4ece4]/92">
+                {navItems.map((item) => (
                   <Link
-                    href={clientSpaceItem.href}
-                    className="rounded-xl border border-white/16 px-3 py-2"
+                    key={item.href}
+                    href={item.href}
+                    className="rounded-xl px-3 py-2"
                     onClick={() => setIsOpen(false)}
                   >
-                    {clientSpaceItem.label}
+                    {item.label}
                   </Link>
-                  {!isAdminArea ? <LanguageSwitcher /> : null}
-                </div>
-              </nav>
-            ) : null}
-          </div>
-        ) : (
-          <nav className="flex items-center gap-5 text-sm uppercase tracking-[0.14em] text-[#f4ece4]/90 md:text-[0.95rem]">
-            {navItems.map((item) => (
-              <Link key={item.href} href={item.href} className="hover:opacity-80 transition-opacity">
-                {item.label}
-              </Link>
-            ))}
-            <Link
-              href={clientSpaceItem.href}
-              className="rounded border border-white/16 px-3 py-2 text-[#f4ece4] transition-opacity hover:opacity-80"
-            >
-              {clientSpaceItem.label}
+                ))}
+                <Link
+                  href={clientSpaceItem.href}
+                  className="rounded-xl border border-white/16 px-3 py-2"
+                  onClick={() => setIsOpen(false)}
+                >
+                  {clientSpaceItem.label}
+                </Link>
+                {!isAdminArea ? <LanguageSwitcher /> : null}
+              </div>
+            </nav>
+          ) : null}
+        </div>
+
+        {/* Desktop nav - visible from md breakpoint */}
+        <nav className="hidden items-center gap-5 text-sm uppercase tracking-[0.14em] text-[#f4ece4]/90 md:flex md:text-[0.95rem]">
+          {navItems.map((item) => (
+            <Link key={item.href} href={item.href} className="hover:opacity-80 transition-opacity">
+              {item.label}
             </Link>
-            {!isAdminArea ? <LanguageSwitcher /> : null}
-          </nav>
-        )}
+          ))}
+          <Link
+            href={clientSpaceItem.href}
+            className="rounded border border-white/16 px-3 py-2 text-[#f4ece4] transition-opacity hover:opacity-80"
+          >
+            {clientSpaceItem.label}
+          </Link>
+          {!isAdminArea ? <LanguageSwitcher /> : null}
+        </nav>
       </div>
     </header>
   );

@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Libre_Baskerville, Montserrat, Open_Sans } from "next/font/google";
 import localFont from "next/font/local";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 import { SiteHeader } from "./components/site-header";
+import { RouteProgressBar } from "./components/route-progress-bar";
 import { getRequestLocale } from "@/lib/i18n/request";
 
 const hkGrotesk = localFont({
@@ -63,8 +66,12 @@ export default async function RootLayout({
       <body
         className={`${hkGrotesk.variable} ${montagna.variable} ${libreBaskerville.variable} ${montserrat.variable} ${openSans.variable} antialiased`}
       >
+        <Suspense fallback={null}>
+          <RouteProgressBar />
+        </Suspense>
         <SiteHeader />
         {children}
+        <SpeedInsights />
       </body>
     </html>
   );
