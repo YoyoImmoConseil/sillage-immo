@@ -1,6 +1,7 @@
 import "server-only";
 import { serverEnv } from "@/lib/env/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { revalidatePublicListings } from "@/lib/cache/revalidate";
 import { sweepBrightClient } from "./sweepbright-client.service";
 import { cacheSweepBrightMedia } from "./sweepbright-media-cache.service";
 import type { SweepBrightEstateData } from "@/types/api/sweepbright";
@@ -531,6 +532,7 @@ export const processSweepBrightDelivery = async (deliveryId: string) => {
         processed_at: new Date().toISOString(),
         last_error: null,
       });
+      revalidatePublicListings({ sourceRef: estateId });
       return { skipped: false as const, deleted: true as const };
     }
 
@@ -543,6 +545,14 @@ export const processSweepBrightDelivery = async (deliveryId: string) => {
     const mediaResult = await cachePropertyMediaAssets({
       propertyId: projection.property.id,
       listingId: projection.listing.id,
+    });
+
+    // Invalidate Next Data Cache now that the underlying listing changed.
+    revalidatePublicListings({
+      listingId: projection.listing.id,
+      slug: projection.listing.slug,
+      sourceRef: projection.property.source_ref,
+      postalCode: projection.property.postal_code,
     });
 
     try {

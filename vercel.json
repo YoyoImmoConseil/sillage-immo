@@ -1,4 +1,5 @@
 {
+  "regions": ["cdg1"],
   "crons": [
     {
       "path": "/api/internal/cron/domain-events?limit=25",

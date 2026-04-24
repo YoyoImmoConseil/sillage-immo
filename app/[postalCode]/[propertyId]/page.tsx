@@ -4,6 +4,9 @@ import { getRequestLocale } from "@/lib/i18n/request";
 import { PublicListingDetailPage, buildPublicListingMetadata } from "@/app/components/public-listing-detail-page";
 import { getPublicPropertyListingByExternalId } from "@/services/properties/property-listing.service";
 
+// Incremental Static Regeneration alignee sur /biens/[slug].
+export const revalidate = 600;
+
 type ListingDetailByExternalIdPageProps = {
   params: Promise<{ postalCode: string; propertyId: string }>;
 };

@@ -1,6 +1,7 @@
 import "server-only";
 import type { AppLocale } from "@/lib/i18n/config";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { revalidatePublicTeam } from "@/lib/cache/revalidate";
 import {
   buildAdminProfileMetadata,
   countWords,
@@ -230,6 +231,8 @@ export const createAdminAuthorization = async (input: {
     { email, role: input.role, firstName, lastName, authUserId: profileData.auth_user_id }
   );
 
+  revalidatePublicTeam();
+
   return {
     profileId: profileData.id,
     authUserId: profileData.auth_user_id,
@@ -362,6 +365,8 @@ export const updateAdminRole = async (input: {
     input.actorProfileId ?? null,
     { role: input.role }
   );
+
+  revalidatePublicTeam();
 };
 
 export const updateAdminUserStatus = async (input: {
@@ -412,6 +417,8 @@ export const updateAdminUserStatus = async (input: {
     input.actorProfileId ?? null,
     { isActive: input.isActive }
   );
+
+  revalidatePublicTeam();
 };
 
 export const updateAdminUserProfile = async (input: {
@@ -509,4 +516,6 @@ export const updateAdminUserProfile = async (input: {
       bookingUrl,
     }
   );
+
+  revalidatePublicTeam();
 };

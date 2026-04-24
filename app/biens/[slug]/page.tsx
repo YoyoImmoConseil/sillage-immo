@@ -4,6 +4,10 @@ import { getRequestLocale } from "@/lib/i18n/request";
 import { PublicListingDetailPage, buildPublicListingMetadata } from "@/app/components/public-listing-detail-page";
 import { getPublicPropertyListingBySlug } from "@/services/properties/property-listing.service";
 
+// Incremental Static Regeneration: fiche bien regeneree au plus une fois toutes les 10 minutes.
+// Invalidation granulaire immediate via revalidateTag("listing:{id}") dans les webhooks SweepBright.
+export const revalidate = 600;
+
 type ListingDetailPageProps = {
   params: Promise<{ slug: string }>;
 };

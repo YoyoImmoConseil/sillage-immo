@@ -1,9 +1,11 @@
 import "server-only";
 import { cache } from "react";
+import { unstable_cache } from "next/cache";
 
 import type { AppLocale } from "@/lib/i18n/config";
 import { resolveLocalizedText } from "@/lib/i18n/localized-content";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { CACHE_TAG_TEAM_PUBLIC } from "@/lib/cache/tags";
 import { parseAdminProfileMetadata } from "@/services/admin/admin-profile-metadata";
 import { ADMIN_ROLE_LABELS, type AdminRole, type AdminTeamTitle } from "@/types/domain/admin";
 
@@ -66,8 +68,9 @@ const mapPublicTeamMember = (
   };
 };
 
-export const listPublicTeamMembers = cache(
-  async (locale: AppLocale = "fr"): Promise<PublicTeamMember[]> => {
+const listPublicTeamMembersUncached = async (
+  locale: AppLocale = "fr"
+): Promise<PublicTeamMember[]> => {
     const { data: profiles, error: profilesError } = await supabaseAdmin
       .from("admin_profiles")
       .select("id, email, first_name, last_name, full_name, is_active, metadata")
@@ -102,14 +105,21 @@ export const listPublicTeamMembers = cache(
       .filter((row) => roleByProfileId.has(row.id))
       .map((row) => mapPublicTeamMember(row, roleByProfileId, locale))
       .sort((left, right) => ROLE_ORDER.indexOf(left.role) - ROLE_ORDER.indexOf(right.role));
+};
+
+export const listPublicTeamMembers = unstable_cache(
+  listPublicTeamMembersUncached,
+  ["listPublicTeamMembers"],
+  {
+    tags: [CACHE_TAG_TEAM_PUBLIC],
+    revalidate: 600,
   }
 );
 
-export const getPublicTeamMemberByEmail = cache(
-  async (
-    email: string,
-    locale: AppLocale = "fr"
-  ): Promise<PublicTeamMember | null> => {
+const getPublicTeamMemberByEmailUncached = async (
+  email: string,
+  locale: AppLocale = "fr"
+): Promise<PublicTeamMember | null> => {
     const normalizedEmail = email.trim().toLowerCase();
     if (!normalizedEmail) return null;
 
@@ -143,8 +153,21 @@ export const getPublicTeamMemberByEmail = cache(
       return null;
     }
 
-    const roleByProfileId = new Map<string, TeamRoleRow>();
-    roleByProfileId.set((role as TeamRoleRow).admin_profile_id, role as TeamRoleRow);
-    return mapPublicTeamMember(profile as TeamMemberRow, roleByProfileId, locale);
+  const roleByProfileId = new Map<string, TeamRoleRow>();
+  roleByProfileId.set((role as TeamRoleRow).admin_profile_id, role as TeamRoleRow);
+  return mapPublicTeamMember(profile as TeamMemberRow, roleByProfileId, locale);
+};
+
+export const getPublicTeamMemberByEmail = cache(
+  async (email: string, locale: AppLocale = "fr") => {
+    const cached = unstable_cache(
+      getPublicTeamMemberByEmailUncached,
+      ["getPublicTeamMemberByEmail"],
+      {
+        tags: [CACHE_TAG_TEAM_PUBLIC],
+        revalidate: 600,
+      }
+    );
+    return cached(email, locale);
   }
 );
