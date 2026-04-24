@@ -41,11 +41,11 @@ export function HeroSection({ locale }: Props) {
         className="absolute inset-0 bg-gradient-to-br from-[#141446]/85 via-[#141446]/55 to-[#141446]/30"
       />
       <div className="relative w-full px-6 py-12 md:px-10 md:py-20 xl:px-14 xl:py-24 2xl:px-20">
-        <div className="grid gap-10 lg:grid-cols-[44%_56%] lg:items-center">
-          <div className="max-w-[728px]">
+        <div className="grid gap-10 lg:grid-cols-[58%_42%] lg:items-center">
+          <div className="max-w-[1092px]">
             <SillageLogo priority className="h-auto w-full" />
           </div>
-          <div className="space-y-5 max-w-2xl">
+          <div className="space-y-5 max-w-2xl lg:pl-8 xl:pl-12">
             <p className="text-[11px] md:text-xs uppercase tracking-[0.24em] text-[#f4ece4]/75">
               {copy.eyebrow}
             </p>
