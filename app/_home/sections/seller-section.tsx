@@ -31,6 +31,10 @@ export function SellerSection({ locale }: Props) {
           <p className="sillage-editorial-text text-[#141446]/80">{copy.subtitle}</p>
         </div>
 
+        <p className="max-w-3xl rounded-[20px] border-l-4 border-[#141446] bg-white/60 px-5 py-4 text-sm md:text-base italic text-[#141446]/85 leading-relaxed">
+          {copy.exclusiveMandate}
+        </p>
+
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
           {copy.benefits.map((benefit, index) => (
             <article

@@ -4,13 +4,13 @@ import { HOME_COPY } from "../copy";
 type Props = { locale: AppLocale };
 
 export function SocialProofSection({ locale }: Props) {
-  const items = HOME_COPY[locale].socialProof.items;
+  const { items, bridge } = HOME_COPY[locale].socialProof;
   return (
     <section
       aria-label="Sillage Immo - preuves"
       className="sillage-section-light border-b border-[#141446]/10"
     >
-      <div className="w-full px-6 py-8 md:px-10 md:py-10 xl:px-14 2xl:px-20">
+      <div className="w-full px-6 py-8 md:px-10 md:py-10 xl:px-14 2xl:px-20 space-y-6 md:space-y-8">
         <ul className="grid grid-cols-2 gap-6 md:grid-cols-4 md:gap-10">
           {items.map((item) => (
             <li
@@ -26,6 +26,9 @@ export function SocialProofSection({ locale }: Props) {
             </li>
           ))}
         </ul>
+        <p className="max-w-3xl text-sm md:text-base text-[#141446]/70 leading-relaxed">
+          {bridge}
+        </p>
       </div>
     </section>
   );

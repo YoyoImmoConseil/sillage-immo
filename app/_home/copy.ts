@@ -21,6 +21,7 @@ export type HomeCopy = {
   };
   socialProof: {
     items: SocialProofItem[];
+    bridge: string;
   };
   assistant: {
     eyebrow: string;
@@ -39,6 +40,7 @@ export type HomeCopy = {
     eyebrow: string;
     title: string;
     subtitle: string;
+    exclusiveMandate: string;
     benefits: BenefitContent[];
   };
   buyer: {
@@ -156,6 +158,8 @@ const fr: HomeCopy = {
       { figure: "10+ ans", label: "d'expérience locale" },
       { figure: "7j/7", label: "conseil et suivi digital" },
     ],
+    bridge:
+      "Une expertise locale renforcée par des outils conçus pour mieux vendre, mieux acheter et mieux suivre chaque projet.",
   },
   assistant: {
     eyebrow: "Assistant Sillage",
@@ -171,11 +175,11 @@ const fr: HomeCopy = {
     cards: [
       {
         title: "Un interlocuteur unique",
-        body: "Vous êtes accompagné par un conseiller identifié, disponible et responsable de votre projet du premier échange jusqu'à la signature.",
+        body: "Un conseiller identifié vous accompagne du premier échange jusqu'à la signature, avec un vrai interlocuteur à vos côtés.",
       },
       {
         title: "Des outils vraiment utiles",
-        body: "Estimation data-driven, alertes acquéreurs, recherche par zone dessinée, visite virtuelle, espace client et notifications : la technologie sert votre projet, sans le compliquer.",
+        body: "Estimation fondée sur les données, alertes, recherche dessinée, visite virtuelle et espace client : la technologie sert votre projet, sans le compliquer.",
       },
       {
         title: "Une approche locale et premium",
@@ -189,6 +193,8 @@ const fr: HomeCopy = {
     title: "Vendre avec une stratégie claire, pas avec une simple annonce",
     subtitle:
       "Une bonne vente ne commence pas par une publication. Elle commence par une estimation argumentée, un prix défendable, une mise en valeur sérieuse et une qualification rigoureuse des acquéreurs.",
+    exclusiveMandate:
+      "Un mandat exclusif pensé pour engager l'agence dans le service, avec un cadre plus souple, plus lisible et plus transparent pour le vendeur.",
     benefits: [
       {
         title: "Estimation fiable et argumentée",
@@ -200,7 +206,7 @@ const fr: HomeCopy = {
       },
       {
         title: "Suivi transparent",
-        body: "Votre espace Sillage centralise les informations importantes : avancement, documents, prochaines étapes et échanges avec votre conseiller.",
+        body: "Avancement, documents, prochaines étapes : tout reste centralisé dans votre espace Sillage.",
       },
       {
         title: "Acheteurs mieux qualifiés",
@@ -212,7 +218,7 @@ const fr: HomeCopy = {
     eyebrow: "Vous cherchez",
     title: "Votre recherche immobilière, exactement comme vous la dessinez",
     subtitle:
-      "Ne cherchez plus seulement par ville ou par quartier approximatif. Dessinez votre zone sur la carte et recevez les biens qui correspondent vraiment à votre projet.",
+      "Dessinez votre zone sur la carte et recevez les biens qui correspondent vraiment à votre projet, avec un conseiller à vos côtés pour vous aider à décider sereinement.",
     benefits: [
       {
         title: "Dessinez votre zone",
@@ -454,6 +460,8 @@ const en: HomeCopy = {
       { figure: "10+ years", label: "of local expertise" },
       { figure: "7/7", label: "advisory and digital follow-up" },
     ],
+    bridge:
+      "Local expertise reinforced by tools designed to sell better, buy better and follow every project more closely.",
   },
   assistant: {
     eyebrow: "Sillage assistant",
@@ -469,11 +477,11 @@ const en: HomeCopy = {
     cards: [
       {
         title: "A single point of contact",
-        body: "You're supported by a named, available advisor, accountable for your project from the first exchange to the signature.",
+        body: "A named advisor supports you from the first exchange to the signature, with a real person by your side.",
       },
       {
         title: "Tools that actually help",
-        body: "Data-driven valuation, buyer alerts, search by custom zone, virtual tour, client space and notifications: technology serves your project without complicating it.",
+        body: "Valuation grounded in market data, alerts, drawn-zone search, virtual tour and client space: technology serves your project without complicating it.",
       },
       {
         title: "A local, premium approach",
@@ -487,6 +495,8 @@ const en: HomeCopy = {
     title: "Sell with a clear strategy, not just a listing",
     subtitle:
       "A good sale doesn't start with a listing. It starts with a well-argued valuation, a defendable price, a serious presentation and a rigorous buyer qualification.",
+    exclusiveMandate:
+      "An exclusive mandate designed to commit the agency on service, with a clearer, more flexible and more transparent framework for the seller.",
     benefits: [
       {
         title: "Reliable, argued valuation",
@@ -498,7 +508,7 @@ const en: HomeCopy = {
       },
       {
         title: "Transparent follow-up",
-        body: "Your Sillage space centralizes the important information: progress, documents, next steps and exchanges with your advisor.",
+        body: "Progress, documents, next steps: everything stays centralized in your Sillage space.",
       },
       {
         title: "Better qualified buyers",
@@ -510,7 +520,7 @@ const en: HomeCopy = {
     eyebrow: "You're searching",
     title: "Your property search, exactly the way you draw it",
     subtitle:
-      "Don't settle for searching by city or vague neighborhood. Draw your zone on the map and receive properties that really match your project.",
+      "Draw your zone on the map and receive properties that truly match your project, with an advisor by your side to help you decide with confidence.",
     benefits: [
       {
         title: "Draw your zone",
@@ -751,6 +761,8 @@ const es: HomeCopy = {
       { figure: "10+ años", label: "de experiencia local" },
       { figure: "7/7", label: "asesoramiento y seguimiento digital" },
     ],
+    bridge:
+      "Una experiencia local reforzada por herramientas pensadas para vender mejor, comprar mejor y seguir cada proyecto con más cercanía.",
   },
   assistant: {
     eyebrow: "Asistente Sillage",
@@ -766,11 +778,11 @@ const es: HomeCopy = {
     cards: [
       {
         title: "Un único interlocutor",
-        body: "Le acompaña un asesor identificado, disponible y responsable de su proyecto desde el primer contacto hasta la firma.",
+        body: "Un asesor identificado le acompaña desde el primer contacto hasta la firma, con un interlocutor real a su lado.",
       },
       {
         title: "Herramientas realmente útiles",
-        body: "Valoración basada en datos, alertas para compradores, búsqueda por zona dibujada, visita virtual, espacio cliente y notificaciones: la tecnología sirve a su proyecto sin complicarlo.",
+        body: "Valoración basada en los datos del mercado, alertas, búsqueda por zona dibujada, visita virtual y espacio cliente: la tecnología sirve a su proyecto sin complicarlo.",
       },
       {
         title: "Un enfoque local y premium",
@@ -784,6 +796,8 @@ const es: HomeCopy = {
     title: "Vender con una estrategia clara, no con un simple anuncio",
     subtitle:
       "Una buena venta no empieza con una publicación. Empieza con una valoración argumentada, un precio defendible, una presentación cuidada y una cualificación rigurosa de los compradores.",
+    exclusiveMandate:
+      "Un mandato exclusivo pensado para comprometer a la agencia con el servicio, en un marco más flexible, más legible y más transparente para el vendedor.",
     benefits: [
       {
         title: "Valoración fiable y argumentada",
@@ -795,7 +809,7 @@ const es: HomeCopy = {
       },
       {
         title: "Seguimiento transparente",
-        body: "Su espacio Sillage centraliza la información importante: avance, documentos, próximas etapas y comunicaciones con su asesor.",
+        body: "Avance, documentos, próximas etapas: todo queda centralizado en su espacio Sillage.",
       },
       {
         title: "Compradores mejor cualificados",
@@ -807,7 +821,7 @@ const es: HomeCopy = {
     eyebrow: "Usted busca",
     title: "Su búsqueda inmobiliaria, exactamente como la dibuja",
     subtitle:
-      "No se limite a buscar por ciudad o por barrio aproximado. Dibuje su zona en el mapa y reciba los bienes que realmente corresponden a su proyecto.",
+      "Dibuje su zona en el mapa y reciba los bienes que realmente corresponden a su proyecto, con un asesor a su lado para ayudarle a decidir con serenidad.",
     benefits: [
       {
         title: "Dibuje su zona",
@@ -1048,6 +1062,8 @@ const ru: HomeCopy = {
       { figure: "10+ лет", label: "локальной экспертизы" },
       { figure: "7/7", label: "консультации и цифровое сопровождение" },
     ],
+    bridge:
+      "Локальная экспертиза, усиленная инструментами, чтобы продавать, покупать и сопровождать каждый проект ещё внимательнее.",
   },
   assistant: {
     eyebrow: "Ассистент Sillage",
@@ -1063,11 +1079,11 @@ const ru: HomeCopy = {
     cards: [
       {
         title: "Единый консультант",
-        body: "Вас сопровождает конкретный и доступный советник, который отвечает за ваш проект от первого контакта до подписания.",
+        body: "Конкретный консультант сопровождает вас от первого контакта до подписания — рядом с вами, как живой собеседник.",
       },
       {
         title: "Действительно полезные инструменты",
-        body: "Оценка на данных, оповещения для покупателей, поиск по нарисованной зоне, виртуальный тур, личный кабинет и уведомления — технологии работают на ваш проект, а не усложняют его.",
+        body: "Оценка на рыночных данных, оповещения, поиск по нарисованной зоне, виртуальный тур и личный кабинет — технологии работают на ваш проект, не усложняя его.",
       },
       {
         title: "Локальный премиальный подход",
@@ -1081,6 +1097,8 @@ const ru: HomeCopy = {
     title: "Продавать со стратегией, а не просто объявлением",
     subtitle:
       "Хорошая продажа начинается не с публикации. Она начинается с аргументированной оценки, защищаемой цены, серьёзной презентации и строгой квалификации покупателей.",
+    exclusiveMandate:
+      "Эксклюзивный мандат, который обязывает агентство по уровню сервиса, в более гибкой, ясной и прозрачной форме для продавца.",
     benefits: [
       {
         title: "Надёжная аргументированная оценка",
@@ -1092,7 +1110,7 @@ const ru: HomeCopy = {
       },
       {
         title: "Прозрачное сопровождение",
-        body: "Ваш кабинет Sillage собирает важную информацию: прогресс, документы, следующие шаги и обмен с консультантом.",
+        body: "Прогресс, документы, следующие шаги — всё остаётся в вашем кабинете Sillage.",
       },
       {
         title: "Лучше квалифицированные покупатели",
@@ -1104,7 +1122,7 @@ const ru: HomeCopy = {
     eyebrow: "Вы ищете",
     title: "Ваш поиск недвижимости — ровно таким, каким вы его нарисуете",
     subtitle:
-      "Не ограничивайтесь поиском по городу или приблизительному району. Нарисуйте свою зону на карте и получайте объекты, которые действительно соответствуют вашему проекту.",
+      "Нарисуйте свою зону на карте и получайте объекты, которые действительно соответствуют вашему проекту, с консультантом рядом, который поможет принять решение спокойно.",
     benefits: [
       {
         title: "Нарисуйте свою зону",
