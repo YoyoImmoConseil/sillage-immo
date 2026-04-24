@@ -43,9 +43,9 @@ export function SellerApiFirstFlow({ locale = "fr" }: { locale?: AppLocale }) {
       mediaUploadNetworkError: "Erreur reseau pendant l'envoi des medias.",
       tooManyPhotos: "Vous pouvez ajouter jusqu'a 20 photos.",
       tooManyVideos: "Vous pouvez ajouter jusqu'a 5 videos.",
-      title: "Estimation vendeur Sillage Immo",
+      title: "Démarrer votre demande d'estimation",
       intro:
-        "Un parcours clair, guidé et sécurisé : vous renseignez votre bien une fois, nous vérifions votre email, puis nous produisons votre estimation pour cadrer la suite.",
+        "Un parcours guidé en trois étapes : vous décrivez votre bien, nous sécurisons votre email, puis vous recevez une estimation structurée avec un conseiller Sillage à vos côtés pour préparer la suite.",
     },
     en: {
       sendOtpError: "Unable to send the email code.",
@@ -64,9 +64,9 @@ export function SellerApiFirstFlow({ locale = "fr" }: { locale?: AppLocale }) {
       mediaUploadNetworkError: "Network error while uploading media.",
       tooManyPhotos: "You can upload up to 20 photos.",
       tooManyVideos: "You can upload up to 5 videos.",
-      title: "Seller valuation by Sillage Immo",
+      title: "Start your valuation request",
       intro:
-        "A clear, guided and secure journey: you provide your property details once, we verify your email, then we prepare your valuation to define the next steps.",
+        "A guided three-step journey: you describe your property, we secure your email, then you receive a structured valuation with a Sillage advisor by your side to prepare the next steps.",
     },
     es: {
       sendOtpError: "No se pudo enviar el código por email.",
@@ -85,9 +85,9 @@ export function SellerApiFirstFlow({ locale = "fr" }: { locale?: AppLocale }) {
       mediaUploadNetworkError: "Error de red durante la carga de los medios.",
       tooManyPhotos: "Puede cargar hasta 20 fotos.",
       tooManyVideos: "Puede cargar hasta 5 videos.",
-      title: "Valoración de vendedor Sillage Immo",
+      title: "Iniciar su solicitud de valoración",
       intro:
-        "Un recorrido claro, guiado y seguro: nos facilita una vez los datos de su inmueble, verificamos su email y después generamos su valoración para preparar la siguiente etapa.",
+        "Un recorrido guiado en tres etapas: usted describe su inmueble, aseguramos su email, y luego recibe una valoración estructurada con un asesor Sillage a su lado para preparar la continuación.",
     },
     ru: {
       sendOtpError: "Не удалось отправить код по email.",
@@ -106,9 +106,9 @@ export function SellerApiFirstFlow({ locale = "fr" }: { locale?: AppLocale }) {
       mediaUploadNetworkError: "Ошибка сети при загрузке медиафайлов.",
       tooManyPhotos: "Можно загрузить до 20 фотографий.",
       tooManyVideos: "Можно загрузить до 5 видео.",
-      title: "Оценка для продавца от Sillage Immo",
+      title: "Начать заявку на оценку",
       intro:
-        "Понятный, безопасный и пошаговый процесс: вы один раз заполняете данные об объекте, мы подтверждаем ваш email и затем готовим оценку для определения дальнейших шагов.",
+        "Пошаговый путь из трёх этапов: вы описываете объект, мы подтверждаем ваш email, а затем вы получаете структурированную оценку с консультантом Sillage рядом, чтобы подготовить следующие шаги.",
     },
   }[locale];
   const idempotencyKeysRef = useRef<Record<string, string>>({});
@@ -395,8 +395,8 @@ export function SellerApiFirstFlow({ locale = "fr" }: { locale?: AppLocale }) {
   return (
     <div className="space-y-6">
       <section className="rounded-2xl bg-[#141446] p-6 text-[#f4ece4] space-y-4">
-        <h1 className="text-2xl font-semibold">{copy.title}</h1>
-        <p className="text-sm opacity-75">{copy.intro}</p>
+        <h2 className="text-2xl font-semibold">{copy.title}</h2>
+        <p className="text-sm opacity-80">{copy.intro}</p>
       </section>
 
       <SellerProjectFormSection
