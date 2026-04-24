@@ -42,7 +42,7 @@ export function HeroSection({ locale }: Props) {
       />
       <div className="relative w-full px-6 py-12 md:px-10 md:py-20 xl:px-14 xl:py-24 2xl:px-20">
         <div className="grid gap-10 lg:grid-cols-[44%_56%] lg:items-center">
-          <div className="max-w-[560px]">
+          <div className="max-w-[728px]">
             <SillageLogo priority className="h-auto w-full" />
           </div>
           <div className="space-y-5 max-w-2xl">
@@ -51,7 +51,7 @@ export function HeroSection({ locale }: Props) {
             </p>
             <h1
               id="hero-title"
-              className="font-serif text-3xl md:text-5xl xl:text-[54px] font-semibold leading-[1.08] tracking-tight"
+              className="sillage-section-title-font text-3xl md:text-5xl xl:text-[54px] font-semibold leading-[1.08] tracking-tight"
             >
               {copy.title}
             </h1>
