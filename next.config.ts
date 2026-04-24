@@ -13,15 +13,23 @@ const supabaseHostname = (() => {
 
 const nextConfig: NextConfig = {
   images: {
-    remotePatterns: supabaseHostname
-      ? [
-          {
-            protocol: "https",
-            hostname: supabaseHostname,
-            pathname: "/storage/v1/object/public/**",
-          },
-        ]
-      : [],
+    remotePatterns: [
+      ...(supabaseHostname
+        ? [
+            {
+              protocol: "https" as const,
+              hostname: supabaseHostname,
+              pathname: "/storage/v1/object/public/**",
+            },
+          ]
+        : []),
+      // SweepBright CDN + services de media (les URLs exactes varient selon
+      // l'environnement ; on autorise les sous-domaines connus).
+      { protocol: "https" as const, hostname: "website.sweepbright.com" },
+      { protocol: "https" as const, hostname: "**.sweepbright.com" },
+      { protocol: "https" as const, hostname: "**.sweepbright.app" },
+      { protocol: "https" as const, hostname: "**.amazonaws.com" },
+    ],
   },
 };
 

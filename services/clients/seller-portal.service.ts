@@ -154,11 +154,21 @@ export const getSellerPortalClientByAuthUserId = async (authUserId: string) => {
 };
 
 export const listSellerPortalProjects = async (
-  clientProfileId: string
+  clientProfileId: string,
+  options?: {
+    /**
+     * Optional projects preloaded by the caller (e.g. listClientPortalProjects
+     * already fetched them for all project types). When provided, skips the
+     * duplicate Supabase roundtrip to client_projects / seller_projects.
+     */
+    preloadedProjects?: Awaited<ReturnType<typeof getClientProjectsByClientId>>;
+  }
 ): Promise<SellerPortalProjectSummary[]> => {
-  const projects = await getClientProjectsByClientId(clientProfileId, {
-    projectTypes: ["seller"],
-  });
+  const projects = options?.preloadedProjects
+    ? options.preloadedProjects.filter((project) => project.projectType === "seller")
+    : await getClientProjectsByClientId(clientProfileId, {
+        projectTypes: ["seller"],
+      });
   const sellerLeadIds = projects
     .map((project) => project.sellerProject?.sellerLeadId)
     .filter((value): value is string => Boolean(value));

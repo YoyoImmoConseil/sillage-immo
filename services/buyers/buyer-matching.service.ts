@@ -170,23 +170,6 @@ const buildMatchScore = (profile: BuyerSearchProfileRow, listing: PropertyListin
   };
 };
 
-const getBuyerLeadAndProfile = async (buyerLeadId: string) => {
-  const [{ data: leadData, error: leadError }, { data: profileData, error: profileError }] =
-    await Promise.all([
-      supabaseAdmin.from("buyer_leads").select("*").eq("id", buyerLeadId).maybeSingle(),
-      supabaseAdmin.from("buyer_search_profiles").select("*").eq("buyer_lead_id", buyerLeadId).maybeSingle(),
-    ]);
-
-  if (leadError) throw new Error(leadError.message);
-  if (profileError) throw new Error(profileError.message);
-  if (!leadData || !profileData) return null;
-
-  return {
-    lead: leadData as BuyerLeadRow,
-    profile: profileData as BuyerSearchProfileRow,
-  };
-};
-
 const listActiveListings = async () => {
   const { data, error } = await supabaseAdmin
     .from("property_listings")
@@ -201,49 +184,177 @@ const listActiveListings = async () => {
   return (data ?? []) as PropertyListingRow[];
 };
 
-export const recomputeMatchesForBuyerLead = async (buyerLeadId: string) => {
-  const buyer = await getBuyerLeadAndProfile(buyerLeadId);
-  if (!buyer) return [];
+export type RecomputeNewMatch = {
+  matchId: string;
+  buyerLeadId: string;
+  buyerSearchProfileId: string;
+  propertyId: string;
+  propertyListingId: string;
+  score: number;
+};
+
+export type RecomputeMatchesResult = {
+  newMatches: RecomputeNewMatch[];
+  totalMatches: number;
+};
+
+const getAllActiveProfilesForLead = async (buyerLeadId: string): Promise<BuyerSearchProfileRow[]> => {
+  const { data, error } = await supabaseAdmin
+    .from("buyer_search_profiles")
+    .select("*")
+    .eq("buyer_lead_id", buyerLeadId)
+    .eq("status", "active");
+  if (error) throw new Error(error.message);
+  return (data ?? []) as BuyerSearchProfileRow[];
+};
+
+const upsertMatchPreservingFlags = async (input: {
+  buyerLeadId: string;
+  profileId: string;
+  propertyId: string;
+  propertyListingId: string;
+  score: number;
+  status: string;
+  matchedCriteria: Record<string, unknown>;
+  computedAt: string;
+}): Promise<"created" | "updated"> => {
+  const { data: existing, error: existingError } = await supabaseAdmin
+    .from("buyer_property_matches")
+    .select("id")
+    .eq("buyer_search_profile_id", input.profileId)
+    .eq("property_listing_id", input.propertyListingId)
+    .maybeSingle();
+  if (existingError) throw new Error(existingError.message);
+
+  if (existing) {
+    const { error } = await supabaseAdmin
+      .from("buyer_property_matches")
+      .update({
+        score: input.score,
+        status: input.status,
+        blockers: [],
+        matched_criteria: input.matchedCriteria,
+        computed_at: input.computedAt,
+        updated_at: input.computedAt,
+      })
+      .eq("id", existing.id);
+    if (error) throw new Error(error.message);
+    return "updated";
+  }
+
+  const { error } = await supabaseAdmin
+    .from("buyer_property_matches")
+    .insert({
+      buyer_lead_id: input.buyerLeadId,
+      buyer_search_profile_id: input.profileId,
+      property_id: input.propertyId,
+      property_listing_id: input.propertyListingId,
+      score: input.score,
+      status: input.status,
+      blockers: [],
+      matched_criteria: input.matchedCriteria,
+      computed_at: input.computedAt,
+      updated_at: input.computedAt,
+    });
+  if (error) throw new Error(error.message);
+  return "created";
+};
+
+const deleteObsoleteMatchesForProfile = async (input: {
+  profileId: string;
+  keepListingIds: string[];
+}) => {
+  if (input.keepListingIds.length === 0) {
+    const { error } = await supabaseAdmin
+      .from("buyer_property_matches")
+      .delete()
+      .eq("buyer_search_profile_id", input.profileId);
+    if (error) throw new Error(error.message);
+    return;
+  }
+
+  const { data: existing, error: existingError } = await supabaseAdmin
+    .from("buyer_property_matches")
+    .select("id, property_listing_id")
+    .eq("buyer_search_profile_id", input.profileId);
+  if (existingError) throw new Error(existingError.message);
+
+  const toDeleteIds = (existing ?? [])
+    .filter((row) => !input.keepListingIds.includes(row.property_listing_id))
+    .map((row) => row.id);
+
+  if (toDeleteIds.length === 0) return;
+  const { error } = await supabaseAdmin
+    .from("buyer_property_matches")
+    .delete()
+    .in("id", toDeleteIds);
+  if (error) throw new Error(error.message);
+};
+
+export const recomputeMatchesForBuyerLead = async (
+  buyerLeadId: string
+): Promise<RecomputeMatchesResult> => {
+  const profiles = await getAllActiveProfilesForLead(buyerLeadId);
+  if (profiles.length === 0) {
+    return { newMatches: [], totalMatches: 0 };
+  }
 
   const listings = await listActiveListings();
   const now = new Date().toISOString();
+  const newMatches: RecomputeNewMatch[] = [];
+  let totalMatches = 0;
 
-  const matches = listings
-    .map((listing) => ({
-      listing,
-      evaluation: buildMatchScore(buyer.profile, listing),
-    }))
-    .filter(({ evaluation }) => evaluation.blockers.length === 0 && evaluation.score > 0)
-    .sort((left, right) => right.evaluation.score - left.evaluation.score)
-    .slice(0, 50);
+  for (const profile of profiles) {
+    const evaluated = listings
+      .map((listing) => ({ listing, evaluation: buildMatchScore(profile, listing) }))
+      .filter(({ evaluation }) => evaluation.blockers.length === 0 && evaluation.score > 0)
+      .sort((left, right) => right.evaluation.score - left.evaluation.score)
+      .slice(0, 50);
 
-  await supabaseAdmin.from("buyer_property_matches").delete().eq("buyer_lead_id", buyerLeadId);
+    await deleteObsoleteMatchesForProfile({
+      profileId: profile.id,
+      keepListingIds: evaluated.map(({ listing }) => listing.id),
+    });
 
-  if (matches.length > 0) {
-    const { error } = await supabaseAdmin.from("buyer_property_matches").insert(
-      matches.map(({ listing, evaluation }) => ({
-        buyer_lead_id: buyerLeadId,
-        buyer_search_profile_id: buyer.profile.id,
-        property_id: listing.property_id,
-        property_listing_id: listing.id,
+    for (const { listing, evaluation } of evaluated) {
+      const status = await upsertMatchPreservingFlags({
+        buyerLeadId: profile.buyer_lead_id,
+        profileId: profile.id,
+        propertyId: listing.property_id,
+        propertyListingId: listing.id,
         score: evaluation.score,
         status: "suggested",
-        blockers: [],
-        matched_criteria: evaluation.matchedCriteria,
-        computed_at: now,
-        updated_at: now,
-      }))
-    );
-
-    if (error) {
-      throw new Error(error.message);
+        matchedCriteria: evaluation.matchedCriteria,
+        computedAt: now,
+      });
+      totalMatches += 1;
+      if (status === "created") {
+        const { data: matchRow } = await supabaseAdmin
+          .from("buyer_property_matches")
+          .select("id")
+          .eq("buyer_search_profile_id", profile.id)
+          .eq("property_listing_id", listing.id)
+          .maybeSingle();
+        if (matchRow) {
+          newMatches.push({
+            matchId: matchRow.id,
+            buyerLeadId: profile.buyer_lead_id,
+            buyerSearchProfileId: profile.id,
+            propertyId: listing.property_id,
+            propertyListingId: listing.id,
+            score: evaluation.score,
+          });
+        }
+      }
     }
   }
 
-  return listMatchesForBuyerLead(buyerLeadId);
+  return { newMatches, totalMatches };
 };
 
-export const recomputeMatchesForProperty = async (propertyId: string) => {
+export const recomputeMatchesForProperty = async (
+  propertyId: string
+): Promise<RecomputeMatchesResult> => {
   const { data: listingData, error: listingError } = await supabaseAdmin
     .from("property_listings")
     .select("*")
@@ -255,54 +366,81 @@ export const recomputeMatchesForProperty = async (propertyId: string) => {
   if (listingError) {
     throw new Error(listingError.message);
   }
-  if (!listingData) return [];
+  if (!listingData) {
+    return { newMatches: [], totalMatches: 0 };
+  }
+
+  const listing = listingData as PropertyListingRow;
 
   const { data: profilesData, error: profilesError } = await supabaseAdmin
     .from("buyer_search_profiles")
     .select("*")
     .eq("status", "active");
-
   if (profilesError) {
     throw new Error(profilesError.message);
   }
-
-  const listing = listingData as PropertyListingRow;
   const profiles = (profilesData ?? []) as BuyerSearchProfileRow[];
 
-  const matches = profiles
-    .map((profile) => ({
-      profile,
-      evaluation: buildMatchScore(profile, listing),
-    }))
+  const matching = profiles
+    .map((profile) => ({ profile, evaluation: buildMatchScore(profile, listing) }))
     .filter(({ evaluation }) => evaluation.blockers.length === 0 && evaluation.score > 0)
     .sort((left, right) => right.evaluation.score - left.evaluation.score)
-    .slice(0, 50);
+    .slice(0, 200);
 
-  await supabaseAdmin.from("buyer_property_matches").delete().eq("property_id", propertyId);
+  const matchingProfileIds = new Set(matching.map(({ profile }) => profile.id));
+  const { data: existingRows, error: existingError } = await supabaseAdmin
+    .from("buyer_property_matches")
+    .select("id, buyer_search_profile_id")
+    .eq("property_listing_id", listing.id);
+  if (existingError) throw new Error(existingError.message);
 
-  if (matches.length > 0) {
-    const now = new Date().toISOString();
-    const { error } = await supabaseAdmin.from("buyer_property_matches").insert(
-      matches.map(({ profile, evaluation }) => ({
-        buyer_lead_id: profile.buyer_lead_id,
-        buyer_search_profile_id: profile.id,
-        property_id: listing.property_id,
-        property_listing_id: listing.id,
-        score: evaluation.score,
-        status: "suggested",
-        blockers: [],
-        matched_criteria: evaluation.matchedCriteria,
-        computed_at: now,
-        updated_at: now,
-      }))
-    );
+  const obsoleteIds = (existingRows ?? [])
+    .filter((row) => !matchingProfileIds.has(row.buyer_search_profile_id))
+    .map((row) => row.id);
+  if (obsoleteIds.length > 0) {
+    const { error } = await supabaseAdmin
+      .from("buyer_property_matches")
+      .delete()
+      .in("id", obsoleteIds);
+    if (error) throw new Error(error.message);
+  }
 
-    if (error) {
-      throw new Error(error.message);
+  const now = new Date().toISOString();
+  const newMatches: RecomputeNewMatch[] = [];
+
+  for (const { profile, evaluation } of matching) {
+    const status = await upsertMatchPreservingFlags({
+      buyerLeadId: profile.buyer_lead_id,
+      profileId: profile.id,
+      propertyId: listing.property_id,
+      propertyListingId: listing.id,
+      score: evaluation.score,
+      status: "suggested",
+      matchedCriteria: evaluation.matchedCriteria,
+      computedAt: now,
+    });
+
+    if (status === "created") {
+      const { data: matchRow } = await supabaseAdmin
+        .from("buyer_property_matches")
+        .select("id")
+        .eq("buyer_search_profile_id", profile.id)
+        .eq("property_listing_id", listing.id)
+        .maybeSingle();
+      if (matchRow) {
+        newMatches.push({
+          matchId: matchRow.id,
+          buyerLeadId: profile.buyer_lead_id,
+          buyerSearchProfileId: profile.id,
+          propertyId: listing.property_id,
+          propertyListingId: listing.id,
+          score: evaluation.score,
+        });
+      }
     }
   }
 
-  return listMatchesForProperty(propertyId);
+  return { newMatches, totalMatches: matching.length };
 };
 
 export const listMatchesForBuyerLead = async (buyerLeadId: string): Promise<BuyerMatchListItem[]> => {

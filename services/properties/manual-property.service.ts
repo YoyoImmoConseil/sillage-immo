@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 import type { AppLocale } from "@/lib/i18n/config";
 import { mergeLocalizedText } from "@/lib/i18n/localized-content";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { revalidatePublicListings } from "@/lib/cache/revalidate";
 import type { Database } from "@/types/db/supabase";
 import type { PropertyBusinessType } from "@/types/domain/properties";
 
@@ -233,9 +234,17 @@ export const createManualProperty = async (input: {
     throw new Error(listingError?.message ?? "Impossible de creer l'annonce du bien.");
   }
 
+  const listing = listingData as PropertyListingRow;
+  revalidatePublicListings({
+    listingId: listing.id,
+    slug: listing.slug,
+    sourceRef: property.source_ref,
+    postalCode: property.postal_code,
+  });
+
   return {
     property,
-    listing: listingData as PropertyListingRow,
+    listing,
   };
 };
 
@@ -327,4 +336,11 @@ export const updateManualProperty = async (input: {
   if (listingError) {
     throw new Error(listingError.message);
   }
+
+  revalidatePublicListings({
+    listingId: detail.listing?.id ?? null,
+    slug: detail.listing?.slug ?? null,
+    sourceRef: detail.property.source_ref,
+    postalCode: detail.property.postal_code,
+  });
 };

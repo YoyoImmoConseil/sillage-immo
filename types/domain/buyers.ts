@@ -18,6 +18,11 @@ export type BuyerLeadSnapshot = {
   notes: string | null;
   assignedAdminProfileId: string | null;
   metadata: Record<string, unknown>;
+  origin: string | null;
+  emailVerifiedAt: string | null;
+  sweepbrightContactId: string | null;
+  sweepbrightSyncedAt: string | null;
+  sweepbrightLastError: string | null;
 };
 
 export type BuyerSearchProfileSnapshot = {

@@ -868,6 +868,10 @@ export type Database = {
           notes: string | null;
           assigned_admin_profile_id: string | null;
           metadata: Record<string, unknown>;
+          sweepbright_contact_id: string | null;
+          sweepbright_synced_at: string | null;
+          sweepbright_last_error: string | null;
+          email_verified_at: string | null;
         };
         Insert: {
           id?: string;
@@ -885,6 +889,10 @@ export type Database = {
           notes?: string | null;
           assigned_admin_profile_id?: string | null;
           metadata?: Record<string, unknown>;
+          sweepbright_contact_id?: string | null;
+          sweepbright_synced_at?: string | null;
+          sweepbright_last_error?: string | null;
+          email_verified_at?: string | null;
         };
         Update: {
           id?: string;
@@ -902,6 +910,10 @@ export type Database = {
           notes?: string | null;
           assigned_admin_profile_id?: string | null;
           metadata?: Record<string, unknown>;
+          sweepbright_contact_id?: string | null;
+          sweepbright_synced_at?: string | null;
+          sweepbright_last_error?: string | null;
+          email_verified_at?: string | null;
         };
         Relationships: [
           {
@@ -1025,6 +1037,9 @@ export type Database = {
           matched_criteria: Record<string, unknown>;
           notes: string | null;
           computed_at: string;
+          notified_at: string | null;
+          read_at: string | null;
+          first_seen_at: string;
         };
         Insert: {
           id?: string;
@@ -1040,6 +1055,9 @@ export type Database = {
           matched_criteria?: Record<string, unknown>;
           notes?: string | null;
           computed_at?: string;
+          notified_at?: string | null;
+          read_at?: string | null;
+          first_seen_at?: string;
         };
         Update: {
           id?: string;
@@ -1055,6 +1073,9 @@ export type Database = {
           matched_criteria?: Record<string, unknown>;
           notes?: string | null;
           computed_at?: string;
+          notified_at?: string | null;
+          read_at?: string | null;
+          first_seen_at?: string;
         };
         Relationships: [
           {

@@ -1,6 +1,6 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import type { AppLocale } from "@/lib/i18n/config";
 import type { PropertyMediaSnapshot } from "@/types/domain/properties";
@@ -17,6 +17,11 @@ type PropertyGalleryProps = {
 const getImageUrl = (image: PropertyMediaSnapshot) => {
   return image.cachedUrl ?? image.remoteUrl ?? null;
 };
+
+// Les images SweepBright ne sont pas encore migrees sur notre pipeline Supabase
+// dans tous les cas (remoteUrl fallback). On desactive l'optimisation Next pour
+// ces URLs non-allowlistees afin d'eviter un 400 de /_next/image.
+const shouldOptimizeImage = (image: PropertyMediaSnapshot) => Boolean(image.cachedUrl);
 
 export function PropertyGallery({
   images,
@@ -82,11 +87,15 @@ export function PropertyGallery({
   return (
     <>
       <section className="space-y-4">
-        <div className="relative overflow-hidden rounded-2xl border border-[rgba(20,20,70,0.18)] bg-[rgba(20,20,70,0.05)]">
-          <img
+        <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-[rgba(20,20,70,0.18)] bg-[rgba(20,20,70,0.05)]">
+          <Image
             src={activeUrl}
             alt={activeImage.description ?? title}
-            className="aspect-[4/3] h-full w-full object-cover"
+            fill
+            sizes="(min-width: 1024px) 720px, 100vw"
+            priority={safeActiveIndex === 0}
+            className="object-cover"
+            unoptimized={!shouldOptimizeImage(activeImage)}
           />
           <ListingStatusBanner availabilityStatus={availabilityStatus} locale={locale} />
           {validImages.length > 1 ? (
@@ -133,7 +142,7 @@ export function PropertyGallery({
                 <button
                   key={image.id}
                   type="button"
-                  className={`overflow-hidden rounded-xl border ${
+                  className={`relative aspect-square overflow-hidden rounded-xl border ${
                     index === safeActiveIndex
                       ? "border-[#141446] ring-2 ring-[rgba(20,20,70,0.25)]"
                       : "border-[rgba(20,20,70,0.14)]"
@@ -141,10 +150,13 @@ export function PropertyGallery({
                   onClick={() => setActiveIndex(index)}
                   aria-label={`Afficher la photo ${index + 1}`}
                 >
-                  <img
+                  <Image
                     src={imageUrl}
                     alt={image.description ?? `${title} ${index + 1}`}
-                    className="aspect-square h-full w-full object-cover"
+                    fill
+                    sizes="120px"
+                    className="object-cover"
+                    unoptimized={!shouldOptimizeImage(image)}
                   />
                 </button>
               );
@@ -168,10 +180,13 @@ export function PropertyGallery({
             </button>
           </div>
           <div className="relative flex h-[calc(100vh-6rem)] items-center justify-center">
-            <img
+            <Image
               src={activeUrl}
               alt={activeImage.description ?? title}
-              className="max-h-full max-w-full rounded-2xl object-contain"
+              fill
+              sizes="100vw"
+              className="rounded-2xl object-contain"
+              unoptimized={!shouldOptimizeImage(activeImage)}
             />
             {validImages.length > 1 ? (
               <>

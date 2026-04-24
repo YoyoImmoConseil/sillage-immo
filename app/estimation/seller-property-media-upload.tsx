@@ -39,9 +39,11 @@ export function SellerPropertyMediaUpload({
 
   const copy = {
     fr: {
-      title: "Photos et videos du bien (optionnel)",
+      title: "Ajoutez des photos si vous souhaitez une analyse plus fine",
       intro:
-        "Ajoutez jusqu'a 20 photos et quelques videos si vous le souhaitez. Elles enrichissent le dossier Sillage pour analyse humaine, sans etre envoyees au moteur d'estimation automatique.",
+        "Les photos et vidéos ne sont pas obligatoires, mais elles aident votre conseiller à mieux apprécier l'état, la luminosité, la vue, les extérieurs et le potentiel du bien.",
+      reassurance:
+        "Vos médias servent uniquement à l'analyse de votre dossier Sillage.",
       photos: "Photos",
       videos: "Videos",
       photosHint: "Jusqu'a 20 photos",
@@ -54,9 +56,11 @@ export function SellerPropertyMediaUpload({
       remove: "Retirer",
     },
     en: {
-      title: "Property photos and videos (optional)",
+      title: "Add photos if you want a sharper analysis",
       intro:
-        "Add up to 20 photos and optional videos. They enrich the Sillage file for human review and are not sent to the automatic valuation engine.",
+        "Photos and videos are not required, but they help your advisor better appreciate the condition, light, view, outdoor areas and potential of your property.",
+      reassurance:
+        "Your media are used solely to analyse your Sillage file.",
       photos: "Photos",
       videos: "Videos",
       photosHint: "Up to 20 photos",
@@ -69,9 +73,11 @@ export function SellerPropertyMediaUpload({
       remove: "Remove",
     },
     es: {
-      title: "Fotos y videos del inmueble (opcional)",
+      title: "Añada fotos si desea un análisis más fino",
       intro:
-        "Anada hasta 20 fotos y videos si lo desea. Enriquecen el expediente de Sillage para revision humana y no se envian al motor automatico de valoracion.",
+        "Las fotos y vídeos no son obligatorios, pero ayudan a su asesor a valorar mejor el estado, la luminosidad, las vistas, los exteriores y el potencial del inmueble.",
+      reassurance:
+        "Sus archivos se utilizan únicamente para analizar su expediente Sillage.",
       photos: "Fotos",
       videos: "Videos",
       photosHint: "Hasta 20 fotos",
@@ -84,9 +90,11 @@ export function SellerPropertyMediaUpload({
       remove: "Quitar",
     },
     ru: {
-      title: "Фото и видео объекта (необязательно)",
+      title: "Добавьте фотографии, если хотите более точный анализ",
       intro:
-        "Добавьте до 20 фотографий и при желании видео. Они дополняют досье Sillage для ручной проверки и не отправляются в автоматический модуль оценки.",
+        "Фото и видео не обязательны, но они помогают вашему консультанту лучше оценить состояние, освещённость, вид, наружные пространства и потенциал объекта.",
+      reassurance:
+        "Ваши медиафайлы используются исключительно для анализа вашего досье Sillage.",
       photos: "Фотографии",
       videos: "Видео",
       photosHint: "До 20 фотографий",
@@ -117,6 +125,7 @@ export function SellerPropertyMediaUpload({
       <div className="space-y-1">
         <p className="text-sm font-medium">{copy.title}</p>
         <p className="text-xs opacity-75">{copy.intro}</p>
+        <p className="text-xs italic opacity-70">{copy.reassurance}</p>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">

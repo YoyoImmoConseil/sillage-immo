@@ -3,9 +3,13 @@ import { notFound } from "next/navigation";
 import { AdminShell } from "@/app/components/admin-shell";
 import { requireAdminPagePermission } from "@/lib/admin/auth";
 import { formatPropertyTypeLabel } from "@/lib/properties/property-type-label";
-import { getBuyerLeadDetailForAdmin } from "@/services/buyers/buyer-lead.service";
+import {
+  getBuyerLeadDetailForAdmin,
+  listBuyerLeadAdminProjects,
+} from "@/services/buyers/buyer-lead.service";
 import { listMatchesForBuyerLead } from "@/services/buyers/buyer-matching.service";
 import { BuyerLeadForm } from "./buyer-lead-form";
+import { BuyerLeadAdminPanel } from "./buyer-lead-admin-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +26,7 @@ export default async function BuyerLeadDetailPage({ params }: BuyerLeadDetailPag
   if (!detail) notFound();
 
   const matches = await listMatchesForBuyerLead(id);
+  const adminProjects = await listBuyerLeadAdminProjects(id);
 
   return (
     <AdminShell
@@ -37,6 +42,62 @@ export default async function BuyerLeadDetailPage({ params }: BuyerLeadDetailPag
       </div>
 
       <div className="space-y-6">
+        <BuyerLeadAdminPanel
+          buyerLeadId={detail.lead.id}
+          origin={detail.lead.origin}
+          emailVerifiedAt={detail.lead.emailVerifiedAt}
+          sweepbrightContactId={detail.lead.sweepbrightContactId}
+          sweepbrightSyncedAt={detail.lead.sweepbrightSyncedAt}
+          sweepbrightLastError={detail.lead.sweepbrightLastError}
+        />
+
+        {adminProjects.length > 0 ? (
+          <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6">
+            <h2 className="text-xl font-semibold text-[#141446]">
+              Recherches sauvegardées ({adminProjects.length})
+            </h2>
+            <div className="mt-4 grid gap-3">
+              {adminProjects.map((project) => (
+                <article
+                  key={project.clientProjectId}
+                  className="rounded-2xl border border-[rgba(20,20,70,0.14)] p-4 text-sm"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="font-semibold text-[#141446]">
+                        {project.title ?? "Recherche acquéreur"}
+                      </p>
+                      <p className="text-[#141446]/70">
+                        Statut projet : {project.status} ·{" "}
+                        {project.searchProfile
+                          ? `Recherche : ${project.searchProfile.status}`
+                          : "Aucun profil de recherche actif"}
+                      </p>
+                      {project.searchProfile ? (
+                        <p className="text-xs text-[#141446]/60">
+                          {project.searchProfile.businessType === "rental"
+                            ? "Location"
+                            : "Achat"}{" "}
+                          ·{" "}
+                          {(project.searchProfile.cities ?? []).join(", ") ||
+                            project.searchProfile.locationText ||
+                            "Zone non précisée"}
+                        </p>
+                      ) : null}
+                    </div>
+                    <Link
+                      href={`/admin/client-projects/${project.clientProjectId}`}
+                      className="text-sm underline"
+                    >
+                      Voir le projet client
+                    </Link>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
         <BuyerLeadForm
           buyerLeadId={detail.lead.id}
           initial={{

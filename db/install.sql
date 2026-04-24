@@ -290,7 +290,7 @@ create table if not exists public.buyer_search_profiles (
   id uuid primary key default gen_random_uuid(),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  buyer_lead_id uuid not null unique references public.buyer_leads(id) on delete cascade,
+  buyer_lead_id uuid not null references public.buyer_leads(id) on delete cascade,
   business_type text not null default 'sale',
   status text not null default 'active',
   location_text text,
@@ -324,6 +324,9 @@ create table if not exists public.buyer_property_matches (
   matched_criteria jsonb not null default '{}'::jsonb,
   notes text,
   computed_at timestamptz not null default now(),
+  notified_at timestamptz,
+  read_at timestamptz,
+  first_seen_at timestamptz not null default now(),
   unique (buyer_search_profile_id, property_listing_id)
 );
 
@@ -434,6 +437,12 @@ alter table public.seller_leads
 alter table public.buyer_leads
   add column if not exists contact_identity_id uuid references public.contact_identities(id) on delete set null;
 
+alter table public.buyer_leads
+  add column if not exists sweepbright_contact_id text,
+  add column if not exists sweepbright_synced_at timestamptz,
+  add column if not exists sweepbright_last_error text,
+  add column if not exists email_verified_at timestamptz;
+
 alter table public.client_profiles
   add column if not exists contact_identity_id uuid references public.contact_identities(id) on delete set null;
 
@@ -445,7 +454,7 @@ create table if not exists public.buyer_projects (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   client_project_id uuid not null unique references public.client_projects(id) on delete cascade,
-  buyer_lead_id uuid unique references public.buyer_leads(id) on delete set null,
+  buyer_lead_id uuid references public.buyer_leads(id) on delete set null,
   active_search_profile_id uuid references public.buyer_search_profiles(id) on delete set null,
   metadata jsonb not null default '{}'::jsonb
 );
@@ -967,6 +976,25 @@ on public.buyer_search_profiles using gin (property_types);
 create index if not exists idx_buyer_search_profiles_client_project
 on public.buyer_search_profiles (client_project_id);
 
+create index if not exists idx_buyer_search_profiles_buyer_lead
+on public.buyer_search_profiles (buyer_lead_id);
+
+create unique index if not exists idx_buyer_search_profiles_client_project_unique
+on public.buyer_search_profiles (client_project_id)
+where client_project_id is not null;
+
+create index if not exists idx_buyer_leads_sweepbright_contact
+on public.buyer_leads (sweepbright_contact_id)
+where sweepbright_contact_id is not null;
+
+create index if not exists idx_buyer_property_matches_unread
+on public.buyer_property_matches (buyer_search_profile_id, created_at desc)
+where read_at is null;
+
+create index if not exists idx_buyer_property_matches_pending_notify
+on public.buyer_property_matches (created_at)
+where notified_at is null;
+
 create index if not exists idx_buyer_property_matches_buyer
 on public.buyer_property_matches (buyer_lead_id, score desc);
 
@@ -1103,6 +1131,69 @@ create policy "client_project_events_self_select"
       from public.client_projects cproj
       join public.client_profiles cp on cp.id = cproj.client_profile_id
       where cproj.id = client_project_events.client_project_id
+        and cp.auth_user_id = auth.uid()
+    )
+  );
+
+drop policy if exists "buyer_projects_self_select" on public.buyer_projects;
+create policy "buyer_projects_self_select"
+  on public.buyer_projects
+  for select
+  to authenticated
+  using (
+    exists (
+      select 1
+      from public.client_projects cproj
+      join public.client_profiles cp on cp.id = cproj.client_profile_id
+      where cproj.id = buyer_projects.client_project_id
+        and cp.auth_user_id = auth.uid()
+    )
+  );
+
+drop policy if exists "buyer_search_profiles_self_select" on public.buyer_search_profiles;
+create policy "buyer_search_profiles_self_select"
+  on public.buyer_search_profiles
+  for select
+  to authenticated
+  using (
+    client_project_id is not null
+    and exists (
+      select 1
+      from public.client_projects cproj
+      join public.client_profiles cp on cp.id = cproj.client_profile_id
+      where cproj.id = buyer_search_profiles.client_project_id
+        and cp.auth_user_id = auth.uid()
+    )
+  );
+
+drop policy if exists "buyer_property_matches_self_select" on public.buyer_property_matches;
+create policy "buyer_property_matches_self_select"
+  on public.buyer_property_matches
+  for select
+  to authenticated
+  using (
+    exists (
+      select 1
+      from public.buyer_search_profiles bsp
+      join public.client_projects cproj on cproj.id = bsp.client_project_id
+      join public.client_profiles cp on cp.id = cproj.client_profile_id
+      where bsp.id = buyer_property_matches.buyer_search_profile_id
+        and cp.auth_user_id = auth.uid()
+    )
+  );
+
+drop policy if exists "buyer_leads_self_select" on public.buyer_leads;
+create policy "buyer_leads_self_select"
+  on public.buyer_leads
+  for select
+  to authenticated
+  using (
+    exists (
+      select 1
+      from public.buyer_projects bp
+      join public.client_projects cproj on cproj.id = bp.client_project_id
+      join public.client_profiles cp on cp.id = cproj.client_profile_id
+      where bp.buyer_lead_id = buyer_leads.id
         and cp.auth_user_id = auth.uid()
     )
   );

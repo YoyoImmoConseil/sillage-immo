@@ -1,8 +1,11 @@
 import "server-only";
+import { cache } from "react";
+import { unstable_cache } from "next/cache";
 
 import type { AppLocale } from "@/lib/i18n/config";
 import { resolveLocalizedText } from "@/lib/i18n/localized-content";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { CACHE_TAG_TEAM_PUBLIC } from "@/lib/cache/tags";
 import { parseAdminProfileMetadata } from "@/services/admin/admin-profile-metadata";
 import { ADMIN_ROLE_LABELS, type AdminRole, type AdminTeamTitle } from "@/types/domain/admin";
 
@@ -32,9 +35,18 @@ export type PublicTeamMember = {
   phone: string | null;
   bio: string | null;
   avatarUrl: string | null;
+  bookingUrl: string | null;
 };
 
 const ROLE_ORDER: AdminRole[] = ["administrateur", "manager", "collaborateur"];
+
+const sanitizeBookingUrl = (value: string | null | undefined): string | null => {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  if (!/^https?:\/\//i.test(trimmed)) return null;
+  return trimmed;
+};
 
 const mapPublicTeamMember = (
   row: TeamMemberRow,
@@ -62,73 +74,110 @@ const mapPublicTeamMember = (
       sources: [row.metadata],
     }),
     avatarUrl: metadata.avatarUrl,
+    bookingUrl: sanitizeBookingUrl(metadata.bookingUrl),
   };
 };
 
-export const listPublicTeamMembers = async (locale: AppLocale = "fr"): Promise<PublicTeamMember[]> => {
-  const [{ data: profiles, error: profilesError }, { data: roles, error: rolesError }] =
-    await Promise.all([
-      supabaseAdmin
-        .from("admin_profiles")
-        .select("id, email, first_name, last_name, full_name, is_active, metadata")
-        .eq("is_active", true),
-      supabaseAdmin
-        .from("admin_role_assignments")
-        .select("admin_profile_id, role, is_active")
-        .eq("is_active", true),
-    ]);
+const listPublicTeamMembersUncached = async (
+  locale: AppLocale = "fr"
+): Promise<PublicTeamMember[]> => {
+    const { data: profiles, error: profilesError } = await supabaseAdmin
+      .from("admin_profiles")
+      .select("id, email, first_name, last_name, full_name, is_active, metadata")
+      .eq("is_active", true);
 
-  if (profilesError) {
-    throw new Error(profilesError.message);
-  }
-  if (rolesError) {
-    throw new Error(rolesError.message);
-  }
+    if (profilesError) {
+      throw new Error(profilesError.message);
+    }
+    const profileRows = (profiles ?? []) as TeamMemberRow[];
+    if (profileRows.length === 0) return [];
 
-  const roleByProfileId = new Map(
-    ((roles ?? []) as TeamRoleRow[]).map((role) => [role.admin_profile_id, role])
-  );
+    // Fetch role assignments only for the profiles we already hold, instead
+    // of the whole admin_role_assignments table.
+    const { data: roles, error: rolesError } = await supabaseAdmin
+      .from("admin_role_assignments")
+      .select("admin_profile_id, role, is_active")
+      .eq("is_active", true)
+      .in(
+        "admin_profile_id",
+        profileRows.map((row) => row.id)
+      );
 
-  return ((profiles ?? []) as TeamMemberRow[])
-    .filter((row) => roleByProfileId.has(row.id))
-    .map((row) => mapPublicTeamMember(row, roleByProfileId, locale))
-    .sort((left, right) => ROLE_ORDER.indexOf(left.role) - ROLE_ORDER.indexOf(right.role));
+    if (rolesError) {
+      throw new Error(rolesError.message);
+    }
+
+    const roleByProfileId = new Map(
+      ((roles ?? []) as TeamRoleRow[]).map((role) => [role.admin_profile_id, role])
+    );
+
+    return profileRows
+      .filter((row) => roleByProfileId.has(row.id))
+      .map((row) => mapPublicTeamMember(row, roleByProfileId, locale))
+      .sort((left, right) => ROLE_ORDER.indexOf(left.role) - ROLE_ORDER.indexOf(right.role));
 };
 
-export const getPublicTeamMemberByEmail = async (
+export const listPublicTeamMembers = unstable_cache(
+  listPublicTeamMembersUncached,
+  ["listPublicTeamMembers"],
+  {
+    tags: [CACHE_TAG_TEAM_PUBLIC],
+    revalidate: 600,
+  }
+);
+
+const getPublicTeamMemberByEmailUncached = async (
   email: string,
   locale: AppLocale = "fr"
 ): Promise<PublicTeamMember | null> => {
-  const normalizedEmail = email.trim().toLowerCase();
-  if (!normalizedEmail) return null;
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) return null;
 
-  const [{ data: profile, error: profileError }, { data: role, error: roleError }] = await Promise.all([
-    supabaseAdmin
+    const { data: profile, error: profileError } = await supabaseAdmin
       .from("admin_profiles")
       .select("id, email, first_name, last_name, full_name, is_active, metadata")
       .eq("email", normalizedEmail)
       .eq("is_active", true)
-      .maybeSingle(),
-    supabaseAdmin
+      .maybeSingle();
+
+    if (profileError) {
+      throw new Error(profileError.message);
+    }
+    if (!profile) {
+      return null;
+    }
+
+    // Previously loaded the entire admin_role_assignments table on every
+    // listing page. Now scoped to the specific profile we just resolved.
+    const { data: role, error: roleError } = await supabaseAdmin
       .from("admin_role_assignments")
       .select("admin_profile_id, role, is_active")
-      .eq("is_active", true),
-  ]);
+      .eq("is_active", true)
+      .eq("admin_profile_id", profile.id)
+      .maybeSingle();
 
-  if (profileError) {
-    throw new Error(profileError.message);
-  }
-  if (roleError) {
-    throw new Error(roleError.message);
-  }
-  if (!profile) {
-    return null;
-  }
+    if (roleError) {
+      throw new Error(roleError.message);
+    }
+    if (!role) {
+      return null;
+    }
 
-  const roleByProfileId = new Map(((role ?? []) as TeamRoleRow[]).map((item) => [item.admin_profile_id, item]));
-  if (!roleByProfileId.has(profile.id)) {
-    return null;
-  }
-
+  const roleByProfileId = new Map<string, TeamRoleRow>();
+  roleByProfileId.set((role as TeamRoleRow).admin_profile_id, role as TeamRoleRow);
   return mapPublicTeamMember(profile as TeamMemberRow, roleByProfileId, locale);
 };
+
+export const getPublicTeamMemberByEmail = cache(
+  async (email: string, locale: AppLocale = "fr") => {
+    const cached = unstable_cache(
+      getPublicTeamMemberByEmailUncached,
+      ["getPublicTeamMemberByEmail"],
+      {
+        tags: [CACHE_TAG_TEAM_PUBLIC],
+        revalidate: 600,
+      }
+    );
+    return cached(email, locale);
+  }
+);

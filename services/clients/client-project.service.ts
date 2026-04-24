@@ -85,16 +85,19 @@ export const getClientProjectsByClientId = async (
   const projectIds = rows.map((p) => p.id);
   if (projectIds.length === 0) return [];
 
-  const { data: sellerProjects } = await supabaseAdmin
-    .from("seller_projects")
-    .select("id, client_project_id, seller_lead_id, assigned_admin_profile_id, entry_channel, project_status, mandate_status")
-    .in("client_project_id", projectIds);
-
-  const { data: propCounts } = await supabaseAdmin
-    .from("project_properties")
-    .select("client_project_id")
-    .in("client_project_id", projectIds)
-    .is("unlinked_at", null);
+  const [sellerProjectsResult, propCountsResult] = await Promise.all([
+    supabaseAdmin
+      .from("seller_projects")
+      .select("id, client_project_id, seller_lead_id, assigned_admin_profile_id, entry_channel, project_status, mandate_status")
+      .in("client_project_id", projectIds),
+    supabaseAdmin
+      .from("project_properties")
+      .select("client_project_id")
+      .in("client_project_id", projectIds)
+      .is("unlinked_at", null),
+  ]);
+  const sellerProjects = sellerProjectsResult.data;
+  const propCounts = propCountsResult.data;
 
   const sellerByProject = (sellerProjects ?? []).reduce(
     (acc, sp) => {

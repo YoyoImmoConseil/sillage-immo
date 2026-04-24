@@ -1,10 +1,13 @@
 import "server-only";
 import { serverEnv } from "@/lib/env/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { revalidatePublicListings } from "@/lib/cache/revalidate";
 import { sweepBrightClient } from "./sweepbright-client.service";
 import { cacheSweepBrightMedia } from "./sweepbright-media-cache.service";
 import type { SweepBrightEstateData } from "@/types/api/sweepbright";
 import type { Database } from "@/types/db/supabase";
+import { recomputeMatchesForProperty } from "@/services/buyers/buyer-matching.service";
+import { processBuyerAlertsForNewMatches } from "@/services/buyers/buyer-alert.service";
 
 type WebhookDeliveryRow = Database["public"]["Tables"]["crm_webhook_deliveries"]["Row"];
 type PropertyRow = Database["public"]["Tables"]["properties"]["Row"];
@@ -529,6 +532,7 @@ export const processSweepBrightDelivery = async (deliveryId: string) => {
         processed_at: new Date().toISOString(),
         last_error: null,
       });
+      revalidatePublicListings({ sourceRef: estateId });
       return { skipped: false as const, deleted: true as const };
     }
 
@@ -542,6 +546,27 @@ export const processSweepBrightDelivery = async (deliveryId: string) => {
       propertyId: projection.property.id,
       listingId: projection.listing.id,
     });
+
+    // Invalidate Next Data Cache now that the underlying listing changed.
+    revalidatePublicListings({
+      listingId: projection.listing.id,
+      slug: projection.listing.slug,
+      sourceRef: projection.property.source_ref,
+      postalCode: projection.property.postal_code,
+    });
+
+    try {
+      const matchResult = await recomputeMatchesForProperty(projection.property.id);
+      if (matchResult.newMatches.length > 0) {
+        await processBuyerAlertsForNewMatches(matchResult.newMatches);
+      }
+    } catch (matchError) {
+      console.error(
+        "[sweepbright-sync] buyer alert recompute failed",
+        matchError
+      );
+    }
+
     await updateDeliveryStatus(delivery.id, {
       status: "processed",
       processed_at: new Date().toISOString(),

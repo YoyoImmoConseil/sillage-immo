@@ -1,4 +1,6 @@
 import "server-only";
+import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import type { AppLocale } from "@/lib/i18n/config";
 import { formatCurrency } from "@/lib/i18n/format";
@@ -10,12 +12,20 @@ import type {
   PublicPropertyListingSummary,
 } from "@/types/domain/properties";
 import { buildPropertyDerivedFields } from "./property-presentation";
+import {
+  CACHE_TAG_LISTINGS_PUBLIC,
+  cacheTagListingByExternalRef,
+  cacheTagListingById,
+  cacheTagListingBySlug,
+} from "@/lib/cache/tags";
 
 type ListingRow = Database["public"]["Tables"]["property_listings"]["Row"];
 type PropertyRow = Database["public"]["Tables"]["properties"]["Row"];
 type MediaRow = Database["public"]["Tables"]["property_media"]["Row"];
 
 const SWEEPBRIGHT_SOURCE = "sweepbright";
+
+export const DEFAULT_LISTINGS_PAGE_SIZE = 24;
 
 const isMissingRelationError = (message: string) => {
   const normalized = message.toLowerCase();
@@ -141,29 +151,99 @@ const mapListingSnapshot = (
   };
 };
 
-const hydrateListingSnapshot = async (listing: ListingRow, locale: AppLocale) => {
-  const { data: propertyData, error: propertyError } = await supabaseAdmin
-    .from("properties")
-    .select("*")
-    .eq("id", listing.property_id)
-    .maybeSingle();
+/**
+ * Fetch every property + its media referenced by a batch of listings in
+ * exactly two round-trips instead of one per listing, and return a lookup
+ * map keyed by property id.
+ */
+const fetchPropertiesAndMediaForListings = async (
+  listings: ListingRow[]
+): Promise<{
+  propertiesById: Map<string, PropertyRow>;
+  mediaByPropertyId: Map<string, MediaRow[]>;
+}> => {
+  const uniquePropertyIds = Array.from(
+    new Set(listings.map((listing) => listing.property_id).filter(Boolean))
+  );
 
-  if (propertyError) {
-    throw new Error(propertyError.message);
+  if (uniquePropertyIds.length === 0) {
+    return {
+      propertiesById: new Map(),
+      mediaByPropertyId: new Map(),
+    };
   }
-  if (!propertyData) return null;
 
-  const { data: mediaData, error: mediaError } = await supabaseAdmin
-    .from("property_media")
-    .select("*")
-    .eq("property_id", listing.property_id)
-    .order("ordinal", { ascending: true });
+  const [propertiesResult, mediaResult] = await Promise.all([
+    supabaseAdmin
+      .from("properties")
+      .select("*")
+      .in("id", uniquePropertyIds),
+    supabaseAdmin
+      .from("property_media")
+      .select("*")
+      .in("property_id", uniquePropertyIds)
+      .order("ordinal", { ascending: true }),
+  ]);
 
-  if (mediaError) {
-    throw new Error(mediaError.message);
+  if (propertiesResult.error) {
+    throw new Error(propertiesResult.error.message);
+  }
+  if (mediaResult.error) {
+    throw new Error(mediaResult.error.message);
   }
 
-  return mapListingSnapshot(listing, propertyData as PropertyRow, (mediaData ?? []) as MediaRow[], locale);
+  const propertiesById = new Map<string, PropertyRow>();
+  for (const row of (propertiesResult.data ?? []) as PropertyRow[]) {
+    propertiesById.set(row.id, row);
+  }
+
+  const mediaByPropertyId = new Map<string, MediaRow[]>();
+  for (const row of (mediaResult.data ?? []) as MediaRow[]) {
+    const bucket = mediaByPropertyId.get(row.property_id);
+    if (bucket) {
+      bucket.push(row);
+    } else {
+      mediaByPropertyId.set(row.property_id, [row]);
+    }
+  }
+
+  return { propertiesById, mediaByPropertyId };
+};
+
+const hydrateListingsBatch = async (
+  listings: ListingRow[],
+  locale: AppLocale
+): Promise<PropertyListingSnapshot[]> => {
+  if (listings.length === 0) return [];
+
+  const { propertiesById, mediaByPropertyId } =
+    await fetchPropertiesAndMediaForListings(listings);
+
+  const snapshots: PropertyListingSnapshot[] = [];
+  for (const listing of listings) {
+    const property = propertiesById.get(listing.property_id);
+    if (!property) continue;
+    const media = mediaByPropertyId.get(listing.property_id) ?? [];
+    snapshots.push(mapListingSnapshot(listing, property, media, locale));
+  }
+  return snapshots;
+};
+
+const hydrateListingSnapshot = async (
+  listing: ListingRow,
+  locale: AppLocale
+): Promise<PropertyListingSnapshot | null> => {
+  const [snapshot] = await hydrateListingsBatch([listing], locale);
+  return snapshot ?? null;
+};
+
+const hydrateListingSnapshotWithProperty = (
+  listing: ListingRow,
+  property: PropertyRow,
+  media: MediaRow[],
+  locale: AppLocale
+): PropertyListingSnapshot => {
+  return mapListingSnapshot(listing, property, media, locale);
 };
 
 const normalizePostalCode = (value: string) => value.trim().replace(/\s+/g, "");
@@ -208,7 +288,7 @@ export const toPublicPropertyListingSummary = (
   energy: listing.property.energy,
 });
 
-export const listPublicPropertyListings = async (input: {
+type ListPublicPropertyListingsInput = {
   locale?: AppLocale;
   businessType: PropertyBusinessType;
   city?: string;
@@ -223,15 +303,30 @@ export const listPublicPropertyListings = async (input: {
   maxFloor?: number;
   terrace?: boolean;
   elevator?: boolean;
-}): Promise<PropertyListingSnapshot[]> => {
+  page?: number;
+  pageSize?: number;
+};
+
+const listPublicPropertyListingsUncached = async (
+  input: ListPublicPropertyListingsInput
+): Promise<PropertyListingSnapshot[]> => {
   const locale = input.locale ?? "fr";
+  const pageSize = Math.min(
+    Math.max(input.pageSize ?? DEFAULT_LISTINGS_PAGE_SIZE, 1),
+    100
+  );
+  const page = Math.max(input.page ?? 1, 1);
+  const rangeStart = (page - 1) * pageSize;
+  const rangeEnd = rangeStart + pageSize - 1;
+
   let query = supabaseAdmin
     .from("property_listings")
     .select("*")
     .eq("business_type", input.businessType)
     .eq("is_published", true)
     .eq("publication_status", "active")
-    .order("updated_at", { ascending: false });
+    .order("updated_at", { ascending: false })
+    .range(rangeStart, rangeEnd);
 
   if (input.city?.trim()) {
     query = query.ilike("city", `%${input.city.trim()}%`);
@@ -278,14 +373,28 @@ export const listPublicPropertyListings = async (input: {
     throw new Error(error.message);
   }
 
-  const snapshots = await Promise.all(
-    ((data ?? []) as ListingRow[]).map(async (listing) => hydrateListingSnapshot(listing, locale))
-  );
-
-  return snapshots.filter((listing): listing is PropertyListingSnapshot => Boolean(listing));
+  // Hydrate the whole page in exactly 2 round-trips (property + media)
+  // instead of 2 round-trips per listing (N+1 pattern).
+  return hydrateListingsBatch((data ?? []) as ListingRow[], locale);
 };
 
-export const getPublicPropertyListingBySlug = async (slug: string, locale: AppLocale = "fr") => {
+/**
+ * Next.js Data Cache wrapper. Invalidated via revalidateTag("listings:public")
+ * from the SweepBright webhook and admin mutations.
+ */
+export const listPublicPropertyListings = unstable_cache(
+  listPublicPropertyListingsUncached,
+  ["listPublicPropertyListings"],
+  {
+    tags: [CACHE_TAG_LISTINGS_PUBLIC],
+    revalidate: 300,
+  }
+);
+
+const getPublicPropertyListingBySlugUncached = async (
+  slug: string,
+  locale: AppLocale = "fr"
+) => {
   const { data: listingData, error: listingError } = await supabaseAdmin
     .from("property_listings")
     .select("*")
@@ -304,7 +413,27 @@ export const getPublicPropertyListingBySlug = async (slug: string, locale: AppLo
   return hydrateListingSnapshot(listingData as ListingRow, locale);
 };
 
-export const getPublicPropertyListingByExternalId = async (input: {
+/**
+ * React.cache deduplicates generateMetadata + page within a single HTTP
+ * request. unstable_cache persists across requests and is invalidated via
+ * revalidateTag on CACHE_TAG_LISTINGS_PUBLIC (any listing changed) or on
+ * cacheTagListingBySlug(slug) (this listing changed).
+ */
+export const getPublicPropertyListingBySlug = cache(
+  async (slug: string, locale: AppLocale = "fr") => {
+    const cached = unstable_cache(
+      getPublicPropertyListingBySlugUncached,
+      ["getPublicPropertyListingBySlug"],
+      {
+        tags: [CACHE_TAG_LISTINGS_PUBLIC, cacheTagListingBySlug(slug)],
+        revalidate: 600,
+      }
+    );
+    return cached(slug, locale);
+  }
+);
+
+const getPublicPropertyListingByExternalIdUncached = async (input: {
   postalCode: string;
   propertyId: string;
   locale?: AppLocale;
@@ -333,25 +462,67 @@ export const getPublicPropertyListingByExternalId = async (input: {
   if (!propertyData) return null;
   const property = propertyData as PropertyRow;
 
-  const { data: listingData, error: listingError } = await supabaseAdmin
-    .from("property_listings")
-    .select("*")
-    .eq("property_id", property.id)
-    .eq("is_published", true)
-    .maybeSingle();
+  const [listingResult, mediaResult] = await Promise.all([
+    supabaseAdmin
+      .from("property_listings")
+      .select("*")
+      .eq("property_id", property.id)
+      .eq("is_published", true)
+      .maybeSingle(),
+    supabaseAdmin
+      .from("property_media")
+      .select("*")
+      .eq("property_id", property.id)
+      .order("ordinal", { ascending: true }),
+  ]);
 
-  if (listingError) {
-    if (isMissingRelationError(listingError.message)) {
+  if (listingResult.error) {
+    if (isMissingRelationError(listingResult.error.message)) {
       return null;
     }
-    throw new Error(listingError.message);
+    throw new Error(listingResult.error.message);
   }
-  if (!listingData) return null;
+  if (!listingResult.data) return null;
+  if (mediaResult.error) {
+    throw new Error(mediaResult.error.message);
+  }
 
-  return hydrateListingSnapshot(listingData as ListingRow, locale);
+  return hydrateListingSnapshotWithProperty(
+    listingResult.data as ListingRow,
+    property,
+    (mediaResult.data ?? []) as MediaRow[],
+    locale
+  );
 };
 
-export const listPropertyTypesForBusinessType = async (businessType: PropertyBusinessType) => {
+/**
+ * Cached per request (React.cache) + across requests (unstable_cache) with
+ * tags tied to the external SweepBright reference (postalCode + sourceRef).
+ */
+export const getPublicPropertyListingByExternalId = cache(
+  async (input: {
+    postalCode: string;
+    propertyId: string;
+    locale?: AppLocale;
+  }) => {
+    const cached = unstable_cache(
+      getPublicPropertyListingByExternalIdUncached,
+      ["getPublicPropertyListingByExternalId"],
+      {
+        tags: [
+          CACHE_TAG_LISTINGS_PUBLIC,
+          cacheTagListingByExternalRef(input.postalCode, input.propertyId),
+        ],
+        revalidate: 600,
+      }
+    );
+    return cached(input);
+  }
+);
+
+const listPropertyTypesForBusinessTypeUncached = async (
+  businessType: PropertyBusinessType
+) => {
   const { data, error } = await supabaseAdmin
     .from("property_listings")
     .select("property_type")
@@ -374,3 +545,12 @@ export const listPropertyTypesForBusinessType = async (businessType: PropertyBus
     )
   ).sort((left, right) => left.localeCompare(right, "fr"));
 };
+
+export const listPropertyTypesForBusinessType = unstable_cache(
+  listPropertyTypesForBusinessTypeUncached,
+  ["listPropertyTypesForBusinessType"],
+  {
+    tags: [CACHE_TAG_LISTINGS_PUBLIC],
+    revalidate: 300,
+  }
+);

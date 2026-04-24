@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import {
   listPropertyTypesForBusinessType,
   listPublicPropertyListings,
@@ -5,6 +6,7 @@ import {
 } from "@/services/properties/property-listing.service";
 import type { AppLocale } from "@/lib/i18n/config";
 import { PublicListingsSearch } from "./public-listings-search";
+import { SkeletonListingsGrid } from "./skeletons";
 import type { PropertyBusinessType } from "@/types/domain/properties";
 
 type ListingSearchParams = {
@@ -20,6 +22,7 @@ type ListingSearchParams = {
   maxFloor?: string;
   terrace?: string;
   elevator?: string;
+  page?: string;
 };
 
 type PublicListingsPageProps = {
@@ -42,7 +45,37 @@ const toBoolean = (value: string | undefined) => {
   return undefined;
 };
 
-export async function PublicListingsPage(props: PublicListingsPageProps) {
+export function PublicListingsPage(props: PublicListingsPageProps) {
+  return (
+    <main className="min-h-screen">
+      <section className="bg-[#141446] text-[#f4ece4]">
+        <div className="w-full px-6 py-10 md:px-10 md:py-14 xl:px-14 2xl:px-20 space-y-4">
+          <p className="text-xs uppercase tracking-[0.18em] text-[#f4ece4]/70">
+            Catalogue Sillage Immo
+          </p>
+          <h1 className="sillage-section-title text-[#f4ece4]">{props.title}</h1>
+          <p className="sillage-editorial-text max-w-3xl text-[#f4ece4]/82">{props.intro}</p>
+        </div>
+      </section>
+
+      <section className="bg-[#f4ece4] text-[#141446]">
+        <div className="w-full px-6 py-8 md:px-10 xl:px-14 2xl:px-20 space-y-8">
+          <Suspense
+            fallback={
+              <div className="space-y-6">
+                <SkeletonListingsGrid count={6} />
+              </div>
+            }
+          >
+            <PublicListingsContent {...props} />
+          </Suspense>
+        </div>
+      </section>
+    </main>
+  );
+}
+
+async function PublicListingsContent(props: PublicListingsPageProps) {
   const [listings, propertyTypes] = await Promise.all([
     listPublicPropertyListings({
       locale: props.locale,
@@ -59,52 +92,37 @@ export async function PublicListingsPage(props: PublicListingsPageProps) {
       maxFloor: toNumber(props.searchParams.maxFloor),
       terrace: toBoolean(props.searchParams.terrace),
       elevator: toBoolean(props.searchParams.elevator),
+      page: toNumber(props.searchParams.page),
     }),
     listPropertyTypesForBusinessType(props.businessType),
   ]);
 
   return (
-    <main className="min-h-screen">
-      <section className="bg-[#141446] text-[#f4ece4]">
-        <div className="w-full px-6 py-10 md:px-10 md:py-14 xl:px-14 2xl:px-20 space-y-4">
-          <p className="text-xs uppercase tracking-[0.18em] text-[#f4ece4]/70">
-            Catalogue Sillage Immo
-          </p>
-          <h1 className="sillage-section-title text-[#f4ece4]">{props.title}</h1>
-          <p className="sillage-editorial-text max-w-3xl text-[#f4ece4]/82">{props.intro}</p>
-        </div>
-      </section>
-
-      <section className="bg-[#f4ece4] text-[#141446]">
-        <div className="w-full px-6 py-8 md:px-10 xl:px-14 2xl:px-20 space-y-8">
-          <PublicListingsSearch
-            locale={props.locale}
-            businessType={props.businessType}
-            initialListings={listings.map(toPublicPropertyListingSummary)}
-            initialPropertyTypes={propertyTypes}
-            initialFilters={{
-              city: props.searchParams.city ?? "",
-              type: props.searchParams.type ?? "",
-              minPrice: props.searchParams.minPrice ?? "",
-              maxPrice: props.searchParams.maxPrice ?? "",
-              minRooms: props.searchParams.minRooms ?? "",
-              maxRooms: props.searchParams.maxRooms ?? "",
-              minSurface: props.searchParams.minSurface ?? "",
-              maxSurface: props.searchParams.maxSurface ?? "",
-              minFloor: props.searchParams.minFloor ?? "",
-              maxFloor: props.searchParams.maxFloor ?? "",
-              terrace:
-                props.searchParams.terrace === "true" || props.searchParams.terrace === "false"
-                  ? props.searchParams.terrace
-                  : "",
-              elevator:
-                props.searchParams.elevator === "true" || props.searchParams.elevator === "false"
-                  ? props.searchParams.elevator
-                  : "",
-            }}
-          />
-        </div>
-      </section>
-    </main>
+    <PublicListingsSearch
+      locale={props.locale}
+      businessType={props.businessType}
+      initialListings={listings.map(toPublicPropertyListingSummary)}
+      initialPropertyTypes={propertyTypes}
+      initialFilters={{
+        city: props.searchParams.city ?? "",
+        type: props.searchParams.type ?? "",
+        minPrice: props.searchParams.minPrice ?? "",
+        maxPrice: props.searchParams.maxPrice ?? "",
+        minRooms: props.searchParams.minRooms ?? "",
+        maxRooms: props.searchParams.maxRooms ?? "",
+        minSurface: props.searchParams.minSurface ?? "",
+        maxSurface: props.searchParams.maxSurface ?? "",
+        minFloor: props.searchParams.minFloor ?? "",
+        maxFloor: props.searchParams.maxFloor ?? "",
+        terrace:
+          props.searchParams.terrace === "true" || props.searchParams.terrace === "false"
+            ? props.searchParams.terrace
+            : "",
+        elevator:
+          props.searchParams.elevator === "true" || props.searchParams.elevator === "false"
+            ? props.searchParams.elevator
+            : "",
+      }}
+    />
   );
 }

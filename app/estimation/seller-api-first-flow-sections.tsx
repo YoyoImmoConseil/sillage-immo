@@ -42,9 +42,11 @@ export function SellerProjectFormSection({
 }: SellerProjectFormSectionProps) {
   const copy = {
     fr: {
-      title: "Étape 1 - Votre projet et votre bien",
+      title: "Étape 1 — Comprendre votre bien et votre projet",
       intro:
-        "Quelques informations simples pour cadrer votre estimation et vous proposer un accompagnement vraiment adapté à votre situation.",
+        "Quelques informations suffisent pour préparer une estimation cohérente et vous orienter vers le bon accompagnement.",
+      antiFriction:
+        "Répondez avec les informations dont vous disposez aujourd'hui. Votre conseiller pourra compléter ou corriger les éléments avec vous si nécessaire.",
       contactDetails: "Vos coordonnées",
       firstName: "Prénom *",
       lastName: "Nom *",
@@ -55,13 +57,13 @@ export function SellerProjectFormSection({
       emailPlaceholder: "Ex: marie.dupont@email.com",
       phonePlaceholder: "Ex: 06 12 34 56 78",
       project: "Votre projet",
-      projectTimeline: "Où en est votre projet de vente ?",
-      timelineAlreadyListed: "J'ai déjà mis en vente",
-      timelineListNow: "Je veux mettre en vente maintenant",
-      timelineListWithin6Months: "Je veux mettre en vente dans les 6 mois",
-      timelineSelfSellFirst: "Je veux commencer à vendre par moi-même sans agence",
-      timelineEarlyReflection: "Je commence juste à réfléchir au projet",
-      timelinePersonalInfoOnly: "J'ai juste besoin de l'information pour des raisons personnelles",
+      projectTimeline: "Où en êtes-vous dans votre projet ?",
+      timelineAlreadyListed: "Mon bien est déjà en vente",
+      timelineListNow: "Je vends dès maintenant",
+      timelineListWithin6Months: "Je prévois de vendre dans les 6 mois",
+      timelineSelfSellFirst: "Je veux d'abord tester le marché par moi-même",
+      timelineEarlyReflection: "Je réfléchis encore",
+      timelinePersonalInfoOnly: "J'ai besoin d'une valeur pour une raison personnelle",
       addressAndType: "Adresse et type de bien",
       propertyType: "Type de bien",
       propertyTypeApartment: "Appartement",
@@ -118,13 +120,15 @@ export function SellerProjectFormSection({
       topFloor: "Dernier étage",
       usefulInfo: "Informations utiles (optionnel)",
       usefulInfoPlaceholder: "Ex : travaux récents, contraintes de calendrier, contexte particulier...",
-      send: "Étape 2 - Sécuriser mon email",
+      send: "Sécuriser mon estimation",
       sending: "Envoi...",
     },
     en: {
-      title: "Step 1 - Your project and property",
+      title: "Step 1 — Understanding your property and project",
       intro:
-        "A few simple details to frame your valuation and offer guidance that truly fits your situation.",
+        "A few details are enough to prepare a coherent valuation and guide you towards the right level of support.",
+      antiFriction:
+        "Answer with the information you have today. Your advisor can complete or adjust the details with you if needed.",
       contactDetails: "Your contact details",
       firstName: "First name *",
       lastName: "Last name *",
@@ -135,13 +139,13 @@ export function SellerProjectFormSection({
       emailPlaceholder: "Ex: marie.dupont@email.com",
       phonePlaceholder: "Ex: +33 6 12 34 56 78",
       project: "Your project",
-      projectTimeline: "Where are you in your selling project?",
-      timelineAlreadyListed: "I have already listed the property",
-      timelineListNow: "I want to sell now",
-      timelineListWithin6Months: "I want to sell within 6 months",
-      timelineSelfSellFirst: "I want to start by selling on my own without an agency",
-      timelineEarlyReflection: "I am just starting to think about the project",
-      timelinePersonalInfoOnly: "I only need information for personal reasons",
+      projectTimeline: "Where are you in your project?",
+      timelineAlreadyListed: "My property is already for sale",
+      timelineListNow: "I am selling right now",
+      timelineListWithin6Months: "I plan to sell within the next 6 months",
+      timelineSelfSellFirst: "I want to test the market on my own first",
+      timelineEarlyReflection: "I am still considering my options",
+      timelinePersonalInfoOnly: "I need a value for a personal reason",
       addressAndType: "Address and property type",
       propertyType: "Property type",
       propertyTypeApartment: "Apartment",
@@ -198,13 +202,15 @@ export function SellerProjectFormSection({
       topFloor: "Top floor",
       usefulInfo: "Useful details (optional)",
       usefulInfoPlaceholder: "Ex: recent works, timing constraints, special context...",
-      send: "Step 2 - Secure my email",
+      send: "Secure my valuation",
       sending: "Sending...",
     },
     es: {
-      title: "Paso 1 - Su proyecto y su inmueble",
+      title: "Paso 1 — Entender su inmueble y su proyecto",
       intro:
-        "Algunos datos sencillos para enmarcar su valoración y proponerle un acompañamiento realmente adaptado a su situación.",
+        "Unos pocos datos bastan para preparar una valoración coherente y orientarle hacia el acompañamiento adecuado.",
+      antiFriction:
+        "Responda con la información de la que dispone hoy. Su asesor podrá completar o ajustar los elementos con usted si es necesario.",
       contactDetails: "Sus datos de contacto",
       firstName: "Nombre *",
       lastName: "Apellidos *",
@@ -215,13 +221,13 @@ export function SellerProjectFormSection({
       emailPlaceholder: "Ej: maria.dupont@email.com",
       phonePlaceholder: "Ej: +33 6 12 34 56 78",
       project: "Su proyecto",
-      projectTimeline: "¿En qué punto se encuentra su proyecto de venta?",
-      timelineAlreadyListed: "Ya he puesto el inmueble en venta",
-      timelineListNow: "Quiero ponerlo en venta ahora",
-      timelineListWithin6Months: "Quiero ponerlo en venta en los próximos 6 meses",
-      timelineSelfSellFirst: "Quiero empezar a vender por mi cuenta sin agencia",
-      timelineEarlyReflection: "Apenas estoy empezando a pensar en el proyecto",
-      timelinePersonalInfoOnly: "Solo necesito la información por motivos personales",
+      projectTimeline: "¿En qué punto se encuentra su proyecto?",
+      timelineAlreadyListed: "Mi inmueble ya está en venta",
+      timelineListNow: "Vendo ahora mismo",
+      timelineListWithin6Months: "Tengo previsto vender en los próximos 6 meses",
+      timelineSelfSellFirst: "Primero quiero probar el mercado por mi cuenta",
+      timelineEarlyReflection: "Aún lo estoy pensando",
+      timelinePersonalInfoOnly: "Necesito un valor por un motivo personal",
       addressAndType: "Dirección y tipo de inmueble",
       propertyType: "Tipo de inmueble",
       propertyTypeApartment: "Apartamento",
@@ -278,13 +284,15 @@ export function SellerProjectFormSection({
       topFloor: "Última planta",
       usefulInfo: "Información útil (opcional)",
       usefulInfoPlaceholder: "Ej: obras recientes, restricciones de calendario, contexto particular...",
-      send: "Paso 2 - Asegurar mi email",
+      send: "Asegurar mi valoración",
       sending: "Envío...",
     },
     ru: {
-      title: "Шаг 1 - Ваш проект и ваш объект",
+      title: "Шаг 1 — Понять ваш объект и ваш проект",
       intro:
-        "Несколько простых данных, чтобы подготовить оценку и предложить сопровождение, действительно подходящее вашей ситуации.",
+        "Нескольких данных достаточно, чтобы подготовить связную оценку и направить вас к нужному уровню сопровождения.",
+      antiFriction:
+        "Укажите ту информацию, которая у вас есть сегодня. Ваш консультант сможет дополнить или уточнить детали вместе с вами при необходимости.",
       contactDetails: "Ваши контактные данные",
       firstName: "Имя *",
       lastName: "Фамилия *",
@@ -295,13 +303,13 @@ export function SellerProjectFormSection({
       emailPlaceholder: "Например: maria.dupont@email.com",
       phonePlaceholder: "Например: +33 6 12 34 56 78",
       project: "Ваш проект",
-      projectTimeline: "На каком этапе находится ваш проект продажи?",
-      timelineAlreadyListed: "Я уже выставил объект на продажу",
-      timelineListNow: "Я хочу выставить объект на продажу сейчас",
-      timelineListWithin6Months: "Я хочу выставить объект на продажу в течение 6 месяцев",
-      timelineSelfSellFirst: "Я хочу сначала попробовать продавать самостоятельно без агентства",
-      timelineEarlyReflection: "Я только начинаю задумываться о проекте",
-      timelinePersonalInfoOnly: "Мне нужна только информация по личным причинам",
+      projectTimeline: "На каком этапе ваш проект?",
+      timelineAlreadyListed: "Мой объект уже выставлен на продажу",
+      timelineListNow: "Я продаю прямо сейчас",
+      timelineListWithin6Months: "Планирую продать в течение 6 месяцев",
+      timelineSelfSellFirst: "Сначала хочу попробовать рынок самостоятельно",
+      timelineEarlyReflection: "Пока ещё обдумываю",
+      timelinePersonalInfoOnly: "Мне нужна стоимость по личной причине",
       addressAndType: "Адрес и тип объекта",
       propertyType: "Тип объекта",
       propertyTypeApartment: "Квартира",
@@ -358,7 +366,7 @@ export function SellerProjectFormSection({
       topFloor: "Последний этаж",
       usefulInfo: "Полезная информация (необязательно)",
       usefulInfoPlaceholder: "Например: недавние работы, ограничения по срокам, особый контекст...",
-      send: "Шаг 2 - Подтвердить мой email",
+      send: "Защитить мою оценку",
       sending: "Отправка...",
     },
   }[locale];
@@ -370,6 +378,9 @@ export function SellerProjectFormSection({
     <section className="rounded-2xl border border-[rgba(20,20,70,0.2)] bg-[#f4ece4] p-6 space-y-4">
       <h2 className="sillage-section-title">{copy.title}</h2>
       <p className="text-sm opacity-75">{copy.intro}</p>
+      <p className="rounded-[16px] border-l-4 border-[#141446] bg-white/70 px-4 py-3 text-sm italic text-[#141446]/85 leading-relaxed">
+        {copy.antiFriction}
+      </p>
       <div className="grid gap-3 sm:grid-cols-2 text-sm">
         <p className="sm:col-span-2 text-xs uppercase tracking-wide opacity-70">
           {copy.contactDetails}
@@ -723,46 +734,58 @@ export function SellerEmailVerificationSection({
 }: SellerEmailVerificationSectionProps) {
   const copy = {
     fr: {
-      title: "Étape 2 - Vérification de votre email",
-      intro: "Entrez le code reçu par email pour finaliser la sécurisation de votre demande.",
-      code: "Code email",
-      verify: "Valider le code",
+      title: "Étape 2 — Sécuriser l'envoi de votre estimation",
+      intro:
+        "Nous vérifions votre email pour protéger votre demande, éviter les fausses estimations et vous transmettre un résultat exploitable.",
+      code: "Code reçu par email",
+      verify: "Recevoir mon lien sécurisé",
       verifying: "Vérification...",
       dev: "Mode dev : code OTP =",
-      estimate: "Étape 3 - Obtenir mon estimation précise",
+      nonEngagement:
+        "Votre demande d'estimation ne vous engage pas. Elle nous permet de préparer une première analyse sérieuse et, si vous le souhaitez, un échange avec un conseiller Sillage.",
+      estimate: "Obtenir mon estimation et préparer la suite avec un conseiller",
       estimating: "Calcul en cours...",
       progress: "Analyse en cours...",
     },
     en: {
-      title: "Step 2 - Verify your email",
-      intro: "Enter the code received by email to finalize and secure your request.",
-      code: "Email code",
-      verify: "Validate code",
+      title: "Step 2 — Securing your valuation delivery",
+      intro:
+        "We verify your email to protect your request, prevent fake valuations and make sure you receive a usable result.",
+      code: "Code received by email",
+      verify: "Receive my secure link",
       verifying: "Verifying...",
       dev: "Dev mode: OTP code =",
-      estimate: "Step 3 - Get my detailed valuation",
+      nonEngagement:
+        "Requesting a valuation does not commit you to anything. It lets us prepare a first serious analysis and, if you wish, a conversation with a Sillage advisor.",
+      estimate: "Get my valuation and prepare the next steps with an advisor",
       estimating: "Calculating...",
       progress: "Analysis in progress...",
     },
     es: {
-      title: "Paso 2 - Verificación de su email",
-      intro: "Introduzca el código recibido por email para finalizar y asegurar su solicitud.",
-      code: "Código por email",
-      verify: "Validar código",
+      title: "Paso 2 — Asegurar el envío de su valoración",
+      intro:
+        "Verificamos su email para proteger su solicitud, evitar valoraciones falsas y enviarle un resultado aprovechable.",
+      code: "Código recibido por email",
+      verify: "Recibir mi enlace seguro",
       verifying: "Verificando...",
       dev: "Modo dev: código OTP =",
-      estimate: "Paso 3 - Obtener mi valoración detallada",
+      nonEngagement:
+        "Su solicitud de valoración no le compromete. Nos permite preparar un primer análisis serio y, si lo desea, una conversación con un asesor Sillage.",
+      estimate: "Obtener mi valoración y preparar la continuación con un asesor",
       estimating: "Calculando...",
       progress: "Análisis en curso...",
     },
     ru: {
-      title: "Шаг 2 - Подтверждение email",
-      intro: "Введите код, полученный по email, чтобы завершить и защитить вашу заявку.",
-      code: "Код из email",
-      verify: "Подтвердить код",
+      title: "Шаг 2 — Защитить отправку вашей оценки",
+      intro:
+        "Мы подтверждаем ваш email, чтобы защитить заявку, избежать недостоверных оценок и отправить вам пригодный для работы результат.",
+      code: "Код, полученный по email",
+      verify: "Получить мою защищённую ссылку",
       verifying: "Проверка...",
       dev: "Режим dev: OTP-код =",
-      estimate: "Шаг 3 - Получить точную оценку",
+      nonEngagement:
+        "Заявка на оценку ни к чему вас не обязывает. Она позволяет подготовить первый серьёзный анализ и, при желании, разговор с консультантом Sillage.",
+      estimate: "Получить оценку и подготовить следующий шаг с консультантом",
       estimating: "Расчет...",
       progress: "Идет анализ...",
     },
@@ -796,6 +819,9 @@ export function SellerEmailVerificationSection({
       ) : null}
       {verificationToken ? (
         <div className="space-y-3">
+          <p className="rounded-[16px] border-l-4 border-[#f4ece4] bg-[#f4ece4]/10 px-4 py-3 text-sm italic text-[#f4ece4]/90 leading-relaxed">
+            {copy.nonEngagement}
+          </p>
           <button
             className="rounded bg-[#f4ece4] px-4 py-2 text-sm text-[#141446] disabled:opacity-60"
             type="button"

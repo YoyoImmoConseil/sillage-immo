@@ -13,8 +13,12 @@ export async function POST(
 
   try {
     const { id } = await params;
-    const matches = await recomputeMatchesForBuyerLead(id);
-    return NextResponse.json({ ok: true, count: matches.length });
+    const result = await recomputeMatchesForBuyerLead(id);
+    return NextResponse.json({
+      ok: true,
+      count: result.totalMatches,
+      newCount: result.newMatches.length,
+    });
   } catch (error) {
     return NextResponse.json(
       { ok: false, message: error instanceof Error ? error.message : "Matching impossible." },

@@ -43,6 +43,7 @@ export type BuyerPortalProjectSummary = {
   locationLabel: string | null;
   budgetLabel: string | null;
   searchStatus: string | null;
+  unreadMatchCount: number;
 };
 
 export type BuyerPortalProjectPlaceholderDetail = {
@@ -236,7 +237,8 @@ export const listBuyerPortalProjectBridge = async (projectIds: string[]) => {
 export const buildBuyerPortalProjectSummary = (
   project: BuyerProjectLike,
   bridge: BuyerBridgeData | null,
-  locale: AppLocale = "fr"
+  locale: AppLocale = "fr",
+  options?: { unreadMatchCount?: number }
 ): BuyerPortalProjectSummary => {
   const resolvedBridge = bridge ?? { searchProfile: null, buyerLead: null };
   return {
@@ -256,6 +258,7 @@ export const buildBuyerPortalProjectSummary = (
         )
       : null,
     searchStatus: translateGenericStatus(resolvedBridge.searchProfile?.status ?? null, locale),
+    unreadMatchCount: options?.unreadMatchCount ?? 0,
   };
 };
 

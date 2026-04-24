@@ -142,6 +142,29 @@ export const sendOtpEmail = async (email: string, code: string) => {
   return { sent: true as const, provider: "smtp" as const };
 };
 
+export const sendTransactionalEmail = async (payload: EmailPayload) => {
+  if (isResendConfigured()) {
+    return sendWithResend(payload);
+  }
+
+  const transporter = getTransporter();
+  if (!transporter) {
+    return { sent: false as const, reason: "email_not_configured" as const };
+  }
+
+  const fromEmail = getFromEmail();
+  if (!fromEmail) {
+    return { sent: false as const, reason: "email_from_not_configured" as const };
+  }
+
+  await transporter.sendMail({
+    from: `${getFromName()} <${fromEmail}>`,
+    ...payload,
+  });
+
+  return { sent: true as const, provider: "smtp" as const };
+};
+
 export const sendClientPortalAccessEmail = async (input: {
   email: string;
   accessLink: string;
