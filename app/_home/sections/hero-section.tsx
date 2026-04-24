@@ -41,11 +41,11 @@ export function HeroSection({ locale }: Props) {
         className="absolute inset-0 bg-gradient-to-br from-[#141446]/85 via-[#141446]/55 to-[#141446]/30"
       />
       <div className="relative w-full px-6 py-12 md:px-10 md:py-20 xl:px-14 xl:py-24 2xl:px-20">
-        <div className="grid gap-10 lg:grid-cols-[58%_42%] lg:items-center">
+        <div className="grid gap-10 lg:grid-cols-[50%_50%] lg:items-center">
           <div className="max-w-[1092px]">
             <SillageLogo priority className="h-auto w-full" />
           </div>
-          <div className="space-y-5 max-w-2xl lg:pl-8 xl:pl-12">
+          <div className="space-y-5 max-w-3xl xl:max-w-4xl lg:pl-8 xl:pl-12">
             <p className="text-[11px] md:text-xs uppercase tracking-[0.24em] text-[#f4ece4]/75">
               {copy.eyebrow}
             </p>
@@ -55,10 +55,10 @@ export function HeroSection({ locale }: Props) {
             >
               {copy.title}
             </h1>
-            <p className="sillage-editorial-text text-[#f4ece4]/90 max-w-xl">
+            <p className="sillage-editorial-text text-[#f4ece4]/90 max-w-3xl">
               {copy.subtitle}
             </p>
-            <p className="text-sm md:text-base text-[#f4ece4]/70 max-w-xl">
+            <p className="text-sm md:text-base text-[#f4ece4]/70 max-w-3xl">
               {copy.tagline}
             </p>
 
@@ -91,7 +91,7 @@ export function HeroSection({ locale }: Props) {
               </Link>
             </div>
 
-            <p className="pt-2 text-xs md:text-sm text-[#f4ece4]/65 max-w-xl">
+            <p className="pt-2 text-xs md:text-sm text-[#f4ece4]/65 max-w-3xl">
               {copy.microcopy}
             </p>
           </div>
