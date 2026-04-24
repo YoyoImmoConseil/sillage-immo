@@ -244,8 +244,8 @@ export default async function EstimationPage() {
           className="pointer-events-none absolute right-6 top-6 opacity-[0.10]"
         />
         <div className="relative w-full px-6 py-12 md:px-10 md:py-20 xl:px-14 xl:py-24 2xl:px-20">
-          <div className="grid gap-10 lg:grid-cols-[38%_62%] lg:items-center">
-            <div className="max-w-[420px]">
+          <div className="grid gap-10 lg:grid-cols-[50%_50%] lg:items-center">
+            <div className="max-w-[840px]">
               <SillageLogo priority className="h-auto w-full" />
             </div>
             <div className="space-y-5 max-w-3xl">
