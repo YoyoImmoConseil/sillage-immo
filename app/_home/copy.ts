@@ -194,7 +194,7 @@ const fr: HomeCopy = {
     subtitle:
       "Une bonne vente ne commence pas par une publication. Elle commence par une estimation argumentée, un prix défendable, une mise en valeur sérieuse et une qualification rigoureuse des acquéreurs.",
     exclusiveMandate:
-      "Un mandat exclusif pensé pour engager l'agence dans le service, avec un cadre plus souple, plus lisible et plus transparent pour le vendeur.",
+      "Mandat exclusif, sans engagement : nous nous engageons sur le service, vous gardez votre liberté. Un cadre plus souple, plus lisible et plus transparent.",
     benefits: [
       {
         title: "Estimation fiable et argumentée",
@@ -496,7 +496,7 @@ const en: HomeCopy = {
     subtitle:
       "A good sale doesn't start with a listing. It starts with a well-argued valuation, a defendable price, a serious presentation and a rigorous buyer qualification.",
     exclusiveMandate:
-      "An exclusive mandate designed to commit the agency on service, with a clearer, more flexible and more transparent framework for the seller.",
+      "Exclusive mandate, no lock-in: we commit on the service, you keep your freedom. A clearer, more flexible and more transparent framework.",
     benefits: [
       {
         title: "Reliable, argued valuation",
@@ -797,7 +797,7 @@ const es: HomeCopy = {
     subtitle:
       "Una buena venta no empieza con una publicación. Empieza con una valoración argumentada, un precio defendible, una presentación cuidada y una cualificación rigurosa de los compradores.",
     exclusiveMandate:
-      "Un mandato exclusivo pensado para comprometer a la agencia con el servicio, en un marco más flexible, más legible y más transparente para el vendedor.",
+      "Mandato exclusivo, sin compromiso: nosotros nos comprometemos con el servicio, usted conserva su libertad. Un marco más flexible, más legible y más transparente.",
     benefits: [
       {
         title: "Valoración fiable y argumentada",
@@ -1098,7 +1098,7 @@ const ru: HomeCopy = {
     subtitle:
       "Хорошая продажа начинается не с публикации. Она начинается с аргументированной оценки, защищаемой цены, серьёзной презентации и строгой квалификации покупателей.",
     exclusiveMandate:
-      "Эксклюзивный мандат, который обязывает агентство по уровню сервиса, в более гибкой, ясной и прозрачной форме для продавца.",
+      "Эксклюзивный мандат без обязательств: мы обязуемся по уровню сервиса, вы сохраняете свою свободу. Более гибкая, ясная и прозрачная форма сотрудничества.",
     benefits: [
       {
         title: "Надёжная аргументированная оценка",
