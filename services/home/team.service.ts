@@ -35,9 +35,18 @@ export type PublicTeamMember = {
   phone: string | null;
   bio: string | null;
   avatarUrl: string | null;
+  bookingUrl: string | null;
 };
 
 const ROLE_ORDER: AdminRole[] = ["administrateur", "manager", "collaborateur"];
+
+const sanitizeBookingUrl = (value: string | null | undefined): string | null => {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  if (!/^https?:\/\//i.test(trimmed)) return null;
+  return trimmed;
+};
 
 const mapPublicTeamMember = (
   row: TeamMemberRow,
@@ -65,6 +74,7 @@ const mapPublicTeamMember = (
       sources: [row.metadata],
     }),
     avatarUrl: metadata.avatarUrl,
+    bookingUrl: sanitizeBookingUrl(metadata.bookingUrl),
   };
 };
 
