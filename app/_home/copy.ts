@@ -218,15 +218,15 @@ const fr: HomeCopy = {
     eyebrow: "Vous cherchez",
     title: "Votre recherche immobilière, exactement comme vous la dessinez",
     subtitle:
-      "Dessinez votre zone sur la carte et recevez les biens qui correspondent vraiment à votre projet, avec un conseiller à vos côtés pour vous aider à décider sereinement.",
+      "Dessinez votre zone, indiquez vos critères et recevez des alertes ciblées. Votre recherche peut aussi être suivie par un conseiller Sillage, qui l'active dans nos outils métier et notre réseau professionnel Côte d'Azur pour aller au-delà de notre propre catalogue.",
     benefits: [
       {
         title: "Dessinez votre zone",
         body: "Tracez précisément les rues, quartiers ou secteurs qui vous intéressent.",
       },
       {
-        title: "Créez plusieurs recherches",
-        body: "Résidence principale, investissement, pied-à-terre ou location : chaque projet peut avoir ses propres critères.",
+        title: "Recherche activée par un conseiller",
+        body: "Votre projet ne reste pas une simple alerte : un conseiller peut l'analyser, l'affiner avec vous et rechercher des opportunités dans nos bases métier partenaires.",
       },
       {
         title: "Recevez des alertes instantanées",
@@ -520,15 +520,15 @@ const en: HomeCopy = {
     eyebrow: "You're searching",
     title: "Your property search, exactly the way you draw it",
     subtitle:
-      "Draw your zone on the map and receive properties that truly match your project, with an advisor by your side to help you decide with confidence.",
+      "Draw your zone, set your criteria and receive targeted alerts. Your search can also be followed by a Sillage advisor, who activates it in our professional tools and our French Riviera partner network to go beyond our own catalogue.",
     benefits: [
       {
         title: "Draw your zone",
         body: "Trace precisely the streets, neighborhoods or sectors that matter to you.",
       },
       {
-        title: "Create several searches",
-        body: "Primary residence, investment, pied-à-terre or rental: each project can have its own criteria.",
+        title: "Search activated by an advisor",
+        body: "Your project is more than an alert: an advisor can review it, refine it with you and search for opportunities through our professional partner databases.",
       },
       {
         title: "Instant alerts",
@@ -821,15 +821,15 @@ const es: HomeCopy = {
     eyebrow: "Usted busca",
     title: "Su búsqueda inmobiliaria, exactamente como la dibuja",
     subtitle:
-      "Dibuje su zona en el mapa y reciba los bienes que realmente corresponden a su proyecto, con un asesor a su lado para ayudarle a decidir con serenidad.",
+      "Dibuje su zona, indique sus criterios y reciba alertas precisas. Su búsqueda también puede ser seguida por un asesor Sillage, que la activa en nuestras herramientas profesionales y en nuestra red de la Costa Azul para ir más allá de nuestro propio catálogo.",
     benefits: [
       {
         title: "Dibuje su zona",
         body: "Trace con precisión las calles, barrios o sectores que le interesan.",
       },
       {
-        title: "Cree varias búsquedas",
-        body: "Residencia principal, inversión, pied-à-terre o alquiler: cada proyecto puede tener sus propios criterios.",
+        title: "Búsqueda activada por un asesor",
+        body: "Su proyecto no se queda en una simple alerta: un asesor puede analizarlo, afinarlo con usted y buscar oportunidades en nuestras bases profesionales asociadas.",
       },
       {
         title: "Reciba alertas instantáneas",
@@ -1122,15 +1122,15 @@ const ru: HomeCopy = {
     eyebrow: "Вы ищете",
     title: "Ваш поиск недвижимости — ровно таким, каким вы его нарисуете",
     subtitle:
-      "Нарисуйте свою зону на карте и получайте объекты, которые действительно соответствуют вашему проекту, с консультантом рядом, который поможет принять решение спокойно.",
+      "Нарисуйте зону, укажите критерии и получайте целевые уведомления. Ваш поиск также может вести консультант Sillage — он активирует его в наших профессиональных инструментах и в нашей партнёрской сети Лазурного Берега, чтобы выйти за рамки нашего каталога.",
     benefits: [
       {
         title: "Нарисуйте свою зону",
         body: "Точно очертите улицы, кварталы или сектора, которые вас интересуют.",
       },
       {
-        title: "Создавайте несколько поисков",
-        body: "Основное жильё, инвестиция, pied-à-terre или аренда — у каждого проекта свои критерии.",
+        title: "Поиск, активированный консультантом",
+        body: "Ваш проект — не просто уведомление: консультант может его проанализировать, уточнить вместе с вами и искать возможности в наших профессиональных партнёрских базах.",
       },
       {
         title: "Получайте мгновенные оповещения",

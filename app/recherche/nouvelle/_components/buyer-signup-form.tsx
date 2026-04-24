@@ -96,10 +96,18 @@ export function BuyerSignupForm(props: BuyerSignupFormProps) {
       steps: ["Critères", "Contact"],
       sections: {
         criteria: "Vos critères de recherche",
-        zone: "Votre zone de recherche",
+        criteriaIntro:
+          "Indiquez vos critères actuels, même s'ils sont encore approximatifs. Vous pourrez les ajuster ensuite dans votre espace Sillage, et un conseiller pourra vous aider à les affiner.",
+        zone: "Dessinez votre zone idéale",
         zoneHint:
-          "Dessinez précisément le périmètre qui vous intéresse. Cette zone sera transmise à notre logiciel immobilier pour cibler les biens pertinents.",
-        contact: "Vos coordonnées",
+          "Tracez les rues, quartiers ou secteurs qui vous intéressent. Cette zone nous aide à mieux filtrer les biens automatiquement, mais aussi à guider le travail de votre conseiller lorsqu'il recherche des opportunités pour vous.",
+        zoneReassurance:
+          "Plus votre zone est précise, plus les alertes et les recherches de votre conseiller seront pertinentes.",
+        contact: "Recevez vos alertes et soyez accompagné",
+        contactIntro:
+          "Votre email permet de créer votre espace Sillage sécurisé, sans mot de passe. Votre téléphone permet à un conseiller de vous rappeler si une opportunité sérieuse correspond à votre projet ou si votre recherche mérite d'être affinée.",
+        contactControl:
+          "Vous gardez la main : votre recherche peut être modifiée, mise en pause ou supprimée à tout moment depuis votre espace Sillage.",
       },
       fields: {
         businessType: "Type de transaction",
@@ -131,9 +139,9 @@ export function BuyerSignupForm(props: BuyerSignupFormProps) {
           "J'accepte que Sillage Immo conserve ces informations pour traiter ma recherche et m'envoyer des alertes. Je peux me désabonner à tout moment.",
       },
       buttons: {
-        next: "Continuer",
+        next: "Valider mes critères",
         back: "Retour",
-        submit: "Sauvegarder ma recherche",
+        submit: "Activer ma recherche Sillage",
       },
       validation: {
         emailInvalid: "Merci de renseigner un email valide.",
@@ -159,10 +167,18 @@ export function BuyerSignupForm(props: BuyerSignupFormProps) {
       steps: ["Criteria", "Contact"],
       sections: {
         criteria: "Your search criteria",
-        zone: "Your search area",
+        criteriaIntro:
+          "Share your current criteria, even if they're still approximate. You'll be able to adjust them later in your Sillage space, and an advisor can help you refine them.",
+        zone: "Draw your ideal zone",
         zoneHint:
-          "Draw the exact area you're interested in. This zone will be pushed to our CRM to target relevant listings.",
-        contact: "Your contact details",
+          "Trace the streets, neighborhoods or sectors that matter to you. This zone helps us filter properties automatically, and it also guides your advisor when searching for opportunities on your behalf.",
+        zoneReassurance:
+          "The more precise your zone, the more relevant your alerts and your advisor's search work will be.",
+        contact: "Receive your alerts and stay supported",
+        contactIntro:
+          "Your email lets us create your secure Sillage space without any password. Your phone lets an advisor call you back if a serious opportunity matches your project, or if your search deserves to be refined.",
+        contactControl:
+          "You stay in control: your search can be edited, paused or deleted at any time from your Sillage space.",
       },
       fields: {
         businessType: "Transaction type",
@@ -194,9 +210,9 @@ export function BuyerSignupForm(props: BuyerSignupFormProps) {
           "I agree that Sillage Immo can keep this information to process my search and send me alerts. I can unsubscribe at any time.",
       },
       buttons: {
-        next: "Continue",
+        next: "Validate my criteria",
         back: "Back",
-        submit: "Save my search",
+        submit: "Activate my Sillage search",
       },
       validation: {
         emailInvalid: "Please provide a valid email.",
@@ -222,10 +238,18 @@ export function BuyerSignupForm(props: BuyerSignupFormProps) {
       steps: ["Criterios", "Contacto"],
       sections: {
         criteria: "Sus criterios de búsqueda",
-        zone: "Su zona de búsqueda",
+        criteriaIntro:
+          "Indique sus criterios actuales, aunque aún sean aproximados. Podrá ajustarlos después en su espacio Sillage, y un asesor podrá ayudarle a afinarlos.",
+        zone: "Dibuje su zona ideal",
         zoneHint:
-          "Dibuje el perímetro exacto que le interesa. Esta zona se transmitirá a nuestro CRM para dirigir las propiedades relevantes.",
-        contact: "Sus datos de contacto",
+          "Trace las calles, barrios o sectores que le interesan. Esta zona nos ayuda a filtrar mejor los bienes automáticamente, y también orienta el trabajo de su asesor cuando busca oportunidades para usted.",
+        zoneReassurance:
+          "Cuanto más precisa sea su zona, más pertinentes serán las alertas y las búsquedas de su asesor.",
+        contact: "Reciba sus alertas y sea acompañado",
+        contactIntro:
+          "Su email permite crear su espacio Sillage seguro, sin contraseña. Su teléfono permite que un asesor le llame si una oportunidad seria coincide con su proyecto, o si su búsqueda merece ser afinada.",
+        contactControl:
+          "Usted lleva el control: su búsqueda puede modificarse, pausarse o eliminarse en cualquier momento desde su espacio Sillage.",
       },
       fields: {
         businessType: "Tipo de operación",
@@ -257,9 +281,9 @@ export function BuyerSignupForm(props: BuyerSignupFormProps) {
           "Acepto que Sillage Immo conserve estos datos para procesar mi búsqueda y enviarme alertas. Puedo darme de baja en cualquier momento.",
       },
       buttons: {
-        next: "Continuar",
+        next: "Validar mis criterios",
         back: "Atrás",
-        submit: "Guardar mi búsqueda",
+        submit: "Activar mi búsqueda Sillage",
       },
       validation: {
         emailInvalid: "Por favor indique un email válido.",
@@ -285,10 +309,18 @@ export function BuyerSignupForm(props: BuyerSignupFormProps) {
       steps: ["Критерии", "Контакты"],
       sections: {
         criteria: "Критерии поиска",
-        zone: "Ваша зона поиска",
+        criteriaIntro:
+          "Укажите текущие критерии, даже если они пока приблизительны. Вы сможете скорректировать их в вашем кабинете Sillage, а консультант поможет их уточнить.",
+        zone: "Нарисуйте идеальную зону",
         zoneHint:
-          "Нарисуйте точный периметр, который вас интересует. Зона будет передана в CRM для подбора релевантных объектов.",
-        contact: "Контактные данные",
+          "Обозначьте улицы, кварталы или сектора, которые вам интересны. Эта зона помогает нам точнее фильтровать объекты автоматически и направляет работу вашего консультанта, когда он ищет возможности для вас.",
+        zoneReassurance:
+          "Чем точнее ваша зона, тем релевантнее уведомления и тем полезнее поисковая работа консультанта.",
+        contact: "Получайте уведомления и сопровождение",
+        contactIntro:
+          "Email нужен, чтобы создать ваш защищённый кабинет Sillage без пароля. Телефон позволит консультанту перезвонить, если появится серьёзная возможность, соответствующая проекту, или если поиск стоит уточнить.",
+        contactControl:
+          "Вы сохраняете контроль: запрос можно изменить, поставить на паузу или удалить в любой момент из кабинета Sillage.",
       },
       fields: {
         businessType: "Тип сделки",
@@ -320,9 +352,9 @@ export function BuyerSignupForm(props: BuyerSignupFormProps) {
           "Я согласен, чтобы Sillage Immo хранила эти данные для обработки моего запроса и отправки уведомлений. Я могу отписаться в любой момент.",
       },
       buttons: {
-        next: "Далее",
+        next: "Подтвердить критерии",
         back: "Назад",
-        submit: "Сохранить запрос",
+        submit: "Активировать мой поиск Sillage",
       },
       validation: {
         emailInvalid: "Укажите корректный email.",
@@ -543,6 +575,9 @@ export function BuyerSignupForm(props: BuyerSignupFormProps) {
       {step === 1 ? (
         <form className="space-y-6" onSubmit={handleNext}>
           <h2 className="text-xl font-semibold">{copy.sections.criteria}</h2>
+          <p className="rounded-[16px] border-l-4 border-[#141446] bg-white/70 px-4 py-3 text-sm italic text-[#141446]/85 leading-relaxed">
+            {copy.sections.criteriaIntro}
+          </p>
           <fieldset className="space-y-2">
             <legend className="text-sm font-medium">{copy.fields.businessType}</legend>
             <div className="flex gap-2">
@@ -700,6 +735,7 @@ export function BuyerSignupForm(props: BuyerSignupFormProps) {
               value={form.zonePolygon}
               onChange={(polygon) => updateField("zonePolygon", polygon)}
             />
+            <p className="text-xs italic opacity-70">{copy.sections.zoneReassurance}</p>
           </div>
 
           <div className="flex justify-end">
@@ -711,6 +747,9 @@ export function BuyerSignupForm(props: BuyerSignupFormProps) {
       ) : (
         <form className="space-y-6" onSubmit={handleSubmit}>
           <h2 className="text-xl font-semibold">{copy.sections.contact}</h2>
+          <p className="text-sm leading-relaxed text-[#141446]/80">
+            {copy.sections.contactIntro}
+          </p>
           <div className="grid gap-4 md:grid-cols-2">
             <label className="text-sm">
               {copy.fields.firstName}
@@ -755,6 +794,10 @@ export function BuyerSignupForm(props: BuyerSignupFormProps) {
               <span className="mt-1 block text-xs opacity-70">{copy.fields.phoneHint}</span>
             </label>
           </div>
+
+          <p className="rounded-[16px] border-l-4 border-[#141446] bg-white/70 px-4 py-3 text-sm italic text-[#141446]/85 leading-relaxed">
+            {copy.sections.contactControl}
+          </p>
 
           <label className="flex items-start gap-3 text-sm">
             <input
