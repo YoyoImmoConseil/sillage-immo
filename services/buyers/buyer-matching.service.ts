@@ -1,6 +1,7 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import type { Database } from "@/types/db/supabase";
+import { isPublicAvailabilityStatus } from "@/lib/properties/canonical-types";
 
 type BuyerLeadRow = Database["public"]["Tables"]["buyer_leads"]["Row"];
 type BuyerSearchProfileRow = Database["public"]["Tables"]["buyer_search_profiles"]["Row"];
@@ -181,7 +182,30 @@ const listActiveListings = async () => {
     throw new Error(error.message);
   }
 
-  return (data ?? []) as PropertyListingRow[];
+  const listings = (data ?? []) as PropertyListingRow[];
+  if (listings.length === 0) return listings;
+
+  // Defensive: do not match buyers against properties whose SweepBright status
+  // is not publicly commercialized (e.g. `prospect` / estimation in progress).
+  // The ingestion pipeline already keeps such listings unpublished, but we
+  // guard here as well so a stale row never triggers a buyer alert.
+  const propertyIds = Array.from(new Set(listings.map((l) => l.property_id)));
+  const { data: propertiesData, error: propertiesError } = await supabaseAdmin
+    .from("properties")
+    .select("id, availability_status")
+    .in("id", propertyIds);
+
+  if (propertiesError) {
+    throw new Error(propertiesError.message);
+  }
+
+  const allowedPropertyIds = new Set(
+    (propertiesData ?? [])
+      .filter((p) => isPublicAvailabilityStatus(p.availability_status))
+      .map((p) => p.id)
+  );
+
+  return listings.filter((l) => allowedPropertyIds.has(l.property_id));
 };
 
 export type RecomputeNewMatch = {
@@ -355,6 +379,25 @@ export const recomputeMatchesForBuyerLead = async (
 export const recomputeMatchesForProperty = async (
   propertyId: string
 ): Promise<RecomputeMatchesResult> => {
+  // Defensive: skip matching for properties not allowed on the public surface
+  // (e.g. `prospect` / estimation in progress). Without this guard, an
+  // incoming SweepBright webhook on a non-public property could otherwise
+  // trigger buyer alerts as a side-effect.
+  const { data: propertyData, error: propertyError } = await supabaseAdmin
+    .from("properties")
+    .select("availability_status")
+    .eq("id", propertyId)
+    .maybeSingle();
+  if (propertyError) {
+    throw new Error(propertyError.message);
+  }
+  if (
+    !propertyData ||
+    !isPublicAvailabilityStatus(propertyData.availability_status)
+  ) {
+    return { newMatches: [], totalMatches: 0 };
+  }
+
   const { data: listingData, error: listingError } = await supabaseAdmin
     .from("property_listings")
     .select("*")

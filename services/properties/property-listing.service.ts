@@ -18,6 +18,7 @@ import {
   cacheTagListingById,
   cacheTagListingBySlug,
 } from "@/lib/cache/tags";
+import { isPublicAvailabilityStatus } from "@/lib/properties/canonical-types";
 
 type ListingRow = Database["public"]["Tables"]["property_listings"]["Row"];
 type PropertyRow = Database["public"]["Tables"]["properties"]["Row"];
@@ -223,6 +224,12 @@ const hydrateListingsBatch = async (
   for (const listing of listings) {
     const property = propertiesById.get(listing.property_id);
     if (!property) continue;
+    // Defensive filter: even if a listing somehow ends up published in DB while
+    // its underlying property carries a non-public availability_status (legacy
+    // rows, manual override, race condition), drop it from the public surface.
+    // The ingestion pipeline is the authoritative gate; this is the second line
+    // of defence for `listPublicPropertyListings` and `getPublicPropertyListingBySlug`.
+    if (!isPublicAvailabilityStatus(property.availability_status)) continue;
     const media = mediaByPropertyId.get(listing.property_id) ?? [];
     snapshots.push(mapListingSnapshot(listing, property, media, locale));
   }
@@ -400,6 +407,7 @@ const getPublicPropertyListingBySlugUncached = async (
     .select("*")
     .eq("slug", slug)
     .eq("is_published", true)
+    .eq("publication_status", "active")
     .maybeSingle();
 
   if (listingError) {
@@ -410,6 +418,9 @@ const getPublicPropertyListingBySlugUncached = async (
   }
   if (!listingData) return null;
 
+  // hydrateListingSnapshot wraps hydrateListingsBatch which carries the
+  // defensive availability_status filter; if the underlying property is no
+  // longer commercialized publicly, the snapshot will be dropped here.
   return hydrateListingSnapshot(listingData as ListingRow, locale);
 };
 
@@ -461,6 +472,9 @@ const getPublicPropertyListingByExternalIdUncached = async (input: {
   }
   if (!propertyData) return null;
   const property = propertyData as PropertyRow;
+  // Defensive: don't expose properties whose SweepBright status is not in the
+  // public whitelist (e.g. `prospect`, `deleted`, `withdrawn`, `null`).
+  if (!isPublicAvailabilityStatus(property.availability_status)) return null;
 
   const [listingResult, mediaResult] = await Promise.all([
     supabaseAdmin
@@ -468,6 +482,7 @@ const getPublicPropertyListingByExternalIdUncached = async (input: {
       .select("*")
       .eq("property_id", property.id)
       .eq("is_published", true)
+      .eq("publication_status", "active")
       .maybeSingle(),
     supabaseAdmin
       .from("property_media")
@@ -528,6 +543,7 @@ const listPropertyTypesForBusinessTypeUncached = async (
     .select("property_type")
     .eq("business_type", businessType)
     .eq("is_published", true)
+    .eq("publication_status", "active")
     .neq("property_type", null);
 
   if (error) {
