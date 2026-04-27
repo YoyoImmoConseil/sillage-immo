@@ -7,6 +7,7 @@ import { formatPropertyTypeLabel } from "@/lib/i18n/domain";
 import { requireClientSpacePageContext } from "@/lib/client-space/auth";
 import { PropertyLocationMap } from "@/app/components/property-location-map";
 import { getSellerPortalPropertyDetail } from "@/services/clients/seller-portal.service";
+import { PropertyDocumentsClientPanel } from "./property-documents-client-panel";
 
 type OwnerPropertyPageProps = {
   params: Promise<{ propertyId: string }>;
@@ -290,6 +291,12 @@ export default async function OwnerPropertyPage({ params }: OwnerPropertyPagePro
               </div>
             </section>
           ) : null}
+
+          <PropertyDocumentsClientPanel
+            propertyId={detail.property.id}
+            clientProfileId={context.clientProfile.id}
+            locale={locale}
+          />
         </div>
 
         <div className="space-y-6">
