@@ -5,6 +5,7 @@ import { splitFullName } from "@/services/contacts/contact-identity.service";
 import { ensureEstimationProperty } from "@/services/properties/estimation-property.service";
 import { createInvitation } from "./client-project-invitation.service";
 import {
+  addClientToProject,
   createClientProject,
   emitClientProjectEvent,
 } from "./client-project.service";
@@ -255,6 +256,10 @@ export const createSellerProjectFromProperty = async (
   if (spErr) throw spErr;
 
   try {
+    // The primary membership (`client_project_clients` row) is already
+    // created by `createClientProject` above; nothing to do here for the
+    // single-owner case.
+
     const { error: propertyLinkError } = await supabaseAdmin.from("project_properties").insert({
       client_project_id: projectId,
       property_id: input.propertyId,
@@ -297,6 +302,191 @@ export const createSellerProjectFromProperty = async (
   }
 
   return { clientProjectId: projectId, sellerProjectId: sp.id };
+};
+
+// =====================================================================
+// Indivision : creation de projet vendeur partage par N proprietaires
+// =====================================================================
+//
+// Each entry of `coOwners` is either:
+//   - { clientProfileId } -> reuse an existing client_profile,
+//   - { email, firstName?, lastName?, phone? } -> resolve / create a
+//     client_profile via createClientProfile (idempotent on email).
+// Order matters: the first entry becomes the legacy primary
+// (`client_projects.client_profile_id`) AND the active primary in
+// `client_project_clients`. Subsequent entries become co_owner rows.
+
+export type CoOwnerInputExisting = { clientProfileId: string };
+export type CoOwnerInputNew = {
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+};
+export type CoOwnerInput = CoOwnerInputExisting | CoOwnerInputNew;
+
+export type CreateSellerProjectFromPropertyWithCoOwnersInput = {
+  propertyId: string;
+  coOwners: CoOwnerInput[];
+  adminProfileId?: string;
+};
+
+export type CreateSellerProjectFromPropertyWithCoOwnersResult = {
+  clientProjectId: string;
+  sellerProjectId: string;
+  primaryClientProfileId: string;
+  coOwnerClientProfileIds: string[];
+};
+
+const resolveCoOwnerClientProfileId = async (
+  input: CoOwnerInput
+): Promise<string> => {
+  if ("clientProfileId" in input && input.clientProfileId) {
+    const existing = await getClientById(input.clientProfileId);
+    if (!existing) {
+      throw new Error("Client co-proprietaire introuvable.");
+    }
+    return existing.id;
+  }
+  const newInput = input as CoOwnerInputNew;
+  if (!newInput.email?.trim()) {
+    throw new Error("Email requis pour creer un nouveau co-proprietaire.");
+  }
+  const result = await createClientProfile({
+    email: newInput.email,
+    phone: newInput.phone,
+    firstName: newInput.firstName,
+    lastName: newInput.lastName,
+  });
+  if (!result.clientProfileId) {
+    throw new Error("Impossible de creer le co-proprietaire.");
+  }
+  return result.clientProfileId;
+};
+
+export const createSellerProjectFromPropertyWithCoOwners = async (
+  input: CreateSellerProjectFromPropertyWithCoOwnersInput
+): Promise<CreateSellerProjectFromPropertyWithCoOwnersResult> => {
+  if (!input.coOwners || input.coOwners.length === 0) {
+    throw new Error("Au moins un proprietaire est requis.");
+  }
+
+  // 1. Resolve / create every client_profile up-front. We dedupe by id to
+  // tolerate the same client being added twice in the modal.
+  const resolvedIds: string[] = [];
+  const seen = new Set<string>();
+  for (const coOwner of input.coOwners) {
+    const id = await resolveCoOwnerClientProfileId(coOwner);
+    if (!seen.has(id)) {
+      resolvedIds.push(id);
+      seen.add(id);
+    }
+  }
+  if (resolvedIds.length === 0) {
+    throw new Error("Aucun proprietaire valide.");
+  }
+
+  const primaryClientProfileId = resolvedIds[0];
+  const coOwnerClientProfileIds = resolvedIds.slice(1);
+
+  // 2. Create the shared client_project with the primary as legacy owner.
+  const projectId = await createClientProject({
+    clientProfileId: primaryClientProfileId,
+    projectType: "seller",
+    title: undefined,
+    createdFrom: "crm_property",
+    primaryAdminProfileId: input.adminProfileId,
+  });
+
+  // 3. Materialize the seller_project + project_property + indivision rows.
+  const { data: sp, error: spErr } = await supabaseAdmin
+    .from("seller_projects")
+    .insert({
+      client_project_id: projectId,
+      assigned_admin_profile_id: input.adminProfileId ?? null,
+      entry_channel: "crm_direct" as SellerProjectEntryChannel,
+      project_status: "estimation_realisee",
+      mandate_status: "none",
+    })
+    .select("id")
+    .single();
+  if (spErr) throw spErr;
+
+  try {
+    // The primary membership is already inserted by `createClientProject`
+    // above. We only have to register additional co-owners here.
+    for (const coOwnerId of coOwnerClientProfileIds) {
+      await addClientToProject({
+        clientProjectId: projectId,
+        clientProfileId: coOwnerId,
+        role: "co_owner",
+        adminProfileId: input.adminProfileId,
+      });
+    }
+
+    const { error: propertyLinkError } = await supabaseAdmin.from("project_properties").insert({
+      client_project_id: projectId,
+      property_id: input.propertyId,
+      relationship_type: "seller_subject_property",
+      is_primary: true,
+      linked_by_admin_profile_id: input.adminProfileId ?? null,
+    });
+    if (propertyLinkError) throw propertyLinkError;
+
+    await createAdvisorHistoryAssignment({
+      sellerProjectId: sp.id,
+      adminProfileId: input.adminProfileId ?? null,
+      assignedByAdminId: input.adminProfileId,
+      reason: "Creation depuis fiche bien (indivision)",
+    });
+
+    await emitClientProjectEvent({
+      clientProjectId: projectId,
+      sellerProjectId: sp.id,
+      eventName: "seller_project.created_from_crm",
+      eventCategory: "project",
+      actorType: "admin",
+      actorId: input.adminProfileId ?? undefined,
+      payload: {
+        property_id: input.propertyId,
+        primary_client_profile_id: primaryClientProfileId,
+        co_owner_client_profile_ids: coOwnerClientProfileIds,
+      },
+    });
+
+    await emitClientProjectEvent({
+      clientProjectId: projectId,
+      sellerProjectId: sp.id,
+      eventName: "project_property.linked",
+      eventCategory: "project",
+      actorType: "admin",
+      actorId: input.adminProfileId ?? undefined,
+      payload: { property_id: input.propertyId },
+    });
+
+    if (coOwnerClientProfileIds.length > 0) {
+      await emitClientProjectEvent({
+        clientProjectId: projectId,
+        sellerProjectId: sp.id,
+        eventName: "client_project.co_owners_added",
+        eventCategory: "project",
+        actorType: "admin",
+        actorId: input.adminProfileId ?? undefined,
+        payload: { co_owner_client_profile_ids: coOwnerClientProfileIds },
+      });
+    }
+  } catch (error) {
+    await supabaseAdmin.from("seller_projects").delete().eq("id", sp.id);
+    await supabaseAdmin.from("client_projects").delete().eq("id", projectId);
+    throw error;
+  }
+
+  return {
+    clientProjectId: projectId,
+    sellerProjectId: sp.id,
+    primaryClientProfileId,
+    coOwnerClientProfileIds,
+  };
 };
 
 export type SellerProjectRow = {

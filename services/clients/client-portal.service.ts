@@ -23,6 +23,7 @@ import { getClientByAuthUserId, type ClientProfileRow } from "./client-profile.s
 import {
   getClientProjectById,
   getClientProjectsByClientId,
+  resolveAccessibleClientProjectIds,
   type ClientProjectRecord,
 } from "./client-project.service";
 import {
@@ -335,7 +336,13 @@ export const getClientPortalProjectDetail = async (input: {
   if (!client) return null;
 
   const project = await getClientProjectById(input.projectId);
-  if (!project || project.client_profile_id !== client.id) {
+  if (!project) {
+    return null;
+  }
+
+  // Indivision: legacy primary OR co-owner membership grants access.
+  const accessibleProjectIds = await resolveAccessibleClientProjectIds(client.id);
+  if (!accessibleProjectIds.includes(project.id)) {
     return null;
   }
 
