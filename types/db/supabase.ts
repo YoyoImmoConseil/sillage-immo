@@ -1613,6 +1613,122 @@ export type Database = {
         };
         Relationships: [];
       };
+      client_project_clients: {
+        Row: {
+          id: string;
+          created_at: string;
+          updated_at: string;
+          client_project_id: string;
+          client_profile_id: string;
+          role: "primary" | "co_owner";
+          added_by_admin_profile_id: string | null;
+          removed_at: string | null;
+          metadata: Record<string, unknown>;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          client_project_id: string;
+          client_profile_id: string;
+          role?: "primary" | "co_owner";
+          added_by_admin_profile_id?: string | null;
+          removed_at?: string | null;
+          metadata?: Record<string, unknown>;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          client_project_id?: string;
+          client_profile_id?: string;
+          role?: "primary" | "co_owner";
+          added_by_admin_profile_id?: string | null;
+          removed_at?: string | null;
+          metadata?: Record<string, unknown>;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "client_project_clients_client_project_id_fkey";
+            columns: ["client_project_id"];
+            isOneToOne: false;
+            referencedRelation: "client_projects";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "client_project_clients_client_profile_id_fkey";
+            columns: ["client_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "client_profiles";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      property_documents: {
+        Row: {
+          id: string;
+          created_at: string;
+          updated_at: string;
+          property_id: string;
+          kind: "file" | "link";
+          visibility: "admin_only" | "admin_and_client";
+          label: string;
+          external_url: string | null;
+          storage_bucket: string | null;
+          storage_path: string | null;
+          mime_type: string | null;
+          size_bytes: number | null;
+          uploaded_by_admin_profile_id: string | null;
+          uploaded_by_client_profile_id: string | null;
+          deleted_at: string | null;
+          metadata: Record<string, unknown>;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          property_id: string;
+          kind: "file" | "link";
+          visibility?: "admin_only" | "admin_and_client";
+          label: string;
+          external_url?: string | null;
+          storage_bucket?: string | null;
+          storage_path?: string | null;
+          mime_type?: string | null;
+          size_bytes?: number | null;
+          uploaded_by_admin_profile_id?: string | null;
+          uploaded_by_client_profile_id?: string | null;
+          deleted_at?: string | null;
+          metadata?: Record<string, unknown>;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          property_id?: string;
+          kind?: "file" | "link";
+          visibility?: "admin_only" | "admin_and_client";
+          label?: string;
+          external_url?: string | null;
+          storage_bucket?: string | null;
+          storage_path?: string | null;
+          mime_type?: string | null;
+          size_bytes?: number | null;
+          uploaded_by_admin_profile_id?: string | null;
+          uploaded_by_client_profile_id?: string | null;
+          deleted_at?: string | null;
+          metadata?: Record<string, unknown>;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "property_documents_property_id_fkey";
+            columns: ["property_id"];
+            isOneToOne: false;
+            referencedRelation: "properties";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

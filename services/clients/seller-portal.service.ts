@@ -9,7 +9,11 @@ import {
   getClientByAuthUserId,
   type ClientProfileRow,
 } from "./client-profile.service";
-import { getClientProjectsByClientId, getClientProjectById } from "./client-project.service";
+import {
+  getClientProjectsByClientId,
+  getClientProjectById,
+  resolveAccessibleClientProjectIds,
+} from "./client-project.service";
 import { getSellerMetadataSections } from "@/services/sellers/seller-metadata";
 import { getLatestValuationForSellerProject } from "@/services/valuation/valuation-record.service";
 
@@ -389,7 +393,13 @@ export const getSellerPortalProjectDetail = async (input: {
   if (!client) return null;
 
   const project = await getClientProjectById(input.projectId);
-  if (!project || project.client_profile_id !== client.id || project.project_type !== "seller") {
+  if (!project || project.project_type !== "seller") {
+    return null;
+  }
+
+  // Indivision: a co-owner is allowed to view the project too.
+  const accessibleProjectIds = await resolveAccessibleClientProjectIds(client.id);
+  if (!accessibleProjectIds.includes(project.id)) {
     return null;
   }
 
@@ -525,11 +535,16 @@ export const getSellerPortalPropertyDetail = async (input: {
   const projectIds = (projectLinks ?? []).map((link) => link.client_project_id);
   if (projectIds.length === 0) return null;
 
+  // Indivision: accept access via the legacy primary OR via
+  // client_project_clients membership.
+  const accessibleProjectIds = new Set(await resolveAccessibleClientProjectIds(client.id));
+  const ownedProjectIds = new Set(projectIds.filter((id) => accessibleProjectIds.has(id)));
+  if (ownedProjectIds.size === 0) return null;
+
   const { data: clientProjects } = await supabaseAdmin
     .from("client_projects")
     .select("id, client_profile_id, project_type")
-    .in("id", projectIds)
-    .eq("client_profile_id", client.id)
+    .in("id", Array.from(ownedProjectIds))
     .eq("project_type", "seller");
 
   const ownedProjects = (clientProjects ?? []) as Array<{
@@ -542,10 +557,10 @@ export const getSellerPortalPropertyDetail = async (input: {
   const detail = await getPropertyDetailById(input.propertyId);
   if (!detail) return null;
 
-  const ownedProjectIds = new Set(ownedProjects.map((project) => project.id));
+  const sellerProjectIds = new Set(ownedProjects.map((project) => project.id));
   const preferredLink =
-    (projectLinks ?? []).find((link) => link.is_primary && ownedProjectIds.has(link.client_project_id)) ??
-    (projectLinks ?? []).find((link) => ownedProjectIds.has(link.client_project_id)) ??
+    (projectLinks ?? []).find((link) => link.is_primary && sellerProjectIds.has(link.client_project_id)) ??
+    (projectLinks ?? []).find((link) => sellerProjectIds.has(link.client_project_id)) ??
     null;
 
   return {

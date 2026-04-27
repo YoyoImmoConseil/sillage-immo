@@ -1,6 +1,7 @@
 import "server-only";
 import nodemailer from "nodemailer";
 import { Resend } from "resend";
+import { escapeHtml, renderEmailLayout } from "./layout";
 
 type EmailPayload = {
   to: string;
@@ -48,11 +49,54 @@ const getFromEmail = () => {
 };
 
 const buildOtpEmailPayload = (email: string, code: string): EmailPayload => {
+  const safeCode = escapeHtml(code);
+  const subject = "Votre code pour sécuriser votre estimation";
+  const preheader = "Votre code est valable pendant 10 minutes.";
+  const bodyHtml = `
+    <p style="margin:0 0 14px;">Bonjour,</p>
+    <p style="margin:0 0 20px;">
+      Voici votre code pour sécuriser l'envoi de votre estimation Sillage Immo.
+    </p>
+    <p style="margin:24px 0;font-size:30px;font-weight:700;letter-spacing:6px;color:#141446;">
+      ${safeCode}
+    </p>
+    <p style="margin:0 0 12px;color:#5b5b78;font-size:14px;">
+      Ce code expire dans 10 minutes.
+    </p>
+    <p style="margin:0;color:#5b5b78;font-size:14px;">
+      Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer ce message en toute sécurité.
+    </p>
+  `;
+  const footerHtml = `
+    <p style="margin:0 0 4px;">À très vite,</p>
+    <p style="margin:0;">L'équipe Sillage Immo</p>
+  `;
+  const html = renderEmailLayout({
+    preheader,
+    eyebrow: "Estimation immobilière",
+    title: "Votre code de vérification",
+    bodyHtml,
+    footerHtml,
+  });
+  const text = [
+    "Bonjour,",
+    "",
+    "Voici votre code pour sécuriser l'envoi de votre estimation Sillage Immo :",
+    "",
+    `    ${code}`,
+    "",
+    "Ce code expire dans 10 minutes.",
+    "Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer ce message.",
+    "",
+    "À très vite,",
+    "L'équipe Sillage Immo",
+  ].join("\n");
+
   return {
     to: email,
-    subject: "Code de verification Sillage Immo",
-    text: `Votre code de verification est: ${code}. Il expire dans 10 minutes.`,
-    html: `<p>Votre code de verification est:</p><p style="font-size:24px;font-weight:700;letter-spacing:4px;">${code}</p><p>Ce code expire dans 10 minutes.</p>`,
+    subject,
+    text,
+    html,
   };
 };
 
@@ -61,37 +105,91 @@ const buildPortalAccessEmailPayload = (
   accessLink: string,
   context: "invite" | "login"
 ): EmailPayload => {
-  const subject =
-    context === "invite"
-      ? "Activez votre espace client Sillage Immo"
-      : "Votre lien de connexion Sillage Immo";
-  const intro =
-    context === "invite"
-      ? "Votre espace client Sillage Immo est pret. Cliquez sur le bouton ci-dessous pour l'activer."
-      : "Cliquez sur le bouton ci-dessous pour vous connecter a votre espace client Sillage Immo.";
+  const isInvite = context === "invite";
+
+  const subject = isInvite
+    ? "Votre espace Sillage est prêt"
+    : "Votre lien sécurisé Sillage";
+
+  const preheader = isInvite
+    ? "Activez votre espace Sillage sécurisé, sans mot de passe à retenir."
+    : "Accédez à votre espace Sillage depuis un lien sécurisé.";
+
+  const eyebrow = isInvite ? "Espace Sillage" : "Connexion sécurisée";
+
+  const title = isInvite
+    ? "Votre espace Sillage est prêt"
+    : "Votre lien sécurisé Sillage";
+
+  const bodyHtml = isInvite
+    ? `
+      <p style="margin:0 0 14px;">Bonjour,</p>
+      <p style="margin:0 0 14px;">
+        Votre espace Sillage est prêt. Vous y retrouverez votre projet, les échanges avec votre conseiller, vos documents et l'avancée de chaque étape.
+      </p>
+      <p style="margin:0 0 6px;">
+        Pas de mot de passe à retenir : un simple clic sur le bouton ci-dessous active votre accès.
+      </p>
+    `
+    : `
+      <p style="margin:0 0 14px;">Bonjour,</p>
+      <p style="margin:0 0 14px;">
+        Voici votre lien sécurisé pour accéder à votre espace Sillage.
+      </p>
+      <p style="margin:0 0 6px;">
+        Vous y retrouvez vos projets, vos recherches et les biens suivis par votre conseiller, sans mot de passe à retenir.
+      </p>
+    `;
+
+  const ctaLabel = isInvite
+    ? "Activer mon espace Sillage"
+    : "Accéder à mon espace Sillage";
+
+  const fallbackIntro = "Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :";
+  const expirationNote = "Ce lien est personnel et expire automatiquement.";
+
+  const footerHtml = `
+    <p style="margin:0 0 4px;">À bientôt,</p>
+    <p style="margin:0;">L'équipe Sillage Immo</p>
+  `;
+
+  const html = renderEmailLayout({
+    preheader,
+    eyebrow,
+    title,
+    bodyHtml,
+    cta: { label: ctaLabel, href: accessLink },
+    fallbackLink: {
+      intro: fallbackIntro,
+      href: accessLink,
+      expirationNote,
+    },
+    footerHtml,
+  });
+
+  const introText = isInvite
+    ? "Votre espace Sillage est prêt. Vous y retrouverez votre projet, les échanges avec votre conseiller, vos documents et l'avancée de chaque étape. Pas de mot de passe à retenir : un simple clic active votre accès."
+    : "Voici votre lien sécurisé pour accéder à votre espace Sillage. Vous y retrouvez vos projets, vos recherches et les biens suivis par votre conseiller, sans mot de passe à retenir.";
+
+  const text = [
+    "Bonjour,",
+    "",
+    introText,
+    "",
+    `${ctaLabel} :`,
+    accessLink,
+    "",
+    expirationNote,
+    "",
+    "À bientôt,",
+    "L'équipe Sillage Immo",
+  ].join("\n");
 
   return {
     to: email,
     subject,
-    text: `${intro}\n\n${accessLink}\n\nCe lien est personnel et expire automatiquement.`,
-    html: `
-      <div style="font-family:Arial,sans-serif;line-height:1.5;color:#141446;">
-        <p>Bonjour,</p>
-        <p>${intro}</p>
-        <p style="margin:24px 0;">
-          <a
-            href="${accessLink}"
-            style="display:inline-block;padding:12px 20px;background:#141446;color:#f4ece4;text-decoration:none;border-radius:8px;font-weight:600;"
-          >
-            Acceder a mon espace client
-          </a>
-        </p>
-        <p>Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :</p>
-        <p><a href="${accessLink}">${accessLink}</a></p>
-        <p style="color:#5b5b78;font-size:13px;">Ce lien est personnel et expire automatiquement.</p>
-        <p>L'equipe Sillage Immo</p>
-      </div>
-    `,
+    text,
+    html,
   };
 };
 
