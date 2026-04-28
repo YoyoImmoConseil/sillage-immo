@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname, useSearchParams } from "next/navigation";
+import { track } from "@/lib/analytics/data-layer";
 import { LOCALE_LABELS, SUPPORTED_LOCALES, type AppLocale } from "@/lib/i18n/config";
 import { getPathLocale, localizePathWithSearch, stripLocalePrefix } from "@/lib/i18n/routing";
 
@@ -31,6 +32,7 @@ export function LanguageSwitcher({ theme = "dark" }: LanguageSwitcherProps) {
           const nextLocale = event.target.value as AppLocale;
           const nextUrl = localizePathWithSearch(basePath, nextLocale, search);
           document.cookie = `sillage-locale=${nextLocale}; path=/; samesite=lax`;
+          track("lang_switched", { from: locale, to: nextLocale });
           window.location.assign(nextUrl);
         }}
         className={

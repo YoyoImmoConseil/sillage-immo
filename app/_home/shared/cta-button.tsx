@@ -9,6 +9,10 @@ type BaseProps = {
   className?: string;
   ariaLabel?: string;
   fullWidth?: boolean;
+  /** Analytics: stable id pushed via the click delegate (`cta_clicked`). */
+  trackId?: string;
+  /** Analytics: e.g. "hero", "final_cta", "footer". */
+  trackLocation?: string;
 };
 
 type LinkProps = BaseProps & {
@@ -61,8 +65,15 @@ export function CtaButton({
   fullWidth = false,
   target,
   rel,
+  trackId,
+  trackLocation,
 }: LinkProps) {
   const composed = composeClassName(variant, fullWidth, className);
+  const analyticsAttrs = trackId
+    ? { "data-track-cta": trackId, "data-track-location": trackLocation }
+    : trackLocation
+      ? { "data-track-location": trackLocation }
+      : {};
 
   if (resolveIsExternal(href)) {
     return (
@@ -72,6 +83,7 @@ export function CtaButton({
         className={composed}
         target={target}
         rel={rel ?? (target === "_blank" ? "noopener noreferrer" : undefined)}
+        {...analyticsAttrs}
       >
         {children}
       </a>
@@ -79,7 +91,7 @@ export function CtaButton({
   }
 
   return (
-    <Link href={href} aria-label={ariaLabel} className={composed}>
+    <Link href={href} aria-label={ariaLabel} className={composed} {...analyticsAttrs}>
       {children}
     </Link>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { track } from "@/lib/analytics/data-layer";
 import { parseApiResponse } from "@/lib/http/parse-api-response";
 import type { AppLocale } from "@/lib/i18n/config";
 import type {
@@ -153,6 +154,10 @@ export function SellerApiFirstFlow({ locale = "fr" }: { locale?: AppLocale }) {
     return () => window.clearInterval(timer);
   }, [isEstimating]);
 
+  useEffect(() => {
+    track("seller_estimation_started", { locale });
+  }, [locale]);
+
   const update = <K extends keyof FlowForm>(key: K, value: FlowForm[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
@@ -272,6 +277,15 @@ export function SellerApiFirstFlow({ locale = "fr" }: { locale?: AppLocale }) {
         return;
       }
       setUploadedMedia((prev) => [...prev, ...registerData.data.files]);
+      const totalSizeBytes = registerData.data.files.reduce(
+        (sum, file) => sum + (typeof file.sizeBytes === "number" ? file.sizeBytes : 0),
+        0
+      );
+      track("seller_media_uploaded", {
+        kind,
+        count: registerData.data.files.length,
+        total_size_mb: Math.round(totalSizeBytes / (1024 * 1024)),
+      });
     } catch {
       setMediaUploadError(copy.mediaUploadNetworkError);
     } finally {
@@ -305,6 +319,7 @@ export function SellerApiFirstFlow({ locale = "fr" }: { locale?: AppLocale }) {
       }
       setPreviewCode(data.data.previewCode ?? null);
       setStep("verify");
+      track("seller_otp_sent", { locale });
     } catch {
       setError(copy.sendOtpNetworkError);
     } finally {
@@ -335,6 +350,7 @@ export function SellerApiFirstFlow({ locale = "fr" }: { locale?: AppLocale }) {
         return;
       }
       setVerificationToken(data.data.verificationToken);
+      track("seller_otp_verified", { locale });
     } catch {
       setError(copy.verifyCodeNetworkError);
     } finally {
@@ -369,6 +385,7 @@ export function SellerApiFirstFlow({ locale = "fr" }: { locale?: AppLocale }) {
 
       setPortalAccessStatus("sent");
       setPortalAccessMessage(copy.portalSentSuccess(access.email));
+      track("seller_portal_link_sent", { mode: access.mode, locale });
     } catch {
       setPortalAccessStatus("error");
       setPortalAccessMessage(copy.portalSendNetworkError);
@@ -453,6 +470,22 @@ export function SellerApiFirstFlow({ locale = "fr" }: { locale?: AppLocale }) {
       setPortalAccess(data.data.portalAccess ?? null);
       setEstimateProgress(100);
       setStep("result");
+      const valuation = data.data.valuation;
+      track("seller_estimation_computed", {
+        valuation_low: valuation.valuationPriceLow ?? undefined,
+        valuation_high: valuation.valuationPriceHigh ?? undefined,
+        valuation_mid: valuation.valuationPrice ?? undefined,
+        city: valuation.cityName ?? undefined,
+        zip: valuation.cityZipCode ?? undefined,
+        rooms: valuation.rooms ?? undefined,
+        living_area_m2: valuation.livingSpaceArea ?? undefined,
+        media_count: uploadedMedia.length,
+      });
+      track("seller_lead_created", {
+        create_status: data.data.createStatus,
+        has_portal_access: Boolean(data.data.portalAccess),
+        locale,
+      });
       if (data.data.portalAccess) {
         void sendPortalMagicLink(data.data.portalAccess);
       }

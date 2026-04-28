@@ -75,7 +75,15 @@ export function PropertyCard({ listing, locale = "fr" }: PropertyCardProps) {
 
   return (
     <article className="overflow-hidden rounded-2xl border border-[rgba(20,20,70,0.18)] bg-[#f4ece4]">
-      <Link href={localizePath(listing.canonicalPath, locale)} className="block">
+      <Link
+        href={localizePath(listing.canonicalPath, locale)}
+        className="block"
+        data-track-property-card={listing.id}
+        data-track-property-price={listing.priceAmount ?? undefined}
+        data-track-property-type={listing.propertyType ?? undefined}
+        data-track-property-city={listing.city ?? undefined}
+        data-track-location="property_card"
+      >
         <div className="relative aspect-[4/3] w-full overflow-hidden bg-[rgba(20,20,70,0.08)]">
           {listing.coverImageUrl ? (
             <img

@@ -7,6 +7,12 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 import { SiteHeader } from "./components/site-header";
 import { RouteProgressBar } from "./components/route-progress-bar";
+import { AnalyticsConsentInit } from "./components/analytics-consent-init";
+import { AnalyticsConsentBanner } from "./components/analytics-consent-banner";
+import { AnalyticsPageTracker } from "./components/analytics-page-tracker";
+import { AnalyticsClickDelegate } from "./components/analytics-click-delegate";
+import { AnalyticsErrorTracker } from "./components/analytics-error-tracker";
+import { AnalyticsWebVitals } from "./components/analytics-web-vitals";
 import { getRequestLocale } from "@/lib/i18n/request";
 
 const hkGrotesk = localFont({
@@ -67,7 +73,12 @@ export default async function RootLayout({
 
   return (
     <html lang={locale}>
-      {gtmId ? <GoogleTagManager gtmId={gtmId} /> : null}
+      {gtmId ? (
+        <>
+          <AnalyticsConsentInit />
+          <GoogleTagManager gtmId={gtmId} />
+        </>
+      ) : null}
       <body
         className={`${hkGrotesk.variable} ${montagna.variable} ${libreBaskerville.variable} ${montserrat.variable} ${openSans.variable} antialiased`}
       >
@@ -77,6 +88,17 @@ export default async function RootLayout({
         <SiteHeader />
         {children}
         <SpeedInsights />
+        {gtmId ? (
+          <>
+            <Suspense fallback={null}>
+              <AnalyticsPageTracker locale={locale} />
+            </Suspense>
+            <AnalyticsClickDelegate />
+            <AnalyticsErrorTracker />
+            <AnalyticsWebVitals />
+            <AnalyticsConsentBanner locale={locale} />
+          </>
+        ) : null}
       </body>
     </html>
   );
