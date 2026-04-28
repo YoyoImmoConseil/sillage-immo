@@ -6,18 +6,48 @@ type ListingStatusBannerProps = {
   compact?: boolean;
 };
 
-const UNDER_AGREEMENT_LABELS: Record<AppLocale, string> = {
-  fr: "Sous Compromis",
-  en: "Sale Agreed",
-  es: "Venta Acordada",
-  ru: "Под соглашением",
+type CommercialStatus = "agreement" | "option";
+
+const STATUS_LABELS: Record<CommercialStatus, Record<AppLocale, string>> = {
+  agreement: {
+    fr: "Sous Compromis",
+    en: "Sale Agreed",
+    es: "Venta Acordada",
+    ru: "Под соглашением",
+  },
+  option: {
+    fr: "Sous Offre",
+    en: "Under Offer",
+    es: "Bajo Oferta",
+    ru: "Под предложением",
+  },
+};
+
+const normalizeAvailabilityStatus = (
+  value: string | null | undefined
+): CommercialStatus | null => {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "agreement") return "agreement";
+  if (normalized === "option") return "option";
+  return null;
 };
 
 export const isListingUnderAgreement = (
   availabilityStatus: string | null | undefined
-): boolean => {
-  if (typeof availabilityStatus !== "string") return false;
-  return availabilityStatus.trim().toLowerCase() === "agreement";
+): boolean => normalizeAvailabilityStatus(availabilityStatus) === "agreement";
+
+export const isListingUnderOffer = (
+  availabilityStatus: string | null | undefined
+): boolean => normalizeAvailabilityStatus(availabilityStatus) === "option";
+
+export const getListingCommercialStatusLabel = (
+  availabilityStatus: string | null | undefined,
+  locale: AppLocale = "fr"
+): string | null => {
+  const status = normalizeAvailabilityStatus(availabilityStatus);
+  if (!status) return null;
+  return STATUS_LABELS[status][locale] ?? STATUS_LABELS[status].fr;
 };
 
 export function ListingStatusBanner({
@@ -25,11 +55,10 @@ export function ListingStatusBanner({
   locale = "fr",
   compact = false,
 }: ListingStatusBannerProps) {
-  if (!isListingUnderAgreement(availabilityStatus)) {
+  const label = getListingCommercialStatusLabel(availabilityStatus, locale);
+  if (!label) {
     return null;
   }
-
-  const label = UNDER_AGREEMENT_LABELS[locale] ?? UNDER_AGREEMENT_LABELS.fr;
 
   return (
     <div

@@ -4,6 +4,11 @@ import type { AppLocale } from "@/lib/i18n/config";
 import { mergeLocalizedText } from "@/lib/i18n/localized-content";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { revalidatePublicListings } from "@/lib/cache/revalidate";
+import {
+  isAdminAvailabilityStatus,
+  isPublicAvailabilityStatus,
+  type AdminAvailabilityStatus,
+} from "@/lib/properties/canonical-types";
 import type { Database } from "@/types/db/supabase";
 import type { PropertyBusinessType } from "@/types/domain/properties";
 
@@ -159,7 +164,7 @@ export const createManualProperty = async (input: {
   hasTerrace?: boolean | null;
   hasElevator?: boolean | null;
   coverImageUrl?: string;
-  isPublished: boolean;
+  availabilityStatus?: AdminAvailabilityStatus;
 }) => {
   const now = new Date().toISOString();
   const sourceRef = createSourceRef();
@@ -169,6 +174,11 @@ export const createManualProperty = async (input: {
     input.descriptionTranslations
   );
   const listingMetadata = mergeLocalizedText({}, "title", input.titleTranslations);
+
+  const requestedStatus = input.availabilityStatus;
+  const availabilityStatus: AdminAvailabilityStatus =
+    requestedStatus && isAdminAvailabilityStatus(requestedStatus) ? requestedStatus : "available";
+  const isPublic = isPublicAvailabilityStatus(availabilityStatus);
 
   const { data: propertyData, error: propertyError } = await supabaseAdmin
     .from("properties")
@@ -188,6 +198,7 @@ export const createManualProperty = async (input: {
       floor: input.floor ?? null,
       has_terrace: input.hasTerrace ?? null,
       has_elevator: input.hasElevator ?? null,
+      availability_status: availabilityStatus,
       raw_payload: {},
       metadata: propertyMetadata,
       updated_at: now,
@@ -207,8 +218,8 @@ export const createManualProperty = async (input: {
     .insert({
       property_id: property.id,
       business_type: input.businessType,
-      publication_status: input.isPublished ? "active" : "inactive",
-      is_published: input.isPublished,
+      publication_status: isPublic ? "active" : "inactive",
+      is_published: isPublic,
       slug: slugPayload.slug,
       canonical_path: slugPayload.canonicalPath,
       title: input.title.trim(),
@@ -223,7 +234,7 @@ export const createManualProperty = async (input: {
       has_terrace: input.hasTerrace ?? null,
       has_elevator: input.hasElevator ?? null,
       price_amount: input.priceAmount ?? null,
-      published_at: input.isPublished ? now : null,
+      published_at: isPublic ? now : null,
       updated_at: now,
       listing_metadata: listingMetadata,
     })
@@ -266,7 +277,6 @@ export const updateManualProperty = async (input: {
   hasTerrace?: boolean | null;
   hasElevator?: boolean | null;
   coverImageUrl?: string;
-  isPublished: boolean;
 }) => {
   const detail = await getAdminPropertyDetail(input.propertyId);
   if (!detail) {
@@ -308,12 +318,14 @@ export const updateManualProperty = async (input: {
     throw new Error(propertyError.message);
   }
 
+  // Note: publication is no longer driven by this endpoint. The status panel
+  // (PATCH /api/admin/properties/[id]/status) is the single source of truth
+  // for `is_published` / `publication_status` (derived from
+  // `properties.availability_status`).
   const { error: listingError } = await supabaseAdmin
     .from("property_listings")
     .update({
       business_type: input.businessType,
-      publication_status: input.isPublished ? "active" : "inactive",
-      is_published: input.isPublished,
       title: input.title.trim(),
       city: input.city?.trim() || null,
       postal_code: input.postalCode?.trim() || null,
@@ -326,8 +338,6 @@ export const updateManualProperty = async (input: {
       has_terrace: input.hasTerrace ?? null,
       has_elevator: input.hasElevator ?? null,
       price_amount: input.priceAmount ?? null,
-      published_at: input.isPublished ? now : null,
-      unpublished_at: input.isPublished ? null : now,
       listing_metadata: listingMetadata,
       updated_at: now,
     })

@@ -11,6 +11,7 @@ import { formatListingPrice } from "@/services/properties/property-listing.servi
 import { PropertyEnergyScale } from "./property-energy-scale";
 import { PropertyGallery } from "./property-gallery";
 import { PropertyLocationMap } from "./property-location-map";
+import { getListingCommercialStatusLabel } from "./listing-status-banner";
 
 export const buildPublicListingMetadata = (
   listing: PropertyListingSnapshot | null,
@@ -64,6 +65,8 @@ export async function PublicListingDetailPage({
       location: "Emplacement",
       video: "Vidéo",
       watchVideo: "Voir la vidéo",
+      statusLabel: "Statut",
+      statusAvailable: "Disponible",
     },
     en: {
       back: "Back to listings",
@@ -78,6 +81,8 @@ export async function PublicListingDetailPage({
       location: "Location",
       video: "Video",
       watchVideo: "Watch the video",
+      statusLabel: "Status",
+      statusAvailable: "Available",
     },
     es: {
       back: "Volver al catálogo",
@@ -92,6 +97,8 @@ export async function PublicListingDetailPage({
       location: "Ubicación",
       video: "Vídeo",
       watchVideo: "Ver el vídeo",
+      statusLabel: "Estado",
+      statusAvailable: "Disponible",
     },
     ru: {
       back: "Назад к каталогу",
@@ -106,8 +113,16 @@ export async function PublicListingDetailPage({
       location: "Расположение",
       video: "Видео",
       watchVideo: "Смотреть видео",
+      statusLabel: "Статус",
+      statusAvailable: "Доступен",
     },
   }[locale];
+  // Localized, marketing-safe label (`Disponible`, `Sous Compromis`, `Sous Offre`, ...).
+  // Never expose the raw SweepBright `availability_status` value on the public surface
+  // (e.g. `prospect`, `option`, `agreement`) — only the curated label.
+  const commercialStatusLabel =
+    getListingCommercialStatusLabel(listing.property.availabilityStatus, locale) ??
+    copy.statusAvailable;
   const contact = listing.property.negotiator;
   const contactEmail = typeof contact.email === "string" && contact.email.trim() ? contact.email.trim() : null;
   const contactProfile = contactEmail ? await getPublicTeamMemberByEmail(contactEmail, locale) : null;
@@ -316,8 +331,8 @@ export async function PublicListingDetailPage({
                   <dd>{listing.property.generalCondition ?? "-"}</dd>
                 </div>
                 <div>
-                  <dt className="opacity-65">📌 Statut</dt>
-                  <dd>{listing.property.availabilityStatus ?? "-"}</dd>
+                  <dt className="opacity-65">📌 {copy.statusLabel}</dt>
+                  <dd>{commercialStatusLabel}</dd>
                 </div>
               </dl>
             </section>

@@ -21,7 +21,6 @@ type UpdatePropertyBody = {
   hasTerrace?: boolean | null;
   hasElevator?: boolean | null;
   coverImageUrl?: string;
-  isPublished?: boolean;
 };
 
 export async function PATCH(
@@ -64,7 +63,6 @@ export async function PATCH(
       hasTerrace: body.hasTerrace ?? null,
       hasElevator: body.hasElevator ?? null,
       coverImageUrl: body.coverImageUrl,
-      isPublished: Boolean(body.isPublished),
     });
 
     return NextResponse.json({ ok: true });
