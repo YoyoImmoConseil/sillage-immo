@@ -7,6 +7,12 @@ type PropertyLocationMapProps = {
   longitude: number | null;
   address: string | null;
   title: string;
+  /**
+   * Visual footprint of the map.
+   * - `default` (16/9, full width) for public detail pages.
+   * - `compact` (smaller fixed height, capped width) for admin / dense layouts.
+   */
+  size?: "default" | "compact";
 };
 
 const TILE_URL =
@@ -20,6 +26,7 @@ export function PropertyLocationMap({
   longitude,
   address,
   title,
+  size = "default",
 }: PropertyLocationMapProps) {
   const mapRef = useRef<HTMLDivElement | null>(null);
 
@@ -71,10 +78,19 @@ export function PropertyLocationMap({
     return null;
   }
 
+  const containerClass =
+    size === "compact"
+      ? "relative isolate overflow-hidden rounded-xl border border-[rgba(20,20,70,0.14)] max-w-2xl"
+      : "relative isolate overflow-hidden rounded-xl border border-[rgba(20,20,70,0.14)]";
+  const mapClass =
+    size === "compact"
+      ? "h-64 w-full bg-[#e9e1d8]"
+      : "aspect-[16/9] w-full bg-[#e9e1d8]";
+
   return (
     <div className="space-y-3">
-      <div className="overflow-hidden rounded-xl border border-[rgba(20,20,70,0.14)]">
-        <div ref={mapRef} className="aspect-[16/9] w-full bg-[#e9e1d8]" />
+      <div className={containerClass}>
+        <div ref={mapRef} className={mapClass} />
       </div>
       {address ? <p className="text-sm opacity-70">{address}</p> : null}
     </div>

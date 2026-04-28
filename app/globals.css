@@ -158,6 +158,10 @@ textarea:focus {
   outline-offset: 1px;
 }
 
+.leaflet-container {
+  z-index: 0;
+}
+
 .sillage-map-pin-wrapper {
   background: transparent;
   border: 0;
