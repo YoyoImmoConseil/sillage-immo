@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { track } from "@/lib/analytics/data-layer";
 import { parseApiResponse } from "@/lib/http/parse-api-response";
 
 const MAX_FILE_BYTES = 25 * 1024 * 1024;
@@ -471,6 +472,12 @@ function ClientUploadModal({ propertyId, copy, onClose, onUploaded }: ClientUplo
       if (!createParsed.ok) {
         throw new Error(createParsed.message ?? copy.errorGeneric);
       }
+      track("client_document_uploaded", {
+        property_id: propertyId,
+        size_kb: Math.round(file.size / 1024),
+        mime: file.type || PDF_MIME,
+        actor: "client",
+      });
       await onUploaded();
     } catch (err) {
       setError(err instanceof Error ? err.message : copy.errorGeneric);

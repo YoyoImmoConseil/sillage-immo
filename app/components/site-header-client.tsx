@@ -56,15 +56,24 @@ export function SiteHeaderClient() {
   }[locale];
 
   const navItems = [
-    { href: localizePath("/vente", locale), label: copy.sale },
-    { href: localizePath("/location", locale), label: copy.rental },
-    { href: localizePath("/estimation", locale), label: copy.valuation },
-    { href: localizePath("/recherche/nouvelle", locale), label: copy.buy },
+    { href: localizePath("/vente", locale), label: copy.sale, ctaId: "header_nav_sale" },
+    { href: localizePath("/location", locale), label: copy.rental, ctaId: "header_nav_rental" },
+    {
+      href: localizePath("/estimation", locale),
+      label: copy.valuation,
+      ctaId: "header_nav_valuation",
+    },
+    {
+      href: localizePath("/recherche/nouvelle", locale),
+      label: copy.buy,
+      ctaId: "header_nav_buy",
+    },
   ] as const;
 
   const clientSpaceItem = {
     href: localizePath("/espace-client/login", locale),
     label: copy.clientSpace,
+    ctaId: "header_nav_client_space",
   } as const;
 
   return (
@@ -73,6 +82,8 @@ export function SiteHeaderClient() {
         <Link
           href={localizePath("/", locale)}
           className="text-base tracking-[0.16em] uppercase text-[#f4ece4]/90 md:text-[1.05rem]"
+          data-track-cta="header_nav_home"
+          data-track-location="header"
         >
           {copy.home}
         </Link>
@@ -102,6 +113,8 @@ export function SiteHeaderClient() {
                     href={item.href}
                     className="rounded-xl px-3 py-2"
                     onClick={() => setIsOpen(false)}
+                    data-track-cta={item.ctaId}
+                    data-track-location="header_mobile"
                   >
                     {item.label}
                   </Link>
@@ -110,6 +123,8 @@ export function SiteHeaderClient() {
                   href={clientSpaceItem.href}
                   className="rounded-xl border border-white/16 px-3 py-2"
                   onClick={() => setIsOpen(false)}
+                  data-track-cta={clientSpaceItem.ctaId}
+                  data-track-location="header_mobile"
                 >
                   {clientSpaceItem.label}
                 </Link>
@@ -122,13 +137,21 @@ export function SiteHeaderClient() {
         {/* Desktop nav - visible from md breakpoint */}
         <nav className="hidden items-center gap-5 text-sm uppercase tracking-[0.14em] text-[#f4ece4]/90 md:flex md:text-[0.95rem]">
           {navItems.map((item) => (
-            <Link key={item.href} href={item.href} className="hover:opacity-80 transition-opacity">
+            <Link
+              key={item.href}
+              href={item.href}
+              className="hover:opacity-80 transition-opacity"
+              data-track-cta={item.ctaId}
+              data-track-location="header"
+            >
               {item.label}
             </Link>
           ))}
           <Link
             href={clientSpaceItem.href}
             className="rounded border border-white/16 px-3 py-2 text-[#f4ece4] transition-opacity hover:opacity-80"
+            data-track-cta={clientSpaceItem.ctaId}
+            data-track-location="header"
           >
             {clientSpaceItem.label}
           </Link>

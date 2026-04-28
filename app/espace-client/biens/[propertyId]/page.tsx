@@ -8,6 +8,7 @@ import { requireClientSpacePageContext } from "@/lib/client-space/auth";
 import { PropertyLocationMap } from "@/app/components/property-location-map";
 import { getSellerPortalPropertyDetail } from "@/services/clients/seller-portal.service";
 import { PropertyDocumentsClientPanel } from "./property-documents-client-panel";
+import { PropertyViewTracker } from "./_property-view-tracker";
 
 type OwnerPropertyPageProps = {
   params: Promise<{ propertyId: string }>;
@@ -191,6 +192,11 @@ export default async function OwnerPropertyPage({ params }: OwnerPropertyPagePro
 
   return (
     <div className="space-y-6">
+      <PropertyViewTracker
+        propertyId={detail.property.id}
+        businessType={detail.listing?.businessType ?? null}
+        city={detail.property.city ?? null}
+      />
       <div className="flex flex-wrap gap-4">
         <Link href={backHref} className="text-sm underline text-[#141446]">
           {detail.linkedProjectId ? copy.backToProject : copy.backToProjects}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { track } from "@/lib/analytics/data-layer";
 import type { AppLocale } from "@/lib/i18n/config";
 
 type SellerMagicLinkFormProps = {
@@ -87,6 +88,11 @@ export function SellerMagicLinkForm({
         }
 
         setFeedback(successMessage);
+        track("client_login", {
+          method: "magic_link",
+          flow: inviteToken ? "invite" : "self",
+          locale,
+        });
       } catch {
         setError(copy.sendError);
       }
