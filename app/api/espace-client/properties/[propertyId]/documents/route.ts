@@ -4,6 +4,7 @@ import { canClientAccessProperty } from "@/services/clients/client-project.servi
 import {
   listPropertyDocumentsForClient,
   PROPERTY_DOCUMENT_MAX_BYTES,
+  registerUploadedClientPropertyDocument,
   resolveDocumentUploaders,
   uploadClientPropertyDocument,
 } from "@/services/properties/property-documents.service";
@@ -65,6 +66,41 @@ export async function POST(
     }
 
     const contentType = request.headers.get("content-type") ?? "";
+
+    if (contentType.includes("application/json")) {
+      const body = (await request.json()) as {
+        kind?: "file";
+        storagePath?: string;
+        label?: string;
+      };
+      if (body.kind !== "file") {
+        return NextResponse.json(
+          { ok: false, message: "Type de document invalide." },
+          { status: 422 }
+        );
+      }
+      const storagePath = (body.storagePath ?? "").trim();
+      if (!storagePath) {
+        return NextResponse.json(
+          { ok: false, message: "Chemin de stockage requis." },
+          { status: 422 }
+        );
+      }
+      if (body.label && body.label.length > MAX_LABEL_LENGTH) {
+        return NextResponse.json(
+          { ok: false, message: "Libellé trop long." },
+          { status: 422 }
+        );
+      }
+      const document = await registerUploadedClientPropertyDocument({
+        propertyId,
+        clientProfileId: session.clientProfile.id,
+        storagePath,
+        label: body.label,
+      });
+      return NextResponse.json({ ok: true, document });
+    }
+
     if (!contentType.includes("multipart/form-data")) {
       return NextResponse.json(
         { ok: false, message: "Type de requête non supporté." },

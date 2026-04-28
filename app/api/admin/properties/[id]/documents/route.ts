@@ -4,6 +4,7 @@ import {
   addAdminPropertyDocumentLink,
   listPropertyDocumentsForAdmin,
   PROPERTY_DOCUMENT_MAX_BYTES,
+  registerUploadedAdminPropertyDocument,
   resolveDocumentUploaders,
   uploadAdminPropertyDocument,
   type PropertyDocumentVisibility,
@@ -58,11 +59,37 @@ export async function POST(
   try {
     if (contentType.includes("application/json")) {
       const body = (await request.json()) as {
-        kind?: "link";
+        kind?: "link" | "file";
         label?: string;
         url?: string;
+        storagePath?: string;
         visibility?: PropertyDocumentVisibility | string;
       };
+
+      if (body.kind === "file") {
+        const storagePath = (body.storagePath ?? "").trim();
+        if (!storagePath) {
+          return NextResponse.json(
+            { ok: false, message: "Chemin de stockage requis." },
+            { status: 422 }
+          );
+        }
+        if (body.label && body.label.length > MAX_LABEL_LENGTH) {
+          return NextResponse.json(
+            { ok: false, message: "Libellé trop long." },
+            { status: 422 }
+          );
+        }
+        const document = await registerUploadedAdminPropertyDocument({
+          propertyId,
+          adminProfileId,
+          storagePath,
+          label: body.label,
+          visibility: parseVisibility(body.visibility),
+        });
+        return NextResponse.json({ ok: true, document });
+      }
+
       if (body.kind !== "link") {
         return NextResponse.json(
           { ok: false, message: "Type de document invalide." },
