@@ -1,8 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { parseApiResponse } from "@/lib/http/parse-api-response";
 
 const MAX_FILE_BYTES = 25 * 1024 * 1024;
+const PDF_MIME = "application/pdf";
 
 type Locale = "fr" | "en" | "es" | "ru";
 
@@ -218,17 +220,16 @@ export function PropertyDocumentsClientPanel({ propertyId, clientProfileId, loca
     setError(null);
     try {
       const res = await fetch(`/api/espace-client/properties/${propertyId}/documents`);
-      const data = (await res.json()) as {
+      const parsed = await parseApiResponse<{
         ok?: boolean;
         documents?: DocumentDto[];
         uploaders?: Record<string, UploaderInfo>;
-        message?: string;
-      };
-      if (!data.ok || !Array.isArray(data.documents)) {
-        throw new Error(data.message ?? copy.errorGeneric);
+      }>(res);
+      if (!parsed.ok || !parsed.data || !Array.isArray(parsed.data.documents)) {
+        throw new Error(parsed.message ?? copy.errorGeneric);
       }
-      setDocuments(data.documents);
-      setUploaders(data.uploaders ?? {});
+      setDocuments(parsed.data.documents);
+      setUploaders(parsed.data.uploaders ?? {});
     } catch (err) {
       setError(err instanceof Error ? err.message : copy.errorGeneric);
     } finally {
@@ -247,8 +248,8 @@ export function PropertyDocumentsClientPanel({ propertyId, clientProfileId, loca
         `/api/espace-client/properties/${propertyId}/documents/${documentId}`,
         { method: "DELETE" }
       );
-      const data = (await res.json()) as { ok?: boolean; message?: string };
-      if (!data.ok) throw new Error(data.message ?? copy.errorGeneric);
+      const parsed = await parseApiResponse(res);
+      if (!parsed.ok) throw new Error(parsed.message ?? copy.errorGeneric);
       await refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : copy.errorGeneric);
@@ -260,9 +261,10 @@ export function PropertyDocumentsClientPanel({ propertyId, clientProfileId, loca
       const res = await fetch(
         `/api/espace-client/properties/${propertyId}/documents/${documentId}/signed-url`
       );
-      const data = (await res.json()) as { ok?: boolean; url?: string; message?: string };
-      if (!data.ok || !data.url) throw new Error(data.message ?? copy.errorGeneric);
-      window.open(data.url, "_blank", "noopener,noreferrer");
+      const parsed = await parseApiResponse<{ url?: string }>(res);
+      const url = parsed.data?.url;
+      if (!parsed.ok || !url) throw new Error(parsed.message ?? copy.errorGeneric);
+      window.open(url, "_blank", "noopener,noreferrer");
     } catch (err) {
       setError(err instanceof Error ? err.message : copy.errorGeneric);
     }
@@ -425,15 +427,50 @@ function ClientUploadModal({ propertyId, copy, onClose, onUploaded }: ClientUplo
     setSubmitting(true);
     setError(null);
     try {
-      const form = new FormData();
-      form.append("file", file);
-      if (label.trim()) form.append("label", label.trim());
-      const res = await fetch(`/api/espace-client/properties/${propertyId}/documents`, {
-        method: "POST",
-        body: form,
+      const urlRes = await fetch(
+        `/api/espace-client/properties/${propertyId}/documents/upload-url`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fileName: file.name,
+            sizeBytes: file.size,
+            mimeType: file.type || PDF_MIME,
+          }),
+        }
+      );
+      const urlParsed = await parseApiResponse<{
+        uploadUrl?: string;
+        storagePath?: string;
+      }>(urlRes);
+      const uploadUrl = urlParsed.data?.uploadUrl;
+      const storagePath = urlParsed.data?.storagePath;
+      if (!urlParsed.ok || !uploadUrl || !storagePath) {
+        throw new Error(urlParsed.message ?? copy.errorGeneric);
+      }
+
+      const putRes = await fetch(uploadUrl, {
+        method: "PUT",
+        headers: { "Content-Type": file.type || PDF_MIME },
+        body: file,
       });
-      const data = (await res.json()) as { ok?: boolean; message?: string };
-      if (!data.ok) throw new Error(data.message ?? copy.errorGeneric);
+      if (!putRes.ok) {
+        throw new Error(`${copy.errorGeneric} (${putRes.status})`);
+      }
+
+      const createRes = await fetch(`/api/espace-client/properties/${propertyId}/documents`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          kind: "file",
+          storagePath,
+          label: label.trim() || undefined,
+        }),
+      });
+      const createParsed = await parseApiResponse(createRes);
+      if (!createParsed.ok) {
+        throw new Error(createParsed.message ?? copy.errorGeneric);
+      }
       await onUploaded();
     } catch (err) {
       setError(err instanceof Error ? err.message : copy.errorGeneric);

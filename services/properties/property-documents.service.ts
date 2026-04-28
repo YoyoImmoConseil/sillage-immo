@@ -89,6 +89,42 @@ const buildStoragePath = (propertyId: string, fileName: string) => {
   return `${propertyId}/${randomUUID()}-${safe}.pdf`;
 };
 
+/**
+ * Confirm via Supabase Storage that an object physically exists at the given
+ * path inside the private bucket, and return its real size / mime type as
+ * reported by Storage. Used to validate a direct-upload performed by the
+ * browser against a signed upload URL before inserting the metadata row.
+ */
+const confirmUploadedObject = async (
+  bucket: string,
+  storagePath: string
+): Promise<{ sizeBytes: number | null; mimeType: string | null }> => {
+  const lastSlash = storagePath.lastIndexOf("/");
+  const folder = lastSlash >= 0 ? storagePath.slice(0, lastSlash) : "";
+  const fileName = lastSlash >= 0 ? storagePath.slice(lastSlash + 1) : storagePath;
+
+  const { data, error } = await supabaseAdmin.storage
+    .from(bucket)
+    .list(folder, { search: fileName, limit: 1 });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+  const entry = data?.find((item) => item.name === fileName);
+  if (!entry) {
+    throw new Error("Fichier introuvable dans le storage. L'upload n'a pas abouti.");
+  }
+  const size =
+    entry.metadata && typeof (entry.metadata as { size?: number }).size === "number"
+      ? (entry.metadata as { size: number }).size
+      : null;
+  const mime =
+    entry.metadata && typeof (entry.metadata as { mimetype?: string }).mimetype === "string"
+      ? (entry.metadata as { mimetype: string }).mimetype
+      : null;
+  return { sizeBytes: size, mimeType: mime };
+};
+
 const validateExternalUrl = (url: string) => {
   try {
     const parsed = new URL(url.trim());
@@ -209,6 +245,148 @@ export const addAdminPropertyDocumentLink = async (input: {
     externalUrl: url,
     uploadedByAdminProfileId: input.adminProfileId,
   });
+};
+
+export type SignedUploadUrlResponse = {
+  uploadUrl: string;
+  token: string;
+  storagePath: string;
+  storageBucket: string;
+  maxBytes: number;
+  mimeType: typeof PROPERTY_DOCUMENT_PDF_MIME;
+};
+
+/**
+ * Issue a short-lived signed upload URL that the browser uses to PUT the PDF
+ * directly to Supabase Storage. This bypasses Vercel's 4.5 MB serverless
+ * function body limit so we can really honour the 25 MB cap announced by
+ * the UI.
+ *
+ * The returned `storagePath` is server-generated (UUID + sanitized base
+ * name) so a malicious caller cannot overwrite arbitrary objects.
+ */
+export const createSignedUploadUrlForPropertyDocument = async (input: {
+  propertyId: string;
+  fileName: string;
+  sizeBytes: number;
+  mimeType?: string | null;
+}): Promise<SignedUploadUrlResponse> => {
+  if (input.mimeType && input.mimeType !== PROPERTY_DOCUMENT_PDF_MIME) {
+    throw new Error("Le fichier doit être au format PDF.");
+  }
+  if (!Number.isFinite(input.sizeBytes) || input.sizeBytes <= 0) {
+    throw new Error("Taille de fichier invalide.");
+  }
+  if (input.sizeBytes > PROPERTY_DOCUMENT_MAX_BYTES) {
+    throw new Error("Le fichier dépasse la taille maximale de 25 Mo.");
+  }
+  if (!input.fileName?.trim()) {
+    throw new Error("Nom de fichier requis.");
+  }
+
+  const storagePath = buildStoragePath(input.propertyId, input.fileName);
+  const { data, error } = await supabaseAdmin.storage
+    .from(PROPERTY_DOCUMENTS_BUCKET)
+    .createSignedUploadUrl(storagePath);
+
+  if (error || !data?.signedUrl || !data?.token) {
+    throw new Error(error?.message ?? "Impossible de générer l'URL d'upload.");
+  }
+
+  return {
+    uploadUrl: data.signedUrl,
+    token: data.token,
+    storagePath: data.path ?? storagePath,
+    storageBucket: PROPERTY_DOCUMENTS_BUCKET,
+    maxBytes: PROPERTY_DOCUMENT_MAX_BYTES,
+    mimeType: PROPERTY_DOCUMENT_PDF_MIME,
+  };
+};
+
+/**
+ * Confirm an admin direct-upload: verify the file landed in the private
+ * bucket, then create the property_documents metadata row. The recorded
+ * size is the one reported by Supabase (not the client) for trust.
+ */
+export const registerUploadedAdminPropertyDocument = async (input: {
+  propertyId: string;
+  adminProfileId: string;
+  storagePath: string;
+  label?: string;
+  visibility: PropertyDocumentVisibility;
+}): Promise<PropertyDocument> => {
+  if (!input.storagePath?.startsWith(`${input.propertyId}/`)) {
+    throw new Error("Chemin de stockage invalide.");
+  }
+
+  const { sizeBytes, mimeType } = await confirmUploadedObject(
+    PROPERTY_DOCUMENTS_BUCKET,
+    input.storagePath
+  );
+  if (typeof sizeBytes === "number" && sizeBytes > PROPERTY_DOCUMENT_MAX_BYTES) {
+    await tryRemoveStorageObject(PROPERTY_DOCUMENTS_BUCKET, input.storagePath);
+    throw new Error("Le fichier dépasse la taille maximale de 25 Mo.");
+  }
+
+  const fallbackName = input.storagePath.split("/").pop() ?? "document.pdf";
+  try {
+    return await insertDocument({
+      propertyId: input.propertyId,
+      kind: "file",
+      visibility: input.visibility,
+      label: input.label?.trim() || fallbackName,
+      storageBucket: PROPERTY_DOCUMENTS_BUCKET,
+      storagePath: input.storagePath,
+      mimeType: mimeType ?? PROPERTY_DOCUMENT_PDF_MIME,
+      sizeBytes,
+      uploadedByAdminProfileId: input.adminProfileId,
+    });
+  } catch (error) {
+    await tryRemoveStorageObject(PROPERTY_DOCUMENTS_BUCKET, input.storagePath);
+    throw error;
+  }
+};
+
+/**
+ * Confirm a client direct-upload (espace-client). Visibility is forced to
+ * `admin_and_client` because clients cannot push admin-only documents.
+ */
+export const registerUploadedClientPropertyDocument = async (input: {
+  propertyId: string;
+  clientProfileId: string;
+  storagePath: string;
+  label?: string;
+}): Promise<PropertyDocument> => {
+  if (!input.storagePath?.startsWith(`${input.propertyId}/`)) {
+    throw new Error("Chemin de stockage invalide.");
+  }
+
+  const { sizeBytes, mimeType } = await confirmUploadedObject(
+    PROPERTY_DOCUMENTS_BUCKET,
+    input.storagePath
+  );
+  if (typeof sizeBytes === "number" && sizeBytes > PROPERTY_DOCUMENT_MAX_BYTES) {
+    await tryRemoveStorageObject(PROPERTY_DOCUMENTS_BUCKET, input.storagePath);
+    throw new Error("Le fichier dépasse la taille maximale de 25 Mo.");
+  }
+
+  const fallbackName = input.storagePath.split("/").pop() ?? "document.pdf";
+  try {
+    return await insertDocument({
+      propertyId: input.propertyId,
+      kind: "file",
+      visibility: "admin_and_client",
+      label: input.label?.trim() || fallbackName,
+      storageBucket: PROPERTY_DOCUMENTS_BUCKET,
+      storagePath: input.storagePath,
+      mimeType: mimeType ?? PROPERTY_DOCUMENT_PDF_MIME,
+      sizeBytes,
+      uploadedByClientProfileId: input.clientProfileId,
+    });
+  } catch (error) {
+    await tryRemoveStorageObject(PROPERTY_DOCUMENTS_BUCKET, input.storagePath);
+    throw error;
+  }
 };
 
 export const uploadClientPropertyDocument = async (input: {
