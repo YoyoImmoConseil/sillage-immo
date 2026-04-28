@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Libre_Baskerville, Montserrat, Open_Sans } from "next/font/google";
 import localFont from "next/font/local";
+import { GoogleTagManager } from "@next/third-parties/google";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 import { SiteHeader } from "./components/site-header";
@@ -60,9 +61,13 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const locale = await getRequestLocale();
+  // Only inject GTM when an ID is configured (prod). Empty / unset on local
+  // and preview branches avoids polluting analytics with non-prod traffic.
+  const gtmId = process.env.NEXT_PUBLIC_GTM_ID;
 
   return (
     <html lang={locale}>
+      {gtmId ? <GoogleTagManager gtmId={gtmId} /> : null}
       <body
         className={`${hkGrotesk.variable} ${montagna.variable} ${libreBaskerville.variable} ${montserrat.variable} ${openSans.variable} antialiased`}
       >
