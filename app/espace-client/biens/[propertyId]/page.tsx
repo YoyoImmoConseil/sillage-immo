@@ -287,6 +287,7 @@ export default async function OwnerPropertyPage({ params }: OwnerPropertyPagePro
                   longitude={detail.property.longitude}
                   address={fullAddress || null}
                   title={title}
+                  size="compact"
                 />
               </div>
             </section>

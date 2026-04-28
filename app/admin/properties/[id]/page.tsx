@@ -173,6 +173,7 @@ export default async function AdminPropertyDetailPage({ params }: AdminPropertyD
                 longitude={detail.property.longitude}
                 address={fullAddress || null}
                 title={detail.property.title ?? "Bien"}
+                size="compact"
               />
             </div>
           </section>
