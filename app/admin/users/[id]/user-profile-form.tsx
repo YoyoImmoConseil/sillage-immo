@@ -4,6 +4,7 @@ import NextImage from "next/image";
 import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { parseApiResponse } from "@/lib/http/parse-api-response";
 import { ADMIN_TEAM_TITLES, type AdminRole, type AdminTeamTitle } from "@/types/domain/admin";
 
 type UserProfile = {
@@ -75,9 +76,9 @@ export function UserProfileForm({ user, canManage }: { user: UserProfile; canMan
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ firstName, lastName, title, phone, bio, bookingUrl }),
         });
-        const payload = (await response.json()) as { ok?: boolean; message?: string };
-        if (!response.ok || !payload.ok) {
-          setError(payload.message ?? "Enregistrement impossible.");
+        const parsed = await parseApiResponse(response);
+        if (!parsed.ok) {
+          setError(parsed.message ?? "Enregistrement impossible.");
           return;
         }
 
@@ -100,25 +101,51 @@ export function UserProfileForm({ user, canManage }: { user: UserProfile; canMan
 
     startUploading(async () => {
       try {
-        const formData = new FormData();
-        formData.append("file", file);
-
-        const response = await fetch(`/api/admin/users/${user.id}/avatar`, {
+        const urlResponse = await fetch(`/api/admin/users/${user.id}/avatar/upload-url`, {
           method: "POST",
-          body: formData,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fileName: file.name,
+            sizeBytes: file.size,
+            mimeType: file.type,
+          }),
         });
-        const payload = (await response.json()) as {
-          ok?: boolean;
-          message?: string;
-          avatarUrl?: string;
-        };
-
-        if (!response.ok || !payload.ok || !payload.avatarUrl) {
-          setError(payload.message ?? "Upload impossible.");
+        const urlParsed = await parseApiResponse<{
+          uploadUrl?: string;
+          storagePath?: string;
+        }>(urlResponse);
+        const uploadUrl = urlParsed.data?.uploadUrl;
+        const storagePath = urlParsed.data?.storagePath;
+        if (!urlParsed.ok || !uploadUrl || !storagePath) {
+          setError(urlParsed.message ?? "Upload impossible.");
           return;
         }
 
-        setAvatarUrl(payload.avatarUrl);
+        const putResponse = await fetch(uploadUrl, {
+          method: "PUT",
+          headers: { "Content-Type": file.type },
+          body: file,
+        });
+        if (!putResponse.ok) {
+          setError(`Upload Supabase echoue (${putResponse.status}).`);
+          return;
+        }
+
+        const registerResponse = await fetch(`/api/admin/users/${user.id}/avatar`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ kind: "file", storagePath }),
+        });
+        const registerParsed = await parseApiResponse<{ avatarUrl?: string }>(
+          registerResponse
+        );
+        const avatarUrlNext = registerParsed.data?.avatarUrl;
+        if (!registerParsed.ok || !avatarUrlNext) {
+          setError(registerParsed.message ?? "Upload impossible.");
+          return;
+        }
+
+        setAvatarUrl(avatarUrlNext);
         setResult("Photo mise à jour.");
         router.refresh();
       } catch {
