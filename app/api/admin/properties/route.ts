@@ -2,6 +2,10 @@ import type { AppLocale } from "@/lib/i18n/config";
 import { NextResponse } from "next/server";
 import { getAdminRequestContext, hasAdminPermission } from "@/lib/admin/auth";
 import { createManualProperty, listAdminProperties } from "@/services/properties/manual-property.service";
+import {
+  isAdminAvailabilityStatus,
+  type AdminAvailabilityStatus,
+} from "@/lib/properties/canonical-types";
 import type { PropertyBusinessType } from "@/types/domain/properties";
 
 type CreatePropertyBody = {
@@ -21,7 +25,7 @@ type CreatePropertyBody = {
   hasTerrace?: boolean | null;
   hasElevator?: boolean | null;
   coverImageUrl?: string;
-  isPublished?: boolean;
+  availabilityStatus?: string;
 };
 
 export async function GET(request: Request) {
@@ -67,6 +71,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, message: "Titre et businessType requis." }, { status: 422 });
   }
 
+  let availabilityStatus: AdminAvailabilityStatus | undefined;
+  if (typeof body.availabilityStatus === "string") {
+    const candidate = body.availabilityStatus.trim().toLowerCase();
+    if (!isAdminAvailabilityStatus(candidate)) {
+      return NextResponse.json(
+        { ok: false, message: "Statut inconnu." },
+        { status: 422 }
+      );
+    }
+    availabilityStatus = candidate;
+  }
+
   try {
     const created = await createManualProperty({
       title: body.title,
@@ -85,7 +101,7 @@ export async function POST(request: Request) {
       hasTerrace: body.hasTerrace ?? null,
       hasElevator: body.hasElevator ?? null,
       coverImageUrl: body.coverImageUrl,
-      isPublished: Boolean(body.isPublished),
+      availabilityStatus,
     });
 
     return NextResponse.json({ ok: true, propertyId: created.property.id });

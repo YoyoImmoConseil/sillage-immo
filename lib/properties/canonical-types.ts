@@ -33,6 +33,63 @@ export const isPublicAvailabilityStatus = (
 };
 
 /**
+ * Full set of `availability_status` values we expose in the admin status
+ * dropdown. Includes both the public whitelist and the internal/SweepBright
+ * statuses that should NEVER reach the public site (prospect, sold, rented,
+ * withdrawn, deleted).
+ *
+ * Order matters: the dropdown renders entries in this order.
+ */
+export const ADMIN_AVAILABILITY_STATUSES = [
+  "available",
+  "agreement",
+  "option",
+  "prospect",
+  "sold",
+  "rented",
+  "withdrawn",
+  "deleted",
+] as const;
+
+export type AdminAvailabilityStatus = (typeof ADMIN_AVAILABILITY_STATUSES)[number];
+
+const ADMIN_AVAILABILITY_STATUS_SET = new Set<string>(ADMIN_AVAILABILITY_STATUSES);
+
+export const isAdminAvailabilityStatus = (
+  value: string | null | undefined
+): value is AdminAvailabilityStatus => {
+  if (typeof value !== "string") return false;
+  return ADMIN_AVAILABILITY_STATUS_SET.has(value.trim().toLowerCase());
+};
+
+/**
+ * French admin labels for `availability_status` values. Admin UI is FR-only;
+ * public-facing translations live in `app/components/listing-status-banner.tsx`
+ * and `app/components/public-listing-detail-page.tsx`.
+ */
+export const ADMIN_AVAILABILITY_STATUS_LABELS_FR: Record<AdminAvailabilityStatus, string> = {
+  available: "Disponible",
+  agreement: "Sous compromis",
+  option: "Sous offre",
+  prospect: "Prospect / Estimation en cours",
+  sold: "Vendu",
+  rented: "Loué",
+  withdrawn: "Retiré",
+  deleted: "Supprimé",
+};
+
+export const getAdminAvailabilityStatusLabel = (
+  value: string | null | undefined
+): string => {
+  if (typeof value !== "string" || !value.trim()) return "Aucun statut";
+  const normalized = value.trim().toLowerCase();
+  if (isAdminAvailabilityStatus(normalized)) {
+    return ADMIN_AVAILABILITY_STATUS_LABELS_FR[normalized];
+  }
+  return value;
+};
+
+/**
  * Canonical list of property types offered to users when they express a
  * search/purchase/rental intent, regardless of what is currently in stock.
  * Slugs match the keys known by `formatPropertyTypeLabel` in `lib/i18n/domain.ts`.

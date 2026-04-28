@@ -9,6 +9,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { listClientsForProject } from "@/services/clients/client-project.service";
 import { AttachPropertyToProjectModal } from "./attach-property-to-project-modal";
 import { PropertyDocumentsAdminPanel } from "./property-documents-admin-panel";
+import { PropertyStatusPanel } from "./property-status-panel";
 import { PropertyLocationMap } from "@/app/components/property-location-map";
 
 export const dynamic = "force-dynamic";
@@ -139,6 +140,13 @@ export default async function AdminPropertyDetailPage({ params }: AdminPropertyD
       </div>
 
       <div className="space-y-6">
+        <PropertyStatusPanel
+          propertyId={detail.property.id}
+          source={detail.property.source}
+          initialAvailabilityStatus={detail.property.availability_status}
+          initialIsPublished={detail.listing?.is_published ?? false}
+        />
+
         <PropertyForm
           mode="edit"
           propertyId={detail.property.id}
@@ -160,7 +168,6 @@ export default async function AdminPropertyDetailPage({ params }: AdminPropertyD
             hasElevator:
               detail.property.has_elevator === null ? "" : detail.property.has_elevator ? "true" : "false",
             coverImageUrl: detail.listing?.cover_image_url ?? "",
-            isPublished: detail.listing?.is_published ?? false,
           }}
         />
 
