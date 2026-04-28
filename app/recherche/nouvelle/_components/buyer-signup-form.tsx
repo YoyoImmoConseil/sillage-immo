@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { track } from "@/lib/analytics/data-layer";
 import type { AppLocale } from "@/lib/i18n/config";
 import { localizePath } from "@/lib/i18n/routing";
 import { formatPropertyTypeLabel } from "@/lib/properties/property-type-label";
@@ -407,8 +408,30 @@ export function BuyerSignupForm(props: BuyerSignupFormProps) {
     [form.businessType, props.rentalTypes, props.saleTypes]
   );
 
+  useEffect(() => {
+    track("buyer_search_started", {
+      business_type: props.initialBusinessType,
+      city: props.initialFilters.city ?? undefined,
+      locale: props.locale,
+    });
+  }, [props.initialBusinessType, props.initialFilters.city, props.locale]);
+
   const updateField = <K extends keyof FormState>(key: K, value: FormState[K]) => {
-    setForm((current) => ({ ...current, [key]: value }));
+    setForm((current) => {
+      const next = { ...current, [key]: value };
+      if (
+        key === "zonePolygon" &&
+        value &&
+        Array.isArray(value) &&
+        (value as ZonePolygon).length >= 3
+      ) {
+        track("buyer_search_zone_drawn", {
+          vertices: (value as ZonePolygon).length,
+          city: current.city ?? undefined,
+        });
+      }
+      return next;
+    });
   };
 
   const handleNext = (event: React.FormEvent<HTMLFormElement>) => {
@@ -502,10 +525,30 @@ export function BuyerSignupForm(props: BuyerSignupFormProps) {
 
       if (json.code === "signup_created_email_failed") {
         setStatus({ kind: "success_email_failed", email });
+        track("buyer_search_saved", {
+          source: "signup_form",
+          email_sent: false,
+          has_phone: Boolean(form.phone.trim()),
+          has_zone: Boolean(form.zonePolygon && form.zonePolygon.length >= 3),
+          business_type: form.businessType,
+          city: form.city ?? undefined,
+          property_type: form.propertyType ?? undefined,
+          locale: props.locale,
+        });
         return;
       }
 
       setStatus({ kind: "success", email });
+      track("buyer_search_saved", {
+        source: "signup_form",
+        email_sent: true,
+        has_phone: Boolean(form.phone.trim()),
+        has_zone: Boolean(form.zonePolygon && form.zonePolygon.length >= 3),
+        business_type: form.businessType,
+        city: form.city ?? undefined,
+        property_type: form.propertyType ?? undefined,
+        locale: props.locale,
+      });
     } catch (error) {
       setStatus({
         kind: "error",

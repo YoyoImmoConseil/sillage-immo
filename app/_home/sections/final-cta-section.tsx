@@ -33,12 +33,16 @@ export function FinalCtaSection({ locale }: Props) {
             <Link
               href={localizePath("/estimation", locale)}
               className="inline-flex items-center justify-center rounded-full bg-[#f4ece4] px-6 py-3 text-sm font-semibold text-[#141446] shadow-sm transition hover:-translate-y-[1px] hover:opacity-95"
+              data-track-cta="final_cta_estimate"
+              data-track-location="final_cta"
             >
               {ctaCopy.estimate}
             </Link>
             <Link
               href={localizePath("/recherche/nouvelle", locale)}
               className="inline-flex items-center justify-center rounded-full border border-[#f4ece4] bg-transparent px-6 py-3 text-sm font-semibold text-[#f4ece4] transition hover:bg-[#f4ece4]/10"
+              data-track-cta="final_cta_buyer_search"
+              data-track-location="final_cta"
             >
               {ctaCopy.search}
             </Link>
@@ -46,6 +50,7 @@ export function FinalCtaSection({ locale }: Props) {
               href={`tel:${SILLAGE_PHONE_RAW}`}
               aria-label={phoneAria}
               className="inline-flex items-center justify-center gap-2 rounded-full border border-[#f4ece4]/50 bg-transparent px-6 py-3 text-sm font-semibold text-[#f4ece4] transition hover:border-[#f4ece4] hover:bg-[#f4ece4]/10"
+              data-track-location="final_cta"
             >
               <PhoneIcon className="h-4 w-4" />
               {ctaCopy.callSillage}

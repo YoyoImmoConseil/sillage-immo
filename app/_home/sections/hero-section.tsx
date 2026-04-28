@@ -66,12 +66,16 @@ export function HeroSection({ locale }: Props) {
               <Link
                 href={localizePath("/estimation", locale)}
                 className="order-1 inline-flex items-center justify-center rounded-full bg-[#f4ece4] px-6 py-3 text-sm font-semibold text-[#141446] shadow-sm transition hover:-translate-y-[1px] hover:opacity-95"
+                data-track-cta="hero_estimate"
+                data-track-location="hero"
               >
                 {ctaCopy.estimate}
               </Link>
               <Link
                 href={localizePath("/recherche/nouvelle", locale)}
                 className="order-2 inline-flex items-center justify-center rounded-full border border-[#f4ece4] bg-transparent px-6 py-3 text-sm font-semibold text-[#f4ece4] transition hover:bg-[#f4ece4] hover:text-[#141446]"
+                data-track-cta="hero_buyer_search"
+                data-track-location="hero"
               >
                 {ctaCopy.search}
               </Link>
@@ -79,6 +83,7 @@ export function HeroSection({ locale }: Props) {
                 href={`tel:${SILLAGE_PHONE_RAW}`}
                 aria-label={phoneAria}
                 className="order-3 lg:order-4 inline-flex items-center justify-center gap-2 rounded-full border border-[#f4ece4]/60 bg-transparent px-6 py-3 text-sm font-semibold text-[#f4ece4] transition hover:bg-[#f4ece4]/10"
+                data-track-location="hero"
               >
                 <PhoneIcon className="h-4 w-4" />
                 {ctaCopy.callAdvisor}
@@ -86,6 +91,8 @@ export function HeroSection({ locale }: Props) {
               <Link
                 href={localizePath("/vente", locale)}
                 className="order-4 lg:order-3 inline-flex items-center justify-center rounded-full border border-[#f4ece4]/40 bg-transparent px-6 py-3 text-sm font-medium text-[#f4ece4]/85 transition hover:border-[#f4ece4] hover:text-[#f4ece4]"
+                data-track-cta="hero_view_sales"
+                data-track-location="hero"
               >
                 {ctaCopy.viewSales}
               </Link>

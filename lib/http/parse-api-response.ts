@@ -14,7 +14,11 @@
  *   readable message even when the upstream response is HTML or text.
  * - Maps a few well-known HTTP statuses (413, 401/403, 500, 502/503/504) to
  *   user-friendly French messages.
+ * - On any non-OK response, pushes an `api_error` event into the GTM
+ *   dataLayer for observability (status, path, method, content_type).
  */
+
+import { track } from "@/lib/analytics/data-layer";
 
 export type ApiResponse<T = unknown> = {
   ok: boolean;
@@ -51,6 +55,23 @@ const extractTextMessage = (text: string, status: number): string => {
   return truncate(trimmed);
 };
 
+const reportApiError = (res: Response, status: number, message: string | undefined) => {
+  // Best-effort path extraction from the absolute URL so PII in query
+  // strings (?email=, ?token=) doesn't leak into analytics.
+  let path: string | undefined;
+  try {
+    path = new URL(res.url).pathname;
+  } catch {
+    path = res.url;
+  }
+  track("api_error", {
+    status,
+    path,
+    content_type: res.headers.get("content-type") ?? undefined,
+    message: message?.slice(0, 200),
+  });
+};
+
 export async function parseApiResponse<T = unknown>(res: Response): Promise<ApiResponse<T>> {
   const status = res.status;
   const contentType = res.headers.get("content-type") ?? "";
@@ -61,17 +82,21 @@ export async function parseApiResponse<T = unknown>(res: Response): Promise<ApiR
         | (T & { ok?: boolean; message?: string })
         | { ok?: boolean; message?: string };
       const ok = res.ok && (json as { ok?: boolean })?.ok !== false;
+      const message = (json as { message?: string }).message;
+      if (!ok) reportApiError(res, status, message);
       return {
         ok,
         status,
         data: json as T,
-        message: (json as { message?: string }).message,
+        message,
       };
     } catch {
+      const message = STATUS_FALLBACK_MESSAGES[status] ?? "Réponse JSON invalide.";
+      reportApiError(res, status, message);
       return {
         ok: false,
         status,
-        message: STATUS_FALLBACK_MESSAGES[status] ?? "Réponse JSON invalide.",
+        message,
       };
     }
   }
@@ -83,9 +108,11 @@ export async function parseApiResponse<T = unknown>(res: Response): Promise<ApiR
     text = "";
   }
 
+  const message = extractTextMessage(text, status);
+  reportApiError(res, status, message);
   return {
     ok: false,
     status,
-    message: extractTextMessage(text, status),
+    message,
   };
 }

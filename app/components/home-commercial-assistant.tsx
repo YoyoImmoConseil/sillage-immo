@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { track } from "@/lib/analytics/data-layer";
 import type { AppLocale } from "@/lib/i18n/config";
 import { localizePath } from "@/lib/i18n/routing";
 
@@ -135,6 +136,11 @@ export function HomeCommercialAssistant({ locale = "fr" }: { locale?: AppLocale 
       .map((item) => ({ role: item.role, text: item.text }));
     setChat((prev) => [...prev, { role: "user", text: trimmed }]);
     setMessage("");
+    track("ai_assistant_message_sent", {
+      locale,
+      message_length: trimmed.length,
+      history_size: historyForApi.length,
+    });
     try {
       const response = await fetch("/api/home-assistant", {
         method: "POST",

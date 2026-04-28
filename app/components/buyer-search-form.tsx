@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { track } from "@/lib/analytics/data-layer";
 import type { AppLocale } from "@/lib/i18n/config";
 
 const COPY = {
@@ -97,6 +98,12 @@ export function BuyerSearchForm({ locale = "fr" }: { locale?: AppLocale }) {
       setEmail("");
       setPhone("");
       setSearchDetails("");
+      track("buyer_search_saved", {
+        source: "homepage_form",
+        has_phone: phone.trim().length > 0,
+        details_length: searchDetails.trim().length,
+        locale,
+      });
     } catch {
       setError(copy.networkError);
     } finally {

@@ -449,6 +449,8 @@ function SellerProjectDetailView({
                       target="_blank"
                       rel="noreferrer"
                       className="inline-block rounded bg-[#141446] px-4 py-2 text-[#f4ece4]"
+                      data-track-cta="client_advisor_booking_clicked"
+                      data-track-location="project_advisor_card"
                     >
                       {copy.bookWithAdvisor}
                     </a>
@@ -473,6 +475,8 @@ function SellerProjectDetailView({
                   target="_blank"
                   rel="noreferrer"
                   className="inline-block rounded bg-[#141446] px-4 py-2 text-[#f4ece4]"
+                  data-track-cta="client_advisor_booking_clicked"
+                  data-track-location="project_next_action"
                 >
                   {copy.book}
                 </a>
