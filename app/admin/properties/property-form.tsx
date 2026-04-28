@@ -22,7 +22,6 @@ type PropertyFormProps = {
     hasTerrace: "" | "true" | "false";
     hasElevator: "" | "true" | "false";
     coverImageUrl: string;
-    isPublished: boolean;
   };
   source: string;
 };
@@ -41,7 +40,7 @@ export function PropertyForm({ mode, propertyId, initial, source }: PropertyForm
   const [isPending, startTransition] = useTransition();
   const [isMatchingPending, startMatchingTransition] = useTransition();
 
-  const patch = (key: keyof typeof form, value: string | boolean) => {
+  const patch = (key: keyof typeof form, value: string) => {
     setForm((current) => ({ ...current, [key]: value }));
   };
 
@@ -71,7 +70,6 @@ export function PropertyForm({ mode, propertyId, initial, source }: PropertyForm
             hasTerrace: form.hasTerrace === "" ? null : form.hasTerrace === "true",
             hasElevator: form.hasElevator === "" ? null : form.hasElevator === "true",
             coverImageUrl: form.coverImageUrl || undefined,
-            isPublished: form.isPublished,
           }),
         });
         const payload = (await response.json()) as {
@@ -205,10 +203,11 @@ export function PropertyForm({ mode, propertyId, initial, source }: PropertyForm
         <textarea className="mt-1 w-full rounded border px-3 py-2" rows={5} value={form.description} onChange={(event) => patch("description", event.target.value)} disabled={isReadOnly} />
       </label>
 
-      <label className="flex items-center gap-2 text-sm">
-        <input type="checkbox" checked={form.isPublished} onChange={(event) => patch("isPublished", event.target.checked)} disabled={isReadOnly} />
-        Publier le bien
-      </label>
+      <p className="rounded-md border border-[rgba(20,20,70,0.12)] bg-[rgba(20,20,70,0.04)] p-2 text-xs text-[#141446]/70">
+        {mode === "edit"
+          ? "La publication du bien est pilotee par le statut SweepBright (panneau « Statut & publication » ci-dessus)."
+          : "Le bien sera cree avec le statut « Disponible » et donc visible publiquement. Vous pourrez modifier le statut ensuite."}
+      </p>
 
       <div className="flex flex-wrap gap-3">
         {!isReadOnly ? (

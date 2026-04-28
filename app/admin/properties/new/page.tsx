@@ -38,7 +38,6 @@ export default async function NewManualPropertyPage() {
           hasTerrace: "",
           hasElevator: "",
           coverImageUrl: "",
-          isPublished: false,
         }}
       />
     </AdminShell>

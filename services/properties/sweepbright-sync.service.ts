@@ -8,6 +8,7 @@ import type { SweepBrightEstateData } from "@/types/api/sweepbright";
 import type { Database } from "@/types/db/supabase";
 import { recomputeMatchesForProperty } from "@/services/buyers/buyer-matching.service";
 import { processBuyerAlertsForNewMatches } from "@/services/buyers/buyer-alert.service";
+import { isPublicAvailabilityStatus } from "@/lib/properties/canonical-types";
 
 type WebhookDeliveryRow = Database["public"]["Tables"]["crm_webhook_deliveries"]["Row"];
 type PropertyRow = Database["public"]["Tables"]["properties"]["Row"];
@@ -218,6 +219,10 @@ const mapEstateToPropertyInsert = (estate: SweepBrightEstateData) => {
     appointment_service_url: estate.appointment_service_url ?? null,
     negotiator: asRecord(estate.negotiator) ?? {},
     legal: asRecord(estate.legal) ?? {},
+    // RGPD-sensitive: `raw_payload` mirrors the SweepBright estate as-is, including
+    // `vendors` (owner PII: first/last name, email, phone). Never expose `raw_payload`
+    // through public selectors. Access must remain restricted to `service_role`
+    // server-side and admin/back-office paths.
     raw_payload: estate as unknown as Record<string, unknown>,
     metadata: {
       office: estate.office ?? null,
@@ -348,14 +353,23 @@ const upsertPropertyProjection = async (estate: SweepBrightEstateData) => {
   const coverImageUrl =
     estate.images?.find((item) => typeof item?.url === "string" && item.url)?.url ?? null;
 
+  // Publication policy: only SweepBright statuses in the `PUBLIC_AVAILABILITY_STATUSES`
+  // whitelist (currently `available`, `agreement`, `option`) are allowed on the public
+  // catalogue. Anything else (`prospect` for in-progress estimations, `deleted`,
+  // `withdrawn`, `null`, ...) is ingested but kept hidden (`is_published=false`,
+  // `publication_status="inactive"`) until SweepBright moves the estate to a public
+  // status. This is enforced server-side at the ingestion source of truth.
+  const isPubliclyVisible = isPublicAvailabilityStatus(estate.status);
+  const nowIso = new Date().toISOString();
+
   const { data: listingData, error: listingError } = await supabaseAdmin
     .from("property_listings")
     .upsert(
       {
         property_id: property.id,
         business_type: businessType,
-        publication_status: "active",
-        is_published: true,
+        publication_status: isPubliclyVisible ? "active" : "inactive",
+        is_published: isPubliclyVisible,
         slug,
         canonical_path: canonicalPath,
         title: property.title,
@@ -372,13 +386,13 @@ const upsertPropertyProjection = async (estate: SweepBrightEstateData) => {
         price_amount: computePriceAmount(estate),
         price_currency:
           estate.price?.currency ?? estate.price_base_rent?.currency ?? "EUR",
-        published_at: new Date().toISOString(),
-        unpublished_at: null,
+        published_at: isPubliclyVisible ? nowIso : null,
+        unpublished_at: isPubliclyVisible ? null : nowIso,
         listing_metadata: {
           source_ref: estate.id,
           negotiation: estate.negotiation ?? null,
         },
-        updated_at: new Date().toISOString(),
+        updated_at: nowIso,
       },
       { onConflict: "property_id,business_type" }
     )
