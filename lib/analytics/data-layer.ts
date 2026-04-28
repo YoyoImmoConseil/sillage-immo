@@ -110,13 +110,20 @@ export const track = (event: AnalyticsEventName, payload?: AnalyticsPayload) => 
 };
 
 /**
- * Low-level dataLayer push used by Consent Mode helpers (gtag-style
- * arrays). Don't call this from product code — use `track()` instead.
+ * gtag-style helper for Consent Mode v2. GTM and gtag.js detect
+ * Consent Mode commands by inspecting the *native* `arguments` object
+ * pushed onto `dataLayer`. A regular Array (`...args`) won't work:
+ * GTM ignores it. So we use a real (non-arrow) function and push
+ * `arguments` directly, exactly mirroring the official Google snippet:
+ *
+ *   function gtag(){ dataLayer.push(arguments); }
+ *
+ * Don't call this from product code — use `track()` instead.
  */
-export const rawPush = (...args: unknown[]) => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function gtag(..._args: unknown[]): void {
   const dl = ensureDataLayer();
   if (!dl) return;
-  // GTM expects gtag calls to behave like `dataLayer.push(arguments)`,
-  // so we keep the array-like shape.
-  dl.push(args);
-};
+  // eslint-disable-next-line prefer-rest-params
+  dl.push(arguments);
+}

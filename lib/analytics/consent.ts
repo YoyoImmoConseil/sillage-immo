@@ -10,7 +10,7 @@
  * reappear on every visit.
  */
 
-import { rawPush, track } from "./data-layer";
+import { gtag, track } from "./data-layer";
 
 export const CONSENT_COOKIE_NAME = "sillage_consent";
 export const CONSENT_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365; // 1 year
@@ -97,7 +97,7 @@ export const saveConsentState = (state: ConsentState) => {
  * interact with the banner before any tag fires.
  */
 export const pushDefaultConsent = () => {
-  rawPush("consent", "default", {
+  gtag("consent", "default", {
     analytics_storage: DEFAULT_DENIED.analytics,
     ad_storage: DEFAULT_DENIED.ads,
     ad_user_data: DEFAULT_DENIED.ads,
@@ -115,7 +115,7 @@ export const pushDefaultConsent = () => {
  * what unblocks GA4 / Ads tags downstream.
  */
 export const applyConsentState = (state: ConsentState) => {
-  rawPush("consent", "update", {
+  gtag("consent", "update", {
     analytics_storage: state.analytics,
     ad_storage: state.ads,
     ad_user_data: state.ads,
