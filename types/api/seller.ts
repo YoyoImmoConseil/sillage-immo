@@ -57,6 +57,26 @@ export type SellerPropertyMediaUploadSuccessResponse = {
   };
 };
 
+export type SellerPropertyMediaSignedUploadDescriptor = {
+  uploadId: string;
+  fileName: string;
+  contentType: string;
+  storageBucket: string;
+  storagePath: string;
+  uploadUrl: string;
+};
+
+export type SellerPropertyMediaSignedUploadSuccessResponse = {
+  ok: true;
+  data: {
+    files: SellerPropertyMediaSignedUploadDescriptor[];
+  };
+};
+
+export type SellerPropertyMediaSignedUploadResponse =
+  | SellerPropertyMediaSignedUploadSuccessResponse
+  | SellerApiErrorResponse;
+
 export type SellerEstimateAndCreateSuccessResponse = {
   ok: true;
   data: {
