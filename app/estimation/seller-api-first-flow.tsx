@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { parseApiResponse } from "@/lib/http/parse-api-response";
 import type { AppLocale } from "@/lib/i18n/config";
 import type {
   SellerEstimateAndCreateResponse,
+  SellerPropertyMediaSignedUploadResponse,
   SellerPropertyMediaUploadResponse,
   SellerPortalAccessData,
   SellerSendOtpResponse,
@@ -184,22 +186,92 @@ export function SellerApiFirstFlow({ locale = "fr" }: { locale?: AppLocale }) {
     setError(null);
     setIsUploadingMedia(true);
     try {
-      const formData = new FormData();
-      formData.set("kind", kind);
-      formData.set("uploadSessionId", uploadSessionIdRef.current);
-      files.forEach((file) => formData.append("files", file));
-
-      const response = await fetch("/api/seller/property-media/upload", {
+      // 1) Demander des URLs d'upload signees a notre API.
+      const urlResponse = await fetch("/api/seller/property-media/upload-url", {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          kind,
+          uploadSessionId: uploadSessionIdRef.current,
+          items: files.map((file) => ({
+            fileName: file.name,
+            sizeBytes: file.size,
+            contentType: file.type,
+          })),
+        }),
       });
-      const data = (await response.json()) as SellerPropertyMediaUploadResponse;
-      if (!response.ok || !data.ok) {
-        setMediaUploadError(getApiErrorMessage(data) ?? copy.mediaUploadNetworkError);
+      const urlParsed = await parseApiResponse<SellerPropertyMediaSignedUploadResponse>(
+        urlResponse
+      );
+      const urlData = urlParsed.data;
+      if (!urlParsed.ok || !urlData || !("ok" in urlData) || urlData.ok !== true) {
+        const fallback =
+          urlData && "message" in urlData && typeof urlData.message === "string"
+            ? urlData.message
+            : null;
+        setMediaUploadError(urlParsed.message ?? fallback ?? copy.mediaUploadNetworkError);
+        return;
+      }
+      const descriptors = urlData.data.files;
+      if (descriptors.length !== files.length) {
+        setMediaUploadError(copy.mediaUploadNetworkError);
         return;
       }
 
-      setUploadedMedia((prev) => [...prev, ...data.data.files]);
+      // 2) Upload direct vers Supabase Storage (en parallele) pour bypasser
+      // la limite Vercel de 4.5 Mo sur les serverless functions. Critique
+      // pour les videos qui depassent systematiquement cette limite.
+      const putResults = await Promise.all(
+        descriptors.map((descriptor, index) => {
+          const file = files[index];
+          return fetch(descriptor.uploadUrl, {
+            method: "PUT",
+            headers: { "Content-Type": file.type },
+            body: file,
+          });
+        })
+      );
+      const failedPut = putResults.find((res) => !res.ok);
+      if (failedPut) {
+        setMediaUploadError(copy.mediaUploadNetworkError);
+        return;
+      }
+
+      // 3) Confirmer cote API : creation des metadonnees + signed preview.
+      const registerResponse = await fetch("/api/seller/property-media/upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          kind,
+          uploadSessionId: uploadSessionIdRef.current,
+          items: descriptors.map((descriptor, index) => ({
+            uploadId: descriptor.uploadId,
+            fileName: descriptor.fileName,
+            contentType: descriptor.contentType,
+            sizeBytes: files[index].size,
+            storagePath: descriptor.storagePath,
+          })),
+        }),
+      });
+      const registerParsed =
+        await parseApiResponse<SellerPropertyMediaUploadResponse>(registerResponse);
+      const registerData = registerParsed.data;
+      if (
+        !registerParsed.ok ||
+        !registerData ||
+        !("ok" in registerData) ||
+        registerData.ok !== true
+      ) {
+        const fallback =
+          registerData && "message" in registerData && typeof registerData.message === "string"
+            ? registerData.message
+            : null;
+        setMediaUploadError(
+          registerParsed.message ?? fallback ?? copy.mediaUploadNetworkError
+        );
+        return;
+      }
+      setUploadedMedia((prev) => [...prev, ...registerData.data.files]);
     } catch {
       setMediaUploadError(copy.mediaUploadNetworkError);
     } finally {

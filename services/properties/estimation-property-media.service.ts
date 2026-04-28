@@ -111,6 +111,202 @@ export const validateEstimationPropertyMediaFiles = (
   });
 };
 
+const validateEstimationMediaDescriptor = (
+  kind: SellerUploadedPropertyMedia["kind"],
+  descriptor: { fileName: string; sizeBytes: number; contentType: string }
+) => {
+  const allowedContentTypes = getAllowedContentTypes(kind);
+  const maxSizeBytes = getMaxFileSizeBytes(kind);
+  if (!descriptor.fileName?.trim()) {
+    throw new Error("Nom de fichier requis.");
+  }
+  if (!allowedContentTypes.has(descriptor.contentType)) {
+    throw new Error(`Type de fichier non autorise pour ${descriptor.fileName}.`);
+  }
+  if (!Number.isFinite(descriptor.sizeBytes) || descriptor.sizeBytes <= 0) {
+    throw new Error(`Taille invalide pour ${descriptor.fileName}.`);
+  }
+  if (descriptor.sizeBytes > maxSizeBytes) {
+    throw new Error(`Le fichier ${descriptor.fileName} depasse la taille maximale autorisee.`);
+  }
+};
+
+const buildEstimationMediaPath = (
+  uploadSessionId: string,
+  kind: SellerUploadedPropertyMedia["kind"],
+  fileName: string,
+  uploadId: string
+) => {
+  const baseName = fileName.replace(/\.[^.]+$/, "");
+  const safe = sanitizePathSegment(baseName) || kind;
+  const extension = fileName.includes(".")
+    ? (fileName.split(".").pop()?.toLowerCase() ?? "")
+    : "";
+  return [uploadSessionId, kind, `${uploadId}-${safe}${extension ? `.${extension}` : ""}`].join(
+    "/"
+  );
+};
+
+const confirmStorageObject = async (
+  bucket: string,
+  storagePath: string
+): Promise<{ sizeBytes: number | null; contentType: string | null }> => {
+  const lastSlash = storagePath.lastIndexOf("/");
+  const folder = lastSlash >= 0 ? storagePath.slice(0, lastSlash) : "";
+  const fileName = lastSlash >= 0 ? storagePath.slice(lastSlash + 1) : storagePath;
+
+  const { data, error } = await supabaseAdmin.storage
+    .from(bucket)
+    .list(folder, { search: fileName, limit: 1 });
+  if (error) throw new Error(error.message);
+  const entry = data?.find((item) => item.name === fileName);
+  if (!entry) {
+    throw new Error("Fichier introuvable dans le storage. L'upload n'a pas abouti.");
+  }
+  const size =
+    entry.metadata && typeof (entry.metadata as { size?: number }).size === "number"
+      ? (entry.metadata as { size: number }).size
+      : null;
+  const mime =
+    entry.metadata && typeof (entry.metadata as { mimetype?: string }).mimetype === "string"
+      ? (entry.metadata as { mimetype: string }).mimetype
+      : null;
+  return { sizeBytes: size, contentType: mime };
+};
+
+export type EstimationMediaSignedUploadDescriptor = {
+  uploadId: string;
+  fileName: string;
+  contentType: string;
+  storagePath: string;
+  storageBucket: string;
+  uploadUrl: string;
+};
+
+/**
+ * Issue short-lived Supabase signed upload URLs for a batch of estimation
+ * medias (photos/videos). Each URL is bound to a server-generated
+ * `storagePath` that the browser then PUTs to directly, bypassing the
+ * Vercel 4.5 MB serverless function body limit (critical for videos that
+ * routinely exceed it).
+ */
+export const createSignedUploadUrlsForEstimationMedia = async (input: {
+  kind: SellerUploadedPropertyMedia["kind"];
+  uploadSessionId: string;
+  items: Array<{ fileName: string; sizeBytes: number; contentType: string }>;
+}): Promise<EstimationMediaSignedUploadDescriptor[]> => {
+  await ensureBucket();
+
+  if (input.items.length === 0) {
+    throw new Error("Aucun fichier n'a ete fourni.");
+  }
+  if (input.items.length > getMaxFileCount(input.kind)) {
+    throw new Error(
+      input.kind === "video"
+        ? `Vous pouvez envoyer jusqu'a ${ESTIMATION_PROPERTY_MEDIA_MAX_VIDEOS} videos.`
+        : `Vous pouvez envoyer jusqu'a ${ESTIMATION_PROPERTY_MEDIA_MAX_IMAGES} photos.`
+    );
+  }
+  input.items.forEach((descriptor) =>
+    validateEstimationMediaDescriptor(input.kind, descriptor)
+  );
+
+  const descriptors: EstimationMediaSignedUploadDescriptor[] = [];
+  for (const item of input.items) {
+    const uploadId = randomUUID();
+    const path = buildEstimationMediaPath(
+      input.uploadSessionId,
+      input.kind,
+      item.fileName,
+      uploadId
+    );
+    const { data, error } = await supabaseAdmin.storage
+      .from(ESTIMATION_PROPERTY_MEDIA_BUCKET)
+      .createSignedUploadUrl(path);
+    if (error || !data?.signedUrl) {
+      throw new Error(error?.message ?? "Impossible de generer l'URL d'upload.");
+    }
+    descriptors.push({
+      uploadId,
+      fileName: item.fileName,
+      contentType: item.contentType,
+      storageBucket: ESTIMATION_PROPERTY_MEDIA_BUCKET,
+      storagePath: data.path ?? path,
+      uploadUrl: data.signedUrl,
+    });
+  }
+  return descriptors;
+};
+
+/**
+ * Confirm a batch of direct uploads: for each item, verify the object
+ * exists in the bucket and generate a signed preview URL. Returns the
+ * canonical SellerUploadedPropertyMedia[] used by the UI.
+ */
+export const registerUploadedEstimationMedia = async (input: {
+  kind: SellerUploadedPropertyMedia["kind"];
+  uploadSessionId: string;
+  items: Array<{
+    uploadId: string;
+    fileName: string;
+    contentType: string;
+    sizeBytes: number;
+    storagePath: string;
+  }>;
+}): Promise<SellerUploadedPropertyMedia[]> => {
+  if (input.items.length === 0) {
+    throw new Error("Aucun fichier n'a ete fourni.");
+  }
+  const expectedPrefix = `${input.uploadSessionId}/${input.kind}/`;
+  for (const item of input.items) {
+    if (!item.storagePath?.startsWith(expectedPrefix)) {
+      throw new Error("Chemin de stockage invalide.");
+    }
+  }
+
+  const uploaded: SellerUploadedPropertyMedia[] = [];
+  for (const item of input.items) {
+    const { sizeBytes: actualSize, contentType: actualMime } = await confirmStorageObject(
+      ESTIMATION_PROPERTY_MEDIA_BUCKET,
+      item.storagePath
+    );
+    const sizeBytes = typeof actualSize === "number" ? actualSize : item.sizeBytes;
+    if (sizeBytes > getMaxFileSizeBytes(input.kind)) {
+      await supabaseAdmin.storage
+        .from(ESTIMATION_PROPERTY_MEDIA_BUCKET)
+        .remove([item.storagePath])
+        .catch(() => undefined);
+      throw new Error(
+        `Le fichier ${item.fileName} depasse la taille maximale autorisee.`
+      );
+    }
+    const contentType = actualMime ?? item.contentType;
+
+    const { data: signedData, error: signedError } = await supabaseAdmin.storage
+      .from(ESTIMATION_PROPERTY_MEDIA_BUCKET)
+      .createSignedUrl(item.storagePath, 24 * 60 * 60);
+    if (signedError || !signedData?.signedUrl) {
+      throw new Error(signedError?.message ?? "Impossible de generer l'aperçu du fichier.");
+    }
+    const previewUrl =
+      signedData.signedUrl.startsWith("http") || !process.env.NEXT_PUBLIC_SUPABASE_URL
+        ? signedData.signedUrl
+        : `${process.env.NEXT_PUBLIC_SUPABASE_URL}${signedData.signedUrl}`;
+
+    uploaded.push({
+      uploadId: item.uploadId,
+      kind: input.kind,
+      fileName: item.fileName,
+      contentType,
+      sizeBytes,
+      storageBucket: ESTIMATION_PROPERTY_MEDIA_BUCKET,
+      storagePath: item.storagePath,
+      previewUrl,
+    });
+  }
+  return uploaded;
+};
+
 export const uploadEstimationPropertyMedia = async (input: {
   kind: SellerUploadedPropertyMedia["kind"];
   uploadSessionId: string;
