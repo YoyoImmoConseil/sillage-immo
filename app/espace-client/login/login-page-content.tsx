@@ -54,7 +54,7 @@ export function SellerLoginPageContent({ locale = "fr" }: { locale?: AppLocale }
       intro:
         "Renseignez l'email rattaché à votre espace client : nous vous envoyons un lien sécurisé. Aucun mot de passe à retenir, un seul clic vous connecte.",
       passwordlessHint:
-        "Connexion sans mot de passe : le lien est valable une seule fois. Si vous en demandez un nouveau, ouvrez toujours le mail le plus récent.",
+        "Le lien reçu par email est à usage unique. Une fois cliqué, vous restez connecté 30 jours sur cet appareil — sans mot de passe, sans relancer la procédure. Si vous demandez un nouveau lien, ouvrez toujours le mail le plus récent.",
       submit: "M'envoyer un lien de connexion",
       success:
         "Si cette adresse dispose d'un espace client, un email de connexion vient d'être envoyé. Vérifiez aussi vos spams.",
@@ -69,7 +69,7 @@ export function SellerLoginPageContent({ locale = "fr" }: { locale?: AppLocale }
       intro:
         "Enter the email linked to your client portal — we'll send a secure link. No password to remember, one click signs you in.",
       passwordlessHint:
-        "Passwordless sign-in: each link is single-use. If you request a new one, always open the most recent email.",
+        "Each emailed link is single-use. Once clicked, you stay signed in for 30 days on this device — no password, no need to re-request. If you ask for a new link, always open the most recent email.",
       submit: "Email me a sign-in link",
       success:
         "If this address has an active portal, a login email has just been sent. Please also check your spam folder.",
@@ -84,7 +84,7 @@ export function SellerLoginPageContent({ locale = "fr" }: { locale?: AppLocale }
       intro:
         "Introduzca el email vinculado a su espacio cliente: le enviaremos un enlace seguro. Sin contraseña que recordar, un solo clic le conecta.",
       passwordlessHint:
-        "Acceso sin contraseña: cada enlace es de un solo uso. Si solicita uno nuevo, abra siempre el último email.",
+        "Cada enlace recibido por email es de un solo uso. Una vez clicado, permanece conectado 30 días en este dispositivo — sin contraseña ni nuevas solicitudes. Si pide un nuevo enlace, abra siempre el último email.",
       submit: "Enviarme un enlace de acceso",
       success:
         "Si esta dirección dispone de un espacio cliente, se acaba de enviar un email de acceso. Consulte también el correo no deseado.",
@@ -99,7 +99,7 @@ export function SellerLoginPageContent({ locale = "fr" }: { locale?: AppLocale }
       intro:
         "Укажите email, привязанный к вашему пространству — мы отправим безопасную ссылку. Без пароля: один клик и вы внутри.",
       passwordlessHint:
-        "Вход без пароля: каждая ссылка одноразовая. Если запрашиваете новую, всегда открывайте самое последнее письмо.",
+        "Каждая ссылка из письма — одноразовая. После клика вы остаётесь в системе 30 дней на этом устройстве — без пароля и без повторных запросов. Если запросите новую ссылку, всегда открывайте самое последнее письмо.",
       submit: "Отправить мне ссылку",
       success:
         "Если для этого адреса доступно клиентское пространство, письмо для входа уже отправлено. Проверьте также папку «Спам».",
