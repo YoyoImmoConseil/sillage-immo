@@ -35,6 +35,7 @@ export type AnalyticsEventName =
   | "seller_otp_sent"
   | "seller_otp_verified"
   | "seller_media_uploaded"
+  | "seller_media_upload_failed"
   | "seller_estimation_computed"
   | "seller_lead_created"
   | "seller_portal_link_sent"

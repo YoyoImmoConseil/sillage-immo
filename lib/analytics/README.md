@@ -92,6 +92,7 @@ Tous les events ont la forme `{ event: string, ...payload }`.
 | `seller_otp_sent`             | OTP email envoyé                       | `locale`                                                    |
 | `seller_otp_verified`         | OTP validé                             | `locale`                                                    |
 | `seller_media_uploaded`       | Upload photos/vidéo terminé            | `kind` (image/video), `count`, `total_size_mb`              |
+| `seller_media_upload_failed`  | Échec d'upload média (toute étape)     | `kind`, `error_code` (cf. ci-dessous), `error_step`, `http_status?`, `file_name?`, `size_mb?`, `error_message?` |
 | `seller_estimation_computed`  | Estimation calculée (succès)           | `valuation_low/mid/high`, `city`, `zip`, `rooms`, `living_area_m2`, `media_count` |
 | `seller_lead_created`         | Lead enregistré côté API               | `create_status`, `has_portal_access`, `locale`              |
 | `seller_portal_link_sent`     | Magic link espace client envoyé        | `mode`, `locale`                                            |
@@ -119,6 +120,22 @@ Tous les events ont la forme `{ event: string, ...payload }`.
 |-------------|-----------------------------------------------|-------------------------------------------------------------|
 | `js_error`  | `window.onerror` + `unhandledrejection`       | `message`, `file`, `line`, `column`, `kind?`, `page_path`   |
 | `api_error` | `parseApiResponse` reçoit un statut non-OK    | `status`, `path`, `content_type`, `message`                 |
+
+#### Codes `seller_media_upload_failed`
+
+| `error_code`              | `error_step`        | Sens                                                                          |
+|---------------------------|---------------------|-------------------------------------------------------------------------------|
+| `too_many_files`          | `client_count`      | Quota photos (20) ou vidéos (5) dépassé                                       |
+| `size_exceeded_client`    | `client_size`       | Fichier > 15 Mo (image) ou 200 Mo (vidéo) — bloqué avant le réseau            |
+| `signed_url_failed`       | `api_upload_url`    | `/api/seller/property-media/upload-url` a renvoyé une erreur                  |
+| `descriptor_count_mismatch` | `api_upload_url`  | Nombre d'URLs signées ≠ nombre de fichiers (incohérence serveur)              |
+| `size_exceeded_supabase`  | `supabase_put`      | Supabase Storage a renvoyé `413` ou "exceeded the maximum allowed size"        |
+| `unsupported_mime`        | `supabase_put`      | Supabase Storage a renvoyé `415` ou "mime type" — bucket `allowedMimeTypes`   |
+| `signed_url_expired`      | `supabase_put`      | `401` / `403` Supabase — l'URL signée a expiré                                |
+| `supabase_server_error`   | `supabase_put`      | `5xx` côté Supabase                                                            |
+| `http_<status>`           | `supabase_put`      | Autre code HTTP non mappé                                                      |
+| `register_failed`         | `api_register`      | `/api/seller/property-media/upload` (registration) a renvoyé une erreur       |
+| `network_exception`       | `client_catch`      | `fetch` rejected (offline, abort, CORS, etc.)                                 |
 
 ### Web Vitals (Core Web Vitals)
 

@@ -27,6 +27,98 @@ import {
   type ValuationResult,
 } from "./seller-api-first-flow.shared";
 
+/**
+ * Mirror of the server-side per-file caps in
+ * `services/properties/estimation-property-media.service.ts`. We duplicate
+ * them client-side because that file is `server-only`. Keep them in sync.
+ */
+const CLIENT_MAX_IMAGE_BYTES = 15 * 1024 * 1024;
+const CLIENT_MAX_VIDEO_BYTES = 200 * 1024 * 1024;
+
+type MediaErrorCopy = {
+  mediaUploadNetworkError: string;
+  mediaTooLargeImage: (fileName: string, sizeMb: number) => string;
+  mediaTooLargeVideo: (fileName: string, sizeMb: number) => string;
+  mediaUnsupportedFormat: (fileName: string) => string;
+  mediaUploadExpired: string;
+  mediaServerUnavailable: string;
+};
+
+const SUPABASE_SIZE_PATTERNS = [
+  "exceeded the maximum allowed size",
+  "payload too large",
+  "request entity too large",
+];
+
+const SUPABASE_MIME_PATTERNS = ["mime type", "invalid_mime_type"];
+
+/**
+ * Translate a failed Supabase Storage signed-URL PUT into a human,
+ * locale-aware error message. Supabase returns verbatim English strings
+ * like "The object exceeded the maximum allowed size" with a JSON body;
+ * surfacing them to the user is confusing and untraceable. Here we map a
+ * few well-known patterns + HTTP statuses to rich i18n copy and return a
+ * stable `errorCode` for analytics.
+ */
+const interpretSupabasePutFailure = async (
+  response: Response,
+  file: File,
+  kind: "image" | "video",
+  copy: MediaErrorCopy
+): Promise<{ message: string; errorCode: string }> => {
+  let bodyText = "";
+  try {
+    bodyText = await response.text();
+  } catch {
+    bodyText = "";
+  }
+  const lower = bodyText.toLowerCase();
+  const status = response.status;
+  const sizeMb = file.size / (1024 * 1024);
+
+  if (
+    status === 413 ||
+    SUPABASE_SIZE_PATTERNS.some((pattern) => lower.includes(pattern))
+  ) {
+    return {
+      message:
+        kind === "image"
+          ? copy.mediaTooLargeImage(file.name, sizeMb)
+          : copy.mediaTooLargeVideo(file.name, sizeMb),
+      errorCode: "size_exceeded_supabase",
+    };
+  }
+
+  if (
+    status === 415 ||
+    SUPABASE_MIME_PATTERNS.some((pattern) => lower.includes(pattern))
+  ) {
+    return {
+      message: copy.mediaUnsupportedFormat(file.name),
+      errorCode: "unsupported_mime",
+    };
+  }
+
+  if (status === 401 || status === 403) {
+    return {
+      message: copy.mediaUploadExpired,
+      errorCode: "signed_url_expired",
+    };
+  }
+
+  if (status >= 500 && status < 600) {
+    return {
+      message: copy.mediaServerUnavailable,
+      errorCode: "supabase_server_error",
+    };
+  }
+
+  return {
+    message: copy.mediaUploadNetworkError,
+    errorCode: `http_${status}`,
+  };
+};
+
 export function SellerApiFirstFlow({ locale = "fr" }: { locale?: AppLocale }) {
   const copy = {
     fr: {
@@ -44,6 +136,16 @@ export function SellerApiFirstFlow({ locale = "fr" }: { locale?: AppLocale }) {
       estimateError: "Impossible de calculer votre estimation.",
       estimateNetworkError: "Erreur réseau pendant le calcul d'estimation.",
       mediaUploadNetworkError: "Erreur reseau pendant l'envoi des medias.",
+      mediaTooLargeImage: (fileName: string, sizeMb: number) =>
+        `La photo "${fileName}" fait ${sizeMb.toFixed(1)} Mo et depasse la limite autorisee de 15 Mo. Reduisez la resolution ou compressez-la.`,
+      mediaTooLargeVideo: (fileName: string, sizeMb: number) =>
+        `La video "${fileName}" fait ${sizeMb.toFixed(0)} Mo et depasse la limite autorisee de 200 Mo.`,
+      mediaUnsupportedFormat: (fileName: string) =>
+        `Le fichier "${fileName}" n'est pas dans un format accepte. Formats acceptes : JPG, PNG, WEBP, HEIC, MP4, MOV, WEBM.`,
+      mediaUploadExpired:
+        "Le lien d'envoi a expire. Rechargez la page et reessayez.",
+      mediaServerUnavailable:
+        "Service de stockage momentanement indisponible. Reessayez dans un instant.",
       tooManyPhotos: "Vous pouvez ajouter jusqu'a 20 photos.",
       tooManyVideos: "Vous pouvez ajouter jusqu'a 5 videos.",
       title: "Démarrer votre demande d'estimation",
@@ -65,6 +167,16 @@ export function SellerApiFirstFlow({ locale = "fr" }: { locale?: AppLocale }) {
       estimateError: "Unable to compute your valuation.",
       estimateNetworkError: "Network error while computing the valuation.",
       mediaUploadNetworkError: "Network error while uploading media.",
+      mediaTooLargeImage: (fileName: string, sizeMb: number) =>
+        `The photo "${fileName}" is ${sizeMb.toFixed(1)} MB and exceeds the 15 MB limit. Reduce its resolution or compress it.`,
+      mediaTooLargeVideo: (fileName: string, sizeMb: number) =>
+        `The video "${fileName}" is ${sizeMb.toFixed(0)} MB and exceeds the 200 MB limit.`,
+      mediaUnsupportedFormat: (fileName: string) =>
+        `The file "${fileName}" is not in an accepted format. Accepted: JPG, PNG, WEBP, HEIC, MP4, MOV, WEBM.`,
+      mediaUploadExpired:
+        "The upload link has expired. Reload the page and try again.",
+      mediaServerUnavailable:
+        "Storage service temporarily unavailable. Please try again shortly.",
       tooManyPhotos: "You can upload up to 20 photos.",
       tooManyVideos: "You can upload up to 5 videos.",
       title: "Start your valuation request",
@@ -86,6 +198,16 @@ export function SellerApiFirstFlow({ locale = "fr" }: { locale?: AppLocale }) {
       estimateError: "No se pudo calcular su valoración.",
       estimateNetworkError: "Error de red durante el cálculo de la valoración.",
       mediaUploadNetworkError: "Error de red durante la carga de los medios.",
+      mediaTooLargeImage: (fileName: string, sizeMb: number) =>
+        `La foto "${fileName}" pesa ${sizeMb.toFixed(1)} MB y supera el limite de 15 MB. Reduzca la resolucion o comprimala.`,
+      mediaTooLargeVideo: (fileName: string, sizeMb: number) =>
+        `El video "${fileName}" pesa ${sizeMb.toFixed(0)} MB y supera el limite de 200 MB.`,
+      mediaUnsupportedFormat: (fileName: string) =>
+        `El archivo "${fileName}" no esta en un formato aceptado. Aceptados: JPG, PNG, WEBP, HEIC, MP4, MOV, WEBM.`,
+      mediaUploadExpired:
+        "El enlace de carga ha expirado. Recargue la pagina y vuelva a intentarlo.",
+      mediaServerUnavailable:
+        "Servicio de almacenamiento momentaneamente no disponible. Vuelva a intentarlo en breve.",
       tooManyPhotos: "Puede cargar hasta 20 fotos.",
       tooManyVideos: "Puede cargar hasta 5 videos.",
       title: "Iniciar su solicitud de valoración",
@@ -107,6 +229,16 @@ export function SellerApiFirstFlow({ locale = "fr" }: { locale?: AppLocale }) {
       estimateError: "Не удалось рассчитать оценку.",
       estimateNetworkError: "Ошибка сети при расчете оценки.",
       mediaUploadNetworkError: "Ошибка сети при загрузке медиафайлов.",
+      mediaTooLargeImage: (fileName: string, sizeMb: number) =>
+        `Фото "${fileName}" весит ${sizeMb.toFixed(1)} МБ и превышает лимит 15 МБ. Уменьшите разрешение или сожмите файл.`,
+      mediaTooLargeVideo: (fileName: string, sizeMb: number) =>
+        `Видео "${fileName}" весит ${sizeMb.toFixed(0)} МБ и превышает лимит 200 МБ.`,
+      mediaUnsupportedFormat: (fileName: string) =>
+        `Файл "${fileName}" не в принятом формате. Допустимые форматы: JPG, PNG, WEBP, HEIC, MP4, MOV, WEBM.`,
+      mediaUploadExpired:
+        "Ссылка для загрузки истекла. Обновите страницу и попробуйте снова.",
+      mediaServerUnavailable:
+        "Хранилище временно недоступно. Повторите попытку через мгновение.",
       tooManyPhotos: "Можно загрузить до 20 фотографий.",
       tooManyVideos: "Можно загрузить до 5 видео.",
       title: "Начать заявку на оценку",
@@ -183,7 +315,34 @@ export function SellerApiFirstFlow({ locale = "fr" }: { locale?: AppLocale }) {
     const currentCount = uploadedMedia.filter((item) => item.kind === kind).length;
     const maxCount = kind === "image" ? 20 : 5;
     if (currentCount + files.length > maxCount) {
-      setMediaUploadError(kind === "image" ? copy.tooManyPhotos : copy.tooManyVideos);
+      const message = kind === "image" ? copy.tooManyPhotos : copy.tooManyVideos;
+      setMediaUploadError(message);
+      track("seller_media_upload_failed", {
+        kind,
+        error_code: "too_many_files",
+        error_step: "client_count",
+        files_total: currentCount + files.length,
+      });
+      return;
+    }
+
+    const maxBytesPerFile =
+      kind === "image" ? CLIENT_MAX_IMAGE_BYTES : CLIENT_MAX_VIDEO_BYTES;
+    const oversized = files.find((file) => file.size > maxBytesPerFile);
+    if (oversized) {
+      const sizeMb = oversized.size / (1024 * 1024);
+      const message =
+        kind === "image"
+          ? copy.mediaTooLargeImage(oversized.name, sizeMb)
+          : copy.mediaTooLargeVideo(oversized.name, sizeMb);
+      setMediaUploadError(message);
+      track("seller_media_upload_failed", {
+        kind,
+        error_code: "size_exceeded_client",
+        error_step: "client_size",
+        file_name: oversized.name.slice(0, 120),
+        size_mb: Math.round(sizeMb * 10) / 10,
+      });
       return;
     }
 
@@ -215,11 +374,25 @@ export function SellerApiFirstFlow({ locale = "fr" }: { locale?: AppLocale }) {
             ? urlData.message
             : null;
         setMediaUploadError(urlParsed.message ?? fallback ?? copy.mediaUploadNetworkError);
+        track("seller_media_upload_failed", {
+          kind,
+          error_code: "signed_url_failed",
+          error_step: "api_upload_url",
+          http_status: urlParsed.status,
+          error_message: (urlParsed.message ?? fallback ?? "").slice(0, 200),
+        });
         return;
       }
       const descriptors = urlData.data.files;
       if (descriptors.length !== files.length) {
         setMediaUploadError(copy.mediaUploadNetworkError);
+        track("seller_media_upload_failed", {
+          kind,
+          error_code: "descriptor_count_mismatch",
+          error_step: "api_upload_url",
+          expected: files.length,
+          received: descriptors.length,
+        });
         return;
       }
 
@@ -227,18 +400,33 @@ export function SellerApiFirstFlow({ locale = "fr" }: { locale?: AppLocale }) {
       // la limite Vercel de 4.5 Mo sur les serverless functions. Critique
       // pour les videos qui depassent systematiquement cette limite.
       const putResults = await Promise.all(
-        descriptors.map((descriptor, index) => {
+        descriptors.map(async (descriptor, index) => {
           const file = files[index];
-          return fetch(descriptor.uploadUrl, {
+          const response = await fetch(descriptor.uploadUrl, {
             method: "PUT",
             headers: { "Content-Type": file.type },
             body: file,
           });
+          return { response, file };
         })
       );
-      const failedPut = putResults.find((res) => !res.ok);
+      const failedPut = putResults.find((entry) => !entry.response.ok);
       if (failedPut) {
-        setMediaUploadError(copy.mediaUploadNetworkError);
+        const interpreted = await interpretSupabasePutFailure(
+          failedPut.response,
+          failedPut.file,
+          kind,
+          copy
+        );
+        setMediaUploadError(interpreted.message);
+        track("seller_media_upload_failed", {
+          kind,
+          error_code: interpreted.errorCode,
+          error_step: "supabase_put",
+          http_status: failedPut.response.status,
+          file_name: failedPut.file.name.slice(0, 120),
+          size_mb: Math.round((failedPut.file.size / (1024 * 1024)) * 10) / 10,
+        });
         return;
       }
 
@@ -271,9 +459,16 @@ export function SellerApiFirstFlow({ locale = "fr" }: { locale?: AppLocale }) {
           registerData && "message" in registerData && typeof registerData.message === "string"
             ? registerData.message
             : null;
-        setMediaUploadError(
-          registerParsed.message ?? fallback ?? copy.mediaUploadNetworkError
-        );
+        const message =
+          registerParsed.message ?? fallback ?? copy.mediaUploadNetworkError;
+        setMediaUploadError(message);
+        track("seller_media_upload_failed", {
+          kind,
+          error_code: "register_failed",
+          error_step: "api_register",
+          http_status: registerParsed.status,
+          error_message: message.slice(0, 200),
+        });
         return;
       }
       setUploadedMedia((prev) => [...prev, ...registerData.data.files]);
@@ -286,8 +481,15 @@ export function SellerApiFirstFlow({ locale = "fr" }: { locale?: AppLocale }) {
         count: registerData.data.files.length,
         total_size_mb: Math.round(totalSizeBytes / (1024 * 1024)),
       });
-    } catch {
+    } catch (caught) {
       setMediaUploadError(copy.mediaUploadNetworkError);
+      track("seller_media_upload_failed", {
+        kind,
+        error_code: "network_exception",
+        error_step: "client_catch",
+        error_message:
+          caught instanceof Error ? caught.message.slice(0, 200) : "unknown",
+      });
     } finally {
       setIsUploadingMedia(false);
     }
