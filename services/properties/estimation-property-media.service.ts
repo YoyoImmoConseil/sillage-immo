@@ -99,72 +99,21 @@ const isPlanFileSizeLimitError = (message: string) => {
  * upload pipeline: we degrade gracefully so photo uploads keep working
  * even when the active Supabase plan disallows the requested limits.
  */
-const ensureBucket = async (debugRunId?: string) => {
-  if (ensureBucketPromise) {
-    // #region agent log
-    console.error(
-      `[debug-cada68][ensureBucket][H1] runId=${debugRunId ?? "n/a"} returning cached promise (state may be resolved or rejected)`
-    );
-    // #endregion
-    try {
-      const result = await ensureBucketPromise;
-      // #region agent log
-      console.error(
-        `[debug-cada68][ensureBucket][H1] runId=${debugRunId ?? "n/a"} cached promise RESOLVED`
-      );
-      // #endregion
-      return result;
-    } catch (cachedErr) {
-      // #region agent log
-      console.error(
-        `[debug-cada68][ensureBucket][H1] runId=${debugRunId ?? "n/a"} cached promise REJECTED message=${
-          cachedErr instanceof Error ? cachedErr.message : String(cachedErr)
-        }`
-      );
-      // #endregion
-      throw cachedErr;
-    }
-  }
-
-  // #region agent log
-  console.error(
-    `[debug-cada68][ensureBucket][H1] runId=${debugRunId ?? "n/a"} fresh run starting (no cache)`
-  );
-  // #endregion
+const ensureBucket = async () => {
+  if (ensureBucketPromise) return ensureBucketPromise;
 
   const promise = (async () => {
     const desired = buildBucketDesiredOptions();
 
     const { data: buckets, error } = await supabaseAdmin.storage.listBuckets();
-    if (error) {
-      // #region agent log
-      console.error(
-        `[debug-cada68][ensureBucket][H1] runId=${debugRunId ?? "n/a"} listBuckets ERROR=${error.message}`
-      );
-      // #endregion
-      throw new Error(error.message);
-    }
+    if (error) throw new Error(error.message);
 
     const existing = buckets.find((bucket) => bucket.name === ESTIMATION_PROPERTY_MEDIA_BUCKET);
-    // #region agent log
-    console.error(
-      `[debug-cada68][ensureBucket][H1] runId=${debugRunId ?? "n/a"} listBuckets ok totalBuckets=${buckets.length} existing=${Boolean(
-        existing
-      )}`
-    );
-    // #endregion
     if (existing) {
       const { error: updateError } = await supabaseAdmin.storage.updateBucket(
         ESTIMATION_PROPERTY_MEDIA_BUCKET,
         desired
       );
-      // #region agent log
-      console.error(
-        `[debug-cada68][ensureBucket][H1] runId=${debugRunId ?? "n/a"} updateBucket result error=${
-          updateError ? updateError.message : "none"
-        }`
-      );
-      // #endregion
       if (updateError) {
         console.warn(
           `[estimation-media] Failed to sync bucket config for "${ESTIMATION_PROPERTY_MEDIA_BUCKET}": ${updateError.message}`
@@ -177,14 +126,6 @@ const ensureBucket = async (debugRunId?: string) => {
       ESTIMATION_PROPERTY_MEDIA_BUCKET,
       desired
     );
-
-    // #region agent log
-    console.error(
-      `[debug-cada68][ensureBucket][H1] runId=${debugRunId ?? "n/a"} createBucket result error=${
-        createError ? createError.message : "none"
-      }`
-    );
-    // #endregion
 
     if (!createError) return;
     if (isBenignDuplicateError(createError.message)) return;
@@ -211,13 +152,6 @@ const ensureBucket = async (debugRunId?: string) => {
   // negotiation. Without this, a transient hiccup poisons the singleton
   // and every subsequent upload fails until the lambda is recycled.
   ensureBucketPromise = promise.catch((err) => {
-    // #region agent log
-    console.error(
-      `[debug-cada68][ensureBucket][H1] runId=${debugRunId ?? "n/a"} fresh run REJECTED, clearing cache. message=${
-        err instanceof Error ? err.message : String(err)
-      }`
-    );
-    // #endregion
     ensureBucketPromise = null;
     throw err;
   });
@@ -337,14 +271,8 @@ export const createSignedUploadUrlsForEstimationMedia = async (input: {
   kind: SellerUploadedPropertyMedia["kind"];
   uploadSessionId: string;
   items: Array<{ fileName: string; sizeBytes: number; contentType: string }>;
-  debugRunId?: string;
 }): Promise<EstimationMediaSignedUploadDescriptor[]> => {
-  // #region agent log
-  console.error(
-    `[debug-cada68][createSignedUploadUrls][entry] runId=${input.debugRunId ?? "n/a"} kind=${input.kind} sessionLen=${input.uploadSessionId.length} itemsLen=${input.items.length}`
-  );
-  // #endregion
-  await ensureBucket(input.debugRunId);
+  await ensureBucket();
 
   if (input.items.length === 0) {
     throw new Error("Aucun fichier n'a ete fourni.");
