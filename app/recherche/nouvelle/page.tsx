@@ -311,13 +311,28 @@ export default async function NouvelleRecherchePage({ searchParams }: NouvelleRe
             {copy.title}
           </h1>
           <p className="sillage-editorial-text max-w-3xl text-[#f4ece4]/90">{copy.intro}</p>
-          <ul className="flex flex-wrap gap-2 pt-2">
+          <ul
+            aria-label={copy.kicker}
+            className="flex flex-col gap-1.5 pt-2 sm:flex-row sm:flex-wrap sm:gap-x-6 sm:gap-y-1.5"
+          >
             {copy.microProofs.map((proof) => (
               <li
                 key={proof}
-                className="inline-flex items-center rounded-full border border-[#f4ece4]/40 bg-[#f4ece4]/5 px-3 py-1.5 text-xs md:text-[13px] text-[#f4ece4]/90"
+                className="inline-flex items-center gap-2 text-xs md:text-[13px] text-[#f4ece4]/85"
               >
-                {proof}
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 16 16"
+                  className="h-3.5 w-3.5 shrink-0 text-[#f4c47a]"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M3 8.5l3 3 7-7" />
+                </svg>
+                <span>{proof}</span>
               </li>
             ))}
           </ul>

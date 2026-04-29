@@ -47,6 +47,18 @@ export default async function SellerInvitationPage({
   const { token, error } = await searchParams;
   const invitation = token ? await getInvitationByToken(token) : null;
   const errorMessage = getErrorMessage(error, locale);
+  // When the invitation has already been accepted, suppress benign errors that
+  // simply mean "the link was used once" (magic_link_invalid / missing_token_hash
+  // / missing_user). They are expected and would only confuse the user. We
+  // still surface real errors (revoked, expired, email_mismatch, profile_link_failed).
+  const benignAcceptedErrors = new Set([
+    "magic_link_invalid",
+    "missing_token_hash",
+    "missing_user",
+  ]);
+  const shouldShowErrorMessage =
+    !!errorMessage &&
+    !(invitation?.status === "accepted" && benignAcceptedErrors.has(error ?? ""));
   const copy = {
     fr: {
       title: "Invitation à votre espace client",
@@ -61,6 +73,10 @@ export default async function SellerInvitationPage({
       submitAccepted: "Recevoir un lien de connexion",
       success: "Un email de connexion vient d'être envoyé. Ouvrez-le pour activer votre espace client.",
       successAccepted: "Un lien de connexion vient d'être envoyé à votre adresse email.",
+      acceptedReassureTitle: "Votre espace est déjà activé",
+      acceptedReassureBody:
+        "Pas d'inquiétude : un lien magique se consomme en un seul clic. Demandez un nouveau lien ci-dessous, puis ouvrez le mail le plus récent — un seul clic vous connectera directement à votre espace.",
+      acceptedGoToHub: "Ouvrir mon espace client",
     },
     en: {
       title: "Invitation to your client portal",
@@ -75,6 +91,10 @@ export default async function SellerInvitationPage({
       submitAccepted: "Receive a login link",
       success: "A login email has just been sent. Open it to activate your client portal.",
       successAccepted: "A login link has just been sent to your email address.",
+      acceptedReassureTitle: "Your portal is already activated",
+      acceptedReassureBody:
+        "No worries: each magic link is single-use. Request a fresh link below, then open the most recent email — one click will sign you straight into your portal.",
+      acceptedGoToHub: "Open my client portal",
     },
     es: {
       title: "Invitación a su espacio cliente",
@@ -89,6 +109,10 @@ export default async function SellerInvitationPage({
       submitAccepted: "Recibir un enlace de acceso",
       success: "Se acaba de enviar un email de acceso. Ábralo para activar su espacio cliente.",
       successAccepted: "Se acaba de enviar un enlace de acceso a su email.",
+      acceptedReassureTitle: "Su espacio ya está activado",
+      acceptedReassureBody:
+        "No se preocupe: cada enlace mágico es de un solo uso. Solicite un nuevo enlace a continuación y abra el último email — un solo clic le conectará a su espacio.",
+      acceptedGoToHub: "Abrir mi espacio cliente",
     },
     ru: {
       title: "Приглашение в клиентское пространство",
@@ -103,6 +127,10 @@ export default async function SellerInvitationPage({
       submitAccepted: "Получить ссылку для входа",
       success: "Письмо для входа только что отправлено. Откройте его, чтобы активировать клиентское пространство.",
       successAccepted: "Ссылка для входа только что отправлена на ваш email.",
+      acceptedReassureTitle: "Ваше пространство уже активировано",
+      acceptedReassureBody:
+        "Не беспокойтесь: каждая магическая ссылка одноразовая. Запросите новую ссылку ниже и откройте последнее письмо — один клик и вы войдёте в кабинет.",
+      acceptedGoToHub: "Открыть мой кабинет",
     },
   }[locale];
 
@@ -113,7 +141,7 @@ export default async function SellerInvitationPage({
         <p className="text-sm text-[#141446]/75">{copy.intro}</p>
       </div>
 
-      {errorMessage ? (
+      {shouldShowErrorMessage ? (
         <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {errorMessage}
         </p>
@@ -135,10 +163,20 @@ export default async function SellerInvitationPage({
           {copy.expired}
         </p>
       ) : invitation.status === "accepted" ? (
-        <div className="mt-6 space-y-4">
-          <p className="text-sm text-[#141446]/75">
-            {copy.alreadyActivated} <strong>{invitation.email}</strong>.
-          </p>
+        <div className="mt-6 space-y-5">
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 px-4 py-4 text-sm text-emerald-900">
+            <p className="font-semibold">{copy.acceptedReassureTitle}</p>
+            <p className="mt-1 text-emerald-900/85">
+              {copy.alreadyActivated} <strong>{invitation.email}</strong>.
+            </p>
+            <p className="mt-2 text-emerald-900/85">{copy.acceptedReassureBody}</p>
+          </div>
+          <Link
+            href={localizePath("/espace-client", locale)}
+            className="inline-flex w-full items-center justify-center rounded-full bg-[#141446] px-5 py-2.5 text-sm font-semibold text-[#f4ece4] transition hover:opacity-95 sm:w-auto"
+          >
+            {copy.acceptedGoToHub}
+          </Link>
           <SellerMagicLinkForm
             locale={locale}
             defaultEmail={invitation.email}
