@@ -75,7 +75,7 @@ export default async function SellerInvitationPage({
       successAccepted: "Un lien de connexion vient d'être envoyé à votre adresse email.",
       acceptedReassureTitle: "Votre espace est déjà activé",
       acceptedReassureBody:
-        "Pas d'inquiétude : un lien magique se consomme en un seul clic. Demandez un nouveau lien ci-dessous, puis ouvrez le mail le plus récent — un seul clic vous connectera directement à votre espace.",
+        "Pas d'inquiétude : un lien magique se consomme en un seul clic, mais une fois cliqué vous restez connecté 30 jours sur cet appareil. Si vous avez perdu votre session, demandez un nouveau lien ci-dessous — un seul clic vous connectera directement à votre espace.",
       acceptedGoToHub: "Ouvrir mon espace client",
     },
     en: {
@@ -93,7 +93,7 @@ export default async function SellerInvitationPage({
       successAccepted: "A login link has just been sent to your email address.",
       acceptedReassureTitle: "Your portal is already activated",
       acceptedReassureBody:
-        "No worries: each magic link is single-use. Request a fresh link below, then open the most recent email — one click will sign you straight into your portal.",
+        "No worries: each magic link is single-use, but once clicked you stay signed in for 30 days on this device. If you lost your session, request a fresh link below — one click will sign you straight into your portal.",
       acceptedGoToHub: "Open my client portal",
     },
     es: {
@@ -111,7 +111,7 @@ export default async function SellerInvitationPage({
       successAccepted: "Se acaba de enviar un enlace de acceso a su email.",
       acceptedReassureTitle: "Su espacio ya está activado",
       acceptedReassureBody:
-        "No se preocupe: cada enlace mágico es de un solo uso. Solicite un nuevo enlace a continuación y abra el último email — un solo clic le conectará a su espacio.",
+        "No se preocupe: cada enlace mágico es de un solo uso, pero una vez clicado permanece conectado 30 días en este dispositivo. Si ha perdido su sesión, solicite un nuevo enlace a continuación — un solo clic le conectará directamente a su espacio.",
       acceptedGoToHub: "Abrir mi espacio cliente",
     },
     ru: {
@@ -129,7 +129,7 @@ export default async function SellerInvitationPage({
       successAccepted: "Ссылка для входа только что отправлена на ваш email.",
       acceptedReassureTitle: "Ваше пространство уже активировано",
       acceptedReassureBody:
-        "Не беспокойтесь: каждая магическая ссылка одноразовая. Запросите новую ссылку ниже и откройте последнее письмо — один клик и вы войдёте в кабинет.",
+        "Не беспокойтесь: каждая магическая ссылка одноразовая, но после клика вы остаётесь в системе 30 дней на этом устройстве. Если сессия потеряна, запросите новую ссылку ниже — один клик, и вы войдёте в кабинет.",
       acceptedGoToHub: "Открыть мой кабинет",
     },
   }[locale];
