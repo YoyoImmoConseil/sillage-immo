@@ -1,9 +1,22 @@
 import { Suspense } from "react";
+import { redirect } from "next/navigation";
 import { getRequestLocale } from "@/lib/i18n/request";
+import { localizePath } from "@/lib/i18n/routing";
+import { getClientSpacePageContext } from "@/lib/client-space/auth";
 import { SellerLoginPageContent } from "./login-page-content";
 
 export default async function SellerLoginPage() {
   const locale = await getRequestLocale();
+
+  // If the visitor is already signed in AND has a client profile, the
+  // login form is dead-end UX (cf. Laurent's feedback: header showed
+  // "Connecté en tant que Laurent PERIGNON" while the body asked him to
+  // sign in again). Redirect them straight to the hub.
+  const context = await getClientSpacePageContext();
+  if (context) {
+    redirect(localizePath("/espace-client", locale));
+  }
+
   const fallback = {
     fr: "Chargement de votre espace client...",
     en: "Loading your client portal...",
