@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import type { AppLocale } from "@/lib/i18n/config";
+import { localizePath } from "@/lib/i18n/routing";
 import { SellerMagicLinkForm } from "../_components/seller-magic-link-form";
 
 const getErrorMessage = (errorCode: string | null, locale: AppLocale) => {
@@ -49,27 +51,63 @@ export function SellerLoginPageContent({ locale = "fr" }: { locale?: AppLocale }
   const copy = {
     fr: {
       title: "Connexion à votre espace client",
-      intro: "Saisissez l'adresse email rattachée à votre espace client pour recevoir un lien de connexion.",
-      submit: "Recevoir un lien de connexion",
-      success: "Si cette adresse dispose d'un espace client, un email de connexion vient d'être envoyé.",
+      intro:
+        "Renseignez l'email rattaché à votre espace client : nous vous envoyons un lien sécurisé. Aucun mot de passe à retenir, un seul clic vous connecte.",
+      passwordlessHint:
+        "Connexion sans mot de passe : le lien est valable une seule fois. Si vous en demandez un nouveau, ouvrez toujours le mail le plus récent.",
+      submit: "M'envoyer un lien de connexion",
+      success:
+        "Si cette adresse dispose d'un espace client, un email de connexion vient d'être envoyé. Vérifiez aussi vos spams.",
+      noAccountTitle: "Pas encore de compte chez Sillage Immo ?",
+      noAccountBody:
+        "L'espace client est créé après votre première interaction avec nous. Démarrez par une estimation vendeur ou par votre recherche acquéreur :",
+      ctaSeller: "Estimer mon bien",
+      ctaBuyer: "Lancer ma recherche",
     },
     en: {
       title: "Sign in to your client portal",
-      intro: "Enter the email address linked to your client portal to receive a login link.",
-      submit: "Receive a login link",
-      success: "If this address has an active portal, a login email has just been sent.",
+      intro:
+        "Enter the email linked to your client portal — we'll send a secure link. No password to remember, one click signs you in.",
+      passwordlessHint:
+        "Passwordless sign-in: each link is single-use. If you request a new one, always open the most recent email.",
+      submit: "Email me a sign-in link",
+      success:
+        "If this address has an active portal, a login email has just been sent. Please also check your spam folder.",
+      noAccountTitle: "No account with Sillage Immo yet?",
+      noAccountBody:
+        "Your portal is created after your first interaction with us. Start with a seller estimate or with your buyer search:",
+      ctaSeller: "Estimate my property",
+      ctaBuyer: "Start my search",
     },
     es: {
       title: "Conéctese a su espacio cliente",
-      intro: "Introduzca la dirección de email vinculada a su espacio cliente para recibir un enlace de conexión.",
-      submit: "Recibir un enlace de conexión",
-      success: "Si esta dirección dispone de un espacio cliente, se acaba de enviar un email de conexión.",
+      intro:
+        "Introduzca el email vinculado a su espacio cliente: le enviaremos un enlace seguro. Sin contraseña que recordar, un solo clic le conecta.",
+      passwordlessHint:
+        "Acceso sin contraseña: cada enlace es de un solo uso. Si solicita uno nuevo, abra siempre el último email.",
+      submit: "Enviarme un enlace de acceso",
+      success:
+        "Si esta dirección dispone de un espacio cliente, se acaba de enviar un email de acceso. Consulte también el correo no deseado.",
+      noAccountTitle: "¿Aún no tiene cuenta en Sillage Immo?",
+      noAccountBody:
+        "Su espacio se crea tras su primera interacción con nosotros. Comience con una estimación vendedor o con su búsqueda comprador:",
+      ctaSeller: "Estimar mi inmueble",
+      ctaBuyer: "Iniciar mi búsqueda",
     },
     ru: {
       title: "Вход в клиентское пространство",
-      intro: "Введите email, связанный с вашим клиентским пространством, чтобы получить ссылку для входа.",
-      submit: "Получить ссылку для входа",
-      success: "Если для этого адреса доступно клиентское пространство, письмо для входа уже отправлено.",
+      intro:
+        "Укажите email, привязанный к вашему пространству — мы отправим безопасную ссылку. Без пароля: один клик и вы внутри.",
+      passwordlessHint:
+        "Вход без пароля: каждая ссылка одноразовая. Если запрашиваете новую, всегда открывайте самое последнее письмо.",
+      submit: "Отправить мне ссылку",
+      success:
+        "Если для этого адреса доступно клиентское пространство, письмо для входа уже отправлено. Проверьте также папку «Спам».",
+      noAccountTitle: "Ещё нет аккаунта в Sillage Immo?",
+      noAccountBody:
+        "Кабинет создаётся после первого взаимодействия с нами. Начните с оценки квартиры или с поиска недвижимости:",
+      ctaSeller: "Оценить мой объект",
+      ctaBuyer: "Начать поиск",
     },
   }[locale];
 
@@ -86,12 +124,32 @@ export function SellerLoginPageContent({ locale = "fr" }: { locale?: AppLocale }
         </p>
       ) : null}
 
-      <div className="mt-6">
+      <div className="mt-6 space-y-4">
         <SellerMagicLinkForm
           locale={locale}
           submitLabel={copy.submit}
           successMessage={copy.success}
         />
+        <p className="text-xs text-[#141446]/60">{copy.passwordlessHint}</p>
+      </div>
+
+      <div className="mt-8 rounded-2xl border border-[rgba(20,20,70,0.12)] bg-[#141446]/[0.03] p-5">
+        <p className="text-sm font-semibold text-[#141446]">{copy.noAccountTitle}</p>
+        <p className="mt-1 text-sm text-[#141446]/75">{copy.noAccountBody}</p>
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:gap-3">
+          <Link
+            href={localizePath("/estimation", locale)}
+            className="inline-flex items-center justify-center rounded-full bg-[#141446] px-5 py-2.5 text-sm font-semibold text-[#f4ece4] transition hover:opacity-95"
+          >
+            {copy.ctaSeller}
+          </Link>
+          <Link
+            href={localizePath("/recherche/nouvelle", locale)}
+            className="inline-flex items-center justify-center rounded-full border border-[#141446] bg-transparent px-5 py-2.5 text-sm font-semibold text-[#141446] transition hover:bg-[#141446]/5"
+          >
+            {copy.ctaBuyer}
+          </Link>
+        </div>
       </div>
     </section>
   );
