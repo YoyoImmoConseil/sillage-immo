@@ -271,6 +271,21 @@ export const getClientBuyerSearchDetail = async (input: {
   };
 };
 
+// Postgres error code 42703 == undefined_column. We return it as a soft
+// signal whenever the prod DB is missing a column the code expects (e.g.
+// a migration not yet applied). The caller can then degrade gracefully
+// instead of bubbling a 500 to the user.
+const PG_UNDEFINED_COLUMN = "42703";
+const isUndefinedColumnError = (error: unknown): boolean => {
+  if (!error || typeof error !== "object") return false;
+  const candidate = error as { code?: unknown; message?: unknown };
+  if (candidate.code === PG_UNDEFINED_COLUMN) return true;
+  if (typeof candidate.message === "string" && /column .*does not exist/i.test(candidate.message)) {
+    return true;
+  }
+  return false;
+};
+
 export const countUnreadMatchesByClientProjectIds = async (
   clientProjectIds: string[]
 ): Promise<Record<string, number>> => {
@@ -280,7 +295,17 @@ export const countUnreadMatchesByClientProjectIds = async (
     .from("buyer_search_profiles")
     .select("id, client_project_id")
     .in("client_project_id", clientProjectIds);
-  if (profilesError) throw profilesError;
+  if (profilesError) {
+    if (isUndefinedColumnError(profilesError)) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        "[buyer-portal] countUnreadMatchesByClientProjectIds: column missing on buyer_search_profiles, degrading to zero unread counts. Apply migration 20260510_020_buyer_funnel_lot1.sql.",
+        { code: profilesError.code, message: profilesError.message }
+      );
+      return {};
+    }
+    throw profilesError;
+  }
 
   const rows = (profiles ?? []) as Array<{ id: string; client_project_id: string | null }>;
   if (rows.length === 0) return {};
@@ -300,7 +325,21 @@ export const countUnreadMatchesByClientProjectIds = async (
     .select("buyer_search_profile_id, read_at")
     .in("buyer_search_profile_id", profileIds)
     .is("read_at", null);
-  if (matchesError) throw matchesError;
+  if (matchesError) {
+    if (isUndefinedColumnError(matchesError)) {
+      // Production DBs that are still on migration 019 don't have the
+      // read_at / notified_at / first_seen_at columns from migration 020.
+      // Falling back to zero unread keeps the client hub usable; the badge
+      // will light up automatically once the migration is applied.
+      // eslint-disable-next-line no-console
+      console.warn(
+        "[buyer-portal] countUnreadMatchesByClientProjectIds: read_at column missing on buyer_property_matches, degrading to zero unread counts. Apply migration 20260510_020_buyer_funnel_lot1.sql to restore unread badges.",
+        { code: matchesError.code, message: matchesError.message }
+      );
+      return {};
+    }
+    throw matchesError;
+  }
 
   const result: Record<string, number> = {};
   for (const row of (matches ?? []) as Array<{ buyer_search_profile_id: string }>) {
