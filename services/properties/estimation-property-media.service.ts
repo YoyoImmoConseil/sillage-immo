@@ -51,15 +51,41 @@ const sanitizePathSegment = (value: string) => {
     .slice(0, 80);
 };
 
-const buildBucketDesiredOptions = (): {
+type BucketDesiredOptions = {
   public: boolean;
   fileSizeLimit: string;
   allowedMimeTypes: string[];
-} => ({
+};
+
+const buildBucketDesiredOptions = (): BucketDesiredOptions => ({
   public: false,
   fileSizeLimit: "200MB",
   allowedMimeTypes: [...IMAGE_CONTENT_TYPES, ...VIDEO_CONTENT_TYPES],
 });
+
+const isBenignDuplicateError = (message: string) => {
+  const lower = message.toLowerCase();
+  return lower.includes("already exists") || lower.includes("duplicate");
+};
+
+/**
+ * Some Supabase plans reject `createBucket`/`updateBucket` calls when the
+ * requested `fileSizeLimit` exceeds the plan's allowed maximum. The API
+ * returns a 400 with the verbatim "The object exceeded the maximum allowed
+ * size" message, which is misleading because the actual file isn't even
+ * being uploaded yet — only the bucket configuration is being negotiated.
+ * Detecting this lets us fall back to a plan-default bucket so photo
+ * uploads still work even if videos are rejected later at PUT time.
+ */
+const isPlanFileSizeLimitError = (message: string) => {
+  const lower = message.toLowerCase();
+  return (
+    lower.includes("exceeded the maximum allowed size") ||
+    lower.includes("file size limit") ||
+    lower.includes("too large") ||
+    lower.includes("payload too large")
+  );
+};
 
 /**
  * Ensure the seller estimation media bucket exists AND has the expected
@@ -69,21 +95,76 @@ const buildBucketDesiredOptions = (): {
  * silently rejects every photo upload at runtime with the verbatim
  * "The object exceeded the maximum allowed size" message. We always
  * `updateBucket` so the bucket stays in lockstep with the constants
- * declared above.
+ * declared above. Failures to apply the desired config never block the
+ * upload pipeline: we degrade gracefully so photo uploads keep working
+ * even when the active Supabase plan disallows the requested limits.
  */
-const ensureBucket = async () => {
-  if (ensureBucketPromise) return ensureBucketPromise;
+const ensureBucket = async (debugRunId?: string) => {
+  if (ensureBucketPromise) {
+    // #region agent log
+    console.error(
+      `[debug-cada68][ensureBucket][H1] runId=${debugRunId ?? "n/a"} returning cached promise (state may be resolved or rejected)`
+    );
+    // #endregion
+    try {
+      const result = await ensureBucketPromise;
+      // #region agent log
+      console.error(
+        `[debug-cada68][ensureBucket][H1] runId=${debugRunId ?? "n/a"} cached promise RESOLVED`
+      );
+      // #endregion
+      return result;
+    } catch (cachedErr) {
+      // #region agent log
+      console.error(
+        `[debug-cada68][ensureBucket][H1] runId=${debugRunId ?? "n/a"} cached promise REJECTED message=${
+          cachedErr instanceof Error ? cachedErr.message : String(cachedErr)
+        }`
+      );
+      // #endregion
+      throw cachedErr;
+    }
+  }
 
-  ensureBucketPromise = (async () => {
+  // #region agent log
+  console.error(
+    `[debug-cada68][ensureBucket][H1] runId=${debugRunId ?? "n/a"} fresh run starting (no cache)`
+  );
+  // #endregion
+
+  const promise = (async () => {
+    const desired = buildBucketDesiredOptions();
+
     const { data: buckets, error } = await supabaseAdmin.storage.listBuckets();
-    if (error) throw new Error(error.message);
+    if (error) {
+      // #region agent log
+      console.error(
+        `[debug-cada68][ensureBucket][H1] runId=${debugRunId ?? "n/a"} listBuckets ERROR=${error.message}`
+      );
+      // #endregion
+      throw new Error(error.message);
+    }
 
     const existing = buckets.find((bucket) => bucket.name === ESTIMATION_PROPERTY_MEDIA_BUCKET);
+    // #region agent log
+    console.error(
+      `[debug-cada68][ensureBucket][H1] runId=${debugRunId ?? "n/a"} listBuckets ok totalBuckets=${buckets.length} existing=${Boolean(
+        existing
+      )}`
+    );
+    // #endregion
     if (existing) {
       const { error: updateError } = await supabaseAdmin.storage.updateBucket(
         ESTIMATION_PROPERTY_MEDIA_BUCKET,
-        buildBucketDesiredOptions()
+        desired
       );
+      // #region agent log
+      console.error(
+        `[debug-cada68][ensureBucket][H1] runId=${debugRunId ?? "n/a"} updateBucket result error=${
+          updateError ? updateError.message : "none"
+        }`
+      );
+      // #endregion
       if (updateError) {
         console.warn(
           `[estimation-media] Failed to sync bucket config for "${ESTIMATION_PROPERTY_MEDIA_BUCKET}": ${updateError.message}`
@@ -94,17 +175,52 @@ const ensureBucket = async () => {
 
     const { error: createError } = await supabaseAdmin.storage.createBucket(
       ESTIMATION_PROPERTY_MEDIA_BUCKET,
-      buildBucketDesiredOptions()
+      desired
     );
 
-    if (
-      createError &&
-      !createError.message.toLowerCase().includes("already exists") &&
-      !createError.message.toLowerCase().includes("duplicate")
-    ) {
-      throw new Error(createError.message);
+    // #region agent log
+    console.error(
+      `[debug-cada68][ensureBucket][H1] runId=${debugRunId ?? "n/a"} createBucket result error=${
+        createError ? createError.message : "none"
+      }`
+    );
+    // #endregion
+
+    if (!createError) return;
+    if (isBenignDuplicateError(createError.message)) return;
+
+    if (isPlanFileSizeLimitError(createError.message)) {
+      console.warn(
+        `[estimation-media] Supabase plan rejected fileSizeLimit=${desired.fileSizeLimit}; ` +
+          `falling back to a plan-default bucket. Original error: ${createError.message}`
+      );
+      const { error: fallbackError } = await supabaseAdmin.storage.createBucket(
+        ESTIMATION_PROPERTY_MEDIA_BUCKET,
+        { public: false }
+      );
+      if (fallbackError && !isBenignDuplicateError(fallbackError.message)) {
+        throw new Error(fallbackError.message);
+      }
+      return;
     }
+
+    throw new Error(createError.message);
   })();
+
+  // Reset the cache on failure so the next request retries the bucket
+  // negotiation. Without this, a transient hiccup poisons the singleton
+  // and every subsequent upload fails until the lambda is recycled.
+  ensureBucketPromise = promise.catch((err) => {
+    // #region agent log
+    console.error(
+      `[debug-cada68][ensureBucket][H1] runId=${debugRunId ?? "n/a"} fresh run REJECTED, clearing cache. message=${
+        err instanceof Error ? err.message : String(err)
+      }`
+    );
+    // #endregion
+    ensureBucketPromise = null;
+    throw err;
+  });
 
   return ensureBucketPromise;
 };
@@ -221,8 +337,14 @@ export const createSignedUploadUrlsForEstimationMedia = async (input: {
   kind: SellerUploadedPropertyMedia["kind"];
   uploadSessionId: string;
   items: Array<{ fileName: string; sizeBytes: number; contentType: string }>;
+  debugRunId?: string;
 }): Promise<EstimationMediaSignedUploadDescriptor[]> => {
-  await ensureBucket();
+  // #region agent log
+  console.error(
+    `[debug-cada68][createSignedUploadUrls][entry] runId=${input.debugRunId ?? "n/a"} kind=${input.kind} sessionLen=${input.uploadSessionId.length} itemsLen=${input.items.length}`
+  );
+  // #endregion
+  await ensureBucket(input.debugRunId);
 
   if (input.items.length === 0) {
     throw new Error("Aucun fichier n'a ete fourni.");
