@@ -51,6 +51,26 @@ const sanitizePathSegment = (value: string) => {
     .slice(0, 80);
 };
 
+const buildBucketDesiredOptions = (): {
+  public: boolean;
+  fileSizeLimit: string;
+  allowedMimeTypes: string[];
+} => ({
+  public: false,
+  fileSizeLimit: "200MB",
+  allowedMimeTypes: [...IMAGE_CONTENT_TYPES, ...VIDEO_CONTENT_TYPES],
+});
+
+/**
+ * Ensure the seller estimation media bucket exists AND has the expected
+ * `fileSizeLimit` + `allowedMimeTypes` configuration. Calling
+ * `createBucket` only once and never re-syncing the config means a bucket
+ * created with a smaller default limit (e.g. via the Supabase Dashboard)
+ * silently rejects every photo upload at runtime with the verbatim
+ * "The object exceeded the maximum allowed size" message. We always
+ * `updateBucket` so the bucket stays in lockstep with the constants
+ * declared above.
+ */
 const ensureBucket = async () => {
   if (ensureBucketPromise) return ensureBucketPromise;
 
@@ -59,15 +79,22 @@ const ensureBucket = async () => {
     if (error) throw new Error(error.message);
 
     const existing = buckets.find((bucket) => bucket.name === ESTIMATION_PROPERTY_MEDIA_BUCKET);
-    if (existing) return;
+    if (existing) {
+      const { error: updateError } = await supabaseAdmin.storage.updateBucket(
+        ESTIMATION_PROPERTY_MEDIA_BUCKET,
+        buildBucketDesiredOptions()
+      );
+      if (updateError) {
+        console.warn(
+          `[estimation-media] Failed to sync bucket config for "${ESTIMATION_PROPERTY_MEDIA_BUCKET}": ${updateError.message}`
+        );
+      }
+      return;
+    }
 
     const { error: createError } = await supabaseAdmin.storage.createBucket(
       ESTIMATION_PROPERTY_MEDIA_BUCKET,
-      {
-        public: false,
-        fileSizeLimit: "200MB",
-        allowedMimeTypes: [...IMAGE_CONTENT_TYPES, ...VIDEO_CONTENT_TYPES],
-      }
+      buildBucketDesiredOptions()
     );
 
     if (
