@@ -7,13 +7,34 @@ import {
   getClientPortalMandateLabel,
   groupClientPortalProjects,
   listClientPortalProjects,
+  type ClientPortalProjectSummary,
+  type ClientPortalProjectGroup,
 } from "@/services/clients/client-portal.service";
 
 export default async function SellerPortalHomePage() {
   const locale = await getRequestLocale();
   const context = await requireClientSpacePageContext();
-  const projects = await listClientPortalProjects(context.clientProfile.id);
-  const groups = groupClientPortalProjects(projects);
+  // Projects fetch is multi-Supabase-call (client_projects + seller_projects
+  // bridge + buyer bridge + unread counts). A single Supabase hiccup, RLS
+  // change or unexpected null would otherwise 500 the whole hub. We isolate
+  // it here so the greeting card always renders, plus we log the cause to
+  // Vercel runtime logs so we can pinpoint the bug from the digest.
+  let projects: ClientPortalProjectSummary[] = [];
+  let groups: ClientPortalProjectGroup[] = [];
+  let projectsLoadFailed = false;
+  try {
+    projects = await listClientPortalProjects(context.clientProfile.id);
+    groups = groupClientPortalProjects(projects);
+  } catch (loadError) {
+    projectsLoadFailed = true;
+    // eslint-disable-next-line no-console
+    console.error("[espace-client] listClientPortalProjects failed", {
+      clientProfileId: context.clientProfile.id,
+      authUserId: context.authUserId,
+      message: loadError instanceof Error ? loadError.message : String(loadError),
+      stack: loadError instanceof Error ? loadError.stack : undefined,
+    });
+  }
   const sellerProjects = projects.filter((project) => project.projectType === "seller");
   const copy = {
     fr: {
@@ -36,6 +57,9 @@ export default async function SellerPortalHomePage() {
       clientProject: "Projet client",
       newMatchesSingular: "nouveau bien",
       newMatchesPlural: "nouveaux biens",
+      projectsLoadError:
+        "Vos projets n'ont pas pu être chargés à l'instant. Cela arrive quand notre base répond plus lentement que prévu. Réessayez dans quelques secondes ou contactez-nous si le problème persiste.",
+      retry: "Réessayer",
     },
     en: {
       greeting: "Hello",
@@ -57,6 +81,9 @@ export default async function SellerPortalHomePage() {
       clientProject: "Client project",
       newMatchesSingular: "new property",
       newMatchesPlural: "new properties",
+      projectsLoadError:
+        "We couldn't load your projects right now. This happens when our database responds more slowly than expected. Please retry in a few seconds, or contact us if the issue persists.",
+      retry: "Retry",
     },
     es: {
       greeting: "Hola",
@@ -78,6 +105,9 @@ export default async function SellerPortalHomePage() {
       clientProject: "Proyecto cliente",
       newMatchesSingular: "inmueble nuevo",
       newMatchesPlural: "inmuebles nuevos",
+      projectsLoadError:
+        "Sus proyectos no se pudieron cargar en este momento. Esto ocurre cuando nuestra base de datos responde más lentamente de lo esperado. Reintente en unos segundos o contáctenos si el problema persiste.",
+      retry: "Reintentar",
     },
     ru: {
       greeting: "Здравствуйте",
@@ -99,6 +129,9 @@ export default async function SellerPortalHomePage() {
       clientProject: "Клиентский проект",
       newMatchesSingular: "новый объект",
       newMatchesPlural: "новых объектов",
+      projectsLoadError:
+        "Не удалось загрузить ваши проекты. Это случается, когда наша база отвечает медленнее, чем обычно. Повторите попытку через несколько секунд или свяжитесь с нами, если проблема не исчезнет.",
+      retry: "Повторить",
     },
   }[locale];
   const formatPortalDate = (value: string) => formatDate(value, locale);
@@ -115,7 +148,9 @@ export default async function SellerPortalHomePage() {
         <div className="mt-6 grid gap-4 md:grid-cols-3">
           <div className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-4">
             <p className="text-xs uppercase text-[#141446]/60">{copy.projects}</p>
-            <p className="mt-2 text-2xl font-semibold text-[#141446]">{projects.length}</p>
+            <p className="mt-2 text-2xl font-semibold text-[#141446]">
+              {projectsLoadFailed ? "—" : projects.length}
+            </p>
           </div>
           <div className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-4">
             <p className="text-xs uppercase text-[#141446]/60">{copy.lastLogin}</p>
@@ -128,11 +163,13 @@ export default async function SellerPortalHomePage() {
           <div className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-4">
             <p className="text-xs uppercase text-[#141446]/60">{copy.nextStep}</p>
             <p className="mt-2 text-sm text-[#141446]">
-              {sellerProjects.some((project) => project.seller?.hasAppointmentLink)
-                ? copy.book
-                : projects.length > 0
-                  ? copy.consult
-                  : copy.ready}
+              {projectsLoadFailed
+                ? "—"
+                : sellerProjects.some((project) => project.seller?.hasAppointmentLink)
+                  ? copy.book
+                  : projects.length > 0
+                    ? copy.consult
+                    : copy.ready}
             </p>
           </div>
         </div>
@@ -140,7 +177,19 @@ export default async function SellerPortalHomePage() {
 
       <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-8">
         <h2 className="text-xl font-semibold text-[#141446]">{copy.yourProjects}</h2>
-        {projects.length === 0 ? (
+        {projectsLoadFailed ? (
+          <div className="mt-4 space-y-3">
+            <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              {copy.projectsLoadError}
+            </p>
+            <Link
+              href={localizePath("/espace-client", locale)}
+              className="inline-flex items-center justify-center rounded-full bg-[#141446] px-5 py-2.5 text-sm font-semibold text-[#f4ece4] transition hover:opacity-95"
+            >
+              {copy.retry}
+            </Link>
+          </div>
+        ) : projects.length === 0 ? (
           <p className="mt-4 text-sm text-[#141446]/75">{copy.none}</p>
         ) : (
           <div className="mt-4 space-y-6">
