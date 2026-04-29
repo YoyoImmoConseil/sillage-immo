@@ -51,15 +51,41 @@ const sanitizePathSegment = (value: string) => {
     .slice(0, 80);
 };
 
-const buildBucketDesiredOptions = (): {
+type BucketDesiredOptions = {
   public: boolean;
   fileSizeLimit: string;
   allowedMimeTypes: string[];
-} => ({
+};
+
+const buildBucketDesiredOptions = (): BucketDesiredOptions => ({
   public: false,
   fileSizeLimit: "200MB",
   allowedMimeTypes: [...IMAGE_CONTENT_TYPES, ...VIDEO_CONTENT_TYPES],
 });
+
+const isBenignDuplicateError = (message: string) => {
+  const lower = message.toLowerCase();
+  return lower.includes("already exists") || lower.includes("duplicate");
+};
+
+/**
+ * Some Supabase plans reject `createBucket`/`updateBucket` calls when the
+ * requested `fileSizeLimit` exceeds the plan's allowed maximum. The API
+ * returns a 400 with the verbatim "The object exceeded the maximum allowed
+ * size" message, which is misleading because the actual file isn't even
+ * being uploaded yet — only the bucket configuration is being negotiated.
+ * Detecting this lets us fall back to a plan-default bucket so photo
+ * uploads still work even if videos are rejected later at PUT time.
+ */
+const isPlanFileSizeLimitError = (message: string) => {
+  const lower = message.toLowerCase();
+  return (
+    lower.includes("exceeded the maximum allowed size") ||
+    lower.includes("file size limit") ||
+    lower.includes("too large") ||
+    lower.includes("payload too large")
+  );
+};
 
 /**
  * Ensure the seller estimation media bucket exists AND has the expected
@@ -69,12 +95,16 @@ const buildBucketDesiredOptions = (): {
  * silently rejects every photo upload at runtime with the verbatim
  * "The object exceeded the maximum allowed size" message. We always
  * `updateBucket` so the bucket stays in lockstep with the constants
- * declared above.
+ * declared above. Failures to apply the desired config never block the
+ * upload pipeline: we degrade gracefully so photo uploads keep working
+ * even when the active Supabase plan disallows the requested limits.
  */
 const ensureBucket = async () => {
   if (ensureBucketPromise) return ensureBucketPromise;
 
-  ensureBucketPromise = (async () => {
+  const promise = (async () => {
+    const desired = buildBucketDesiredOptions();
+
     const { data: buckets, error } = await supabaseAdmin.storage.listBuckets();
     if (error) throw new Error(error.message);
 
@@ -82,7 +112,7 @@ const ensureBucket = async () => {
     if (existing) {
       const { error: updateError } = await supabaseAdmin.storage.updateBucket(
         ESTIMATION_PROPERTY_MEDIA_BUCKET,
-        buildBucketDesiredOptions()
+        desired
       );
       if (updateError) {
         console.warn(
@@ -94,17 +124,37 @@ const ensureBucket = async () => {
 
     const { error: createError } = await supabaseAdmin.storage.createBucket(
       ESTIMATION_PROPERTY_MEDIA_BUCKET,
-      buildBucketDesiredOptions()
+      desired
     );
 
-    if (
-      createError &&
-      !createError.message.toLowerCase().includes("already exists") &&
-      !createError.message.toLowerCase().includes("duplicate")
-    ) {
-      throw new Error(createError.message);
+    if (!createError) return;
+    if (isBenignDuplicateError(createError.message)) return;
+
+    if (isPlanFileSizeLimitError(createError.message)) {
+      console.warn(
+        `[estimation-media] Supabase plan rejected fileSizeLimit=${desired.fileSizeLimit}; ` +
+          `falling back to a plan-default bucket. Original error: ${createError.message}`
+      );
+      const { error: fallbackError } = await supabaseAdmin.storage.createBucket(
+        ESTIMATION_PROPERTY_MEDIA_BUCKET,
+        { public: false }
+      );
+      if (fallbackError && !isBenignDuplicateError(fallbackError.message)) {
+        throw new Error(fallbackError.message);
+      }
+      return;
     }
+
+    throw new Error(createError.message);
   })();
+
+  // Reset the cache on failure so the next request retries the bucket
+  // negotiation. Without this, a transient hiccup poisons the singleton
+  // and every subsequent upload fails until the lambda is recycled.
+  ensureBucketPromise = promise.catch((err) => {
+    ensureBucketPromise = null;
+    throw err;
+  });
 
   return ensureBucketPromise;
 };
