@@ -1687,6 +1687,7 @@ export type Database = {
           creator_name: string | null;
           creator_phone: string | null;
           feedback_rating: number | null;
+          feedback_outcome: string | null;
           feedback_comment_public: string | null;
           feedback_comment_internal: string | null;
           feedback_offer_amount: number | null;
@@ -1715,6 +1716,7 @@ export type Database = {
           creator_name?: string | null;
           creator_phone?: string | null;
           feedback_rating?: number | null;
+          feedback_outcome?: string | null;
           feedback_comment_public?: string | null;
           feedback_comment_internal?: string | null;
           feedback_offer_amount?: number | null;
@@ -1743,6 +1745,7 @@ export type Database = {
           creator_name?: string | null;
           creator_phone?: string | null;
           feedback_rating?: number | null;
+          feedback_outcome?: string | null;
           feedback_comment_public?: string | null;
           feedback_comment_internal?: string | null;
           feedback_offer_amount?: number | null;

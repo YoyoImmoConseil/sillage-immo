@@ -105,6 +105,7 @@ export const upsertVisitFromZapierPayload = async (input: {
     creator_name: payload.creator.name,
     creator_phone: payload.creator.phone,
     feedback_rating: payload.feedback?.rating ?? null,
+    feedback_outcome: payload.feedback?.outcome ?? null,
     feedback_comment_public: payload.feedback?.comment_public ?? null,
     feedback_comment_internal: payload.feedback?.comment_internal ?? null,
     feedback_offer_amount: payload.feedback?.offer_amount ?? null,

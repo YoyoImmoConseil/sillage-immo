@@ -23,12 +23,21 @@ export type PropertyVisitClientView = {
   zapierEvent: string;
   occurredAt: string;
   /**
-   * Verbatim feedback (owner-facing). Populated only when the advisor saved
-   * a visiting report on a `visit.completed` event. Falls back to the
-   * internal comment if no public comment was provided — see plan
-   * "visites-completed-feedback" for the rationale.
+   * Qualitative outcome the advisor saved on the visiting report.
+   * SweepBright exposes 5 buckets via 5 radio buttons (Pas d'intérêt /
+   * Info / Visite / Offre / Deal); the canonical API string is one of
+   * `no_interest | wants_info | wants_to_visit | offer | deal`. The UI
+   * maps this to a localized label and a coloured badge. Free-form
+   * string for forward compatibility with future SweepBright values.
    */
-  feedbackRating: number | null;
+  feedbackOutcome: string | null;
+  /**
+   * Verbatim public comment from the visiting report (owner-facing).
+   * Sourced STRICTLY from `feedback_comment_public`. The advisor's
+   * 🔒 internal comment is NEVER fallback-injected here — SweepBright
+   * marks the two fields with explicit "this text will appear in the
+   * owner report" hint vs lock icon, and we respect that boundary.
+   */
   feedbackComment: string | null;
 };
 
@@ -51,7 +60,9 @@ export type PropertyVisitAdminView = PropertyVisitClientView & {
   };
   feedback: {
     rating: number | null;
+    outcome: string | null;
     commentPublic: string | null;
+    /** Advisor-only. NEVER projected to PropertyVisitClientView. */
     commentInternal: string | null;
     offerAmount: number | null;
   };
@@ -71,9 +82,11 @@ export const toClientView = (
   contactInitials: computeContactInitials(row.contact_name),
   zapierEvent: row.zapier_event,
   occurredAt: row.occurred_at,
-  feedbackRating: row.feedback_rating,
-  feedbackComment:
-    row.feedback_comment_public ?? row.feedback_comment_internal,
+  feedbackOutcome: row.feedback_outcome,
+  // PRIVACY: SOURCE UNIQUE on feedback_comment_public. Do NOT add a
+  // fallback on feedback_comment_internal — SweepBright distinguishes
+  // the two via a 🔒 icon in its UI and we respect that boundary.
+  feedbackComment: row.feedback_comment_public,
 });
 
 export const toAdminView = (row: PropertyVisitRow): PropertyVisitAdminView => ({
@@ -96,6 +109,7 @@ export const toAdminView = (row: PropertyVisitRow): PropertyVisitAdminView => ({
   },
   feedback: {
     rating: row.feedback_rating,
+    outcome: row.feedback_outcome,
     commentPublic: row.feedback_comment_public,
     commentInternal: row.feedback_comment_internal,
     offerAmount: row.feedback_offer_amount,

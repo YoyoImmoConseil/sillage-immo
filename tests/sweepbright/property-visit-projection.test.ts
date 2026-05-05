@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   splitVisitsByTime,
+  toAdminView,
   toClientView,
   type PropertyVisitClientView,
   type PropertyVisitRow,
@@ -28,6 +29,7 @@ const baseRow: PropertyVisitRow = {
   creator_name: "Marie Conseillère",
   creator_phone: "+33 1 00 00 00 00",
   feedback_rating: null,
+  feedback_outcome: null,
   feedback_comment_public: null,
   feedback_comment_internal: null,
   feedback_offer_amount: null,
@@ -44,10 +46,9 @@ describe("toClientView", () => {
       status: "scheduled",
       negotiatorName: "Marie Conseillère",
       contactInitials: "CC",
-      feedbackRating: null,
+      feedbackOutcome: null,
       feedbackComment: null,
     });
-    // Ensure raw PII never leaks via the projection.
     expect(view).not.toHaveProperty("contact_name");
     expect(view).not.toHaveProperty("contact_email");
     expect(view).not.toHaveProperty("contact_phone");
@@ -58,41 +59,87 @@ describe("toClientView", () => {
       ...baseRow,
       status: "completed",
       zapier_event: "visit.completed",
-      feedback_rating: 4,
-      feedback_comment_public: "Acquéreur très intéressé, demande un second RDV.",
+      feedback_outcome: "wants_to_visit",
+      feedback_comment_public:
+        "Acquéreur très intéressé, demande un second RDV.",
       feedback_comment_internal: "Note privée — ne pas afficher.",
     });
     expect(view.status).toBe("completed");
-    expect(view.feedbackRating).toBe(4);
+    expect(view.feedbackOutcome).toBe("wants_to_visit");
     expect(view.feedbackComment).toBe(
       "Acquéreur très intéressé, demande un second RDV."
     );
   });
 
-  it("falls back to the internal comment when the public comment is null", () => {
+  // PRIVACY: this is the canary test for the lock-icon contract. If this
+  // ever fails, we are leaking the advisor's internal comment to the
+  // seller portal — see migration 024 + property-visits-client-panel.tsx.
+  it("never leaks feedback_comment_internal into the client view, even when public is null", () => {
     const view = toClientView({
       ...baseRow,
       status: "completed",
       zapier_event: "visit.completed",
-      feedback_rating: 3,
+      feedback_outcome: "no_interest",
       feedback_comment_public: null,
-      feedback_comment_internal: "Commentaire saisi côté agent.",
+      feedback_comment_internal: "PRIVATE — agent only, do not show owner.",
     });
-    expect(view.feedbackRating).toBe(3);
-    expect(view.feedbackComment).toBe("Commentaire saisi côté agent.");
+    expect(view.feedbackComment).toBeNull();
+    expect(view).not.toHaveProperty("feedbackCommentInternal");
   });
 
-  it("returns null comment when both feedback comments are absent", () => {
+  it("returns null for both feedbackComment and feedbackOutcome when nothing is set", () => {
     const view = toClientView({
       ...baseRow,
       status: "completed",
       zapier_event: "visit.completed",
-      feedback_rating: 5,
-      feedback_comment_public: null,
-      feedback_comment_internal: null,
     });
-    expect(view.feedbackRating).toBe(5);
+    expect(view.feedbackOutcome).toBeNull();
     expect(view.feedbackComment).toBeNull();
+  });
+
+  it("exposes the raw outcome string verbatim for forward-compat with new SweepBright values", () => {
+    const view = toClientView({
+      ...baseRow,
+      status: "completed",
+      feedback_outcome: "withdrawn",
+    });
+    // Even an unknown outcome string is preserved — UI is responsible for
+    // localizing known values and falling back to a generic label otherwise.
+    expect(view.feedbackOutcome).toBe("withdrawn");
+  });
+});
+
+describe("toAdminView", () => {
+  it("exposes both comments and the outcome to the admin", () => {
+    const view = toAdminView({
+      ...baseRow,
+      status: "completed",
+      zapier_event: "visit.completed",
+      feedback_outcome: "deal",
+      feedback_rating: 4,
+      feedback_comment_public: "Public takeaway.",
+      feedback_comment_internal: "Private agent note.",
+      feedback_offer_amount: 250000,
+    });
+    expect(view.feedback.outcome).toBe("deal");
+    expect(view.feedback.rating).toBe(4);
+    expect(view.feedback.commentPublic).toBe("Public takeaway.");
+    expect(view.feedback.commentInternal).toBe("Private agent note.");
+    expect(view.feedback.offerAmount).toBe(250000);
+  });
+
+  it("inherits the same client-safe comment policy on the AdminView client-facing fields", () => {
+    // PropertyVisitAdminView extends PropertyVisitClientView, so the
+    // top-level feedbackComment must still be the public one only.
+    const view = toAdminView({
+      ...baseRow,
+      status: "completed",
+      feedback_comment_public: null,
+      feedback_comment_internal: "Private only.",
+    });
+    expect(view.feedbackComment).toBeNull();
+    // But the structured admin-only block exposes it:
+    expect(view.feedback.commentInternal).toBe("Private only.");
   });
 });
 
@@ -127,7 +174,7 @@ describe("splitVisitsByTime", () => {
       id: "completed-early",
       status: "completed",
       scheduledAt: "2026-05-01T10:00:00.000Z",
-      feedbackRating: 4,
+      feedbackOutcome: "wants_to_visit",
       feedbackComment: "RAS",
     });
     const result = splitVisitsByTime([completedEarly], now);
@@ -140,7 +187,7 @@ describe("splitVisitsByTime", () => {
       id: "completed",
       status: "completed",
       scheduledAt: "2026-04-10T10:00:00.000Z",
-      feedbackRating: 5,
+      feedbackOutcome: "deal",
       feedbackComment: "Excellent retour",
     });
     const result = splitVisitsByTime([completedNormal], now);

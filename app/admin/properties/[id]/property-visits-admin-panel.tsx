@@ -37,6 +37,28 @@ const STATUS_BADGE_CLASS: Record<PropertyVisitAdminView["status"], string> = {
   completed: "bg-emerald-100 text-emerald-900",
 };
 
+type KnownOutcome =
+  | "no_interest"
+  | "wants_info"
+  | "wants_to_visit"
+  | "offer"
+  | "deal";
+
+const OUTCOME_LABEL_FR: Record<KnownOutcome, string> = {
+  no_interest: "Pas d'intérêt",
+  wants_info: "Demande d'informations",
+  wants_to_visit: "Souhaite revisiter",
+  offer: "A fait une offre",
+  deal: "Affaire conclue",
+};
+
+const formatOutcome = (outcome: string | null): string | null => {
+  if (!outcome) return null;
+  return outcome in OUTCOME_LABEL_FR
+    ? OUTCOME_LABEL_FR[outcome as KnownOutcome]
+    : outcome;
+};
+
 const formatDuration = (minutes: number | null): string => {
   if (typeof minutes !== "number") return "—";
   return `${minutes} min`;
@@ -57,8 +79,10 @@ const VisitCard = ({ visit }: { visit: PropertyVisitAdminView }) => {
   const hasFeedback =
     visit.feedback.commentInternal !== null ||
     visit.feedback.commentPublic !== null ||
+    visit.feedback.outcome !== null ||
     visit.feedback.rating !== null ||
     visit.feedback.offerAmount !== null;
+  const outcomeLabel = formatOutcome(visit.feedback.outcome);
 
   return (
     <article className="rounded-2xl border border-[rgba(20,20,70,0.12)] p-4">
@@ -116,20 +140,34 @@ const VisitCard = ({ visit }: { visit: PropertyVisitAdminView }) => {
           <p className="text-xs uppercase tracking-wide text-[#141446]/60">
             Retour de visite
           </p>
+          {outcomeLabel !== null ? (
+            <p className="mt-1 text-[#141446]">
+              <span className="text-xs uppercase tracking-wide text-[#141446]/60">
+                Sentiment SweepBright :
+              </span>{" "}
+              {outcomeLabel}
+            </p>
+          ) : null}
           {visit.feedback.rating !== null ? (
             <p className="mt-1 text-[#141446]">
-              Note : {visit.feedback.rating} / 5
+              <span className="text-xs uppercase tracking-wide text-[#141446]/60">
+                Note (legacy) :
+              </span>{" "}
+              {visit.feedback.rating} / 5
             </p>
           ) : null}
           {visit.feedback.offerAmount !== null ? (
             <p className="mt-1 text-[#141446]">
-              Offre : {visit.feedback.offerAmount.toLocaleString("fr-FR")} €
+              <span className="text-xs uppercase tracking-wide text-[#141446]/60">
+                Offre :
+              </span>{" "}
+              {visit.feedback.offerAmount.toLocaleString("fr-FR")} €
             </p>
           ) : null}
           {visit.feedback.commentPublic ? (
             <p className="mt-2 text-[#141446]">
               <span className="text-xs uppercase tracking-wide text-[#141446]/60">
-                Commentaire public :
+                Commentaire pour propriétaire :
               </span>{" "}
               {visit.feedback.commentPublic}
             </p>
@@ -137,7 +175,7 @@ const VisitCard = ({ visit }: { visit: PropertyVisitAdminView }) => {
           {visit.feedback.commentInternal ? (
             <p className="mt-2 text-[#141446]">
               <span className="text-xs uppercase tracking-wide text-[#141446]/60">
-                Commentaire interne :
+                Commentaire interne 🔒 :
               </span>{" "}
               {visit.feedback.commentInternal}
             </p>
