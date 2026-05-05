@@ -7,6 +7,31 @@ type PropertyVisitsClientPanelProps = {
   locale: AppLocale;
 };
 
+type KnownOutcome =
+  | "no_interest"
+  | "wants_info"
+  | "wants_to_visit"
+  | "offer"
+  | "deal";
+
+const KNOWN_OUTCOMES: ReadonlySet<string> = new Set<KnownOutcome>([
+  "no_interest",
+  "wants_info",
+  "wants_to_visit",
+  "offer",
+  "deal",
+]);
+
+const OUTCOME_BADGE_CLASS: Record<KnownOutcome, string> = {
+  no_interest: "bg-rose-100 text-rose-900",
+  wants_info: "bg-amber-100 text-amber-900",
+  wants_to_visit: "bg-sky-100 text-sky-900",
+  offer: "bg-indigo-100 text-indigo-900",
+  deal: "bg-emerald-100 text-emerald-900",
+};
+
+const OUTCOME_FALLBACK_BADGE_CLASS = "bg-[#141446]/10 text-[#141446]";
+
 const COPY: Record<
   AppLocale,
   {
@@ -29,8 +54,9 @@ const COPY: Record<
     visitorAriaLabel: string;
     privacyNote: string;
     feedbackHeader: string;
-    ratingLabel: string;
     feedbackAriaLabel: string;
+    outcomeLabels: Record<KnownOutcome, string>;
+    outcomeFallback: string;
   }
 > = {
   fr: {
@@ -54,8 +80,15 @@ const COPY: Record<
     privacyNote:
       "Pour la confidentialité de l'acquéreur, seules ses initiales sont affichées.",
     feedbackHeader: "Retour du conseiller",
-    ratingLabel: "Note",
     feedbackAriaLabel: "Retour de visite",
+    outcomeLabels: {
+      no_interest: "Pas d'intérêt",
+      wants_info: "Demande d'informations",
+      wants_to_visit: "Souhaite revisiter",
+      offer: "A fait une offre",
+      deal: "Affaire conclue",
+    },
+    outcomeFallback: "Retour saisi",
   },
   en: {
     title: "Viewings",
@@ -78,8 +111,15 @@ const COPY: Record<
     privacyNote:
       "For the buyer's privacy, only their initials are displayed.",
     feedbackHeader: "Advisor feedback",
-    ratingLabel: "Rating",
     feedbackAriaLabel: "Viewing feedback",
+    outcomeLabels: {
+      no_interest: "Not interested",
+      wants_info: "Wants more information",
+      wants_to_visit: "Wants to revisit",
+      offer: "Made an offer",
+      deal: "Deal closed",
+    },
+    outcomeFallback: "Feedback recorded",
   },
   es: {
     title: "Visitas",
@@ -102,8 +142,15 @@ const COPY: Record<
     privacyNote:
       "Por privacidad del comprador, solo se muestran sus iniciales.",
     feedbackHeader: "Comentario del asesor",
-    ratingLabel: "Valoración",
     feedbackAriaLabel: "Comentario de la visita",
+    outcomeLabels: {
+      no_interest: "Sin interés",
+      wants_info: "Quiere más información",
+      wants_to_visit: "Quiere visitar otra vez",
+      offer: "Hizo una oferta",
+      deal: "Cerrado",
+    },
+    outcomeFallback: "Comentario registrado",
   },
   ru: {
     title: "Просмотры",
@@ -126,8 +173,15 @@ const COPY: Record<
     privacyNote:
       "Для защиты конфиденциальности покупателя отображаются только его инициалы.",
     feedbackHeader: "Комментарий консультанта",
-    ratingLabel: "Оценка",
     feedbackAriaLabel: "Отзыв о просмотре",
+    outcomeLabels: {
+      no_interest: "Без интереса",
+      wants_info: "Хочет больше информации",
+      wants_to_visit: "Хочет ещё раз посмотреть",
+      offer: "Сделал предложение",
+      deal: "Сделка",
+    },
+    outcomeFallback: "Отзыв сохранён",
   },
 };
 
@@ -195,8 +249,25 @@ const STATUS_BADGE_CLASS: Record<PropertyVisitClientView["status"], string> = {
 
 const hasFeedback = (visit: PropertyVisitClientView): boolean =>
   visit.status === "completed" &&
-  (visit.feedbackRating != null ||
+  ((visit.feedbackOutcome != null && visit.feedbackOutcome.trim() !== "") ||
     (visit.feedbackComment != null && visit.feedbackComment.trim() !== ""));
+
+const renderOutcomeBadge = (
+  outcome: string,
+  copy: (typeof COPY)[AppLocale]
+): { label: string; className: string } => {
+  if (KNOWN_OUTCOMES.has(outcome)) {
+    const known = outcome as KnownOutcome;
+    return {
+      label: copy.outcomeLabels[known],
+      className: OUTCOME_BADGE_CLASS[known],
+    };
+  }
+  return {
+    label: copy.outcomeFallback,
+    className: OUTCOME_FALLBACK_BADGE_CLASS,
+  };
+};
 
 const VisitRow = ({
   visit,
@@ -252,16 +323,22 @@ const VisitRow = ({
             <p className="text-xs uppercase tracking-wide text-[#141446]/60">
               {copy.feedbackHeader}
             </p>
-            {visit.feedbackRating != null ? (
-              <p className="mt-1 text-sm text-[#141446]/80">
-                <span className="text-xs uppercase tracking-wide text-[#141446]/60">
-                  {copy.ratingLabel} :
-                </span>{" "}
-                {visit.feedbackRating} / 5
-              </p>
+            {visit.feedbackOutcome ? (
+              (() => {
+                const badge = renderOutcomeBadge(visit.feedbackOutcome, copy);
+                return (
+                  <p className="mt-1">
+                    <span
+                      className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${badge.className}`}
+                    >
+                      {badge.label}
+                    </span>
+                  </p>
+                );
+              })()
             ) : null}
             {visit.feedbackComment ? (
-              <p className="mt-1 whitespace-pre-line text-sm text-[#141446]">
+              <p className="mt-2 whitespace-pre-line text-sm text-[#141446]">
                 {visit.feedbackComment}
               </p>
             ) : null}

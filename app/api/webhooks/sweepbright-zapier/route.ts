@@ -37,6 +37,10 @@ const estateSchema = z.object({
 const feedbackSchema = z
   .object({
     rating: z.number().int().min(0).max(5).nullable().optional().default(null),
+    // Free-form string — SweepBright's enum is "no_interest" | "wants_info" |
+    // "wants_to_visit" | "offer" | "deal", but we accept anything to stay
+    // forward-compatible if SweepBright introduces new buckets.
+    outcome: z.string().nullable().optional().default(null),
     comment_public: z.string().nullable().optional().default(null),
     comment_internal: z.string().nullable().optional().default(null),
     offer_amount: z.number().nullable().optional().default(null),

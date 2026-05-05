@@ -46,10 +46,40 @@ export type SweepBrightZapierVisitEstate = {
   title: string | null;
 };
 
+/**
+ * Qualitative outcome saved by the advisor on a SweepBright visiting
+ * report. SweepBright's UI exposes 5 radio buttons for this; the API
+ * label may evolve, so we type it as the union of the 5 known literals
+ * AND a fallback string for forward compatibility.
+ */
+export type SweepBrightFeedbackOutcome =
+  | "no_interest"
+  | "wants_info"
+  | "wants_to_visit"
+  | "offer"
+  | "deal";
+
 export type SweepBrightZapierVisitFeedback = {
+  /**
+   * Numeric rating, kept for forward compatibility — SweepBright's
+   * current Feedback UI does NOT expose a 1-5 score. The qualitative
+   * outcome is conveyed by `outcome` instead.
+   */
   rating: number | null;
+  outcome: SweepBrightFeedbackOutcome | string | null;
+  /** Public comment — visible to the seller in their portal. */
   comment_public: string | null;
+  /**
+   * Internal advisor-only comment. Lock-icon flagged in SweepBright UI.
+   * MUST NEVER be exposed in the seller portal projection.
+   */
   comment_internal: string | null;
+  /**
+   * Buyer offer amount. NOT carried by `lead_reaction_changed` in
+   * SweepBright — populated only via the dedicated `offer_*` triggers
+   * (out of scope for this feedback flow). Kept on the type for
+   * symmetry with the DB column.
+   */
   offer_amount: number | null;
 };
 
