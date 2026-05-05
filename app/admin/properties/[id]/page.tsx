@@ -9,6 +9,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { listClientsForProject } from "@/services/clients/client-project.service";
 import { AttachPropertyToProjectModal } from "./attach-property-to-project-modal";
 import { PropertyDocumentsAdminPanel } from "./property-documents-admin-panel";
+import { PropertyVisitsAdminPanel } from "./property-visits-admin-panel";
 import { PropertyStatusPanel } from "./property-status-panel";
 import { PropertyLocationMap } from "@/app/components/property-location-map";
 
@@ -234,6 +235,8 @@ export default async function AdminPropertyDetailPage({ params }: AdminPropertyD
         )}
 
         <PropertyDocumentsAdminPanel propertyId={id} />
+
+        <PropertyVisitsAdminPanel propertyId={id} />
 
         <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6">
           <h2 className="text-xl font-semibold text-[#141446]">Acquéreurs compatibles</h2>

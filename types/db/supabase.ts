@@ -1664,6 +1664,102 @@ export type Database = {
           }
         ];
       };
+      property_visits: {
+        Row: {
+          id: string;
+          created_at: string;
+          updated_at: string;
+          received_at: string;
+          property_id: string;
+          external_visit_id: string;
+          status: "scheduled" | "updated" | "cancelled" | "completed";
+          scheduled_at: string | null;
+          ended_at: string | null;
+          duration_minutes: number | null;
+          negotiator_email: string | null;
+          negotiator_name: string | null;
+          negotiator_phone: string | null;
+          contact_external_id: string | null;
+          contact_email: string | null;
+          contact_name: string | null;
+          contact_phone: string | null;
+          creator_email: string | null;
+          creator_name: string | null;
+          creator_phone: string | null;
+          feedback_rating: number | null;
+          feedback_comment_public: string | null;
+          feedback_comment_internal: string | null;
+          feedback_offer_amount: number | null;
+          zapier_event: string;
+          occurred_at: string;
+          raw_payload: Record<string, unknown>;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          received_at?: string;
+          property_id: string;
+          external_visit_id: string;
+          status: "scheduled" | "updated" | "cancelled" | "completed";
+          scheduled_at?: string | null;
+          ended_at?: string | null;
+          negotiator_email?: string | null;
+          negotiator_name?: string | null;
+          negotiator_phone?: string | null;
+          contact_external_id?: string | null;
+          contact_email?: string | null;
+          contact_name?: string | null;
+          contact_phone?: string | null;
+          creator_email?: string | null;
+          creator_name?: string | null;
+          creator_phone?: string | null;
+          feedback_rating?: number | null;
+          feedback_comment_public?: string | null;
+          feedback_comment_internal?: string | null;
+          feedback_offer_amount?: number | null;
+          zapier_event: string;
+          occurred_at: string;
+          raw_payload: Record<string, unknown>;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          received_at?: string;
+          property_id?: string;
+          external_visit_id?: string;
+          status?: "scheduled" | "updated" | "cancelled" | "completed";
+          scheduled_at?: string | null;
+          ended_at?: string | null;
+          negotiator_email?: string | null;
+          negotiator_name?: string | null;
+          negotiator_phone?: string | null;
+          contact_external_id?: string | null;
+          contact_email?: string | null;
+          contact_name?: string | null;
+          contact_phone?: string | null;
+          creator_email?: string | null;
+          creator_name?: string | null;
+          creator_phone?: string | null;
+          feedback_rating?: number | null;
+          feedback_comment_public?: string | null;
+          feedback_comment_internal?: string | null;
+          feedback_offer_amount?: number | null;
+          zapier_event?: string;
+          occurred_at?: string;
+          raw_payload?: Record<string, unknown>;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "property_visits_property_id_fkey";
+            columns: ["property_id"];
+            isOneToOne: false;
+            referencedRelation: "properties";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       property_documents: {
         Row: {
           id: string;

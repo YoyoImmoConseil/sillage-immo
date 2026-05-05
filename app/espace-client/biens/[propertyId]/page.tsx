@@ -8,6 +8,7 @@ import { requireClientSpacePageContext } from "@/lib/client-space/auth";
 import { PropertyLocationMap } from "@/app/components/property-location-map";
 import { getSellerPortalPropertyDetail } from "@/services/clients/seller-portal.service";
 import { PropertyDocumentsClientPanel } from "./property-documents-client-panel";
+import { PropertyVisitsClientPanel } from "./property-visits-client-panel";
 import { PropertyViewTracker } from "./_property-view-tracker";
 
 type OwnerPropertyPageProps = {
@@ -298,6 +299,12 @@ export default async function OwnerPropertyPage({ params }: OwnerPropertyPagePro
               </div>
             </section>
           ) : null}
+
+          <PropertyVisitsClientPanel
+            upcoming={detail.visits.upcoming}
+            past={detail.visits.past}
+            locale={locale}
+          />
 
           <PropertyDocumentsClientPanel
             propertyId={detail.property.id}
