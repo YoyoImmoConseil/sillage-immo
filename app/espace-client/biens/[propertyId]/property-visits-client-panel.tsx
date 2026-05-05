@@ -28,6 +28,9 @@ const COPY: Record<
     durationMinutes: (minutes: number) => string;
     visitorAriaLabel: string;
     privacyNote: string;
+    feedbackHeader: string;
+    ratingLabel: string;
+    feedbackAriaLabel: string;
   }
 > = {
   fr: {
@@ -50,6 +53,9 @@ const COPY: Record<
     visitorAriaLabel: "Initiales du visiteur",
     privacyNote:
       "Pour la confidentialité de l'acquéreur, seules ses initiales sont affichées.",
+    feedbackHeader: "Retour du conseiller",
+    ratingLabel: "Note",
+    feedbackAriaLabel: "Retour de visite",
   },
   en: {
     title: "Viewings",
@@ -71,6 +77,9 @@ const COPY: Record<
     visitorAriaLabel: "Visitor initials",
     privacyNote:
       "For the buyer's privacy, only their initials are displayed.",
+    feedbackHeader: "Advisor feedback",
+    ratingLabel: "Rating",
+    feedbackAriaLabel: "Viewing feedback",
   },
   es: {
     title: "Visitas",
@@ -92,6 +101,9 @@ const COPY: Record<
     visitorAriaLabel: "Iniciales del visitante",
     privacyNote:
       "Por privacidad del comprador, solo se muestran sus iniciales.",
+    feedbackHeader: "Comentario del asesor",
+    ratingLabel: "Valoración",
+    feedbackAriaLabel: "Comentario de la visita",
   },
   ru: {
     title: "Просмотры",
@@ -113,6 +125,9 @@ const COPY: Record<
     visitorAriaLabel: "Инициалы посетителя",
     privacyNote:
       "Для защиты конфиденциальности покупателя отображаются только его инициалы.",
+    feedbackHeader: "Комментарий консультанта",
+    ratingLabel: "Оценка",
+    feedbackAriaLabel: "Отзыв о просмотре",
   },
 };
 
@@ -178,6 +193,11 @@ const STATUS_BADGE_CLASS: Record<PropertyVisitClientView["status"], string> = {
   completed: "bg-emerald-100 text-emerald-900",
 };
 
+const hasFeedback = (visit: PropertyVisitClientView): boolean =>
+  visit.status === "completed" &&
+  (visit.feedbackRating != null ||
+    (visit.feedbackComment != null && visit.feedbackComment.trim() !== ""));
+
 const VisitRow = ({
   visit,
   copy,
@@ -188,38 +208,67 @@ const VisitRow = ({
   locale: AppLocale;
 }) => {
   const statusLabel = copy[STATUS_KEY_MAP[visit.status]];
+  const feedbackVisible = hasFeedback(visit);
   return (
-    <tr className="border-t border-[rgba(20,20,70,0.08)]">
-      <td className="py-3 pr-3 text-sm text-[#141446]">
-        {formatDate(visit.scheduledAt, locale)}
-      </td>
-      <td className="py-3 pr-3 text-sm text-[#141446]">
-        {formatTimeRange(visit.scheduledAt, visit.endedAt, locale)}
-      </td>
-      <td className="py-3 pr-3 text-sm text-[#141446]/80">
-        {typeof visit.durationMinutes === "number"
-          ? copy.durationMinutes(visit.durationMinutes)
-          : "—"}
-      </td>
-      <td className="py-3 pr-3 text-sm text-[#141446]">
-        {visit.negotiatorName ?? "—"}
-      </td>
-      <td className="py-3 pr-3 text-sm">
-        <span
-          aria-label={copy.visitorAriaLabel}
-          className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#141446]/10 text-xs font-semibold text-[#141446]"
-        >
-          {visit.contactInitials}
-        </span>
-      </td>
-      <td className="py-3 text-sm">
-        <span
-          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_BADGE_CLASS[visit.status]}`}
-        >
-          {statusLabel}
-        </span>
-      </td>
-    </tr>
+    <>
+      <tr className="border-t border-[rgba(20,20,70,0.08)]">
+        <td className="py-3 pr-3 text-sm text-[#141446]">
+          {formatDate(visit.scheduledAt, locale)}
+        </td>
+        <td className="py-3 pr-3 text-sm text-[#141446]">
+          {formatTimeRange(visit.scheduledAt, visit.endedAt, locale)}
+        </td>
+        <td className="py-3 pr-3 text-sm text-[#141446]/80">
+          {typeof visit.durationMinutes === "number"
+            ? copy.durationMinutes(visit.durationMinutes)
+            : "—"}
+        </td>
+        <td className="py-3 pr-3 text-sm text-[#141446]">
+          {visit.negotiatorName ?? "—"}
+        </td>
+        <td className="py-3 pr-3 text-sm">
+          <span
+            aria-label={copy.visitorAriaLabel}
+            className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#141446]/10 text-xs font-semibold text-[#141446]"
+          >
+            {visit.contactInitials}
+          </span>
+        </td>
+        <td className="py-3 text-sm">
+          <span
+            className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_BADGE_CLASS[visit.status]}`}
+          >
+            {statusLabel}
+          </span>
+        </td>
+      </tr>
+      {feedbackVisible ? (
+        <tr className="border-t border-[rgba(20,20,70,0.04)]">
+          <td
+            colSpan={6}
+            aria-label={copy.feedbackAriaLabel}
+            className="bg-[#141446]/[0.03] px-3 py-3 text-sm text-[#141446]"
+          >
+            <p className="text-xs uppercase tracking-wide text-[#141446]/60">
+              {copy.feedbackHeader}
+            </p>
+            {visit.feedbackRating != null ? (
+              <p className="mt-1 text-sm text-[#141446]/80">
+                <span className="text-xs uppercase tracking-wide text-[#141446]/60">
+                  {copy.ratingLabel} :
+                </span>{" "}
+                {visit.feedbackRating} / 5
+              </p>
+            ) : null}
+            {visit.feedbackComment ? (
+              <p className="mt-1 whitespace-pre-line text-sm text-[#141446]">
+                {visit.feedbackComment}
+              </p>
+            ) : null}
+          </td>
+        </tr>
+      ) : null}
+    </>
   );
 };
 

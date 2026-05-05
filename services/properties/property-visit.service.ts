@@ -3,13 +3,26 @@ import "server-only";
 import { computeContactInitials } from "@/lib/sweepbright/contact-initials";
 import { parseSweepBrightZapierDate } from "@/lib/sweepbright/zapier-date";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import {
+  splitVisitsByTime as splitVisitsByTimeImpl,
+  toAdminView,
+  toClientView,
+  type PropertyVisitAdminView,
+  type PropertyVisitClientView,
+  type PropertyVisitRow,
+} from "@/services/properties/property-visit.projection";
 import type {
   SweepBrightZapierVisitEventName,
   SweepBrightZapierVisitPayload,
 } from "@/types/api/sweepbright";
 import type { Database } from "@/types/db/supabase";
 
-type PropertyVisitRow = Database["public"]["Tables"]["property_visits"]["Row"];
+export type {
+  PropertyVisitClientView,
+  PropertyVisitAdminView,
+} from "@/services/properties/property-visit.projection";
+
+export const splitVisitsByTime = splitVisitsByTimeImpl;
 
 const ZAPIER_EVENT_TO_STATUS: Record<
   SweepBrightZapierVisitEventName,
@@ -128,85 +141,6 @@ export const upsertVisitFromZapierPayload = async (input: {
  * Read projections (admin vs client)
  * =================================================================== */
 
-export type PropertyVisitClientView = {
-  id: string;
-  status: PropertyVisitRow["status"];
-  scheduledAt: string | null;
-  endedAt: string | null;
-  durationMinutes: number | null;
-  negotiatorName: string | null;
-  contactInitials: string;
-  zapierEvent: string;
-  occurredAt: string;
-};
-
-export type PropertyVisitAdminView = PropertyVisitClientView & {
-  contact: {
-    name: string | null;
-    email: string | null;
-    phone: string | null;
-    externalId: string | null;
-  };
-  negotiator: {
-    name: string | null;
-    email: string | null;
-    phone: string | null;
-  };
-  creator: {
-    name: string | null;
-    email: string | null;
-    phone: string | null;
-  };
-  feedback: {
-    rating: number | null;
-    commentPublic: string | null;
-    commentInternal: string | null;
-    offerAmount: number | null;
-  };
-  receivedAt: string;
-  rawPayload: Record<string, unknown>;
-};
-
-const toClientView = (row: PropertyVisitRow): PropertyVisitClientView => ({
-  id: row.id,
-  status: row.status,
-  scheduledAt: row.scheduled_at,
-  endedAt: row.ended_at,
-  durationMinutes: row.duration_minutes,
-  negotiatorName: row.negotiator_name,
-  contactInitials: computeContactInitials(row.contact_name),
-  zapierEvent: row.zapier_event,
-  occurredAt: row.occurred_at,
-});
-
-const toAdminView = (row: PropertyVisitRow): PropertyVisitAdminView => ({
-  ...toClientView(row),
-  contact: {
-    name: row.contact_name,
-    email: row.contact_email,
-    phone: row.contact_phone,
-    externalId: row.contact_external_id,
-  },
-  negotiator: {
-    name: row.negotiator_name,
-    email: row.negotiator_email,
-    phone: row.negotiator_phone,
-  },
-  creator: {
-    name: row.creator_name,
-    email: row.creator_email,
-    phone: row.creator_phone,
-  },
-  feedback: {
-    rating: row.feedback_rating,
-    commentPublic: row.feedback_comment_public,
-    commentInternal: row.feedback_comment_internal,
-    offerAmount: row.feedback_offer_amount,
-  },
-  receivedAt: row.received_at,
-  rawPayload: row.raw_payload,
-});
-
 /**
  * Fetch visits attached to a property, projected for the requested audience.
  *
@@ -245,41 +179,6 @@ export async function listVisitsForProperty(
   }
   return rows.map(toClientView);
 }
-
-/**
- * Split a list of visits into upcoming (scheduled in the future) and past
- * (everything else, including cancelled / completed). Useful for the UI
- * which renders two stacked sections.
- */
-export const splitVisitsByTime = <T extends { scheduledAt: string | null }>(
-  visits: T[],
-  now: Date = new Date()
-): { upcoming: T[]; past: T[] } => {
-  const nowMs = now.getTime();
-  const upcoming: T[] = [];
-  const past: T[] = [];
-  for (const visit of visits) {
-    if (visit.scheduledAt) {
-      const scheduledMs = new Date(visit.scheduledAt).getTime();
-      if (Number.isFinite(scheduledMs) && scheduledMs >= nowMs) {
-        upcoming.push(visit);
-        continue;
-      }
-    }
-    past.push(visit);
-  }
-  upcoming.sort(
-    (a, b) =>
-      new Date(a.scheduledAt ?? 0).getTime() -
-      new Date(b.scheduledAt ?? 0).getTime()
-  );
-  past.sort(
-    (a, b) =>
-      new Date(b.scheduledAt ?? 0).getTime() -
-      new Date(a.scheduledAt ?? 0).getTime()
-  );
-  return { upcoming, past };
-};
 
 /* ===================================================================
  * client_project_events emission
