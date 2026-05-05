@@ -4,6 +4,11 @@ import type { AppLocale } from "@/lib/i18n/config";
 import { resolveLocalizedText } from "@/lib/i18n/localized-content";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { getPropertyDetailById } from "@/services/properties/manual-property.service";
+import {
+  listVisitsForProperty,
+  splitVisitsByTime,
+  type PropertyVisitClientView,
+} from "@/services/properties/property-visit.service";
 import { parseAdminProfileMetadata } from "@/services/admin/admin-profile-metadata";
 import {
   getClientByAuthUserId,
@@ -114,6 +119,10 @@ export type SellerPortalProjectDetail = {
 export type SellerPortalPropertyDetail = {
   client: SellerPortalClient;
   linkedProjectId: string | null;
+  visits: {
+    upcoming: PropertyVisitClientView[];
+    past: PropertyVisitClientView[];
+  };
   property: {
     id: string;
     title: string | null;
@@ -563,9 +572,23 @@ export const getSellerPortalPropertyDetail = async (input: {
     (projectLinks ?? []).find((link) => sellerProjectIds.has(link.client_project_id)) ??
     null;
 
+  let visitsClientView: PropertyVisitClientView[] = [];
+  try {
+    visitsClientView = await listVisitsForProperty(input.propertyId, "client");
+  } catch (error) {
+    // Defensive: a missing migration or transient DB hiccup must not bring
+    // down the whole property page. The seller still sees everything else.
+    console.error(
+      `[seller-portal] Failed to load visits for property ${input.propertyId}:`,
+      error instanceof Error ? error.message : error
+    );
+  }
+  const visits = splitVisitsByTime(visitsClientView);
+
   return {
     client: toClient(client),
     linkedProjectId: preferredLink?.client_project_id ?? ownedProjects[0]?.id ?? null,
+    visits,
     property: {
       id: detail.property.id,
       title: resolveLocalizedText({

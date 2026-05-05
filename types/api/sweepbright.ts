@@ -10,6 +10,64 @@ export type SweepBrightWebhookPayload = {
   company_id: string;
 };
 
+/**
+ * Payload shape produced by Zapier's "Webhooks by Zapier - Custom Request"
+ * action wired to the SweepBright "New Visit Scheduled" trigger.
+ *
+ * Verified on webhook.site on 5 May 2026 with the production Zap.
+ * SweepBright user IDs (negotiator/creator) are NOT exposed by the Zapier
+ * app; we identify those users by email instead. The pretty-printed
+ * `scheduled_at` / `ended_at` strings are parsed server-side via
+ * `lib/sweepbright/zapier-date.ts`.
+ */
+export type SweepBrightZapierVisitEventName =
+  | "visit.scheduled"
+  | "visit.updated"
+  | "visit.cancelled"
+  | "visit.completed";
+
+export type SweepBrightZapierVisitContact = {
+  id: string | null;
+  name: string | null;
+  email: string | null;
+  phone: string | null;
+};
+
+export type SweepBrightZapierVisitNegotiator = {
+  id: string | null;
+  name: string | null;
+  email: string | null;
+  phone: string | null;
+};
+
+export type SweepBrightZapierVisitEstate = {
+  id: string;
+  reference: string | null;
+  title: string | null;
+};
+
+export type SweepBrightZapierVisitFeedback = {
+  rating: number | null;
+  comment_public: string | null;
+  comment_internal: string | null;
+  offer_amount: number | null;
+};
+
+export type SweepBrightZapierVisitPayload = {
+  event: SweepBrightZapierVisitEventName;
+  occurred_at: string;
+  external_visit_id: string;
+  estate: SweepBrightZapierVisitEstate;
+  scheduled_at: string | null;
+  ended_at: string | null;
+  status: "scheduled" | "updated" | "cancelled" | "completed";
+  negotiator: SweepBrightZapierVisitNegotiator;
+  contact: SweepBrightZapierVisitContact;
+  creator: SweepBrightZapierVisitNegotiator;
+  vendors: unknown;
+  feedback?: SweepBrightZapierVisitFeedback | null;
+};
+
 export type SweepBrightTokenResponse = {
   token_type: string;
   expires_in: number;
