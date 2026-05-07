@@ -55,14 +55,40 @@ export function InviteButton({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
       });
-      const data = (await res.json()) as { ok?: boolean; message?: string; inviteLink?: string };
-      if (!res.ok || !data.ok || !data.inviteLink) {
-        setError(data.message ?? "Invitation impossible.");
+      const data = (await res.json()) as {
+        ok?: boolean;
+        code?: string;
+        message?: string;
+        inviteLink?: string;
+        emailSent?: boolean;
+      };
+
+      // Defensive: even on a non-2xx response, the API always returns an
+      // inviteLink when the invitation row was successfully created (the
+      // failure was downstream — typically email_send_failed). We surface
+      // it so the admin can fall back to a manual copy/paste.
+      if (data.inviteLink) {
+        setInviteLink(`${window.location.origin}${data.inviteLink}`);
+      }
+
+      if (!res.ok || !data.ok) {
+        if (data.code === "email_send_failed" && data.inviteLink) {
+          setError(
+            data.message ??
+              "Invitation creee, mais l'envoi du mail a echoue. Copiez le lien de secours ci-dessous."
+          );
+        } else {
+          setError(data.message ?? "Invitation impossible.");
+        }
+        router.refresh();
         return;
       }
 
-      setInviteLink(`${window.location.origin}${data.inviteLink}`);
-      setResult("Invitation créée. Vous pouvez copier le lien ou recharger la page pour voir le nouvel état.");
+      setResult(
+        data.emailSent
+          ? "Mail d'invitation envoye au client. Un lien de secours est disponible ci-dessous au cas ou."
+          : "Invitation creee. Vous pouvez copier le lien ou recharger la page pour voir le nouvel etat."
+      );
       router.refresh();
     } finally {
       setLoading(false);
