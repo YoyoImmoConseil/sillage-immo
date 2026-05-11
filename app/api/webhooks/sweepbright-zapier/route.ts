@@ -1,8 +1,8 @@
 import { after, NextResponse } from "next/server";
 import { timingSafeEqual } from "crypto";
-import { z } from "zod";
 import { serverEnv } from "@/lib/env/server";
 import { parseSweepBrightZapierDate } from "@/lib/sweepbright/zapier-date";
+import { zapierVisitPayloadSchema } from "@/lib/sweepbright/zapier-payload-schema";
 import {
   findPropertyBySweepBrightId,
   recordVisitEventsForProjects,
@@ -13,60 +13,6 @@ import type { SweepBrightZapierVisitPayload } from "@/types/api/sweepbright";
 export const runtime = "nodejs";
 
 const LOG_PREFIX = "[zapier-visit]";
-
-const contactSchema = z.object({
-  id: z.string().nullable().optional().default(null),
-  name: z.string().nullable().optional().default(null),
-  email: z.string().nullable().optional().default(null),
-  phone: z.string().nullable().optional().default(null),
-});
-
-const negotiatorSchema = z.object({
-  id: z.string().nullable().optional().default(null),
-  name: z.string().nullable().optional().default(null),
-  email: z.string().nullable().optional().default(null),
-  phone: z.string().nullable().optional().default(null),
-});
-
-const estateSchema = z.object({
-  id: z.string().min(1),
-  reference: z.string().nullable().optional().default(null),
-  title: z.string().nullable().optional().default(null),
-});
-
-const feedbackSchema = z
-  .object({
-    rating: z.number().int().min(0).max(5).nullable().optional().default(null),
-    // Free-form string — SweepBright's enum is "no_interest" | "wants_info" |
-    // "wants_to_visit" | "offer" | "deal", but we accept anything to stay
-    // forward-compatible if SweepBright introduces new buckets.
-    outcome: z.string().nullable().optional().default(null),
-    comment_public: z.string().nullable().optional().default(null),
-    comment_internal: z.string().nullable().optional().default(null),
-    offer_amount: z.number().nullable().optional().default(null),
-  })
-  .nullable()
-  .optional();
-
-const payloadSchema = z.object({
-  event: z.enum([
-    "visit.scheduled",
-    "visit.updated",
-    "visit.cancelled",
-    "visit.completed",
-  ]),
-  occurred_at: z.string().min(1),
-  external_visit_id: z.string().min(1),
-  estate: estateSchema,
-  scheduled_at: z.string().nullable().optional().default(null),
-  ended_at: z.string().nullable().optional().default(null),
-  status: z.enum(["scheduled", "updated", "cancelled", "completed"]),
-  negotiator: negotiatorSchema,
-  contact: contactSchema,
-  creator: negotiatorSchema,
-  vendors: z.unknown().optional(),
-  feedback: feedbackSchema,
-});
 
 const verifyZapierSecret = (provided: string | null): boolean => {
   const expected = serverEnv.SWEEPBRIGHT_ZAPIER_WEBHOOK_SECRET;
@@ -115,7 +61,7 @@ export const POST = async (request: Request) => {
     );
   }
 
-  const validation = payloadSchema.safeParse(parsedBody);
+  const validation = zapierVisitPayloadSchema.safeParse(parsedBody);
   if (!validation.success) {
     console.warn(
       `${LOG_PREFIX} runId=${runId} rejected: payload schema mismatch`,
