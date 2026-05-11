@@ -63,9 +63,23 @@ export const POST = async (request: Request) => {
 
   const validation = zapierVisitPayloadSchema.safeParse(parsedBody);
   if (!validation.success) {
+    // [debug:zapier-raw-body] TEMPORARY (remove once root cause identified):
+    // logs the exact raw body + content-type + content-length so we can see
+    // what Zapier actually serialises in production vs our captured samples.
     console.warn(
       `${LOG_PREFIX} runId=${runId} rejected: payload schema mismatch`,
-      validation.error.flatten()
+      JSON.stringify({
+        contentType: request.headers.get("content-type"),
+        contentLength: request.headers.get("content-length"),
+        userAgent: request.headers.get("user-agent"),
+        rawBodyLength: rawBody.length,
+        rawBodyPreview: rawBody.slice(0, 4000),
+        parsedKeys:
+          typeof parsedBody === "object" && parsedBody !== null
+            ? Object.keys(parsedBody as Record<string, unknown>)
+            : null,
+        flatten: validation.error.flatten(),
+      })
     );
     return NextResponse.json(
       { ok: false, message: "Invalid Zapier visit payload." },
