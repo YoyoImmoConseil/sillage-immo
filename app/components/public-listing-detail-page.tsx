@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { AppLocale } from "@/lib/i18n/config";
 import { formatCurrency } from "@/lib/i18n/format";
 import { localizePath } from "@/lib/i18n/routing";
+import { getGeneralConditionLabel } from "@/lib/i18n/domain";
 import { formatPropertyTypeLabel } from "@/lib/properties/property-type-label";
 import { getPublicTeamMemberByEmail } from "@/services/home/team.service";
 import type { PropertyListingSnapshot } from "@/types/domain/properties";
@@ -328,7 +329,7 @@ export async function PublicListingDetailPage({
                 </div>
                 <div>
                   <dt className="opacity-65">🧭 Condition générale</dt>
-                  <dd>{listing.property.generalCondition ?? "-"}</dd>
+                  <dd>{getGeneralConditionLabel(listing.property.generalCondition, locale) ?? "-"}</dd>
                 </div>
                 <div>
                   <dt className="opacity-65">📌 {copy.statusLabel}</dt>
