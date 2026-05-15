@@ -1,3 +1,5 @@
+import type { AppLocale } from "@/lib/i18n/config";
+
 const energyColor = (letter: string) => {
   switch (letter.toUpperCase()) {
     case "A":
@@ -21,18 +23,27 @@ const energyColor = (letter: string) => {
 
 const letters = ["A", "B", "C", "D", "E", "F", "G"];
 
+const PROVIDER_CAPTIONS: Record<AppLocale, string> = {
+  fr: "Valeur transmise par SweepBright",
+  en: "Value provided by SweepBright",
+  es: "Valor proporcionado por SweepBright",
+  ru: "Данные предоставлены SweepBright",
+};
+
 export function PropertyEnergyScale({
   title,
   value,
   label,
   unit,
   compact = false,
+  locale = "fr",
 }: {
   title: string;
   value: number | null;
   label: string | null;
   unit: string;
   compact?: boolean;
+  locale?: AppLocale;
 }) {
   if (value === null && !label) return null;
 
@@ -51,7 +62,9 @@ export function PropertyEnergyScale({
           <p className="text-sm font-semibold text-[#141446]">
             {typeof value === "number" ? `${Math.round(value)} ${unit}` : label ?? "-"}
           </p>
-          {!compact ? <p className="text-xs text-[#141446]/65">Valeur transmise par SweepBright</p> : null}
+          {!compact ? (
+            <p className="text-xs text-[#141446]/65">{PROVIDER_CAPTIONS[locale]}</p>
+          ) : null}
         </div>
       </div>
       <div className="mt-3 grid grid-cols-7 gap-1">

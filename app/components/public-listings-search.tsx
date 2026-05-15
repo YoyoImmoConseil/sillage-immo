@@ -40,6 +40,7 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
       loadError: "Impossible de charger les biens avec ces filtres.",
       searchError: "Erreur de recherche.",
       city: "Ville",
+      cityPlaceholder: "Nice, Cannes...",
       propertyType: "Type de bien",
       allTypes: "Tous les types",
       minBudget: "Budget min",
@@ -60,8 +61,8 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
       saveSearchHint:
         "Recevez une alerte dès qu'un bien correspondant est publié et retrouvez-la dans Mon Espace Sillage.",
       updating: "Mise à jour des résultats...",
-      available: "disponible",
-      availablePlural: "disponibles",
+      countAvailable: (count: number) =>
+        count > 1 ? `${count} biens disponibles` : `${count} bien disponible`,
       noResultsTitle: "Aucun bien ne correspond à ces critères",
       noResultsBody: "Ajustez vos filtres ou contactez Sillage Immo pour nous partager votre recherche.",
     },
@@ -69,6 +70,7 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
       loadError: "Unable to load properties with these filters.",
       searchError: "Search error.",
       city: "City",
+      cityPlaceholder: "Nice, Cannes...",
       propertyType: "Property type",
       allTypes: "All types",
       minBudget: "Min budget",
@@ -89,8 +91,8 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
       saveSearchHint:
         "Get instant email alerts when a matching property is listed and keep it safe in your Sillage account.",
       updating: "Updating results...",
-      available: "available",
-      availablePlural: "available",
+      countAvailable: (count: number) =>
+        count > 1 ? `${count} properties available` : `${count} property available`,
       noResultsTitle: "No property matches these criteria",
       noResultsBody: "Adjust your filters or contact Sillage Immo to share your search with us.",
     },
@@ -98,6 +100,7 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
       loadError: "No se pudieron cargar los inmuebles con estos filtros.",
       searchError: "Error de búsqueda.",
       city: "Ciudad",
+      cityPlaceholder: "Niza, Cannes...",
       propertyType: "Tipo de inmueble",
       allTypes: "Todos los tipos",
       minBudget: "Presupuesto mínimo",
@@ -118,8 +121,8 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
       saveSearchHint:
         "Reciba alertas por email cuando se publique un inmueble que le encaje y consérvela en su espacio Sillage.",
       updating: "Actualizando resultados...",
-      available: "disponible",
-      availablePlural: "disponibles",
+      countAvailable: (count: number) =>
+        count > 1 ? `${count} inmuebles disponibles` : `${count} inmueble disponible`,
       noResultsTitle: "Ningún inmueble coincide con estos criterios",
       noResultsBody: "Ajuste sus filtros o contacte con Sillage Immo para compartirnos su búsqueda.",
     },
@@ -127,6 +130,7 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
       loadError: "Не удалось загрузить объекты с такими фильтрами.",
       searchError: "Ошибка поиска.",
       city: "Город",
+      cityPlaceholder: "Ницца, Канны...",
       propertyType: "Тип объекта",
       allTypes: "Все типы",
       minBudget: "Бюджет от",
@@ -147,8 +151,15 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
       saveSearchHint:
         "Получайте моментальные уведомления по email о новых объектах и сохраняйте запрос в кабинете Sillage.",
       updating: "Обновление результатов...",
-      available: "доступен",
-      availablePlural: "доступно",
+      countAvailable: (count: number) => {
+        // Russian plural rules: 1 → singular nominative; 2-4 → genitive singular;
+        // 5+ and 0 → genitive plural. Tens 11-14 always take genitive plural.
+        const mod10 = count % 10;
+        const mod100 = count % 100;
+        if (mod10 === 1 && mod100 !== 11) return `${count} объект доступен`;
+        if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return `${count} объекта доступно`;
+        return `${count} объектов доступно`;
+      },
       noResultsTitle: "По этим критериям ничего не найдено",
       noResultsBody: "Измените фильтры или свяжитесь с Sillage Immo, чтобы поделиться вашим запросом.",
     },
@@ -258,7 +269,7 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
             className="mt-1 w-full rounded border px-3 py-2"
             value={filters.city}
             onChange={(event) => onFilterChange("city", event.target.value)}
-            placeholder="Nice, Cannes..."
+            placeholder={copy.cityPlaceholder}
           />
         </label>
         <label className="text-sm">
@@ -401,16 +412,7 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
       </div>
 
       <div className="flex items-center justify-between gap-4">
-        <p className="text-sm opacity-75">
-          {listings.length}{" "}
-          {props.locale === "fr"
-            ? `bien${listings.length > 1 ? "s" : ""} ${listings.length > 1 ? copy.availablePlural : copy.available}`
-            : props.locale === "es"
-              ? `inmueble${listings.length > 1 ? "s" : ""} ${listings.length > 1 ? copy.availablePlural : copy.available}`
-              : props.locale === "ru"
-                ? `объект${listings.length > 1 ? "а" : ""} ${copy.availablePlural}`
-                : `properties ${copy.available}`}
-        </p>
+        <p className="text-sm opacity-75">{copy.countAvailable(listings.length)}</p>
       </div>
 
       {listings.length === 0 ? (

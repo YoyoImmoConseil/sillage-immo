@@ -62,10 +62,54 @@ const formatFeeMention = (input: {
 
 export function PropertyCard({ listing, locale = "fr" }: PropertyCardProps) {
   const copy = {
-    fr: { photoSoon: "Photo à venir", asset: "Bien", carrez: "Carrez", rooms: "Pièces", lots: "Lots", charges: "Charges" },
-    en: { photoSoon: "Photo coming soon", asset: "Property", carrez: "Carrez", rooms: "Rooms", lots: "Lots", charges: "Charges" },
-    es: { photoSoon: "Foto próximamente", asset: "Inmueble", carrez: "Carrez", rooms: "Habitaciones", lots: "Lotes", charges: "Gastos" },
-    ru: { photoSoon: "Фото скоро появится", asset: "Объект", carrez: "Каррез", rooms: "Комнаты", lots: "Лоты", charges: "Платежи" },
+    fr: {
+      photoSoon: "Photo à venir",
+      asset: "Bien",
+      carrez: "Carrez",
+      rooms: "Pièces",
+      lots: "Lots",
+      charges: "Charges",
+      coverFallback: "Bien immobilier Sillage Immo",
+      titleFallback: "Bien Sillage Immo",
+      dpeUnit: "kWh/m²/an",
+      gesUnit: "kgCO₂/m²/an",
+    },
+    en: {
+      photoSoon: "Photo coming soon",
+      asset: "Property",
+      carrez: "Carrez",
+      rooms: "Rooms",
+      lots: "Lots",
+      charges: "Charges",
+      coverFallback: "Sillage Immo property",
+      titleFallback: "Sillage Immo property",
+      dpeUnit: "kWh/m²/yr",
+      gesUnit: "kgCO₂/m²/yr",
+    },
+    es: {
+      photoSoon: "Foto próximamente",
+      asset: "Inmueble",
+      carrez: "Carrez",
+      rooms: "Habitaciones",
+      lots: "Lotes",
+      charges: "Gastos",
+      coverFallback: "Inmueble Sillage Immo",
+      titleFallback: "Inmueble Sillage Immo",
+      dpeUnit: "kWh/m²/año",
+      gesUnit: "kgCO₂/m²/año",
+    },
+    ru: {
+      photoSoon: "Фото скоро появится",
+      asset: "Объект",
+      carrez: "Каррез",
+      rooms: "Комнаты",
+      lots: "Лоты",
+      charges: "Платежи",
+      coverFallback: "Объект Sillage Immo",
+      titleFallback: "Объект Sillage Immo",
+      dpeUnit: "кВт·ч/м²/год",
+      gesUnit: "кгCO₂/м²/год",
+    },
   }[locale];
   const feeMention = formatFeeMention({
     sale: listing.sale,
@@ -88,7 +132,7 @@ export function PropertyCard({ listing, locale = "fr" }: PropertyCardProps) {
           {listing.coverImageUrl ? (
             <img
               src={listing.coverImageUrl}
-              alt={listing.title ?? "Bien immobilier Sillage Immo"}
+              alt={listing.title ?? copy.coverFallback}
               className="h-full w-full object-cover"
             />
           ) : (
@@ -108,7 +152,7 @@ export function PropertyCard({ listing, locale = "fr" }: PropertyCardProps) {
               🏠 {formatPropertyTypeLabel(listing.propertyType, locale) ?? copy.asset} {listing.city ? `• ${listing.city}` : ""}
             </p>
             <h2 className="text-xl font-semibold leading-tight">
-              {listing.title ?? "Bien Sillage Immo"}
+              {listing.title ?? copy.titleFallback}
             </h2>
             <p className="text-sm text-[#141446]/72">
               {[listing.city, listing.postalCode].filter(Boolean).join(" ")}
@@ -150,15 +194,17 @@ export function PropertyCard({ listing, locale = "fr" }: PropertyCardProps) {
               title="⚡ DPE"
               value={listing.energy.dpeValue}
               label={listing.energy.dpeLabel}
-              unit="kWh/m²/an"
+              unit={copy.dpeUnit}
               compact
+              locale={locale}
             />
             <PropertyEnergyScale
               title="🌿 GES"
               value={listing.energy.gesValue}
               label={listing.energy.gesLabel}
-              unit="kgCO₂/m²/an"
+              unit={copy.gesUnit}
               compact
+              locale={locale}
             />
           </div>
         </div>
