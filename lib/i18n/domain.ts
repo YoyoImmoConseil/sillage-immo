@@ -192,6 +192,68 @@ const SEA_VIEW_LABELS: Record<string, Record<AppLocale, string>> = {
   },
 };
 
+// SweepBright `general_condition` enum (cf. https://docs.contacts.sweepbright.com/condition).
+// Valid spec values: new, mint, good, fair, poor. We also accept common close variants
+// (`as_new`, `excellent`, `to_renovate`, `to_restore`, `to_refresh`) so the UI stays
+// resilient if SweepBright extends the enum or surfaces alternate spellings.
+const GENERAL_CONDITION_LABELS: Record<string, Record<AppLocale, string>> = {
+  new: { fr: "Neuf", en: "New", es: "Nuevo", ru: "Новый" },
+  mint: {
+    fr: "Comme neuf",
+    en: "Like new",
+    es: "Como nuevo",
+    ru: "Как новый",
+  },
+  "as new": {
+    fr: "Comme neuf",
+    en: "Like new",
+    es: "Como nuevo",
+    ru: "Как новый",
+  },
+  excellent: {
+    fr: "Excellent état",
+    en: "Excellent condition",
+    es: "Excelente estado",
+    ru: "Отличное состояние",
+  },
+  good: {
+    fr: "Bon état",
+    en: "Good condition",
+    es: "Buen estado",
+    ru: "Хорошее состояние",
+  },
+  fair: {
+    fr: "État correct",
+    en: "Fair condition",
+    es: "Estado aceptable",
+    ru: "Удовлетворительное состояние",
+  },
+  poor: {
+    fr: "À rénover",
+    en: "To renovate",
+    es: "Para reformar",
+    ru: "Под ремонт",
+  },
+  "to refresh": {
+    fr: "À rafraîchir",
+    en: "To refresh",
+    es: "Para refrescar",
+    ru: "Косметический ремонт",
+  },
+  "to renovate": {
+    fr: "À rénover",
+    en: "To renovate",
+    es: "Para reformar",
+    ru: "Под ремонт",
+  },
+  "to restore": {
+    fr: "À restaurer",
+    en: "To restore",
+    es: "Para restaurar",
+    ru: "Под реставрацию",
+  },
+};
+
 const APARTMENT_CONDITION_LABELS: Record<string, Record<AppLocale, string>> = {
   a_renover: { fr: "À rénover", en: "To renovate", es: "Para reformar", ru: "Под ремонт" },
   renove_20_ans: {
@@ -289,6 +351,9 @@ export const getSeaViewLabel = (value: string | null | undefined, locale: AppLoc
 
 export const getApartmentConditionLabel = (value: string | null | undefined, locale: AppLocale) =>
   translateFromMap(value, locale, APARTMENT_CONDITION_LABELS);
+
+export const getGeneralConditionLabel = (value: string | null | undefined, locale: AppLocale) =>
+  translateFromMap(value, locale, GENERAL_CONDITION_LABELS);
 
 export const getBuildingAgeLabel = (value: string | null | undefined, locale: AppLocale) =>
   translateFromMap(value, locale, BUILDING_AGE_LABELS);
