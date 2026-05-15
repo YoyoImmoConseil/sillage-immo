@@ -4,7 +4,11 @@ import Link from "next/link";
 import type { AppLocale } from "@/lib/i18n/config";
 import { formatCurrency } from "@/lib/i18n/format";
 import { localizePath } from "@/lib/i18n/routing";
-import { getGeneralConditionLabel } from "@/lib/i18n/domain";
+import {
+  getExposureLabel,
+  getGeneralConditionLabel,
+  getSeaViewLabel,
+} from "@/lib/i18n/domain";
 import { formatPropertyTypeLabel } from "@/lib/properties/property-type-label";
 import { getPublicTeamMemberByEmail } from "@/services/home/team.service";
 import type { PropertyListingSnapshot } from "@/types/domain/properties";
@@ -14,34 +18,39 @@ import { PropertyGallery } from "./property-gallery";
 import { PropertyLocationMap } from "./property-location-map";
 import { getListingCommercialStatusLabel } from "./listing-status-banner";
 
+const METADATA_FALLBACKS: Record<AppLocale, { title: string; description: string }> = {
+  fr: {
+    title: "Bien immobilier",
+    description: "Consultez le détail de ce bien immobilier proposé par Sillage Immo.",
+  },
+  en: {
+    title: "Property",
+    description: "Explore this property presented by Sillage Immo.",
+  },
+  es: {
+    title: "Inmueble",
+    description: "Consulte este inmueble presentado por Sillage Immo.",
+  },
+  ru: {
+    title: "Объект недвижимости",
+    description: "Ознакомьтесь с этим объектом от Sillage Immo.",
+  },
+};
+
 export const buildPublicListingMetadata = (
   listing: PropertyListingSnapshot | null,
   locale: AppLocale = "fr"
 ): Metadata => {
+  const fallback = METADATA_FALLBACKS[locale];
   if (!listing) {
     return {
-      title:
-        locale === "en"
-          ? "Property | Sillage Immo"
-          : locale === "es"
-            ? "Inmueble | Sillage Immo"
-            : locale === "ru"
-              ? "Недвижимость | Sillage Immo"
-              : "Bien immobilier | Sillage Immo",
+      title: `${fallback.title} | Sillage Immo`,
     };
   }
 
   return {
-    title: `${listing.title ?? "Bien immobilier"} | Sillage Immo`,
-    description:
-      listing.property.description?.slice(0, 160) ??
-      (locale === "en"
-        ? "Explore this property presented by Sillage Immo."
-        : locale === "es"
-          ? "Consulte este inmueble presentado por Sillage Immo."
-          : locale === "ru"
-            ? "Ознакомьтесь с этим объектом от Sillage Immo."
-            : "Consultez le détail de ce bien immobilier proposé par Sillage Immo."),
+    title: `${listing.title ?? fallback.title} | Sillage Immo`,
+    description: listing.property.description?.slice(0, 160) ?? fallback.description,
   };
 };
 
@@ -58,6 +67,7 @@ export async function PublicListingDetailPage({
       features: "Caractéristiques détaillées",
       photos: "Photos du bien",
       contact: "Interlocuteur Sillage",
+      contactFallback: "Conseiller Sillage Immo",
       virtualTour: "Visite virtuelle",
       openMatterport: "Ouvrir la visite Matterport",
       highlights: "A retenir",
@@ -68,12 +78,38 @@ export async function PublicListingDetailPage({
       watchVideo: "Voir la vidéo",
       statusLabel: "Statut",
       statusAvailable: "Disponible",
+      propertyFallback: "Bien immobilier",
+      propertyFallbackShort: "Bien",
+      yes: "Oui",
+      no: "Non",
+      dpeUnit: "kWh/m²/an",
+      gesUnit: "kgCO₂/m²/an",
+      livingArea: "📐 Surface habitable",
+      bedrooms: "🛏️ Chambres",
+      livingRooms: "🛋️ Séjours",
+      livingRoomArea: "📏 Surface du séjour",
+      floor: "🏢 Étage / immeuble",
+      topFloor: "🔝 Dernier étage",
+      elevator: "🛗 Ascenseur",
+      cellar: "🧱 Cave",
+      terrace: "🌿 Terrasse",
+      balcony: "🌤️ Balcon",
+      exposure: "☀️ Exposition",
+      seaView: "🌊 Vue mer",
+      generalCondition: "🧭 Condition générale",
+      propertyType: "🏠 Typologie",
+      loiCarrezArea: "📐 Surface Carrez",
+      roomCount: "🛋️ Nombre de pièces",
+      lotCount: "🏢 Nombre de lots",
+      annualCharges: "🧾 Charges annuelles",
+      city: "🏙️ Ville",
     },
     en: {
       back: "Back to listings",
       features: "Detailed features",
       photos: "Property photos",
       contact: "Your Sillage contact",
+      contactFallback: "Sillage Immo advisor",
       virtualTour: "Virtual tour",
       openMatterport: "Open Matterport tour",
       highlights: "Key facts",
@@ -84,12 +120,38 @@ export async function PublicListingDetailPage({
       watchVideo: "Watch the video",
       statusLabel: "Status",
       statusAvailable: "Available",
+      propertyFallback: "Property",
+      propertyFallbackShort: "Property",
+      yes: "Yes",
+      no: "No",
+      dpeUnit: "kWh/m²/yr",
+      gesUnit: "kgCO₂/m²/yr",
+      livingArea: "📐 Living area",
+      bedrooms: "🛏️ Bedrooms",
+      livingRooms: "🛋️ Living rooms",
+      livingRoomArea: "📏 Living room area",
+      floor: "🏢 Floor / building",
+      topFloor: "🔝 Top floor",
+      elevator: "🛗 Elevator",
+      cellar: "🧱 Cellar",
+      terrace: "🌿 Terrace",
+      balcony: "🌤️ Balcony",
+      exposure: "☀️ Exposure",
+      seaView: "🌊 Sea view",
+      generalCondition: "🧭 General condition",
+      propertyType: "🏠 Property type",
+      loiCarrezArea: "📐 Carrez area",
+      roomCount: "🛋️ Number of rooms",
+      lotCount: "🏢 Number of lots",
+      annualCharges: "🧾 Annual charges",
+      city: "🏙️ City",
     },
     es: {
       back: "Volver al catálogo",
       features: "Características detalladas",
       photos: "Fotos del inmueble",
       contact: "Interlocutor Sillage",
+      contactFallback: "Asesor Sillage Immo",
       virtualTour: "Visita virtual",
       openMatterport: "Abrir la visita Matterport",
       highlights: "Puntos clave",
@@ -100,12 +162,38 @@ export async function PublicListingDetailPage({
       watchVideo: "Ver el vídeo",
       statusLabel: "Estado",
       statusAvailable: "Disponible",
+      propertyFallback: "Inmueble",
+      propertyFallbackShort: "Inmueble",
+      yes: "Sí",
+      no: "No",
+      dpeUnit: "kWh/m²/año",
+      gesUnit: "kgCO₂/m²/año",
+      livingArea: "📐 Superficie habitable",
+      bedrooms: "🛏️ Dormitorios",
+      livingRooms: "🛋️ Salones",
+      livingRoomArea: "📏 Superficie del salón",
+      floor: "🏢 Planta / edificio",
+      topFloor: "🔝 Última planta",
+      elevator: "🛗 Ascensor",
+      cellar: "🧱 Bodega",
+      terrace: "🌿 Terraza",
+      balcony: "🌤️ Balcón",
+      exposure: "☀️ Orientación",
+      seaView: "🌊 Vista al mar",
+      generalCondition: "🧭 Estado general",
+      propertyType: "🏠 Tipología",
+      loiCarrezArea: "📐 Superficie Carrez",
+      roomCount: "🛋️ Número de estancias",
+      lotCount: "🏢 Número de lotes",
+      annualCharges: "🧾 Cargas anuales",
+      city: "🏙️ Ciudad",
     },
     ru: {
       back: "Назад к каталогу",
       features: "Подробные характеристики",
       photos: "Фотографии объекта",
       contact: "Ваш контакт в Sillage",
+      contactFallback: "Консультант Sillage Immo",
       virtualTour: "Виртуальный тур",
       openMatterport: "Открыть Matterport-тур",
       highlights: "Ключевые факты",
@@ -116,6 +204,31 @@ export async function PublicListingDetailPage({
       watchVideo: "Смотреть видео",
       statusLabel: "Статус",
       statusAvailable: "Доступен",
+      propertyFallback: "Объект недвижимости",
+      propertyFallbackShort: "Объект",
+      yes: "Да",
+      no: "Нет",
+      dpeUnit: "кВт·ч/м²/год",
+      gesUnit: "кгCO₂/м²/год",
+      livingArea: "📐 Жилая площадь",
+      bedrooms: "🛏️ Спальни",
+      livingRooms: "🛋️ Гостиные",
+      livingRoomArea: "📏 Площадь гостиной",
+      floor: "🏢 Этаж / здание",
+      topFloor: "🔝 Последний этаж",
+      elevator: "🛗 Лифт",
+      cellar: "🧱 Подвал",
+      terrace: "🌿 Терраса",
+      balcony: "🌤️ Балкон",
+      exposure: "☀️ Ориентация",
+      seaView: "🌊 Вид на море",
+      generalCondition: "🧭 Общее состояние",
+      propertyType: "🏠 Тип объекта",
+      loiCarrezArea: "📐 Площадь по Carrez",
+      roomCount: "🛋️ Количество комнат",
+      lotCount: "🏢 Количество лотов",
+      annualCharges: "🧾 Годовые расходы",
+      city: "🏙️ Город",
     },
   }[locale];
   // Localized, marketing-safe label (`Disponible`, `Sous Compromis`, `Sous Offre`, ...).
@@ -188,7 +301,7 @@ export async function PublicListingDetailPage({
           </Link>
           <div className="space-y-2">
             <h1 className="sillage-section-title text-[#f4ece4]">
-              {listing.title ?? "Bien immobilier"}
+              {listing.title ?? copy.propertyFallback}
             </h1>
             <p className="text-sm text-[#f4ece4]/80">
               {[listing.city, listing.postalCode].filter(Boolean).join(" • ")}
@@ -209,7 +322,7 @@ export async function PublicListingDetailPage({
           <div className="space-y-6">
             <PropertyGallery
               images={gallery}
-              title={listing.title ?? "Bien immobilier"}
+              title={listing.title ?? copy.propertyFallback}
               showThumbnails={false}
               availabilityStatus={listing.property.availabilityStatus}
               locale={locale}
@@ -220,13 +333,15 @@ export async function PublicListingDetailPage({
                 title="⚡ DPE"
                 value={listing.property.energy.dpeValue}
                 label={listing.property.energy.dpeLabel}
-                unit="kWh/m²/an"
+                unit={copy.dpeUnit}
+                locale={locale}
               />
               <PropertyEnergyScale
                 title="🌿 GES"
                 value={listing.property.energy.gesValue}
                 label={listing.property.energy.gesLabel}
-                unit="kgCO₂/m²/an"
+                unit={copy.gesUnit}
+                locale={locale}
               />
             </section>
 
@@ -234,7 +349,7 @@ export async function PublicListingDetailPage({
               <h2 className="sillage-section-title">{copy.features}</h2>
               <dl className="grid gap-3 text-sm sm:grid-cols-2 xl:grid-cols-3">
                 <div>
-                  <dt className="opacity-65">📐 Surface habitable</dt>
+                  <dt className="opacity-65">{copy.livingArea}</dt>
                   <dd>
                     {typeof listing.livingArea === "number"
                       ? `${Math.round(listing.livingArea)} m²`
@@ -242,11 +357,11 @@ export async function PublicListingDetailPage({
                   </dd>
                 </div>
                 <div>
-                  <dt className="opacity-65">🛏️ Chambres</dt>
+                  <dt className="opacity-65">{copy.bedrooms}</dt>
                   <dd>{typeof listing.bedrooms === "number" ? listing.bedrooms : "-"}</dd>
                 </div>
                 <div>
-                  <dt className="opacity-65">🛋️ Séjours</dt>
+                  <dt className="opacity-65">{copy.livingRooms}</dt>
                   <dd>
                     {typeof listing.property.rooms.livingRooms === "number"
                       ? listing.property.rooms.livingRooms
@@ -254,7 +369,7 @@ export async function PublicListingDetailPage({
                   </dd>
                 </div>
                 <div>
-                  <dt className="opacity-65">📏 Surface du séjour</dt>
+                  <dt className="opacity-65">{copy.livingRoomArea}</dt>
                   <dd>
                     {typeof listing.property.surfaces.livingRoomArea === "number"
                       ? `${Math.round(listing.property.surfaces.livingRoomArea)} m²`
@@ -262,73 +377,73 @@ export async function PublicListingDetailPage({
                   </dd>
                 </div>
                 <div>
-                  <dt className="opacity-65">🏢 Étage / immeuble</dt>
+                  <dt className="opacity-65">{copy.floor}</dt>
                   <dd>{floorLabel}</dd>
                 </div>
                 <div>
-                  <dt className="opacity-65">🔝 Dernier étage</dt>
+                  <dt className="opacity-65">{copy.topFloor}</dt>
                   <dd>
                     {listing.property.rooms.isTopFloor === null
                       ? "-"
                       : listing.property.rooms.isTopFloor
-                        ? "Oui"
-                        : "Non"}
+                        ? copy.yes
+                        : copy.no}
                   </dd>
                 </div>
                 <div>
-                  <dt className="opacity-65">🛗 Ascenseur</dt>
+                  <dt className="opacity-65">{copy.elevator}</dt>
                   <dd>
                     {listing.property.amenities.hasElevator === null
                       ? "-"
                       : listing.property.amenities.hasElevator
-                        ? "Oui"
-                        : "Non"}
+                        ? copy.yes
+                        : copy.no}
                   </dd>
                 </div>
                 <div>
-                  <dt className="opacity-65">🧱 Cave</dt>
+                  <dt className="opacity-65">{copy.cellar}</dt>
                   <dd>
                     {listing.property.amenities.hasCellar === null
                       ? "-"
                       : listing.property.amenities.hasCellar
-                        ? "Oui"
-                        : "Non"}
+                        ? copy.yes
+                        : copy.no}
                   </dd>
                 </div>
                 <div>
-                  <dt className="opacity-65">🌿 Terrasse</dt>
+                  <dt className="opacity-65">{copy.terrace}</dt>
                   <dd>
                     {listing.property.amenities.hasTerrace === null
                       ? "-"
                       : listing.property.amenities.hasTerrace
                       ? typeof listing.property.surfaces.terraceArea === "number"
-                        ? `Oui • ${Math.round(listing.property.surfaces.terraceArea)} m²`
-                        : "Oui"
-                      : "Non"}
+                        ? `${copy.yes} • ${Math.round(listing.property.surfaces.terraceArea)} m²`
+                        : copy.yes
+                      : copy.no}
                   </dd>
                 </div>
                 <div>
-                  <dt className="opacity-65">🌤️ Balcon</dt>
+                  <dt className="opacity-65">{copy.balcony}</dt>
                   <dd>
                     {listing.property.amenities.hasBalcony === null
                       ? "-"
                       : listing.property.amenities.hasBalcony
                       ? typeof listing.property.surfaces.balconyArea === "number"
-                        ? `Oui • ${Math.round(listing.property.surfaces.balconyArea)} m²`
-                        : "Oui"
-                      : "Non"}
+                        ? `${copy.yes} • ${Math.round(listing.property.surfaces.balconyArea)} m²`
+                        : copy.yes
+                      : copy.no}
                   </dd>
                 </div>
                 <div>
-                  <dt className="opacity-65">☀️ Exposition</dt>
-                  <dd>{listing.property.amenities.exposure ?? "-"}</dd>
+                  <dt className="opacity-65">{copy.exposure}</dt>
+                  <dd>{getExposureLabel(listing.property.amenities.exposure, locale) ?? "-"}</dd>
                 </div>
                 <div>
-                  <dt className="opacity-65">🌊 Vue mer</dt>
-                  <dd>{listing.property.amenities.seaView ?? "-"}</dd>
+                  <dt className="opacity-65">{copy.seaView}</dt>
+                  <dd>{getSeaViewLabel(listing.property.amenities.seaView, locale) ?? "-"}</dd>
                 </div>
                 <div>
-                  <dt className="opacity-65">🧭 Condition générale</dt>
+                  <dt className="opacity-65">{copy.generalCondition}</dt>
                   <dd>{getGeneralConditionLabel(listing.property.generalCondition, locale) ?? "-"}</dd>
                 </div>
                 <div>
@@ -345,7 +460,7 @@ export async function PublicListingDetailPage({
                   latitude={listing.property.address.latitude}
                   longitude={listing.property.address.longitude}
                   address={fullAddress || null}
-                  title={listing.title ?? "Bien immobilier"}
+                  title={listing.title ?? copy.propertyFallback}
                 />
               </section>
             ) : null}
@@ -362,7 +477,7 @@ export async function PublicListingDetailPage({
                       >
                         <img
                           src={image.cachedUrl ?? image.remoteUrl ?? undefined}
-                          alt={image.description ?? `${listing.title ?? "Bien"} ${index + 1}`}
+                          alt={image.description ?? `${listing.title ?? copy.propertyFallbackShort} ${index + 1}`}
                           className="aspect-square h-full w-full object-cover"
                         />
                       </div>
@@ -379,12 +494,12 @@ export async function PublicListingDetailPage({
               {contactAvatarUrl ? (
                 <img
                   src={contactAvatarUrl}
-                  alt={contactProfile?.fullName || contactFullName || "Conseiller Sillage Immo"}
+                  alt={contactProfile?.fullName || contactFullName || copy.contactFallback}
                   className="h-24 w-24 rounded-lg object-cover border border-white/20"
                 />
               ) : null}
               <p className="sillage-editorial-text opacity-85">
-                {contactProfile?.fullName || contactFullName || "Conseiller Sillage Immo"}
+                {contactProfile?.fullName || contactFullName || copy.contactFallback}
               </p>
               {typeof contact.email === "string" && contact.email.trim() ? (
                 <a className="sillage-editorial-text block opacity-85 underline" href={`mailto:${contact.email}`}>
@@ -416,11 +531,11 @@ export async function PublicListingDetailPage({
               <h2 className="sillage-section-title">{copy.highlights}</h2>
               <dl className="grid gap-3 text-sm sm:grid-cols-2">
                 <div>
-                  <dt className="opacity-65">🏠 Typologie</dt>
-                  <dd>{formatPropertyTypeLabel(listing.propertyType) ?? "-"}</dd>
+                  <dt className="opacity-65">{copy.propertyType}</dt>
+                  <dd>{formatPropertyTypeLabel(listing.propertyType, locale) ?? "-"}</dd>
                 </div>
                 <div>
-                  <dt className="opacity-65">📐 Surface Carrez</dt>
+                  <dt className="opacity-65">{copy.loiCarrezArea}</dt>
                   <dd>
                     {typeof listing.property.surfaces.loiCarrezArea === "number"
                       ? `${Math.round(listing.property.surfaces.loiCarrezArea)} m²`
@@ -428,27 +543,27 @@ export async function PublicListingDetailPage({
                   </dd>
                 </div>
                 <div>
-                  <dt className="opacity-65">🛋️ Nombre de pièces</dt>
+                  <dt className="opacity-65">{copy.roomCount}</dt>
                   <dd>{typeof listing.property.rooms.roomCount === "number" ? listing.property.rooms.roomCount : "-"}</dd>
                 </div>
                 <div>
-                  <dt className="opacity-65">🏢 Nombre de lots</dt>
+                  <dt className="opacity-65">{copy.lotCount}</dt>
                   <dd>{typeof listing.property.condo.lotCount === "number" ? listing.property.condo.lotCount : "-"}</dd>
                 </div>
                 <div>
-                  <dt className="opacity-65">🧾 Charges annuelles</dt>
+                  <dt className="opacity-65">{copy.annualCharges}</dt>
                   <dd>
                     {typeof listing.property.condo.annualCharges === "number"
-                      ? new Intl.NumberFormat("fr-FR", {
-                          style: "currency",
-                          currency: listing.priceCurrency || "EUR",
-                          maximumFractionDigits: 0,
-                        }).format(listing.property.condo.annualCharges)
+                      ? formatCurrency(
+                          listing.property.condo.annualCharges,
+                          locale,
+                          listing.priceCurrency || "EUR"
+                        )
                       : "-"}
                   </dd>
                 </div>
                 <div>
-                  <dt className="opacity-65">🏙️ Ville</dt>
+                  <dt className="opacity-65">{copy.city}</dt>
                   <dd>{listing.city ?? "-"}</dd>
                 </div>
               </dl>

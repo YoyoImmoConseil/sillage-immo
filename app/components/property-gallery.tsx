@@ -14,6 +14,56 @@ type PropertyGalleryProps = {
   locale?: AppLocale;
 };
 
+const GALLERY_COPY: Record<
+  AppLocale,
+  {
+    galleryComingSoon: string;
+    mediaUnavailable: string;
+    previousPhoto: string;
+    nextPhoto: string;
+    fullscreen: string;
+    close: string;
+    showPhoto: (index: number) => string;
+  }
+> = {
+  fr: {
+    galleryComingSoon: "Galerie à venir",
+    mediaUnavailable: "Média indisponible",
+    previousPhoto: "Photo précédente",
+    nextPhoto: "Photo suivante",
+    fullscreen: "Plein écran",
+    close: "Fermer",
+    showPhoto: (index) => `Afficher la photo ${index}`,
+  },
+  en: {
+    galleryComingSoon: "Gallery coming soon",
+    mediaUnavailable: "Media unavailable",
+    previousPhoto: "Previous photo",
+    nextPhoto: "Next photo",
+    fullscreen: "Fullscreen",
+    close: "Close",
+    showPhoto: (index) => `Show photo ${index}`,
+  },
+  es: {
+    galleryComingSoon: "Galería próximamente",
+    mediaUnavailable: "Medio no disponible",
+    previousPhoto: "Foto anterior",
+    nextPhoto: "Foto siguiente",
+    fullscreen: "Pantalla completa",
+    close: "Cerrar",
+    showPhoto: (index) => `Mostrar la foto ${index}`,
+  },
+  ru: {
+    galleryComingSoon: "Галерея скоро появится",
+    mediaUnavailable: "Медиа недоступно",
+    previousPhoto: "Предыдущее фото",
+    nextPhoto: "Следующее фото",
+    fullscreen: "Полный экран",
+    close: "Закрыть",
+    showPhoto: (index) => `Показать фото ${index}`,
+  },
+};
+
 const getImageUrl = (image: PropertyMediaSnapshot) => {
   return image.cachedUrl ?? image.remoteUrl ?? null;
 };
@@ -30,6 +80,7 @@ export function PropertyGallery({
   availabilityStatus = null,
   locale = "fr",
 }: PropertyGalleryProps) {
+  const copy = GALLERY_COPY[locale];
   const validImages = useMemo(
     // This component is intentionally image-only; callers may pass the full
     // property media array, but videos and documents are ignored here.
@@ -60,7 +111,7 @@ export function PropertyGallery({
   if (validImages.length === 0) {
     return (
       <div className="flex aspect-[4/3] items-center justify-center rounded-2xl border border-[rgba(20,20,70,0.18)] text-sm opacity-70">
-        Galerie a venir
+        {copy.galleryComingSoon}
       </div>
     );
   }
@@ -71,7 +122,7 @@ export function PropertyGallery({
   if (!activeUrl) {
     return (
       <div className="flex aspect-[4/3] items-center justify-center rounded-2xl border border-[rgba(20,20,70,0.18)] text-sm opacity-70">
-        Media indisponible
+        {copy.mediaUnavailable}
       </div>
     );
   }
@@ -104,7 +155,7 @@ export function PropertyGallery({
                 type="button"
                 className="absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-[rgba(20,20,70,0.7)] text-lg text-white"
                 onClick={goPrev}
-                aria-label="Photo precedente"
+                aria-label={copy.previousPhoto}
               >
                 ‹
               </button>
@@ -112,7 +163,7 @@ export function PropertyGallery({
                 type="button"
                 className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-[rgba(20,20,70,0.7)] text-lg text-white"
                 onClick={goNext}
-                aria-label="Photo suivante"
+                aria-label={copy.nextPhoto}
               >
                 ›
               </button>
@@ -127,7 +178,7 @@ export function PropertyGallery({
               className="rounded-full bg-[rgba(20,20,70,0.7)] px-3 py-1 text-xs text-white"
               onClick={() => setIsFullscreen(true)}
             >
-              Plein ecran
+              {copy.fullscreen}
             </button>
           </div>
         </div>
@@ -148,7 +199,7 @@ export function PropertyGallery({
                       : "border-[rgba(20,20,70,0.14)]"
                   }`}
                   onClick={() => setActiveIndex(index)}
-                  aria-label={`Afficher la photo ${index + 1}`}
+                  aria-label={copy.showPhoto(index + 1)}
                 >
                   <Image
                     src={imageUrl}
@@ -176,7 +227,7 @@ export function PropertyGallery({
               className="rounded-full border border-white/30 px-3 py-1 text-sm"
               onClick={() => setIsFullscreen(false)}
             >
-              Fermer
+              {copy.close}
             </button>
           </div>
           <div className="relative flex h-[calc(100vh-6rem)] items-center justify-center">
@@ -194,7 +245,7 @@ export function PropertyGallery({
                   type="button"
                   className="absolute left-2 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-2xl text-white"
                   onClick={goPrev}
-                  aria-label="Photo precedente"
+                  aria-label={copy.previousPhoto}
                 >
                   ‹
                 </button>
@@ -202,7 +253,7 @@ export function PropertyGallery({
                   type="button"
                   className="absolute right-2 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-2xl text-white"
                   onClick={goNext}
-                  aria-label="Photo suivante"
+                  aria-label={copy.nextPhoto}
                 >
                   ›
                 </button>
