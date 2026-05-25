@@ -203,6 +203,7 @@ export const POST = async (request: Request) => {
     const data = await tool.handler(body.input, {
       requestId,
       actor,
+      actorType: actor,
     });
 
     let outputSize: number | null = null;
