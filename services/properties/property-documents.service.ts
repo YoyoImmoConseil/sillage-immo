@@ -2,6 +2,10 @@ import "server-only";
 
 import { randomUUID } from "crypto";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import {
+  notifyAssignedAdvisorOfClientUploadedDocument,
+  notifyOwnersOfNewPropertyDocument,
+} from "./property-document-notification.service";
 
 export const PROPERTY_DOCUMENTS_BUCKET = "property-documents";
 export const PROPERTY_DOCUMENT_PDF_MIME = "application/pdf";
@@ -207,8 +211,9 @@ export const uploadAdminPropertyDocument = async (input: {
     throw new Error(uploadError.message);
   }
 
+  let document: PropertyDocument;
   try {
-    return await insertDocument({
+    document = await insertDocument({
       propertyId: input.propertyId,
       kind: "file",
       visibility: input.visibility,
@@ -223,6 +228,12 @@ export const uploadAdminPropertyDocument = async (input: {
     await tryRemoveStorageObject(PROPERTY_DOCUMENTS_BUCKET, storagePath);
     throw error;
   }
+  await notifyOwnersOfNewPropertyDocument({
+    propertyId: input.propertyId,
+    document,
+    adminProfileId: input.adminProfileId,
+  });
+  return document;
 };
 
 export const addAdminPropertyDocumentLink = async (input: {
@@ -237,7 +248,7 @@ export const addAdminPropertyDocumentLink = async (input: {
     throw new Error("Le libellé du lien est requis.");
   }
   const url = validateExternalUrl(input.url);
-  return insertDocument({
+  const document = await insertDocument({
     propertyId: input.propertyId,
     kind: "link",
     visibility: input.visibility,
@@ -245,6 +256,12 @@ export const addAdminPropertyDocumentLink = async (input: {
     externalUrl: url,
     uploadedByAdminProfileId: input.adminProfileId,
   });
+  await notifyOwnersOfNewPropertyDocument({
+    propertyId: input.propertyId,
+    document,
+    adminProfileId: input.adminProfileId,
+  });
+  return document;
 };
 
 export type SignedUploadUrlResponse = {
@@ -329,8 +346,9 @@ export const registerUploadedAdminPropertyDocument = async (input: {
   }
 
   const fallbackName = input.storagePath.split("/").pop() ?? "document.pdf";
+  let document: PropertyDocument;
   try {
-    return await insertDocument({
+    document = await insertDocument({
       propertyId: input.propertyId,
       kind: "file",
       visibility: input.visibility,
@@ -345,6 +363,12 @@ export const registerUploadedAdminPropertyDocument = async (input: {
     await tryRemoveStorageObject(PROPERTY_DOCUMENTS_BUCKET, input.storagePath);
     throw error;
   }
+  await notifyOwnersOfNewPropertyDocument({
+    propertyId: input.propertyId,
+    document,
+    adminProfileId: input.adminProfileId,
+  });
+  return document;
 };
 
 /**
@@ -371,8 +395,9 @@ export const registerUploadedClientPropertyDocument = async (input: {
   }
 
   const fallbackName = input.storagePath.split("/").pop() ?? "document.pdf";
+  let document: PropertyDocument;
   try {
-    return await insertDocument({
+    document = await insertDocument({
       propertyId: input.propertyId,
       kind: "file",
       visibility: "admin_and_client",
@@ -387,6 +412,11 @@ export const registerUploadedClientPropertyDocument = async (input: {
     await tryRemoveStorageObject(PROPERTY_DOCUMENTS_BUCKET, input.storagePath);
     throw error;
   }
+  await notifyAssignedAdvisorOfClientUploadedDocument({
+    propertyId: input.propertyId,
+    document,
+  });
+  return document;
 };
 
 export const uploadClientPropertyDocument = async (input: {
@@ -410,8 +440,9 @@ export const uploadClientPropertyDocument = async (input: {
     throw new Error(uploadError.message);
   }
 
+  let document: PropertyDocument;
   try {
-    return await insertDocument({
+    document = await insertDocument({
       propertyId: input.propertyId,
       kind: "file",
       visibility: "admin_and_client",
@@ -426,6 +457,11 @@ export const uploadClientPropertyDocument = async (input: {
     await tryRemoveStorageObject(PROPERTY_DOCUMENTS_BUCKET, storagePath);
     throw error;
   }
+  await notifyAssignedAdvisorOfClientUploadedDocument({
+    propertyId: input.propertyId,
+    document,
+  });
+  return document;
 };
 
 export const listPropertyDocumentsForAdmin = async (
@@ -574,9 +610,23 @@ export const setPropertyDocumentVisibility = async (
   if (error || !data) {
     throw error ?? new Error("Mise à jour de la visibilité impossible.");
   }
-  // adminProfileId is reserved for future audit logging.
-  void adminProfileId;
-  return mapDocumentRow(data as PropertyDocumentRow);
+  const updated = mapDocumentRow(data as PropertyDocumentRow);
+
+  // Notify co-owners only when an admin reveals a previously admin-only
+  // document to the client side. We deliberately do not re-notify when the
+  // document was already visible (no transition) nor when it is being
+  // hidden again.
+  const becameClientVisible =
+    document.visibility === "admin_only" && updated.visibility === "admin_and_client";
+  if (becameClientVisible && updated.uploadedByAdminProfileId) {
+    await notifyOwnersOfNewPropertyDocument({
+      propertyId: updated.propertyId,
+      document: updated,
+      adminProfileId: adminProfileId ?? updated.uploadedByAdminProfileId,
+    });
+  }
+
+  return updated;
 };
 
 export type PropertyDocumentUploaderInfo = {
