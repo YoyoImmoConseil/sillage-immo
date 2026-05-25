@@ -30,10 +30,14 @@ Stack principale:
   - Leads acquereurs structures + matching bidirectionnel
   - Gestion des biens manuels hors SweepBright (`/admin/properties`)
 - **Couches IA-ready**
-  - Endpoint MCP (`GET/POST /api/mcp`)
-  - Registry des tools (`lib/mcp/*`)
+  - Endpoint MCP (`GET/POST /api/mcp`) + manifest (`GET /api/mcp/manifest`)
+  - Bridge MCP natif stdio (`scripts/mcp-server.ts`) — Claude Desktop / Cursor
+  - Registry des tools (`lib/mcp/tools/<domain>.ts`) ~34 tools versionnes
   - Catalogue de versions tools (`/api/admin/tool-versions`)
-  - Journalisation/audit des executions MCP
+  - Journalisation/audit des executions MCP + idempotence + rate-limit
+  - RAG sur pgvector: `entity_embeddings` (1536 dim), `ai_conversations`,
+    `ai_messages`, worker d'embedding ev-driven
+  - Wrapper OpenAI trace (token + cost accounting `cost_micros`)
 - **Resilience et operations**
   - Domain events + processor
   - Idempotency API (`api_idempotency_keys`)
@@ -116,6 +120,15 @@ Note back-office:
 - `GET /api/internal/health?scope=core|full`: etat env + Supabase + queue events
 - `GET /api/internal/readyz`: prete pour trafic metier
 - `POST /api/admin/domain-events/process`: traitement manuel des events en attente
+- `GET /api/mcp` / `POST /api/mcp` / `GET /api/mcp/manifest`: surface MCP
+
+## MCP et IA
+
+- Inventaire des tools: [`docs/ops/mcp-tool-catalog.md`](docs/ops/mcp-tool-catalog.md)
+- Domaine IA / RAG (pgvector, retention, embedding flow):
+  [`docs/ops/ai-domain.md`](docs/ops/ai-domain.md)
+- Bridge MCP natif (Claude Desktop / Cursor): [`lib/mcp/BRIDGE.md`](lib/mcp/BRIDGE.md)
+- Lancer le bridge stdio: `MCP_SERVER_ADMIN_KEY=... npm run mcp:server`
 
 ## Vision cible (fusion des chantiers)
 
