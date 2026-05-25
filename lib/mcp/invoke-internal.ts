@@ -15,5 +15,6 @@ export const invokeMcpToolInternal = async (toolName: string, input: unknown) =>
   return tool.handler(input, {
     requestId: crypto.randomUUID(),
     actor: "system",
+    actorType: "system",
   });
 };

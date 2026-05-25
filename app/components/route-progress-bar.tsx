@@ -81,12 +81,17 @@ export function RouteProgressBar() {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
-    setProgress(100);
+    // Defer state updates out of the effect's synchronous body so React 19
+    // doesn't flag set-state-in-effect on the first complete pulse.
+    const complete = window.setTimeout(() => setProgress(100), 0);
     const hide = window.setTimeout(() => {
       setVisible(false);
       setProgress(0);
     }, 220);
-    return () => window.clearTimeout(hide);
+    return () => {
+      window.clearTimeout(complete);
+      window.clearTimeout(hide);
+    };
   }, [pathname, searchParams, visible]);
 
   return (

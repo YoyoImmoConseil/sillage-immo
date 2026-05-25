@@ -3,6 +3,7 @@ import type { AppLocale } from "@/lib/i18n/config";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { emitDomainEvent } from "@/lib/events/domain-events";
 import { invokeMcpToolInternal } from "@/lib/mcp/invoke-internal";
+import { callOpenAiChat } from "@/lib/ai/openai";
 import {
   SILLAGE_AGENCY_KNOWLEDGE,
   SILLAGE_AGENCY_KNOWLEDGE_VERSION,
@@ -15,7 +16,6 @@ type SellerChatResult = {
   escalateToHuman: boolean;
 };
 
-const OPENAI_BASE_URL = "https://api.openai.com/v1/chat/completions";
 const MAX_HISTORY = 12;
 const SELLER_CHAT_SYSTEM_PROMPT = `Tu es un conseiller commercial immobilier de Sillage Immo (Nice).
 Ton objectif est d'informer, rassurer et aider le vendeur a avancer vers un echange avec un conseiller.
@@ -81,11 +81,6 @@ export const askSellerChat = async (
   userMessage: string,
   locale: AppLocale = "fr"
 ): Promise<SellerChatResult> => {
-  const openAiApiKey = process.env.OPENAI_API_KEY;
-  if (!openAiApiKey) {
-    throw new Error("OPENAI_API_KEY manquante.");
-  }
-
   const cleanedMessage = userMessage.trim();
   if (!cleanedMessage) {
     throw new Error("Message vide.");
@@ -111,64 +106,47 @@ export const askSellerChat = async (
     mcpContext = null;
   }
 
-  const response = await fetch(OPENAI_BASE_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${openAiApiKey}`,
-    },
-    body: JSON.stringify({
-      model: "gpt-4o-mini",
-      temperature: 0.3,
-      messages: [
-        {
-          role: "system",
-          content:
-            SELLER_CHAT_SYSTEM_PROMPT +
-            " " +
-            (locale === "en"
-              ? "Respond in English."
-              : locale === "es"
-                ? "Responde en español."
-                : locale === "ru"
-                  ? "Отвечай по-русски."
-                  : "Réponds en français."),
-        },
-        {
-          role: "user",
-          content: JSON.stringify({
-            agencyKnowledgeVersion: SILLAGE_AGENCY_KNOWLEDGE_VERSION,
-            agencyKnowledge: SILLAGE_AGENCY_KNOWLEDGE,
-            leadContext: {
-              fullName: lead.full_name,
-              city: lead.city,
-              propertyType: lead.property_type,
-            },
-            mcpContext,
-            history: previousMessages,
-            question: cleanedMessage,
-          }),
-        },
-      ],
-    }),
-    cache: "no-store",
+  const chatResult = await callOpenAiChat({
+    model: "gpt-4o-mini",
+    temperature: 0.3,
+    messages: [
+      {
+        role: "system",
+        content:
+          SELLER_CHAT_SYSTEM_PROMPT +
+          " " +
+          (locale === "en"
+            ? "Respond in English."
+            : locale === "es"
+              ? "Responde en español."
+              : locale === "ru"
+                ? "Отвечай по-русски."
+                : "Réponds en français."),
+      },
+      {
+        role: "user",
+        content: JSON.stringify({
+          agencyKnowledgeVersion: SILLAGE_AGENCY_KNOWLEDGE_VERSION,
+          agencyKnowledge: SILLAGE_AGENCY_KNOWLEDGE,
+          leadContext: {
+            fullName: lead.full_name,
+            city: lead.city,
+            propertyType: lead.property_type,
+          },
+          mcpContext,
+          history: previousMessages,
+          question: cleanedMessage,
+        }),
+      },
+    ],
+    toolName: "seller_chat.ask",
+    toolVersion: "1.0.0",
   });
 
-  const payload = (await response.json()) as Record<string, unknown>;
-  if (!response.ok) {
-    throw new Error(`OpenAI error (${response.status}).`);
-  }
-
-  const choices = payload.choices;
-  if (!Array.isArray(choices) || choices.length === 0) {
-    throw new Error("Reponse IA vide.");
-  }
-  const firstChoice = choices[0] as Record<string, unknown>;
-  const message = (firstChoice.message as Record<string, unknown> | undefined) ?? null;
-  const answerRaw = message?.content;
+  const answerRaw = chatResult.content.trim();
   const answer =
-    typeof answerRaw === "string" && answerRaw.trim().length > 0
-      ? answerRaw.trim()
+    answerRaw.length > 0
+      ? answerRaw
       : "Je vous propose de planifier un rappel avec un conseiller Sillage Immo.";
 
   const now = new Date().toISOString();

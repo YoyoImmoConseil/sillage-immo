@@ -2,10 +2,9 @@ import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { emitDomainEvent } from "@/lib/events/domain-events";
 import type { Database } from "@/types/db/supabase";
+import { callOpenAiChat } from "@/lib/ai/openai";
 import { getSellerMetadataSections, mergeSellerMetadata } from "./seller-metadata";
 import type { SellerAiInsight } from "@/types/domain/sellers";
-
-const OPENAI_BASE_URL = "https://api.openai.com/v1/chat/completions";
 
 const normalizeRisk = (value: unknown): SellerAiInsight["competitorRiskLevel"] => {
   if (value === "high" || value === "medium" || value === "low") return value;
@@ -38,11 +37,6 @@ const parseAssistantJson = (raw: string): Omit<SellerAiInsight, "generatedAt" | 
 export const generateSellerAiInsight = async (
   sellerLeadId: string
 ): Promise<SellerAiInsight> => {
-  const openAiApiKey = process.env.OPENAI_API_KEY;
-  if (!openAiApiKey) {
-    throw new Error("OPENAI_API_KEY manquante. Ajoutez-la dans .env.local.");
-  }
-
   const { data: lead, error: leadError } = await supabaseAdmin
     .from("seller_leads")
     .select("*")
@@ -79,57 +73,35 @@ export const generateSellerAiInsight = async (
     ],
   };
 
-  const response = await fetch(OPENAI_BASE_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${openAiApiKey}`,
-    },
-    body: JSON.stringify({
-      model: "gpt-4o-mini",
-      temperature: 0.2,
-      response_format: { type: "json_object" },
-      messages: [
-        {
-          role: "system",
-          content:
-            "Tu analyses des leads vendeurs immobiliers. Reponds strictement en JSON valide.",
-        },
-        {
-          role: "user",
-          content: JSON.stringify(prompt),
-        },
-      ],
-    }),
-    cache: "no-store",
+  const chatResult = await callOpenAiChat({
+    model: "gpt-4o-mini",
+    temperature: 0.2,
+    responseFormat: { type: "json_object" },
+    messages: [
+      {
+        role: "system",
+        content:
+          "Tu analyses des leads vendeurs immobiliers. Reponds strictement en JSON valide.",
+      },
+      {
+        role: "user",
+        content: JSON.stringify(prompt),
+      },
+    ],
+    toolName: "seller_leads.generate_ai_insight",
+    toolVersion: "1.0.0",
   });
 
-  const payload = (await response.json()) as Record<string, unknown>;
-  if (!response.ok) {
-    throw new Error(`OpenAI error (${response.status}): ${JSON.stringify(payload)}`);
-  }
-
-  const choices = payload.choices;
-  if (!Array.isArray(choices) || choices.length === 0) {
-    throw new Error("OpenAI: reponse vide.");
-  }
-  const firstChoice = choices[0] as Record<string, unknown>;
-  const message = (firstChoice.message as Record<string, unknown> | undefined) ?? null;
-  const content = message?.content;
-  if (typeof content !== "string" || content.trim().length === 0) {
+  const content = chatResult.content;
+  if (content.trim().length === 0) {
     throw new Error("OpenAI: contenu IA invalide.");
   }
 
   const parsed = parseAssistantJson(content);
-  const model =
-    typeof payload.model === "string" && payload.model.trim().length > 0
-      ? payload.model
-      : "gpt-4o-mini";
-
   const aiInsight: SellerAiInsight = {
     ...parsed,
     generatedAt: new Date().toISOString(),
-    model,
+    model: chatResult.model,
   };
 
   const nextMetadata = mergeSellerMetadata(metadata, {
