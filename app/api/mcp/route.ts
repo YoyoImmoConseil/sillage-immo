@@ -1,11 +1,21 @@
 import { NextResponse } from "next/server";
-import { isInternalRequest } from "@/lib/admin/auth";
+import {
+  getAdminRequestContext,
+  isInternalRequest,
+} from "@/lib/admin/auth";
 import { bootstrapMcpRegistry } from "@/lib/mcp/bootstrap";
 import { getTool, listTools } from "@/lib/mcp/registry";
 import { validateWithSchema } from "@/lib/mcp/validate";
 import { logMcpCall } from "@/lib/mcp/audit";
 import { isRegisteredToolVersion } from "@/lib/mcp/versioning";
+import { checkRateLimit, extractClientIp } from "@/lib/rate-limit/in-memory";
+import { hashValue } from "@/lib/audit/hash";
+import {
+  checkMcpIdempotency,
+  persistMcpIdempotencyResponse,
+} from "@/lib/idempotency/mcp-idempotency";
 import type {
+  ToolActorType,
   ToolCallError,
   ToolCallRequest,
   ToolCallSuccess,
@@ -13,7 +23,10 @@ import type {
   ToolListResponse,
 } from "@/lib/mcp/types";
 
-const parseActor = (request: Request): ToolContext["actor"] => {
+const DEFAULT_RATE_LIMIT_PER_MINUTE = 60;
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+
+const parseActorHeader = (request: Request): ToolActorType => {
   const raw = request.headers.get("x-mcp-actor");
   if (raw === "system" || raw === "anonymous" || raw === "user") return raw;
   return "system";
@@ -43,6 +56,8 @@ const errorStatus = (code: ToolCallError["error"]["code"]) => {
       return 422;
     case "tool_version_unregistered":
       return 409;
+    case "rate_limited":
+      return 429;
     default:
       return 500;
   }
@@ -60,9 +75,55 @@ const jsonError = (
   );
 };
 
+const getRateLimitPerMinute = () => {
+  const raw = process.env.MCP_RATE_LIMIT_PER_MINUTE;
+  if (!raw) return DEFAULT_RATE_LIMIT_PER_MINUTE;
+  const value = Number.parseInt(raw, 10);
+  if (!Number.isFinite(value) || value <= 0) {
+    return DEFAULT_RATE_LIMIT_PER_MINUTE;
+  }
+  return value;
+};
+
+type ResolvedActor = {
+  actor: ToolActorType;
+  actorId: string | null;
+  actorRole: ToolContext["actorRole"] | null;
+  actorEmail: string | null;
+  rateLimitKey: string;
+};
+
+const resolveActor = async (request: Request): Promise<ResolvedActor> => {
+  const adminContext = await getAdminRequestContext(request);
+  if (adminContext) {
+    return {
+      actor: "user",
+      actorId: adminContext.profile?.id ?? null,
+      actorRole: adminContext.role,
+      actorEmail: adminContext.profile?.email ?? null,
+      rateLimitKey: `mcp:${adminContext.profile?.id ?? `secret:${adminContext.role}`}`,
+    };
+  }
+
+  const headerActor = parseActorHeader(request);
+  const ipHash = hashValue(
+    extractClientIp(new Headers(request.headers), "unknown")
+  );
+  return {
+    actor: headerActor,
+    actorId: null,
+    actorRole: null,
+    actorEmail: null,
+    rateLimitKey: `mcp:ip:${ipHash}`,
+  };
+};
+
 export const GET = async (request: Request) => {
   if (!(await isInternalRequest(request))) {
-    return NextResponse.json({ ok: false, message: "Unauthorized." }, { status: 401 });
+    return NextResponse.json(
+      { ok: false, message: "Unauthorized." },
+      { status: 401 }
+    );
   }
 
   bootstrapMcpRegistry();
@@ -71,16 +132,49 @@ export const GET = async (request: Request) => {
 
 export const POST = async (request: Request) => {
   if (!(await isInternalRequest(request))) {
-    return NextResponse.json({ ok: false, message: "Unauthorized." }, { status: 401 });
+    return NextResponse.json(
+      { ok: false, message: "Unauthorized." },
+      { status: 401 }
+    );
   }
 
   bootstrapMcpRegistry();
 
   const startedAt = Date.now();
   const requestId = crypto.randomUUID();
-  const actor = parseActor(request);
+  const resolved = await resolveActor(request);
   const clientIp = getClientIp(request);
   const userAgent = getUserAgent(request);
+  const idempotencyKey = request.headers.get("idempotency-key")?.trim() ?? "";
+
+  const rateLimit = checkRateLimit({
+    key: resolved.rateLimitKey,
+    limit: getRateLimitPerMinute(),
+    windowMs: RATE_LIMIT_WINDOW_MS,
+  });
+  if (!rateLimit.ok) {
+    await logMcpCall({
+      requestId,
+      tool: "unknown",
+      toolVersion: undefined,
+      actor: resolved.actor,
+      actorId: resolved.actorId,
+      actorRole: resolved.actorRole ?? null,
+      status: "error",
+      input: null,
+      errorCode: "rate_limited",
+      durationMs: Date.now() - startedAt,
+      outputSize: null,
+      clientIp,
+      userAgent,
+    });
+    return jsonError(
+      "unknown",
+      requestId,
+      "rate_limited",
+      "Rate limit exceeded for this actor."
+    );
+  }
 
   let body: ToolCallRequest | null = null;
   try {
@@ -90,7 +184,9 @@ export const POST = async (request: Request) => {
       requestId,
       tool: "unknown",
       toolVersion: undefined,
-      actor,
+      actor: resolved.actor,
+      actorId: resolved.actorId,
+      actorRole: resolved.actorRole ?? null,
       status: "error",
       input: null,
       errorCode: "invalid_request",
@@ -107,7 +203,9 @@ export const POST = async (request: Request) => {
       requestId,
       tool: "unknown",
       toolVersion: undefined,
-      actor,
+      actor: resolved.actor,
+      actorId: resolved.actorId,
+      actorRole: resolved.actorRole ?? null,
       status: "error",
       input: body?.input ?? null,
       errorCode: "invalid_request",
@@ -125,7 +223,9 @@ export const POST = async (request: Request) => {
       requestId,
       tool: body.tool,
       toolVersion: undefined,
-      actor,
+      actor: resolved.actor,
+      actorId: resolved.actorId,
+      actorRole: resolved.actorRole ?? null,
       status: "error",
       input: body.input ?? null,
       errorCode: "tool_not_found",
@@ -142,7 +242,9 @@ export const POST = async (request: Request) => {
       requestId,
       tool: body.tool,
       toolVersion: tool.version,
-      actor,
+      actor: resolved.actor,
+      actorId: resolved.actorId,
+      actorRole: resolved.actorRole ?? null,
       status: "error",
       input: body.input ?? null,
       errorCode: "invalid_input",
@@ -159,7 +261,9 @@ export const POST = async (request: Request) => {
       requestId,
       tool: tool.name,
       toolVersion: undefined,
-      actor,
+      actor: resolved.actor,
+      actorId: resolved.actorId,
+      actorRole: resolved.actorRole ?? null,
       status: "error",
       input: body.input ?? null,
       errorCode: "tool_version_unregistered",
@@ -182,7 +286,9 @@ export const POST = async (request: Request) => {
       requestId,
       tool: tool.name,
       toolVersion: tool.version,
-      actor,
+      actor: resolved.actor,
+      actorId: resolved.actorId,
+      actorRole: resolved.actorRole ?? null,
       status: "error",
       input: body.input ?? null,
       errorCode: "tool_version_unregistered",
@@ -199,11 +305,32 @@ export const POST = async (request: Request) => {
     );
   }
 
+  // Idempotency: when a client provides Idempotency-Key, store the JSON
+  // response keyed by (tool, key) so a retry within 24h re-plays the
+  // exact same response instead of re-executing the tool.
+  if (idempotencyKey) {
+    const replay = await checkMcpIdempotency(tool.name, idempotencyKey);
+    if (replay.kind === "replay") {
+      return NextResponse.json(replay.payload, { status: replay.statusCode });
+    }
+    if (replay.kind === "in_progress") {
+      return jsonError(
+        tool.name,
+        requestId,
+        "invalid_request",
+        "Idempotency key currently in progress; retry shortly."
+      );
+    }
+  }
+
   try {
     const data = await tool.handler(body.input, {
       requestId,
-      actor,
-      actorType: actor,
+      actor: resolved.actor,
+      actorType: resolved.actor,
+      actorId: resolved.actorId,
+      actorRole: resolved.actorRole,
+      actorEmail: resolved.actorEmail,
     });
 
     let outputSize: number | null = null;
@@ -217,7 +344,9 @@ export const POST = async (request: Request) => {
       requestId,
       tool: tool.name,
       toolVersion: tool.version,
-      actor,
+      actor: resolved.actor,
+      actorId: resolved.actorId,
+      actorRole: resolved.actorRole ?? null,
       status: "success",
       input: body.input,
       durationMs: Date.now() - startedAt,
@@ -226,12 +355,27 @@ export const POST = async (request: Request) => {
       userAgent,
     });
 
-    return NextResponse.json<ToolCallSuccess<unknown>>({
+    const successPayload: ToolCallSuccess<unknown> = {
       ok: true,
       tool: tool.name,
       requestId,
       data,
-    });
+    };
+
+    if (idempotencyKey) {
+      try {
+        await persistMcpIdempotencyResponse(
+          tool.name,
+          idempotencyKey,
+          200,
+          successPayload as unknown as Record<string, unknown>
+        );
+      } catch {
+        // non-blocking
+      }
+    }
+
+    return NextResponse.json<ToolCallSuccess<unknown>>(successPayload);
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Tool execution failed.";
@@ -239,7 +383,9 @@ export const POST = async (request: Request) => {
       requestId,
       tool: tool.name,
       toolVersion: tool.version,
-      actor,
+      actor: resolved.actor,
+      actorId: resolved.actorId,
+      actorRole: resolved.actorRole ?? null,
       status: "error",
       input: body.input ?? null,
       errorCode: "failed",
