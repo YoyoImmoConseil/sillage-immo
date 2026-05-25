@@ -1,5 +1,6 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { embedFromDomainEvent } from "@/services/ai/embedding-worker.service";
 
 type DomainEventRow = {
   id: string;
@@ -48,12 +49,28 @@ const handleDomainEvent = async (event: DomainEventRow) => {
     case "seller_lead.scored":
     case "seller_lead.ai_insight_generated":
     case "seller_lead.chat_message_logged":
+    case "buyer_lead.created":
+    case "buyer_lead.search_profile_updated":
+    case "property_listing.published":
+    case "property_listing.unpublished":
+    case "seller_project.status_changed":
+    case "seller_project.advisor_assigned":
       await logProcessedEvent(event, "processed");
       return;
     default:
       throw new Error(`Unsupported domain event: ${event.event_name}`);
   }
 };
+
+// Fire-and-forget bridge from a processed domain event to the embedding
+// worker. The worker is best-effort: silent skip when the event is not
+// embeddable, and any embedding failure must NOT affect the processing
+// success of the underlying domain event.
+const scheduleEmbeddingForProcessedEvent = (event: DomainEventRow) =>
+  embedFromDomainEvent({
+    eventName: event.event_name,
+    aggregateId: event.aggregate_id,
+  }).catch(() => null);
 
 const updateEventSuccess = async (eventId: string, attempts: number) => {
   const { error } = await supabaseAdmin
@@ -108,12 +125,19 @@ export const processPendingDomainEvents = async (
     retried: 0,
   };
 
+  const embeddingTasks: Array<Promise<unknown>> = [];
+
   for (const event of events) {
     const nextAttempts = (event.attempts ?? 0) + 1;
     try {
       await handleDomainEvent(event);
       await updateEventSuccess(event.id, nextAttempts);
       result.processed += 1;
+      // Non-blocking embedding enrichment: tracked in a Promise.allSettled
+      // bucket so the serverless function does not terminate the worker
+      // mid-flight, but errors here are absorbed by embedFromDomainEvent and
+      // the defensive .catch in scheduleEmbeddingForProcessedEvent.
+      embeddingTasks.push(scheduleEmbeddingForProcessedEvent(event));
     } catch (error) {
       const message = safeErrorMessage(error);
       const terminal = nextAttempts >= MAX_ATTEMPTS;
@@ -129,6 +153,10 @@ export const processPendingDomainEvents = async (
         result.retried += 1;
       }
     }
+  }
+
+  if (embeddingTasks.length > 0) {
+    await Promise.allSettled(embeddingTasks);
   }
 
   return result;
