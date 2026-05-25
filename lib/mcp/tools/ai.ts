@@ -22,10 +22,6 @@ type SemanticSearchInput = {
   threshold?: number;
 };
 
-const formatVectorLiteral = (vector: number[]): string => {
-  return `[${vector.join(",")}]`;
-};
-
 export const aiTools: ToolDefinition<unknown, unknown>[] = [
   {
     name: "ai.semantic_search",
@@ -60,7 +56,6 @@ export const aiTools: ToolDefinition<unknown, unknown>[] = [
       if (vector.length === 0) {
         return { items: [], count: 0, threshold, limit };
       }
-      const vectorLiteral = formatVectorLiteral(vector);
 
       // We compute similarity = 1 - cosine_distance to make the score
       // intuitive (higher = closer). The candidate list is intentionally
