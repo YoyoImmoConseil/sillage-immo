@@ -6,10 +6,22 @@ export type DomainEventName =
   | "seller_lead.duplicate_detected"
   | "seller_lead.scored"
   | "seller_lead.ai_insight_generated"
-  | "seller_lead.chat_message_logged";
+  | "seller_lead.chat_message_logged"
+  | "buyer_lead.created"
+  | "buyer_lead.search_profile_updated"
+  | "property_listing.published"
+  | "property_listing.unpublished"
+  | "seller_project.status_changed"
+  | "seller_project.advisor_assigned";
+
+export type DomainAggregateType =
+  | "seller_lead"
+  | "buyer_lead"
+  | "property_listing"
+  | "seller_project";
 
 type EmitDomainEventInput = {
-  aggregateType: "seller_lead";
+  aggregateType: DomainAggregateType;
   aggregateId: string;
   eventName: DomainEventName;
   payload?: Record<string, unknown>;

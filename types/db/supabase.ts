@@ -1828,6 +1828,158 @@ export type Database = {
           }
         ];
       };
+      ai_conversations: {
+        Row: {
+          id: string;
+          created_at: string;
+          updated_at: string;
+          client_project_id: string | null;
+          seller_lead_id: string | null;
+          buyer_lead_id: string | null;
+          entity_type: string;
+          entity_id: string | null;
+          channel: string;
+          model: string | null;
+          locale: string | null;
+          status: string;
+          started_at: string;
+          ended_at: string | null;
+          metadata: Record<string, unknown>;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          client_project_id?: string | null;
+          seller_lead_id?: string | null;
+          buyer_lead_id?: string | null;
+          entity_type: string;
+          entity_id?: string | null;
+          channel: string;
+          model?: string | null;
+          locale?: string | null;
+          status?: string;
+          started_at?: string;
+          ended_at?: string | null;
+          metadata?: Record<string, unknown>;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          client_project_id?: string | null;
+          seller_lead_id?: string | null;
+          buyer_lead_id?: string | null;
+          entity_type?: string;
+          entity_id?: string | null;
+          channel?: string;
+          model?: string | null;
+          locale?: string | null;
+          status?: string;
+          started_at?: string;
+          ended_at?: string | null;
+          metadata?: Record<string, unknown>;
+        };
+        Relationships: [];
+      };
+      ai_messages: {
+        Row: {
+          id: string;
+          conversation_id: string;
+          role: string;
+          content: string;
+          model: string | null;
+          tokens_in: number | null;
+          tokens_out: number | null;
+          cost_micros: number | null;
+          tool_name: string | null;
+          tool_version: string | null;
+          request_id: string | null;
+          finish_reason: string | null;
+          created_at: string;
+          metadata: Record<string, unknown>;
+        };
+        Insert: {
+          id?: string;
+          conversation_id: string;
+          role: string;
+          content: string;
+          model?: string | null;
+          tokens_in?: number | null;
+          tokens_out?: number | null;
+          cost_micros?: number | null;
+          tool_name?: string | null;
+          tool_version?: string | null;
+          request_id?: string | null;
+          finish_reason?: string | null;
+          created_at?: string;
+          metadata?: Record<string, unknown>;
+        };
+        Update: {
+          id?: string;
+          conversation_id?: string;
+          role?: string;
+          content?: string;
+          model?: string | null;
+          tokens_in?: number | null;
+          tokens_out?: number | null;
+          cost_micros?: number | null;
+          tool_name?: string | null;
+          tool_version?: string | null;
+          request_id?: string | null;
+          finish_reason?: string | null;
+          created_at?: string;
+          metadata?: Record<string, unknown>;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "ai_messages_conversation_id_fkey";
+            columns: ["conversation_id"];
+            isOneToOne: false;
+            referencedRelation: "ai_conversations";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      entity_embeddings: {
+        Row: {
+          id: string;
+          created_at: string;
+          updated_at: string;
+          entity_type: string;
+          entity_id: string;
+          model: string;
+          source_text_hash: string;
+          source_text_excerpt: string | null;
+          embedding: number[];
+          metadata: Record<string, unknown>;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          entity_type: string;
+          entity_id: string;
+          model: string;
+          source_text_hash: string;
+          source_text_excerpt?: string | null;
+          embedding: number[];
+          metadata?: Record<string, unknown>;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          entity_type?: string;
+          entity_id?: string;
+          model?: string;
+          source_text_hash?: string;
+          source_text_excerpt?: string | null;
+          embedding?: number[];
+          metadata?: Record<string, unknown>;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
