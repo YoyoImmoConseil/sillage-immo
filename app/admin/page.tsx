@@ -19,6 +19,12 @@ export const dynamic = "force-dynamic";
 
 const cards = [
   {
+    href: "/admin/copilot",
+    title: "Copilot Sillage",
+    description: "Pose une question, le copilot appelle les outils MCP pour répondre avec les données réelles de l'agence.",
+    permission: "admin.dashboard.pilot.view" as AdminPermission,
+  },
+  {
     href: "/admin/users",
     title: "Utilisateurs & rôles",
     description: "Inviter un membre, activer/désactiver un accès et attribuer les rôles.",
