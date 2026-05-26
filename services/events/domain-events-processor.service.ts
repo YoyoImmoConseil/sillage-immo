@@ -59,6 +59,10 @@ const handleDomainEvent = async (event: DomainEventRow) => {
     case "ai_conversation.closed":
       await logProcessedEvent(event, "processed");
       return;
+    case "gdpr_deletion_requested":
+    case "gdpr_deletion_executed":
+      await logProcessedEvent(event, "processed");
+      return;
     default:
       throw new Error(`Unsupported domain event: ${event.event_name}`);
   }

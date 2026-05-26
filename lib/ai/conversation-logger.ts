@@ -147,6 +147,7 @@ export const ensureConversation = async (
       .eq("entity_type", "anonymous")
       .eq("channel", input.channel)
       .eq("status", "open")
+      .is("deleted_at", null)
       .filter("metadata->>anonymous_session_id", "eq", input.anonymousSessionId!)
       .order("started_at", { ascending: false })
       .limit(1)

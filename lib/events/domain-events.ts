@@ -14,14 +14,17 @@ export type DomainEventName =
   | "seller_project.status_changed"
   | "seller_project.advisor_assigned"
   | "ai_conversation.turn_appended"
-  | "ai_conversation.closed";
+  | "ai_conversation.closed"
+  | "gdpr_deletion_requested"
+  | "gdpr_deletion_executed";
 
 export type DomainAggregateType =
   | "seller_lead"
   | "buyer_lead"
   | "property_listing"
   | "seller_project"
-  | "ai_conversation";
+  | "ai_conversation"
+  | "gdpr_request";
 
 type EmitDomainEventInput = {
   aggregateType: DomainAggregateType;
