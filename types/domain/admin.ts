@@ -9,6 +9,7 @@ export type AdminTeamTitle =
 
 export type AdminPermission =
   | "admin.dashboard.view"
+  | "admin.dashboard.pilot.view"
   | "admin.users.view"
   | "admin.users.manage"
   | "leads.sellers.view"
@@ -72,6 +73,7 @@ export const ADMIN_ROLE_PERMISSIONS: Record<AdminRole, AdminPermission[]> = {
   ],
   manager: [
     "admin.dashboard.view",
+    "admin.dashboard.pilot.view",
     "leads.sellers.view",
     "leads.sellers.manage",
     "leads.buyers.view",
@@ -90,6 +92,7 @@ export const ADMIN_ROLE_PERMISSIONS: Record<AdminRole, AdminPermission[]> = {
   ],
   administrateur: [
     "admin.dashboard.view",
+    "admin.dashboard.pilot.view",
     "admin.users.view",
     "admin.users.manage",
     "leads.sellers.view",
