@@ -75,6 +75,7 @@ async function PilotDashboardBody({ canSeeAdvisors }: { canSeeAdvisors: boolean 
     snapshot.kpis.mandatesSigned,
     snapshot.kpis.offersSigned,
     snapshot.kpis.preliminarySalesSigned,
+    snapshot.kpis.deedsSigned,
     snapshot.kpis.conversations,
   ];
 

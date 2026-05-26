@@ -16,6 +16,7 @@ import { formatPropertyTypeLabel } from "@/lib/properties/property-type-label";
 import { SellerProjectActions } from "./seller-project-actions";
 import { InviteButton } from "./invite-button";
 import { AssignAdvisorForm } from "./assign-advisor-form";
+import { MilestonesForm } from "./milestones-form";
 
 export const dynamic = "force-dynamic";
 
@@ -141,6 +142,43 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
             </div>
           )}
         </section>
+
+        {canEdit ? (
+          <MilestonesForm
+            sellerProjectId={detail.id}
+            initialMilestones={detail.milestones}
+          />
+        ) : detail.milestones.mandateSignedAt ||
+          detail.milestones.offerReceivedAt ||
+          detail.milestones.preliminarySaleSignedAt ||
+          detail.milestones.deedSignedAt ? (
+          <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6">
+            <h2 className="text-xl font-semibold text-[#141446]">Étapes du projet</h2>
+            <ul className="mt-3 space-y-1 text-sm text-[#141446]">
+              {detail.milestones.mandateSignedAt ? (
+                <li>Mandat signé le {formatDate(detail.milestones.mandateSignedAt)}</li>
+              ) : null}
+              {detail.milestones.offerReceivedAt ? (
+                <li>
+                  Offre reçue le {formatDate(detail.milestones.offerReceivedAt)}
+                  {detail.milestones.offerBuyerLead
+                    ? ` — ${detail.milestones.offerBuyerLead.fullName ?? detail.milestones.offerBuyerLead.email}`
+                    : detail.milestones.offerBuyerName
+                      ? ` — ${detail.milestones.offerBuyerName}`
+                      : ""}
+                </li>
+              ) : null}
+              {detail.milestones.preliminarySaleSignedAt ? (
+                <li>
+                  Compromis signé le {formatDate(detail.milestones.preliminarySaleSignedAt)}
+                </li>
+              ) : null}
+              {detail.milestones.deedSignedAt ? (
+                <li>Acte signé le {formatDate(detail.milestones.deedSignedAt)}</li>
+              ) : null}
+            </ul>
+          </section>
+        ) : null}
 
         <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6">
           <h2 className="text-xl font-semibold text-[#141446]">Conseiller</h2>
