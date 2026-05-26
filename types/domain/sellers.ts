@@ -137,6 +137,7 @@ export type SellerChatInternalMetadata = {
   confidence_level?: "low" | "medium" | "high" | string | null;
   mcp_context_used?: boolean | null;
   updated_at?: string | null;
+  conversation_id?: string | null;
 };
 
 export type SellerChatMetadata = {

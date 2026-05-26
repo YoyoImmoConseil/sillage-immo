@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import {
   SILLAGE_AGENCY_KNOWLEDGE,
   SILLAGE_AGENCY_KNOWLEDGE_VERSION,
@@ -6,6 +7,13 @@ import {
 import { invokeMcpToolInternal } from "@/lib/mcp/invoke-internal";
 import { inferZoneFromText } from "@/lib/scoring/zone-catalog";
 import { getRuntimeZoneCatalog } from "@/lib/scoring/zone-repository";
+import { callOpenAiChat } from "@/lib/ai/openai";
+import { logConversationTurn } from "@/lib/ai/conversation-logger";
+import {
+  ANONYMOUS_SESSION_COOKIE_NAME,
+  OPT_OUT_COOKIE_NAME,
+  parseAnonymousSessionCookie,
+} from "@/lib/ai/anonymous-session";
 
 type InputBody = {
   message?: string;
@@ -19,8 +27,6 @@ type AssistantPayload = {
   ctaLabel: string;
   ctaHref: string;
 };
-
-const OPENAI_BASE_URL = "https://api.openai.com/v1/chat/completions";
 
 const normalize = (value: string) => {
   return value
@@ -134,8 +140,7 @@ const enforceZoneOpeningTone = (
 };
 
 export const POST = async (request: Request) => {
-  const openAiApiKey = process.env.OPENAI_API_KEY;
-  if (!openAiApiKey) {
+  if (!process.env.OPENAI_API_KEY) {
     return NextResponse.json({ ok: false, message: "OPENAI_API_KEY manquante." }, { status: 500 });
   }
 
@@ -199,65 +204,50 @@ export const POST = async (request: Request) => {
           : "missing";
   const sellerIntentSignal = hasSellerIntent(conversationUserText);
 
-  const response = await fetch(OPENAI_BASE_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${openAiApiKey}`,
+  const systemPrompt = `Tu es un assistant commercial Sillage Immo sur la page d'accueil. Ton role est d'etre professionnel ET chaleureux: tu parles a une personne en face de toi, pas a un robot. Tu dois qualifier l'intention utilisateur (seller, buyer, market, unclear) puis orienter vers le bon parcours, sans etre monocentre sur un seul sujet. Sillage Immo accompagne les clients sur l'ensemble des demarches immobilieres: transaction vente, acquisition, location et gestion locative. seller: orienter vers /estimation en expliquant la valeur d'une estimation, sans pression commerciale. buyer: orienter vers /#acquereur-form en expliquant l'interet de laisser une recherche detaillee. market: fournir une reponse utile sur le marche local et proposer un echange expert via /#contact-expert. Qualification vendeur prioritaire: quand un utilisateur indique vouloir vendre, verifier si la localisation du bien est deja connue (dans son message courant ou l'historique). Si elle n'est pas connue, commencer par une reaction chaleureuse puis poser explicitement une question de localisation (ex: "Tres beau projet ! Puis-je vous demander ou se trouve votre bien ?"). Si la localisation est deja fournie, ne pas reposer la question et poursuivre normalement. Adaptation au niveau de zone: si le contexte indique une zone premium pour un projet vendeur, tu peux ouvrir avec une formule valorisante de type "Tres bel endroit !" puis rester sobre. Si la zone n'est pas premium ou inconnue, utiliser un ton neutre de type "Merci pour cette precision !". Intentions mixtes: si l'utilisateur combine plusieurs besoins (ex: vendre puis acheter), reconnaitre explicitement les deux besoins, expliquer qu'un accompagnement global est possible, puis proposer l'etape la plus utile immediatement. Gestion des objections: si l'utilisateur hesite a passer par une agence, adopter un ton ouvert, empathique et non insistant, dire que ce questionnement est normal, rappeler que l'estimation en ligne n'oblige a rien, et preciser que les conseillers Sillage Immo restent disponibles quelle que soit sa decision. Style: conversation naturelle, humaine, concrete, chaleureuse et rassurante. Reste concis (3-6 phrases), evite les formulations trop administratives ou trop generiques, et ne fais pas de promesse irrealiste. ${languageInstruction} If locale is not French, localize the CTA label and CTA href still pointing to the same path but translated label only. Retourne strictement un JSON avec: reply, intent, ctaLabel, ctaHref.`;
+
+  const userPayload = JSON.stringify({
+    knowledgeVersion: SILLAGE_AGENCY_KNOWLEDGE_VERSION,
+    agencyKnowledge: SILLAGE_AGENCY_KNOWLEDGE,
+    mcpContext,
+    conversationSignals: {
+      sellerIntent: sellerIntentSignal,
+      locationProvided,
+      zoneSignal,
+      inferredZone: inferredZone
+        ? {
+            city: inferredZone.city,
+            slug: inferredZone.slug,
+            score: inferredZone.score,
+          }
+        : null,
     },
-    body: JSON.stringify({
-      model: "gpt-4o-mini",
-      temperature: 0.2,
-      response_format: { type: "json_object" },
-      messages: [
-        {
-          role: "system",
-          content:
-            `Tu es un assistant commercial Sillage Immo sur la page d'accueil. Ton role est d'etre professionnel ET chaleureux: tu parles a une personne en face de toi, pas a un robot. Tu dois qualifier l'intention utilisateur (seller, buyer, market, unclear) puis orienter vers le bon parcours, sans etre monocentre sur un seul sujet. Sillage Immo accompagne les clients sur l'ensemble des demarches immobilieres: transaction vente, acquisition, location et gestion locative. seller: orienter vers /estimation en expliquant la valeur d'une estimation, sans pression commerciale. buyer: orienter vers /#acquereur-form en expliquant l'interet de laisser une recherche detaillee. market: fournir une reponse utile sur le marche local et proposer un echange expert via /#contact-expert. Qualification vendeur prioritaire: quand un utilisateur indique vouloir vendre, verifier si la localisation du bien est deja connue (dans son message courant ou l'historique). Si elle n'est pas connue, commencer par une reaction chaleureuse puis poser explicitement une question de localisation (ex: "Tres beau projet ! Puis-je vous demander ou se trouve votre bien ?"). Si la localisation est deja fournie, ne pas reposer la question et poursuivre normalement. Adaptation au niveau de zone: si le contexte indique une zone premium pour un projet vendeur, tu peux ouvrir avec une formule valorisante de type "Tres bel endroit !" puis rester sobre. Si la zone n'est pas premium ou inconnue, utiliser un ton neutre de type "Merci pour cette precision !". Intentions mixtes: si l'utilisateur combine plusieurs besoins (ex: vendre puis acheter), reconnaitre explicitement les deux besoins, expliquer qu'un accompagnement global est possible, puis proposer l'etape la plus utile immediatement. Gestion des objections: si l'utilisateur hesite a passer par une agence, adopter un ton ouvert, empathique et non insistant, dire que ce questionnement est normal, rappeler que l'estimation en ligne n'oblige a rien, et preciser que les conseillers Sillage Immo restent disponibles quelle que soit sa decision. Style: conversation naturelle, humaine, concrete, chaleureuse et rassurante. Reste concis (3-6 phrases), evite les formulations trop administratives ou trop generiques, et ne fais pas de promesse irrealiste. ${languageInstruction} If locale is not French, localize the CTA label and CTA href still pointing to the same path but translated label only. Retourne strictement un JSON avec: reply, intent, ctaLabel, ctaHref.`,
-        },
-        {
-          role: "user",
-          content: JSON.stringify({
-            knowledgeVersion: SILLAGE_AGENCY_KNOWLEDGE_VERSION,
-            agencyKnowledge: SILLAGE_AGENCY_KNOWLEDGE,
-            mcpContext,
-            conversationSignals: {
-              sellerIntent: sellerIntentSignal,
-              locationProvided,
-              zoneSignal,
-              inferredZone: inferredZone
-                ? {
-                    city: inferredZone.city,
-                    slug: inferredZone.slug,
-                    score: inferredZone.score,
-                  }
-                : null,
-            },
-            history,
-            userMessage: message,
-          }),
-        },
-      ],
-    }),
-    cache: "no-store",
+    history,
+    userMessage: message,
   });
 
-  const payload = (await response.json()) as Record<string, unknown>;
-  if (!response.ok) {
+  let chatResult;
+  try {
+    chatResult = await callOpenAiChat({
+      model: "gpt-4o-mini",
+      temperature: 0.2,
+      responseFormat: { type: "json_object" },
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPayload },
+      ],
+      toolName: "home_assistant.ask",
+      toolVersion: "1.0.0",
+    });
+  } catch (error) {
+    const messageText = error instanceof Error ? error.message : "OpenAI error";
     return NextResponse.json(
-      { ok: false, message: `OpenAI error (${response.status}).`, details: payload },
+      { ok: false, message: messageText },
       { status: 502 }
     );
   }
 
-  const choices = payload.choices;
-  if (!Array.isArray(choices) || choices.length === 0) {
-    return NextResponse.json({ ok: false, message: "Reponse IA vide." }, { status: 502 });
-  }
-
-  const firstChoice = choices[0] as Record<string, unknown>;
-  const messagePayload = firstChoice.message as Record<string, unknown> | undefined;
-  const content = messagePayload?.content;
+  const content = chatResult.content;
   if (typeof content !== "string" || content.trim().length === 0) {
     return NextResponse.json({ ok: false, message: "Contenu IA invalide." }, { status: 502 });
   }
@@ -268,5 +258,49 @@ export const POST = async (request: Request) => {
     locationProvided,
     zoneSignal,
   });
+
+  // Persist this turn into ai_conversations / ai_messages keyed by the
+  // anonymous session cookie (set by proxy.ts). Best-effort: a logger
+  // failure must not break the home-assistant reply.
+  try {
+    const cookieStore = await cookies();
+    const optedOut = cookieStore.get(OPT_OUT_COOKIE_NAME)?.value === "1";
+    if (!optedOut) {
+      const sessionCookie = cookieStore.get(ANONYMOUS_SESSION_COOKIE_NAME)?.value;
+      const session = await parseAnonymousSessionCookie(sessionCookie);
+      if (session) {
+        await logConversationTurn({
+          entityType: "anonymous",
+          channel: "home_assistant",
+          anonymousSessionId: session.id,
+          locale,
+          model: chatResult.model,
+          userMessage: message,
+          assistantMessage: data.reply,
+          usage: {
+            tokensIn: chatResult.usage.promptTokens,
+            tokensOut: chatResult.usage.completionTokens,
+            costMicros: chatResult.costMicros,
+          },
+          finishReason: chatResult.finishReason,
+          toolName: "home_assistant.ask",
+          toolVersion: "1.0.0",
+          metadata: {
+            knowledge_version: SILLAGE_AGENCY_KNOWLEDGE_VERSION,
+            intent: data.intent,
+            zone_signal: zoneSignal,
+            inferred_zone: inferredZone
+              ? { slug: inferredZone.slug, city: inferredZone.city }
+              : null,
+            seller_intent: sellerIntentSignal,
+            location_provided: locationProvided,
+          },
+        });
+      }
+    }
+  } catch {
+    // non-blocking
+  }
+
   return NextResponse.json({ ok: true, data });
 };
