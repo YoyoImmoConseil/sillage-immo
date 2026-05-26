@@ -8,6 +8,10 @@
     {
       "path": "/api/internal/cron/sweepbright-sync?limit=10",
       "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/internal/cron/mynotary-sync",
+      "schedule": "15 4 * * *"
     }
   ]
 }

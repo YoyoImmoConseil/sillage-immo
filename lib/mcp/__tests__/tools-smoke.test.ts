@@ -77,6 +77,10 @@ vi.mock("@/lib/ai/conversation-logger", () => ({
   ensureConversation: vi.fn(),
   closeConversation: vi.fn(),
 }));
+vi.mock("@/services/admin/mynotary-list.service", () => ({
+  listSignedDocuments: vi.fn(),
+  getSignedDocumentByKey: vi.fn(),
+}));
 
 const findSchema = (
   tools: ToolDefinition<unknown, unknown>[],
@@ -301,6 +305,54 @@ describe("MCP tools registry — input schema smoke tests", () => {
     expect(validateWithSchema(schema, { tool: "leads.create" })).toBe(true);
     expect(validateWithSchema(schema, { status: "success" })).toBe(true);
     expect(validateWithSchema(schema, { status: "unknown" })).toBe(false);
+  });
+
+  it("mynotary.list_signed_documents accepts known filters + rejects garbage", async () => {
+    const { tools } = await import("@/lib/mcp/tools");
+    const schema = findSchema(tools, "mynotary.list_signed_documents");
+    expect(
+      validateWithSchema(schema, { kind: "mandate", matched: "matched" })
+    ).toBe(true);
+    expect(validateWithSchema(schema, {})).toBe(true);
+    expect(validateWithSchema(schema, { kind: "rental" })).toBe(false);
+    expect(validateWithSchema(schema, { pageSize: 10000 })).toBe(false);
+  });
+
+  it("mynotary.get_signed_document accepts id OR mynotary_contract_id", async () => {
+    const { tools } = await import("@/lib/mcp/tools");
+    const schema = findSchema(tools, "mynotary.get_signed_document");
+    expect(
+      validateWithSchema(schema, {
+        id: "550e8400-e29b-41d4-a716-446655440000",
+      })
+    ).toBe(true);
+    expect(
+      validateWithSchema(schema, { mynotary_contract_id: "MN-42" })
+    ).toBe(true);
+    expect(validateWithSchema(schema, {})).toBe(false);
+    expect(validateWithSchema(schema, { id: "not-uuid" })).toBe(false);
+  });
+
+  it("mynotary.stats_signed_by_period requires since + until", async () => {
+    const { tools } = await import("@/lib/mcp/tools");
+    const schema = findSchema(tools, "mynotary.stats_signed_by_period");
+    expect(
+      validateWithSchema(schema, {
+        since: "2026-01-01T00:00:00Z",
+        until: "2026-05-01T00:00:00Z",
+        groupBy: "month",
+      })
+    ).toBe(true);
+    expect(
+      validateWithSchema(schema, { since: "2026-01-01T00:00:00Z" })
+    ).toBe(false);
+    expect(
+      validateWithSchema(schema, {
+        since: "2026-01-01T00:00:00Z",
+        until: "2026-05-01T00:00:00Z",
+        groupBy: "year",
+      })
+    ).toBe(false);
   });
 
   it("contacts.find_or_merge accepts an email + rejects unknown keys", async () => {

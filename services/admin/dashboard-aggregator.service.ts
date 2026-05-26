@@ -87,6 +87,8 @@ export type DashboardSnapshot = {
     buyerLeads: DashboardKpi;
     visitsScheduled: DashboardKpi;
     mandatesSigned: DashboardKpi;
+    offersSigned: DashboardKpi;
+    preliminarySalesSigned: DashboardKpi;
     conversations: DashboardKpi;
   };
   funnel: FunnelStep[];
@@ -145,23 +147,58 @@ const extractTopicKeywords = (text: string, max = 3): string[] => {
     .slice(0, max);
 };
 
+type MyNotaryDocsCounter = {
+  from: (table: "mynotary_signed_documents") => {
+    select: (
+      cols: string,
+      opts: { count: "exact"; head: true }
+    ) => {
+      eq: (
+        col: string,
+        value: string
+      ) => {
+        is: (
+          col: string,
+          value: unknown
+        ) => {
+          gte: (
+            col: string,
+            value: string
+          ) => {
+            lt: (
+              col: string,
+              value: string
+            ) => Promise<{ count: number | null; error: unknown }>;
+          } & Promise<{ count: number | null; error: unknown }>;
+        };
+      };
+    };
+  };
+};
+
+const countSignedMyNotary = async (
+  kind: "mandate" | "purchase_offer" | "preliminary_sale",
+  fromIso: string,
+  untilIso: string | undefined
+): Promise<number> => {
+  const client = supabaseAdmin as unknown as MyNotaryDocsCounter;
+  const base = client
+    .from("mynotary_signed_documents")
+    .select("id", { count: "exact", head: true })
+    .eq("contract_kind", kind)
+    .is("deleted_at", null)
+    .gte("signed_at", fromIso);
+  const result = await (untilIso ? base.lt("signed_at", untilIso) : base);
+  if (result.error) return 0;
+  return result.count ?? 0;
+};
+
 const fetchKpis = async (
   periodCursor: string,
   previousCursor: string,
   scheduledUpcomingCursor: string
 ) => {
-  const [
-    sellerCurrent,
-    sellerPrevious,
-    buyerCurrent,
-    buyerPrevious,
-    visitsScheduledCurrent,
-    visitsScheduledPrevious,
-    mandatesSignedCurrent,
-    mandatesSignedPrevious,
-    conversationsCurrent,
-    conversationsPrevious,
-  ] = await Promise.all([
+  const rawCounts = await Promise.all([
     safeCount(
       supabaseAdmin
         .from("seller_leads")
@@ -203,21 +240,12 @@ const fetchKpis = async (
         .eq("status", "completed")
         .gte("scheduled_at", periodCursor)
     ),
-    safeCount(
-      supabaseAdmin
-        .from("seller_projects")
-        .select("id", { count: "exact", head: true })
-        .eq("mandate_status", "signed")
-        .gte("updated_at", periodCursor)
-    ),
-    safeCount(
-      supabaseAdmin
-        .from("seller_projects")
-        .select("id", { count: "exact", head: true })
-        .eq("mandate_status", "signed")
-        .gte("updated_at", previousCursor)
-        .lt("updated_at", periodCursor)
-    ),
+    countSignedMyNotary("mandate", periodCursor, undefined),
+    countSignedMyNotary("mandate", previousCursor, periodCursor),
+    countSignedMyNotary("purchase_offer", periodCursor, undefined),
+    countSignedMyNotary("purchase_offer", previousCursor, periodCursor),
+    countSignedMyNotary("preliminary_sale", periodCursor, undefined),
+    countSignedMyNotary("preliminary_sale", previousCursor, periodCursor),
     safeCount(
       supabaseAdmin
         .from("ai_conversations")
@@ -233,23 +261,60 @@ const fetchKpis = async (
     ),
   ]);
 
+  // Tuple destructuring keeps the call-site readable: each Promise.all
+  // returns its result in the order it was issued above.
+  const [
+    sellerCurrentValue,
+    sellerPreviousValue,
+    buyerCurrentValue,
+    buyerPreviousValue,
+    visitsScheduledCurrentValue,
+    visitsScheduledPreviousValue,
+    mandatesSignedCurrentValue,
+    mandatesSignedPreviousValue,
+    offersSignedCurrentValue,
+    offersSignedPreviousValue,
+    preliminaryCurrentValue,
+    preliminaryPreviousValue,
+    conversationsCurrentValue,
+    conversationsPreviousValue,
+  ] = rawCounts;
+
   return {
-    sellerLeads: computeKpi("Leads vendeurs", sellerCurrent, sellerPrevious),
-    buyerLeads: computeKpi("Leads acquéreurs", buyerCurrent, buyerPrevious),
+    sellerLeads: computeKpi(
+      "Leads vendeurs",
+      sellerCurrentValue,
+      sellerPreviousValue
+    ),
+    buyerLeads: computeKpi(
+      "Leads acquéreurs",
+      buyerCurrentValue,
+      buyerPreviousValue
+    ),
     visitsScheduled: computeKpi(
       "Visites planifiées",
-      visitsScheduledCurrent,
-      visitsScheduledPrevious
+      visitsScheduledCurrentValue,
+      visitsScheduledPreviousValue
     ),
     mandatesSigned: computeKpi(
       "Mandats signés",
-      mandatesSignedCurrent,
-      mandatesSignedPrevious
+      mandatesSignedCurrentValue,
+      mandatesSignedPreviousValue
+    ),
+    offersSigned: computeKpi(
+      "Offres signées",
+      offersSignedCurrentValue,
+      offersSignedPreviousValue
+    ),
+    preliminarySalesSigned: computeKpi(
+      "Compromis signés",
+      preliminaryCurrentValue,
+      preliminaryPreviousValue
     ),
     conversations: computeKpi(
       "Conversations IA",
-      conversationsCurrent,
-      conversationsPrevious
+      conversationsCurrentValue,
+      conversationsPreviousValue
     ),
   } satisfies DashboardSnapshot["kpis"];
 };
@@ -299,13 +364,7 @@ const fetchFunnel = async (periodCursor: string): Promise<FunnelStep[]> => {
           .not("assigned_admin_profile_id", "is", null)
           .gte("updated_at", periodCursor)
       ),
-      safeCount(
-        supabaseAdmin
-          .from("seller_projects")
-          .select("id", { count: "exact", head: true })
-          .eq("mandate_status", "signed")
-          .gte("updated_at", periodCursor)
-      ),
+      countSignedMyNotary("mandate", periodCursor, undefined),
     ]);
 
   const totalLeads = sellerLeads + buyerLeads;

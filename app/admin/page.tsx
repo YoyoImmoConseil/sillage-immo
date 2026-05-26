@@ -54,6 +54,12 @@ const cards = [
     description: "Enrichir les critères et recalculer les rapprochements acquéreur ↔ biens.",
     permission: "leads.buyers.view" as AdminPermission,
   },
+  {
+    href: "/admin/mynotary",
+    title: "MyNotary",
+    description: "Suivre les mandats, offres et compromis signés, et rattacher manuellement les documents non matchés.",
+    permission: "admin.mynotary.view" as AdminPermission,
+  },
 ];
 
 async function PilotDashboardBody({ canSeeAdvisors }: { canSeeAdvisors: boolean }) {
@@ -67,6 +73,8 @@ async function PilotDashboardBody({ canSeeAdvisors }: { canSeeAdvisors: boolean 
     snapshot.kpis.buyerLeads,
     snapshot.kpis.visitsScheduled,
     snapshot.kpis.mandatesSigned,
+    snapshot.kpis.offersSigned,
+    snapshot.kpis.preliminarySalesSigned,
     snapshot.kpis.conversations,
   ];
 

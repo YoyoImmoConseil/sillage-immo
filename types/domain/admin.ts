@@ -26,7 +26,10 @@ export type AdminPermission =
   | "clients.create"
   | "clients.edit"
   | "clients.invite"
-  | "clients.assign_advisor";
+  | "clients.assign_advisor"
+  | "admin.mynotary.view"
+  | "admin.mynotary.manage"
+  | "admin.mynotary.sync";
 
 export type AdminProfileSnapshot = {
   id: string;
@@ -89,6 +92,8 @@ export const ADMIN_ROLE_PERMISSIONS: Record<AdminRole, AdminPermission[]> = {
     "clients.edit",
     "clients.invite",
     "clients.assign_advisor",
+    "admin.mynotary.view",
+    "admin.mynotary.manage",
   ],
   administrateur: [
     "admin.dashboard.view",
@@ -110,5 +115,8 @@ export const ADMIN_ROLE_PERMISSIONS: Record<AdminRole, AdminPermission[]> = {
     "clients.edit",
     "clients.invite",
     "clients.assign_advisor",
+    "admin.mynotary.view",
+    "admin.mynotary.manage",
+    "admin.mynotary.sync",
   ],
 };

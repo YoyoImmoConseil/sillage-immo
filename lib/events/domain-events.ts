@@ -16,7 +16,11 @@ export type DomainEventName =
   | "ai_conversation.turn_appended"
   | "ai_conversation.closed"
   | "gdpr_deletion_requested"
-  | "gdpr_deletion_executed";
+  | "gdpr_deletion_executed"
+  | "mynotary.mandate_signed"
+  | "mynotary.offer_signed"
+  | "mynotary.preliminary_sale_signed"
+  | "mynotary.document_soft_deleted";
 
 export type DomainAggregateType =
   | "seller_lead"
@@ -24,7 +28,8 @@ export type DomainAggregateType =
   | "property_listing"
   | "seller_project"
   | "ai_conversation"
-  | "gdpr_request";
+  | "gdpr_request"
+  | "mynotary_document";
 
 type EmitDomainEventInput = {
   aggregateType: DomainAggregateType;
