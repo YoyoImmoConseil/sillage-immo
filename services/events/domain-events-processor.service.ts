@@ -55,6 +55,12 @@ const handleDomainEvent = async (event: DomainEventRow) => {
     case "property_listing.unpublished":
     case "seller_project.status_changed":
     case "seller_project.advisor_assigned":
+    case "ai_conversation.turn_appended":
+    case "ai_conversation.closed":
+      await logProcessedEvent(event, "processed");
+      return;
+    case "gdpr_deletion_requested":
+    case "gdpr_deletion_executed":
       await logProcessedEvent(event, "processed");
       return;
     default:

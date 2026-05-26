@@ -1,14 +1,29 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import { AdminShell } from "@/app/components/admin-shell";
 import { getAdminPageContext, hasAdminPermission } from "@/lib/admin/auth";
 import { TimeoutError, withTimeout } from "@/lib/async/timeout";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { AdminPermission } from "@/types/domain/admin";
+import { getDashboardSnapshot } from "@/services/admin/dashboard-aggregator.service";
+import { getAllSyntheses } from "@/services/admin/dashboard-syntheses.service";
+import { KpiGrid } from "./dashboard-pilot/kpi-grid";
+import { FunnelChart } from "./dashboard-pilot/funnel-chart";
+import { TopZonesTable } from "./dashboard-pilot/top-zones-table";
+import { AdvisorPerformanceTable } from "./dashboard-pilot/advisor-performance-table";
+import { ConversationsInsights } from "./dashboard-pilot/conversations-insights";
+import { SynthesesGrid } from "./dashboard-pilot/syntheses-grid";
 
 export const dynamic = "force-dynamic";
 
 const cards = [
+  {
+    href: "/admin/copilot",
+    title: "Copilot Sillage",
+    description: "Pose une question, le copilot appelle les outils MCP pour répondre avec les données réelles de l'agence.",
+    permission: "admin.dashboard.pilot.view" as AdminPermission,
+  },
   {
     href: "/admin/users",
     title: "Utilisateurs & rôles",
@@ -40,6 +55,57 @@ const cards = [
     permission: "leads.buyers.view" as AdminPermission,
   },
 ];
+
+async function PilotDashboardBody({ canSeeAdvisors }: { canSeeAdvisors: boolean }) {
+  const [snapshot, syntheses] = await Promise.all([
+    getDashboardSnapshot(),
+    getAllSyntheses(),
+  ]);
+
+  const kpisArray = [
+    snapshot.kpis.sellerLeads,
+    snapshot.kpis.buyerLeads,
+    snapshot.kpis.visitsScheduled,
+    snapshot.kpis.mandatesSigned,
+    snapshot.kpis.conversations,
+  ];
+
+  return (
+    <div className="space-y-6">
+      <KpiGrid kpis={kpisArray} />
+
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+        <FunnelChart steps={snapshot.funnel} />
+        <TopZonesTable rows={snapshot.topZones} />
+      </div>
+
+      {canSeeAdvisors ? <AdvisorPerformanceTable rows={snapshot.advisors} /> : null}
+
+      <ConversationsInsights snapshot={snapshot.conversations} />
+
+      <SynthesesGrid syntheses={syntheses} />
+
+      <p className="text-xs text-[#141446]/55">
+        Snapshot dashboard mis à jour toutes les 5 minutes (SSR cached) •
+        synthèses IA mises à jour toutes les heures • dernière génération{" "}
+        {new Date(snapshot.generatedAt).toLocaleString("fr-FR", {
+          day: "2-digit",
+          month: "short",
+          hour: "2-digit",
+          minute: "2-digit",
+        })}
+      </p>
+    </div>
+  );
+}
+
+function PilotDashboardFallback() {
+  return (
+    <div className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6 text-sm text-[#141446]/70">
+      Chargement du dashboard de pilotage…
+    </div>
+  );
+}
 
 export default async function AdminDashboardPage() {
   let warningMessage: string | null = null;
@@ -99,27 +165,62 @@ export default async function AdminDashboardPage() {
     );
   }
 
+  const showPilotDashboard = hasAdminPermission(
+    context,
+    "admin.dashboard.pilot.view"
+  );
+
   const visibleCards = cards.filter((card) => hasAdminPermission(context, card.permission));
 
   return (
     <AdminShell
-      title="Dashboard admin"
-      description="Point d'entrée du back-office RBAC Sillage Immo."
+      title={showPilotDashboard ? "Pilotage Sillage Immo" : "Dashboard admin"}
+      description={
+        showPilotDashboard
+          ? "Cockpit consolidé : KPI 30 jours, funnel acquisition, top zones, performance conseillers et synthèses IA."
+          : "Point d'entrée du back-office RBAC Sillage Immo."
+      }
       role={context.role}
       profileName={context.profile?.fullName ?? context.profile?.email ?? "Mode admin"}
     >
-      <section className="grid gap-4 md:grid-cols-2">
-        {visibleCards.map((card) => (
-          <Link
-            key={card.href}
-            href={card.href}
-            className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6 transition hover:border-[rgba(20,20,70,0.3)]"
-          >
-            <h2 className="text-xl font-semibold text-[#141446]">{card.title}</h2>
-            <p className="mt-2 text-sm text-[#141446]/75">{card.description}</p>
-          </Link>
-        ))}
-      </section>
+      {showPilotDashboard ? (
+        <Suspense fallback={<PilotDashboardFallback />}>
+          <PilotDashboardBody canSeeAdvisors={true} />
+        </Suspense>
+      ) : (
+        <section className="grid gap-4 md:grid-cols-2">
+          {visibleCards.map((card) => (
+            <Link
+              key={card.href}
+              href={card.href}
+              className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6 transition hover:border-[rgba(20,20,70,0.3)]"
+            >
+              <h2 className="text-xl font-semibold text-[#141446]">{card.title}</h2>
+              <p className="mt-2 text-sm text-[#141446]/75">{card.description}</p>
+            </Link>
+          ))}
+        </section>
+      )}
+
+      {showPilotDashboard && visibleCards.length > 0 ? (
+        <section className="mt-10">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-[#141446]/70">
+            Navigation rapide
+          </h2>
+          <div className="mt-3 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+            {visibleCards.map((card) => (
+              <Link
+                key={card.href}
+                href={card.href}
+                className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white/60 px-4 py-3 text-sm transition hover:border-[rgba(20,20,70,0.3)]"
+              >
+                <span className="font-semibold text-[#141446]">{card.title}</span>
+                <span className="ml-2 text-[#141446]/60">→</span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
     </AdminShell>
   );
 }

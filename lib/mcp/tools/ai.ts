@@ -13,6 +13,7 @@ const SEMANTIC_SEARCH_ENTITY_TYPES = [
   "buyer_lead",
   "client_project",
   "agency_knowledge",
+  "ai_conversation",
 ] as const;
 
 type SemanticSearchInput = {

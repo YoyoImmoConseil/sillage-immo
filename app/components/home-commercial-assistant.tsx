@@ -5,6 +5,7 @@ import { useState } from "react";
 import { track } from "@/lib/analytics/data-layer";
 import type { AppLocale } from "@/lib/i18n/config";
 import { localizePath } from "@/lib/i18n/routing";
+import { AIConsentNotice } from "./ai-consent-notice";
 
 type AiData = {
   reply: string;
@@ -274,6 +275,8 @@ export function HomeCommercialAssistant({ locale = "fr" }: { locale?: AppLocale 
       </div>
 
       {error ? <p className="text-sm text-red-700">{error}</p> : null}
+
+      <AIConsentNotice locale={locale} />
     </section>
   );
 }
