@@ -8,6 +8,7 @@ import {
   SILLAGE_AGENCY_KNOWLEDGE,
   SILLAGE_AGENCY_KNOWLEDGE_VERSION,
 } from "@/lib/ai/knowledge/sillage-agency-knowledge";
+import { logConversationTurn } from "@/lib/ai/conversation-logger";
 import { getSellerMetadataSections, mergeSellerMetadata } from "./seller-metadata";
 import type { SellerChatMessage } from "@/types/domain/sellers";
 
@@ -106,6 +107,11 @@ export const askSellerChat = async (
     mcpContext = null;
   }
 
+  const conversationIdFromMeta =
+    typeof sellerChat?.internal?.conversation_id === "string"
+      ? sellerChat.internal.conversation_id
+      : null;
+
   const chatResult = await callOpenAiChat({
     model: "gpt-4o-mini",
     temperature: 0.3,
@@ -177,6 +183,42 @@ export const askSellerChat = async (
     historySize: previousMessages.length,
   });
 
+  // First-class log into ai_conversations + ai_messages so the
+  // analytics layer (dashboard + copilot) gets a uniform view across
+  // all IA surfaces. Best-effort: a logger failure must NOT abort the
+  // chat reply that we already obtained from the model.
+  let loggedConversationId: string | null = conversationIdFromMeta;
+  try {
+    const logResult = await logConversationTurn({
+      conversationId: conversationIdFromMeta,
+      entityType: "seller_lead",
+      channel: "seller_chat",
+      entityId: sellerLeadId,
+      sellerLeadId,
+      locale,
+      model: chatResult.model,
+      userMessage: cleanedMessage,
+      assistantMessage: answer,
+      usage: {
+        tokensIn: chatResult.usage.promptTokens,
+        tokensOut: chatResult.usage.completionTokens,
+        costMicros: chatResult.costMicros,
+      },
+      finishReason: chatResult.finishReason,
+      toolName: "seller_chat.ask",
+      toolVersion: "1.0.0",
+      metadata: {
+        knowledge_version: SILLAGE_AGENCY_KNOWLEDGE_VERSION,
+        confidence_level: confidence.level,
+        confidence_score: confidence.score,
+        escalate_to_human: escalateToHuman,
+      },
+    });
+    loggedConversationId = logResult.conversationId;
+  } catch {
+    // non-blocking
+  }
+
   finalMetadata.seller_chat = {
     ...(finalMetadata.seller_chat ?? {}),
     internal: {
@@ -185,6 +227,9 @@ export const askSellerChat = async (
       confidence_level: confidence.level,
       mcp_context_used: Boolean(mcpContext),
       updated_at: now,
+      ...(loggedConversationId
+        ? { conversation_id: loggedConversationId }
+        : {}),
     },
   };
 
@@ -200,6 +245,7 @@ export const askSellerChat = async (
         confidenceScore: confidence.score,
         confidenceLevel: confidence.level,
         mcpContextUsed: Boolean(mcpContext),
+        conversationId: loggedConversationId,
       },
     });
   } catch {

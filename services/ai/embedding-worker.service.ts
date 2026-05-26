@@ -13,7 +13,8 @@ export type EmbedEntityType =
   | "seller_lead"
   | "buyer_lead"
   | "client_project"
-  | "agency_knowledge";
+  | "agency_knowledge"
+  | "ai_conversation";
 
 export type EmbedEntityInput = {
   entityType: EmbedEntityType;
@@ -258,6 +259,56 @@ const buildAgencyKnowledgeSourceText = (entityId: string): string => {
   ].join("\n");
 };
 
+const AI_CONVERSATION_MAX_MESSAGES = 24;
+const AI_CONVERSATION_MAX_CHAR_PER_MESSAGE = 800;
+
+const buildAiConversationSourceText = async (
+  conversationId: string
+): Promise<string> => {
+  // We embed the whole conversation (already PII-masked at write time
+  // via lib/ai/conversation-logger) so semantic search can surface the
+  // entire exchange when a snippet matches. Capped at the last N
+  // messages and N characters per message to keep token usage bounded.
+  const [convoResult, messagesResult] = await Promise.all([
+    supabaseAdmin
+      .from("ai_conversations")
+      .select("entity_type, channel, locale, status, metadata")
+      .eq("id", conversationId)
+      .maybeSingle(),
+    supabaseAdmin
+      .from("ai_messages")
+      .select("role, content, created_at")
+      .eq("conversation_id", conversationId)
+      .order("created_at", { ascending: true })
+      .limit(AI_CONVERSATION_MAX_MESSAGES),
+  ]);
+  if (convoResult.error) throw new Error(convoResult.error.message);
+  if (!convoResult.data) return "";
+  if (messagesResult.error) throw new Error(messagesResult.error.message);
+
+  const convo = convoResult.data as Record<string, unknown>;
+  const messages = (messagesResult.data ?? []) as Array<{
+    role: string;
+    content: string;
+  }>;
+  if (messages.length === 0) return "";
+
+  const lines: string[] = [
+    `channel=${convo.channel ?? ""}`,
+    `entity_type=${convo.entity_type ?? ""}`,
+    convo.locale ? `locale=${convo.locale}` : null,
+  ].filter((v): v is string => typeof v === "string" && v.length > 0);
+
+  for (const msg of messages) {
+    if (msg.role === "system" || msg.role === "tool") continue;
+    const safeRole = msg.role === "assistant" ? "Assistant" : "Utilisateur";
+    const trimmed = msg.content.slice(0, AI_CONVERSATION_MAX_CHAR_PER_MESSAGE);
+    lines.push(`${safeRole}: ${trimmed}`);
+  }
+
+  return lines.join("\n");
+};
+
 const buildSourceText = async (input: EmbedEntityInput): Promise<string> => {
   switch (input.entityType) {
     case "property":
@@ -272,6 +323,8 @@ const buildSourceText = async (input: EmbedEntityInput): Promise<string> => {
       return buildClientProjectSourceText(input.entityId);
     case "agency_knowledge":
       return buildAgencyKnowledgeSourceText(input.entityId);
+    case "ai_conversation":
+      return buildAiConversationSourceText(input.entityId);
     default:
       return "";
   }
@@ -398,6 +451,18 @@ const DOMAIN_EVENT_TO_EMBED_INPUT: Record<
   }),
   "property_listing.published": (event) => ({
     entityType: "property_listing",
+    entityId: event.aggregateId,
+  }),
+  // ai_conversation.* events come from lib/ai/conversation-logger:
+  // turn_appended on every Q/A pair, closed when the conversation is
+  // explicitly archived. We embed in both cases — the second run is
+  // a no-op when the source_text_hash is unchanged.
+  "ai_conversation.turn_appended": (event) => ({
+    entityType: "ai_conversation",
+    entityId: event.aggregateId,
+  }),
+  "ai_conversation.closed": (event) => ({
+    entityType: "ai_conversation",
     entityId: event.aggregateId,
   }),
 };

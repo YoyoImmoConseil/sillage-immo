@@ -22,4 +22,9 @@ export const serverEnv = {
   SWEEPBRIGHT_MEDIA_BUCKET: process.env.SWEEPBRIGHT_MEDIA_BUCKET ?? "property-media-cache",
   SWEEPBRIGHT_ZAPIER_WEBHOOK_SECRET: process.env.SWEEPBRIGHT_ZAPIER_WEBHOOK_SECRET ?? "",
   PUBLIC_SITE_URL: process.env.PUBLIC_SITE_URL ?? "",
+  // 32+ random chars used by lib/ai/anonymous-session to sign the
+  // sillage_ai_session cookie. Optional in dev (a fallback is used) but
+  // strongly recommended in production — see anonymous-session.ts for
+  // the warning emitted when missing.
+  SILLAGE_AI_SESSION_SECRET: process.env.SILLAGE_AI_SESSION_SECRET ?? "",
 } as const;

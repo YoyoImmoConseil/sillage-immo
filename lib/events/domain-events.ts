@@ -12,13 +12,16 @@ export type DomainEventName =
   | "property_listing.published"
   | "property_listing.unpublished"
   | "seller_project.status_changed"
-  | "seller_project.advisor_assigned";
+  | "seller_project.advisor_assigned"
+  | "ai_conversation.turn_appended"
+  | "ai_conversation.closed";
 
 export type DomainAggregateType =
   | "seller_lead"
   | "buyer_lead"
   | "property_listing"
-  | "seller_project";
+  | "seller_project"
+  | "ai_conversation";
 
 type EmitDomainEventInput = {
   aggregateType: DomainAggregateType;

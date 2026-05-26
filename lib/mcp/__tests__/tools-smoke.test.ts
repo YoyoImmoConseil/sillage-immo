@@ -72,6 +72,11 @@ vi.mock("@/lib/ai/openai", () => ({
 vi.mock("@/lib/events/domain-events", () => ({
   emitDomainEvent: vi.fn(),
 }));
+vi.mock("@/lib/ai/conversation-logger", () => ({
+  logConversationTurn: vi.fn(),
+  ensureConversation: vi.fn(),
+  closeConversation: vi.fn(),
+}));
 
 const findSchema = (
   tools: ToolDefinition<unknown, unknown>[],
@@ -242,6 +247,51 @@ describe("MCP tools registry — input schema smoke tests", () => {
         entityType: "unknown",
         entityId: "550e8400-e29b-41d4-a716-446655440000",
       })
+    ).toBe(false);
+  });
+
+  it("conversations.search requires a query string", async () => {
+    const { tools } = await import("@/lib/mcp/tools");
+    const schema = findSchema(tools, "conversations.search");
+    expect(
+      validateWithSchema(schema, { query: "vendeurs Mont Boron" })
+    ).toBe(true);
+    expect(validateWithSchema(schema, {})).toBe(false);
+    expect(
+      validateWithSchema(schema, { query: "ok", topK: 1000 })
+    ).toBe(false);
+  });
+
+  it("conversations.search filters known channels + entity types", async () => {
+    const { tools } = await import("@/lib/mcp/tools");
+    const schema = findSchema(tools, "conversations.search");
+    expect(
+      validateWithSchema(schema, {
+        query: "x",
+        channels: ["home_assistant", "seller_chat"],
+        entityTypes: ["anonymous", "seller_lead"],
+      })
+    ).toBe(true);
+    expect(
+      validateWithSchema(schema, {
+        query: "x",
+        channels: ["whatsapp"],
+      })
+    ).toBe(false);
+  });
+
+  it("conversations.trends enforces groupBy enum", async () => {
+    const { tools } = await import("@/lib/mcp/tools");
+    const schema = findSchema(tools, "conversations.trends");
+    expect(validateWithSchema(schema, {})).toBe(true);
+    expect(
+      validateWithSchema(schema, { groupBy: "topic", periodDays: 30 })
+    ).toBe(true);
+    expect(
+      validateWithSchema(schema, { groupBy: "anything", periodDays: 7 })
+    ).toBe(false);
+    expect(
+      validateWithSchema(schema, { periodDays: 365 })
     ).toBe(false);
   });
 
