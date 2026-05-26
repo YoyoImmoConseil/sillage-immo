@@ -14,6 +14,7 @@ const SEMANTIC_SEARCH_ENTITY_TYPES = [
   "client_project",
   "agency_knowledge",
   "ai_conversation",
+  "mynotary_signed_document",
 ] as const;
 
 type SemanticSearchInput = {

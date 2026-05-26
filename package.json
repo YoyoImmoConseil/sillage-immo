@@ -10,7 +10,9 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "mcp:server": "tsx scripts/mcp-server.ts"
+    "mcp:server": "tsx scripts/mcp-server.ts",
+    "mynotary:link-organization": "tsx scripts/mynotary-link-organization.ts",
+    "mynotary:backfill": "tsx scripts/mynotary-backfill.ts"
   },
   "bin": {
     "sillage-mcp-server": "./scripts/mcp-server.ts"

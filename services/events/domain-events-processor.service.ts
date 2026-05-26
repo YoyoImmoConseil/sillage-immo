@@ -63,6 +63,12 @@ const handleDomainEvent = async (event: DomainEventRow) => {
     case "gdpr_deletion_executed":
       await logProcessedEvent(event, "processed");
       return;
+    case "mynotary.mandate_signed":
+    case "mynotary.offer_signed":
+    case "mynotary.preliminary_sale_signed":
+    case "mynotary.document_soft_deleted":
+      await logProcessedEvent(event, "processed");
+      return;
     default:
       throw new Error(`Unsupported domain event: ${event.event_name}`);
   }

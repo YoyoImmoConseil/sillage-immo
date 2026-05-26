@@ -14,7 +14,8 @@ export type EmbedEntityType =
   | "buyer_lead"
   | "client_project"
   | "agency_knowledge"
-  | "ai_conversation";
+  | "ai_conversation"
+  | "mynotary_signed_document";
 
 export type EmbedEntityInput = {
   entityType: EmbedEntityType;
@@ -309,6 +310,110 @@ const buildAiConversationSourceText = async (
   return lines.join("\n");
 };
 
+type MyNotaryDocReader = {
+  from: (table: "mynotary_signed_documents") => {
+    select: (cols: string) => {
+      eq: (col: string, value: string) => {
+        maybeSingle: () => Promise<{
+          data: {
+            contract_kind: string;
+            contract_type_raw: string | null;
+            signed_at: string;
+            signers: Array<{
+              firstName?: string;
+              lastName?: string;
+              email?: string;
+              role?: string;
+            }>;
+            raw_payload: Record<string, unknown>;
+          } | null;
+          error: { message: string } | null;
+        }>;
+      };
+    };
+  };
+};
+
+const normalizeAddress = (raw: string | null | undefined): string => {
+  if (!raw) return "";
+  return raw
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+};
+
+const extractAddressFromPayload = (
+  payload: Record<string, unknown> | undefined | null
+): string | null => {
+  if (!payload || typeof payload !== "object") return null;
+  const nested = (payload as Record<string, unknown>).payload as
+    | Record<string, unknown>
+    | undefined;
+  const sources = [
+    payload as Record<string, unknown>,
+    nested ?? {},
+  ];
+  const keys = [
+    "formattedAddress",
+    "propertyAddress",
+    "address",
+    "operationAddress",
+  ];
+  for (const src of sources) {
+    for (const k of keys) {
+      const v = src[k];
+      if (typeof v === "string" && v.trim().length > 0) return v.trim();
+    }
+  }
+  return null;
+};
+
+const KIND_LABEL: Record<string, string> = {
+  mandate: "Mandat de vente",
+  purchase_offer: "Offre d'achat",
+  preliminary_sale: "Compromis de vente",
+};
+
+const buildMyNotaryDocumentSourceText = async (
+  documentId: string
+): Promise<string> => {
+  const reader = supabaseAdmin as unknown as MyNotaryDocReader;
+  const { data, error } = await reader
+    .from("mynotary_signed_documents")
+    .select(
+      "contract_kind, contract_type_raw, signed_at, signers, raw_payload"
+    )
+    .eq("id", documentId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) return "";
+
+  const kindLabel = KIND_LABEL[data.contract_kind] ?? data.contract_kind;
+  const signersText =
+    (data.signers ?? [])
+      .map((s) => {
+        const name = `${s.firstName ?? ""} ${s.lastName ?? ""}`.trim();
+        const role = s.role ? ` (${s.role})` : "";
+        return name ? `${name}${role}` : s.email ?? "";
+      })
+      .filter((s) => s.length > 0)
+      .join(", ") || "—";
+  const address = extractAddressFromPayload(data.raw_payload);
+  const normalizedAddress = address ? normalizeAddress(address) : "";
+
+  return [
+    `Type: ${kindLabel} (${data.contract_type_raw ?? data.contract_kind})`,
+    `Signé le: ${data.signed_at}`,
+    `Signataires: ${signersText}`,
+    address ? `Adresse: ${address}` : null,
+    normalizedAddress ? `AdresseNormalisee: ${normalizedAddress}` : null,
+  ]
+    .filter((v): v is string => typeof v === "string" && v.length > 0)
+    .join("\n");
+};
+
 const buildSourceText = async (input: EmbedEntityInput): Promise<string> => {
   switch (input.entityType) {
     case "property":
@@ -325,6 +430,8 @@ const buildSourceText = async (input: EmbedEntityInput): Promise<string> => {
       return buildAgencyKnowledgeSourceText(input.entityId);
     case "ai_conversation":
       return buildAiConversationSourceText(input.entityId);
+    case "mynotary_signed_document":
+      return buildMyNotaryDocumentSourceText(input.entityId);
     default:
       return "";
   }
@@ -463,6 +570,21 @@ const DOMAIN_EVENT_TO_EMBED_INPUT: Record<
   }),
   "ai_conversation.closed": (event) => ({
     entityType: "ai_conversation",
+    entityId: event.aggregateId,
+  }),
+  // MyNotary signed documents land in entity_embeddings so the
+  // copilot can search "mandat signé rue de la Roquette" via
+  // ai.semantic_search → contracts.
+  "mynotary.mandate_signed": (event) => ({
+    entityType: "mynotary_signed_document",
+    entityId: event.aggregateId,
+  }),
+  "mynotary.offer_signed": (event) => ({
+    entityType: "mynotary_signed_document",
+    entityId: event.aggregateId,
+  }),
+  "mynotary.preliminary_sale_signed": (event) => ({
+    entityType: "mynotary_signed_document",
     entityId: event.aggregateId,
   }),
 };
