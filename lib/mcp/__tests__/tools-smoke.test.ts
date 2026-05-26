@@ -307,6 +307,34 @@ describe("MCP tools registry — input schema smoke tests", () => {
     expect(validateWithSchema(schema, { status: "unknown" })).toBe(false);
   });
 
+  it("seller_projects.milestones_stats requires since + until", async () => {
+    const { tools } = await import("@/lib/mcp/tools");
+    const schema = findSchema(tools, "seller_projects.milestones_stats");
+    expect(
+      validateWithSchema(schema, {
+        since: "2026-01-01T00:00:00Z",
+        until: "2026-05-01T00:00:00Z",
+      })
+    ).toBe(true);
+    expect(
+      validateWithSchema(schema, {
+        since: "2026-01-01T00:00:00Z",
+        until: "2026-05-01T00:00:00Z",
+        milestones: ["mandate_signed", "deed_signed"],
+      })
+    ).toBe(true);
+    expect(
+      validateWithSchema(schema, { since: "2026-01-01T00:00:00Z" })
+    ).toBe(false);
+    expect(
+      validateWithSchema(schema, {
+        since: "2026-01-01T00:00:00Z",
+        until: "2026-05-01T00:00:00Z",
+        milestones: ["unknown"],
+      })
+    ).toBe(false);
+  });
+
   it("mynotary.list_signed_documents accepts known filters + rejects garbage", async () => {
     const { tools } = await import("@/lib/mcp/tools");
     const schema = findSchema(tools, "mynotary.list_signed_documents");

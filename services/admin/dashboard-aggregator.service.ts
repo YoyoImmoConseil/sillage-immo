@@ -89,6 +89,7 @@ export type DashboardSnapshot = {
     mandatesSigned: DashboardKpi;
     offersSigned: DashboardKpi;
     preliminarySalesSigned: DashboardKpi;
+    deedsSigned: DashboardKpi;
     conversations: DashboardKpi;
   };
   funnel: FunnelStep[];
@@ -147,50 +148,121 @@ const extractTopicKeywords = (text: string, max = 3): string[] => {
     .slice(0, max);
 };
 
-type MyNotaryDocsCounter = {
+// Reader types for the union queries below. We use narrow `as unknown
+// as ...` casts per call-site so the dashboard does not require a
+// fresh Supabase types regen every time we touch the milestone columns.
+
+type MyNotaryUnionReader = {
   from: (table: "mynotary_signed_documents") => {
-    select: (
-      cols: string,
-      opts: { count: "exact"; head: true }
-    ) => {
-      eq: (
-        col: string,
-        value: string
-      ) => {
-        is: (
-          col: string,
-          value: unknown
-        ) => {
-          gte: (
-            col: string,
-            value: string
-          ) => {
-            lt: (
-              col: string,
-              value: string
-            ) => Promise<{ count: number | null; error: unknown }>;
-          } & Promise<{ count: number | null; error: unknown }>;
+    select: (cols: string) => {
+      eq: (col: string, value: string) => {
+        is: (col: string, value: unknown) => {
+          gte: (col: string, value: string) => {
+            lt: (col: string, value: string) => Promise<{
+              data: Array<{ matched_seller_project_id: string | null }> | null;
+              error: { message: string } | null;
+            }>;
+          } & Promise<{
+            data: Array<{ matched_seller_project_id: string | null }> | null;
+            error: { message: string } | null;
+          }>;
         };
       };
     };
   };
 };
 
-const countSignedMyNotary = async (
-  kind: "mandate" | "purchase_offer" | "preliminary_sale",
+type SellerProjectsMilestoneReader = {
+  from: (table: "seller_projects") => {
+    select: (cols: string) => {
+      not: (col: string, op: string, value: unknown) => {
+        gte: (col: string, value: string) => {
+          lt: (col: string, value: string) => Promise<{
+            data: Array<{ id: string }> | null;
+            error: { message: string } | null;
+          }>;
+        } & Promise<{
+          data: Array<{ id: string }> | null;
+          error: { message: string } | null;
+        }>;
+      };
+    };
+  };
+};
+
+// Count the union of:
+//   1. MyNotary docs in window for `kind`, deleted_at IS NULL
+//   2. seller_projects.<milestoneColumn> in window
+// De-duplicating by `seller_projects.id` — a single contract that
+// lands in both tables (because the webhook auto-matched the doc to a
+// project) is counted ONCE. The `deed` milestone has no MyNotary
+// equivalent yet, so `kind` is nullable; the function then just
+// returns the seller_projects count for that window.
+const countSignedUnion = async (
+  milestoneColumn:
+    | "mandate_signed_at"
+    | "offer_received_at"
+    | "preliminary_sale_signed_at"
+    | "deed_signed_at",
+  kind: "mandate" | "purchase_offer" | "preliminary_sale" | null,
   fromIso: string,
   untilIso: string | undefined
 ): Promise<number> => {
-  const client = supabaseAdmin as unknown as MyNotaryDocsCounter;
-  const base = client
-    .from("mynotary_signed_documents")
-    .select("id", { count: "exact", head: true })
-    .eq("contract_kind", kind)
-    .is("deleted_at", null)
-    .gte("signed_at", fromIso);
-  const result = await (untilIso ? base.lt("signed_at", untilIso) : base);
-  if (result.error) return 0;
-  return result.count ?? 0;
+  // Window end defaults to "now + 1 day" so .lt() with the cursor
+  // works without special-casing the trailing-edge call site.
+  const untilCursor =
+    untilIso ?? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
+  // 1. MyNotary docs in window: collect their matched_seller_project_id
+  //    (so we can de-dupe with the manual seller_project counts).
+  let unmatchedMyNotaryCount = 0;
+  const matchedProjectIds = new Set<string>();
+  if (kind !== null) {
+    const reader = supabaseAdmin as unknown as MyNotaryUnionReader;
+    const { data: docs, error } = await reader
+      .from("mynotary_signed_documents")
+      .select("matched_seller_project_id")
+      .eq("contract_kind", kind)
+      .is("deleted_at", null)
+      .gte("signed_at", fromIso)
+      .lt("signed_at", untilCursor);
+    if (!error && docs) {
+      for (const doc of docs) {
+        if (doc.matched_seller_project_id) {
+          matchedProjectIds.add(doc.matched_seller_project_id);
+        } else {
+          unmatchedMyNotaryCount += 1;
+        }
+      }
+    }
+  }
+
+  // 2. seller_projects with the milestone set in window. The PostgREST
+  //    `.not("col", "is", null)` filter gives us a stable way to ask
+  //    "this milestone has been set".
+  const projectsReader = supabaseAdmin as unknown as SellerProjectsMilestoneReader;
+  const { data: projects } = await projectsReader
+    .from("seller_projects")
+    .select("id")
+    .not(milestoneColumn, "is", null)
+    .gte(milestoneColumn, fromIso)
+    .lt(milestoneColumn, untilCursor);
+  const manualProjectIds = new Set<string>((projects ?? []).map((p) => p.id));
+
+  // 3. Union without double counting: every unmatched MyNotary doc
+  //    counts on its own; every seller_project with the milestone set
+  //    counts once. Projects already represented by a MyNotary doc
+  //    fall into the matched set and are absorbed there.
+  let result = unmatchedMyNotaryCount;
+  for (const pid of manualProjectIds) {
+    result += 1;
+    matchedProjectIds.delete(pid);
+  }
+  // Any MyNotary-matched project that does NOT have the milestone set
+  // (rare race condition: backfill skipped writing the column for some
+  // reason) is still counted because the doc exists.
+  result += matchedProjectIds.size;
+  return result;
 };
 
 const fetchKpis = async (
@@ -240,12 +312,24 @@ const fetchKpis = async (
         .eq("status", "completed")
         .gte("scheduled_at", periodCursor)
     ),
-    countSignedMyNotary("mandate", periodCursor, undefined),
-    countSignedMyNotary("mandate", previousCursor, periodCursor),
-    countSignedMyNotary("purchase_offer", periodCursor, undefined),
-    countSignedMyNotary("purchase_offer", previousCursor, periodCursor),
-    countSignedMyNotary("preliminary_sale", periodCursor, undefined),
-    countSignedMyNotary("preliminary_sale", previousCursor, periodCursor),
+    countSignedUnion("mandate_signed_at", "mandate", periodCursor, undefined),
+    countSignedUnion("mandate_signed_at", "mandate", previousCursor, periodCursor),
+    countSignedUnion("offer_received_at", "purchase_offer", periodCursor, undefined),
+    countSignedUnion("offer_received_at", "purchase_offer", previousCursor, periodCursor),
+    countSignedUnion(
+      "preliminary_sale_signed_at",
+      "preliminary_sale",
+      periodCursor,
+      undefined
+    ),
+    countSignedUnion(
+      "preliminary_sale_signed_at",
+      "preliminary_sale",
+      previousCursor,
+      periodCursor
+    ),
+    countSignedUnion("deed_signed_at", null, periodCursor, undefined),
+    countSignedUnion("deed_signed_at", null, previousCursor, periodCursor),
     safeCount(
       supabaseAdmin
         .from("ai_conversations")
@@ -276,6 +360,8 @@ const fetchKpis = async (
     offersSignedPreviousValue,
     preliminaryCurrentValue,
     preliminaryPreviousValue,
+    deedCurrentValue,
+    deedPreviousValue,
     conversationsCurrentValue,
     conversationsPreviousValue,
   ] = rawCounts;
@@ -310,6 +396,11 @@ const fetchKpis = async (
       "Compromis signés",
       preliminaryCurrentValue,
       preliminaryPreviousValue
+    ),
+    deedsSigned: computeKpi(
+      "Actes signés",
+      deedCurrentValue,
+      deedPreviousValue
     ),
     conversations: computeKpi(
       "Conversations IA",
@@ -364,7 +455,7 @@ const fetchFunnel = async (periodCursor: string): Promise<FunnelStep[]> => {
           .not("assigned_admin_profile_id", "is", null)
           .gte("updated_at", periodCursor)
       ),
-      countSignedMyNotary("mandate", periodCursor, undefined),
+      countSignedUnion("mandate_signed_at", "mandate", periodCursor, undefined),
     ]);
 
   const totalLeads = sellerLeads + buyerLeads;

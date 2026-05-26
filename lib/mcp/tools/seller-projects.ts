@@ -163,4 +163,166 @@ export const sellerProjectsTools: ToolDefinition<unknown, unknown>[] = [
       };
     },
   },
+  {
+    name: "seller_projects.milestones_stats",
+    description:
+      "Agrège les 4 jalons signés (mandat / offre / compromis / acte) sur une période, en union MyNotary + saisie manuelle (dédupliqué par seller_project).",
+    version: "1.0.0",
+    inputSchema: {
+      type: "object",
+      properties: {
+        since: { type: "string", format: "date-time" },
+        until: { type: "string", format: "date-time" },
+        milestones: {
+          type: "array",
+          items: {
+            type: "string",
+            enum: [
+              "mandate_signed",
+              "offer_received",
+              "preliminary_sale_signed",
+              "deed_signed",
+            ],
+          },
+          maxItems: 4,
+        },
+      },
+      required: ["since", "until"],
+      additionalProperties: false,
+    },
+    handler: async (input) => {
+      const payload = input as {
+        since: string;
+        until: string;
+        milestones?: Array<
+          | "mandate_signed"
+          | "offer_received"
+          | "preliminary_sale_signed"
+          | "deed_signed"
+        >;
+      };
+      const requested =
+        payload.milestones && payload.milestones.length > 0
+          ? payload.milestones
+          : [
+              "mandate_signed" as const,
+              "offer_received" as const,
+              "preliminary_sale_signed" as const,
+              "deed_signed" as const,
+            ];
+
+      const columnFor: Record<string, string> = {
+        mandate_signed: "mandate_signed_at",
+        offer_received: "offer_received_at",
+        preliminary_sale_signed: "preliminary_sale_signed_at",
+        deed_signed: "deed_signed_at",
+      };
+      const myNotaryKindFor: Record<string, string | null> = {
+        mandate_signed: "mandate",
+        offer_received: "purchase_offer",
+        preliminary_sale_signed: "preliminary_sale",
+        deed_signed: null,
+      };
+
+      type DocsReader = {
+        from: (table: "mynotary_signed_documents") => {
+          select: (cols: string) => {
+            eq: (col: string, value: string) => {
+              is: (col: string, value: unknown) => {
+                gte: (col: string, value: string) => {
+                  lte: (col: string, value: string) => Promise<{
+                    data: Array<{
+                      matched_seller_project_id: string | null;
+                    }> | null;
+                    error: { message: string } | null;
+                  }>;
+                };
+              };
+            };
+          };
+        };
+      };
+      type ProjectsReader = {
+        from: (table: "seller_projects") => {
+          select: (cols: string) => {
+            not: (col: string, op: string, value: unknown) => {
+              gte: (col: string, value: string) => {
+                lte: (col: string, value: string) => Promise<{
+                  data: Array<{ id: string }> | null;
+                  error: { message: string } | null;
+                }>;
+              };
+            };
+          };
+        };
+      };
+
+      const docsReader = supabaseAdmin as unknown as DocsReader;
+      const projReader = supabaseAdmin as unknown as ProjectsReader;
+      const results: Record<
+        string,
+        {
+          fromMyNotary: number;
+          fromManual: number;
+          total: number;
+          matchedSellerProjectIds: string[];
+        }
+      > = {};
+
+      for (const milestone of requested) {
+        const column = columnFor[milestone];
+        const kind = myNotaryKindFor[milestone];
+
+        const matched = new Set<string>();
+        let unmatchedMyNotaryCount = 0;
+        if (kind !== null) {
+          const { data: docs } = await docsReader
+            .from("mynotary_signed_documents")
+            .select("matched_seller_project_id")
+            .eq("contract_kind", kind)
+            .is("deleted_at", null)
+            .gte("signed_at", payload.since)
+            .lte("signed_at", payload.until);
+          for (const doc of docs ?? []) {
+            if (doc.matched_seller_project_id) {
+              matched.add(doc.matched_seller_project_id);
+            } else {
+              unmatchedMyNotaryCount += 1;
+            }
+          }
+        }
+
+        const { data: projects } = await projReader
+          .from("seller_projects")
+          .select("id")
+          .not(column, "is", null)
+          .gte(column, payload.since)
+          .lte(column, payload.until);
+        const manualIds = new Set<string>((projects ?? []).map((p) => p.id));
+
+        let total = unmatchedMyNotaryCount;
+        for (const pid of manualIds) {
+          total += 1;
+          matched.delete(pid);
+        }
+        total += matched.size;
+
+        results[milestone] = {
+          fromMyNotary:
+            unmatchedMyNotaryCount + matched.size + (manualIds.size - 0),
+          fromManual: manualIds.size,
+          total,
+          matchedSellerProjectIds: Array.from(
+            new Set([...manualIds, ...matched])
+          ),
+        };
+      }
+
+      return {
+        since: payload.since,
+        until: payload.until,
+        milestones: results,
+      };
+    },
+  },
 ];

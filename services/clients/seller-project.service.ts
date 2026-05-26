@@ -35,6 +35,25 @@ export type SellerPortalAccessProvision = {
   };
 };
 
+export type SellerProjectMilestones = {
+  // Each milestone is `null` when not yet reached. `at` is a strict
+  // ISO-8601 timestamp (the form uses an <input type="date"> and we
+  // serialize at noon UTC to stay timezone-stable).
+  mandateSignedAt: string | null;
+  offerReceivedAt: string | null;
+  offerBuyerLeadId: string | null;
+  offerBuyerName: string | null;
+  preliminarySaleSignedAt: string | null;
+  deedSignedAt: string | null;
+  // Convenience: when an offerBuyerLeadId resolves, we hydrate this
+  // snapshot for the UI (avoids one extra query from the page).
+  offerBuyerLead?: {
+    id: string;
+    fullName: string | null;
+    email: string;
+  } | null;
+};
+
 export type SellerProjectDetail = {
   id: string;
   clientProjectId: string;
@@ -44,6 +63,7 @@ export type SellerProjectDetail = {
   projectStatus: string;
   mandateStatus: string;
   createdAt: string;
+  milestones: SellerProjectMilestones;
   assignedAdvisor?: {
     id: string;
     firstName: string | null;
@@ -599,6 +619,39 @@ type SellerProjectDetailRow = {
   project_status: string;
   mandate_status: string;
   created_at: string;
+  mandate_signed_at?: string | null;
+  offer_received_at?: string | null;
+  offer_buyer_lead_id?: string | null;
+  offer_buyer_name?: string | null;
+  preliminary_sale_signed_at?: string | null;
+  deed_signed_at?: string | null;
+};
+
+// Columns added by migrations 034 + 037. The generated Supabase types
+// are stale until regenerated, so we centralize the cast type here.
+type SellerProjectMilestonesWriter = {
+  from: (table: "seller_projects") => {
+    update: (row: Record<string, unknown>) => {
+      eq: (col: string, value: string) => {
+        select: (cols: string) => {
+          single: () => Promise<{
+            data: {
+              id: string;
+              client_project_id: string;
+              mandate_status: string;
+              mandate_signed_at: string | null;
+              offer_received_at: string | null;
+              offer_buyer_lead_id: string | null;
+              offer_buyer_name: string | null;
+              preliminary_sale_signed_at: string | null;
+              deed_signed_at: string | null;
+            } | null;
+            error: { message: string } | null;
+          }>;
+        };
+      };
+    };
+  };
 };
 
 export const getSellerProjectDetail = async (
@@ -607,23 +660,26 @@ export const getSellerProjectDetail = async (
 ): Promise<SellerProjectDetail | null> => {
   let sp: SellerProjectDetailRow | null;
 
+  const milestoneColumns =
+    "id, seller_lead_id, assigned_admin_profile_id, entry_channel, project_status, mandate_status, created_at, mandate_signed_at, offer_received_at, offer_buyer_lead_id, offer_buyer_name, preliminary_sale_signed_at, deed_signed_at";
+
   if (sellerProjectId) {
     const { data, error } = await supabaseAdmin
       .from("seller_projects")
-      .select("id, seller_lead_id, assigned_admin_profile_id, entry_channel, project_status, mandate_status, created_at")
+      .select(milestoneColumns)
       .eq("id", sellerProjectId)
       .eq("client_project_id", clientProjectId)
       .maybeSingle();
     if (error || !data) return null;
-    sp = data as SellerProjectDetailRow;
+    sp = data as unknown as SellerProjectDetailRow;
   } else {
     const { data, error } = await supabaseAdmin
       .from("seller_projects")
-      .select("id, seller_lead_id, assigned_admin_profile_id, entry_channel, project_status, mandate_status, created_at")
+      .select(milestoneColumns)
       .eq("client_project_id", clientProjectId)
       .maybeSingle();
     if (error || !data) return null;
-    sp = data as SellerProjectDetailRow;
+    sp = data as unknown as SellerProjectDetailRow;
   }
 
   let sellerLead = null;
@@ -718,6 +774,25 @@ export const getSellerProjectDetail = async (
     .limit(1);
   const latestInvitation = invitations?.[0] ?? null;
 
+  // Hydrate the offerer buyer_lead snapshot (full_name / email) when
+  // `offer_buyer_lead_id` is set — used by the page to render a link
+  // back to the acquéreur's project.
+  let offerBuyerLeadSnapshot: SellerProjectMilestones["offerBuyerLead"] = null;
+  if (sp.offer_buyer_lead_id) {
+    const { data: buyer } = await supabaseAdmin
+      .from("buyer_leads")
+      .select("id, full_name, email")
+      .eq("id", sp.offer_buyer_lead_id)
+      .maybeSingle();
+    if (buyer) {
+      offerBuyerLeadSnapshot = {
+        id: buyer.id,
+        fullName: buyer.full_name ?? null,
+        email: buyer.email ?? "",
+      };
+    }
+  }
+
   return {
     id: sp.id,
     clientProjectId,
@@ -727,6 +802,15 @@ export const getSellerProjectDetail = async (
     projectStatus: sp.project_status,
     mandateStatus: sp.mandate_status,
     createdAt: sp.created_at,
+    milestones: {
+      mandateSignedAt: sp.mandate_signed_at ?? null,
+      offerReceivedAt: sp.offer_received_at ?? null,
+      offerBuyerLeadId: sp.offer_buyer_lead_id ?? null,
+      offerBuyerName: sp.offer_buyer_name ?? null,
+      preliminarySaleSignedAt: sp.preliminary_sale_signed_at ?? null,
+      deedSignedAt: sp.deed_signed_at ?? null,
+      offerBuyerLead: offerBuyerLeadSnapshot,
+    },
     assignedAdvisor,
     sellerLead: sellerLead
       ? {
@@ -991,4 +1075,218 @@ export const assignAdvisorToSellerProject = async (
       payload: { admin_profile_id: adminProfileId },
     });
   }
+};
+
+// =====================================================================
+// Manual milestone updates (cf. migration 037)
+// =====================================================================
+//
+// The 4 milestones (mandate, offer, preliminary_sale, deed) can be
+// set / cleared manually by an admin (clients.edit permission) to
+// back-fill the historical state of projects that pre-date the
+// MyNotary integration. The MyNotary inbound flow still writes
+// `mandate_signed_at` automatically when it matches a project with
+// confidence >= 0.7 — this manual flow simply lets an admin override
+// or back-fill values.
+//
+// The function only updates fields it actually receives in `input`,
+// so the same endpoint can be used to set a single field without
+// nuking the others. Each transition from null → set fires a domain
+// event so the timeline + the audit log capture the change.
+
+export type SellerProjectMilestonesInput = {
+  // ISO-8601 date strings (`YYYY-MM-DD`) or null to clear. The service
+  // normalizes them to `${date}T12:00:00Z` before persisting so the
+  // value displays the same in every timezone.
+  mandateSignedAt?: string | null;
+  offerReceivedAt?: string | null;
+  offerBuyerLeadId?: string | null;
+  offerBuyerName?: string | null;
+  preliminarySaleSignedAt?: string | null;
+  deedSignedAt?: string | null;
+};
+
+const DATE_INPUT_RE = /^\d{4}-\d{2}-\d{2}$/;
+const DATETIME_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?Z$/;
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const normalizeMilestoneDate = (value: string | null | undefined): string | null => {
+  if (value === null || value === undefined || value === "") return null;
+  if (DATETIME_RE.test(value)) return value;
+  if (DATE_INPUT_RE.test(value)) return `${value}T12:00:00.000Z`;
+  throw new Error(`Date invalide: ${value}`);
+};
+
+export const updateSellerProjectMilestones = async (
+  sellerProjectId: string,
+  input: SellerProjectMilestonesInput,
+  options?: { adminProfileId?: string }
+): Promise<SellerProjectMilestones> => {
+  if (!UUID_RE.test(sellerProjectId)) {
+    throw new Error("Identifiant de projet vendeur invalide.");
+  }
+
+  const update: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+  };
+
+  if ("mandateSignedAt" in input) {
+    const normalized = normalizeMilestoneDate(input.mandateSignedAt);
+    update.mandate_signed_at = normalized;
+    // Keep the legacy `mandate_status` enum in sync so any existing
+    // code that filters on it (e.g. the seller-projects MCP tool list
+    // view) doesn't get out of date.
+    update.mandate_status = normalized ? "signed" : "none";
+  }
+
+  if ("offerReceivedAt" in input) {
+    update.offer_received_at = normalizeMilestoneDate(input.offerReceivedAt);
+  }
+  if ("offerBuyerLeadId" in input) {
+    if (input.offerBuyerLeadId && !UUID_RE.test(input.offerBuyerLeadId)) {
+      throw new Error("Identifiant de buyer_lead invalide.");
+    }
+    update.offer_buyer_lead_id = input.offerBuyerLeadId ?? null;
+  }
+  if ("offerBuyerName" in input) {
+    const trimmed = (input.offerBuyerName ?? "").trim();
+    update.offer_buyer_name = trimmed.length > 0 ? trimmed : null;
+  }
+  if ("preliminarySaleSignedAt" in input) {
+    update.preliminary_sale_signed_at = normalizeMilestoneDate(
+      input.preliminarySaleSignedAt
+    );
+  }
+  if ("deedSignedAt" in input) {
+    update.deed_signed_at = normalizeMilestoneDate(input.deedSignedAt);
+  }
+
+  const writer = supabaseAdmin as unknown as SellerProjectMilestonesWriter;
+  const { data, error } = await writer
+    .from("seller_projects")
+    .update(update)
+    .eq("id", sellerProjectId)
+    .select(
+      "id, client_project_id, mandate_status, mandate_signed_at, offer_received_at, offer_buyer_lead_id, offer_buyer_name, preliminary_sale_signed_at, deed_signed_at"
+    )
+    .single();
+  if (error || !data) {
+    throw new Error(error?.message ?? "Projet vendeur introuvable.");
+  }
+
+  // One domain event per field changed (null → set, set → null, or
+  // value changed) so the copilot + admin timeline can reflect the
+  // manual back-fill.
+  type MilestoneEvent =
+    | "seller_project.mandate_signed_set"
+    | "seller_project.offer_received_set"
+    | "seller_project.preliminary_sale_signed_set"
+    | "seller_project.deed_signed_set";
+  const milestoneEvents: Array<{ name: MilestoneEvent; field: string; value: unknown }> = [];
+  if ("mandateSignedAt" in input) {
+    milestoneEvents.push({
+      name: "seller_project.mandate_signed_set",
+      field: "mandate_signed_at",
+      value: data.mandate_signed_at,
+    });
+  }
+  if ("offerReceivedAt" in input || "offerBuyerLeadId" in input || "offerBuyerName" in input) {
+    milestoneEvents.push({
+      name: "seller_project.offer_received_set",
+      field: "offer_received_at",
+      value: {
+        offer_received_at: data.offer_received_at,
+        offer_buyer_lead_id: data.offer_buyer_lead_id,
+        offer_buyer_name: data.offer_buyer_name,
+      },
+    });
+  }
+  if ("preliminarySaleSignedAt" in input) {
+    milestoneEvents.push({
+      name: "seller_project.preliminary_sale_signed_set",
+      field: "preliminary_sale_signed_at",
+      value: data.preliminary_sale_signed_at,
+    });
+  }
+  if ("deedSignedAt" in input) {
+    milestoneEvents.push({
+      name: "seller_project.deed_signed_set",
+      field: "deed_signed_at",
+      value: data.deed_signed_at,
+    });
+  }
+  for (const ev of milestoneEvents) {
+    try {
+      await emitClientProjectEvent({
+        clientProjectId: data.client_project_id,
+        sellerProjectId: data.id,
+        eventName: ev.name,
+        eventCategory: "project",
+        actorType: "admin",
+        actorId: options?.adminProfileId,
+        payload: { [ev.field]: ev.value },
+      });
+    } catch {
+      // Audit failures must never break the user-facing update.
+    }
+  }
+
+  let offerBuyerLeadSnapshot: SellerProjectMilestones["offerBuyerLead"] = null;
+  if (data.offer_buyer_lead_id) {
+    const { data: buyer } = await supabaseAdmin
+      .from("buyer_leads")
+      .select("id, full_name, email")
+      .eq("id", data.offer_buyer_lead_id)
+      .maybeSingle();
+    if (buyer) {
+      offerBuyerLeadSnapshot = {
+        id: buyer.id,
+        fullName: buyer.full_name ?? null,
+        email: buyer.email ?? "",
+      };
+    }
+  }
+
+  return {
+    mandateSignedAt: data.mandate_signed_at,
+    offerReceivedAt: data.offer_received_at,
+    offerBuyerLeadId: data.offer_buyer_lead_id,
+    offerBuyerName: data.offer_buyer_name,
+    preliminarySaleSignedAt: data.preliminary_sale_signed_at,
+    deedSignedAt: data.deed_signed_at,
+    offerBuyerLead: offerBuyerLeadSnapshot,
+  };
+};
+
+// Small autocomplete helper used by the offer rattachement form.
+// Searches buyer_leads on full_name OR email (case-insensitive).
+export type BuyerLeadAutocompleteRow = {
+  id: string;
+  fullName: string | null;
+  email: string;
+  phone: string | null;
+};
+
+export const searchBuyerLeadsForOffer = async (
+  query: string,
+  limit = 10
+): Promise<BuyerLeadAutocompleteRow[]> => {
+  const trimmed = query.trim();
+  if (trimmed.length < 2) return [];
+  const safeLimit = Math.min(Math.max(limit, 1), 25);
+  const escaped = trimmed.replace(/[%_]/g, (m) => `\\${m}`);
+  const { data, error } = await supabaseAdmin
+    .from("buyer_leads")
+    .select("id, full_name, email, phone")
+    .or(`full_name.ilike.%${escaped}%,email.ilike.%${escaped}%`)
+    .order("updated_at", { ascending: false })
+    .limit(safeLimit);
+  if (error || !data) return [];
+  return data.map((row) => ({
+    id: row.id,
+    fullName: row.full_name ?? null,
+    email: row.email ?? "",
+    phone: row.phone ?? null,
+  }));
 };

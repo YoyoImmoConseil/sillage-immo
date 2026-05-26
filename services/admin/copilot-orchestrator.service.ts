@@ -147,6 +147,7 @@ const COPILOT_ALLOWED_BASE = new Set<string>([
   "seller_leads.get_context",
   "seller_leads.score",
   "seller_leads.generate_ai_insight",
+  "seller_projects.milestones_stats",
   "mynotary.list_signed_documents",
   "mynotary.get_signed_document",
   "mynotary.stats_signed_by_period",
