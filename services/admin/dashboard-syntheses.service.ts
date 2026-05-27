@@ -7,7 +7,11 @@ import {
   SILLAGE_AGENCY_KNOWLEDGE,
   SILLAGE_AGENCY_KNOWLEDGE_VERSION,
 } from "@/lib/ai/knowledge/sillage-agency-knowledge";
-import { getDashboardSnapshot } from "./dashboard-aggregator.service";
+import {
+  getDashboardSnapshot,
+  type DashboardPeriodInput,
+  type DashboardPeriodPreset,
+} from "./dashboard-aggregator.service";
 
 // IA syntheses for the admin pilot dashboard.
 //
@@ -50,36 +54,71 @@ Garde-fous Sillage Immo :
 - Ne nomme aucun client par son nom ; ne mentionne aucun email ou téléphone.
 - Si les données sont insuffisantes ou incohérentes, dis-le explicitement et propose une action concrète.`;
 
-const SECTION_PROMPT: Record<SynthesisSection, { title: string; question: string }> = {
+// Each prompt is a template that receives the human-readable period
+// label so the IA never hard-codes "30 derniers jours" anymore.
+const SECTION_PROMPT: Record<
+  SynthesisSection,
+  { title: string; question: (periodLabel: string) => string }
+> = {
   market_trends: {
     title: "Tendances marché",
-    question:
-      "Analyse les tendances marché des 30 derniers jours (volume de leads vendeurs vs acquéreurs, dynamique des zones top, évolution vs période précédente). Identifie 1 à 2 inflexions notables et propose 1 action concrète.",
+    question: (period) =>
+      `Analyse les tendances marché sur la période ${period} (volume de leads vendeurs vs acquéreurs, dynamique des zones top, évolution vs période précédente). Identifie 1 à 2 inflexions notables et propose 1 action concrète.`,
   },
   risk_signals: {
     title: "Risques détectés",
-    question:
-      "Identifie les risques opérationnels visibles dans les indicateurs (baisses brutales, stagnation des mandats, déséquilibre de la performance entre conseillers, conversion en chute). Reste factuel et propose 1 mesure corrective.",
+    question: (period) =>
+      `Identifie les risques opérationnels visibles dans les indicateurs sur la période ${period} (baisses brutales, stagnation des mandats, déséquilibre de la performance entre conseillers, conversion en chute). Reste factuel et propose 1 mesure corrective.`,
   },
   matching_opportunities: {
     title: "Opportunités matching",
-    question:
-      "À partir du volume de leads acquéreurs récents et de la dynamique des mandats signés, identifie les opportunités de matching à activer en priorité cette semaine (zones, types de biens). Conclus par 1 action concrète.",
+    question: (period) =>
+      `À partir du volume de leads acquéreurs sur la période ${period} et de la dynamique des mandats signés, identifie les opportunités de matching à activer en priorité cette semaine (zones, types de biens). Conclus par 1 action concrète.`,
   },
   market_voice: {
     title: "Voix du marché",
-    question:
-      "Analyse les sujets / mots-clés qui ressortent des conversations IA client des 7 derniers jours. Que demandent vraiment les visiteurs ? Qu'est-ce qui mérite d'être mis en avant ou retravaillé dans nos parcours digitaux ?",
+    question: (period) =>
+      `Analyse les sujets / mots-clés qui ressortent des conversations IA client sur la période ${period}. Que demandent vraiment les visiteurs ? Qu'est-ce qui mérite d'être mis en avant ou retravaillé dans nos parcours digitaux ?`,
   },
 };
 
-const buildContextPayload = async (section: SynthesisSection) => {
-  const snapshot = await getDashboardSnapshot();
+// Human-readable label for prompts + audit logs.
+// Mirrors the labels of the period picker UI on /admin so the IA
+// speaks the same vocabulary as the dashboard user.
+const describePeriod = (input?: DashboardPeriodInput): string => {
+  if (!input) return "30 derniers jours";
+  if (input.preset === "all" || input.since === null) return "tout l’historique";
+  switch (input.preset) {
+    case "7d":
+      return "7 derniers jours";
+    case "30d":
+      return "30 derniers jours";
+    case "90d":
+      return "90 derniers jours";
+    case "1y":
+      return "12 derniers mois";
+    case "custom":
+      if (input.since && input.until) {
+        return `du ${input.since.slice(0, 10)} au ${input.until.slice(0, 10)}`;
+      }
+      return "période personnalisée";
+    default:
+      return "30 derniers jours";
+  }
+};
+
+const buildContextPayload = async (
+  section: SynthesisSection,
+  periodInput: DashboardPeriodInput | undefined,
+  periodLabel: string
+) => {
+  const snapshot = await getDashboardSnapshot(periodInput);
   return {
     agencyKnowledgeVersion: SILLAGE_AGENCY_KNOWLEDGE_VERSION,
     agencyKnowledge: SILLAGE_AGENCY_KNOWLEDGE,
     sectionTitle: SECTION_PROMPT[section].title,
-    question: SECTION_PROMPT[section].question,
+    periodLabel,
+    question: SECTION_PROMPT[section].question(periodLabel),
     indicators: {
       periodDays: snapshot.periodDays,
       kpis: snapshot.kpis,
@@ -98,9 +137,11 @@ const buildContextPayload = async (section: SynthesisSection) => {
 };
 
 const computeSynthesis = async (
-  section: SynthesisSection
+  section: SynthesisSection,
+  periodInput: DashboardPeriodInput | undefined,
+  periodLabel: string
 ): Promise<SynthesisResult> => {
-  const payload = await buildContextPayload(section);
+  const payload = await buildContextPayload(section, periodInput, periodLabel);
   const generatedAt = new Date().toISOString();
 
   try {
@@ -124,7 +165,7 @@ const computeSynthesis = async (
         channel: "admin_console",
         model: chatResult.model,
         locale: "fr",
-        userMessage: `[admin_dashboard.synthesis.${section}] ${SECTION_PROMPT[section].question}`,
+        userMessage: `[admin_dashboard.synthesis.${section}] ${SECTION_PROMPT[section].question(periodLabel)}`,
         assistantMessage: body,
         usage: {
           tokensIn: chatResult.usage.promptTokens,
@@ -138,6 +179,7 @@ const computeSynthesis = async (
           synthesis_section: section,
           knowledge_version: SILLAGE_AGENCY_KNOWLEDGE_VERSION,
           generated_at: generatedAt,
+          period_label: periodLabel,
         },
         closeAfter: true,
       });
@@ -172,38 +214,85 @@ const computeSynthesis = async (
   }
 };
 
-const cachedSynthesis = (section: SynthesisSection) =>
-  unstable_cache(
-    async () => computeSynthesis(section),
-    [`admin-dashboard-synthesis-v1-${section}`],
+// Cache the synthesis per (section, period). The shared
+// "admin-dashboard-pilot" tag means a single revalidateTag() call
+// from the milestones API still busts every cached variant at once;
+// the per-section tag lets us invalidate one section in isolation if
+// we ever need to.
+const periodSynthesisCacheKey = (
+  section: SynthesisSection,
+  input: DashboardPeriodInput | undefined
+): string => {
+  const preset = input?.preset ?? "default";
+  const since = input?.since ?? "auto";
+  const until = input?.until ?? "now";
+  return `admin-dashboard-synthesis-v2-${section}-${preset}-${since}-${until}`;
+};
+
+const computeCachedSynthesis = (
+  section: SynthesisSection,
+  periodInput: DashboardPeriodInput | undefined
+): (() => Promise<SynthesisResult>) => {
+  const periodLabel = describePeriod(periodInput);
+  return unstable_cache(
+    async () => computeSynthesis(section, periodInput, periodLabel),
+    [periodSynthesisCacheKey(section, periodInput)],
     {
       revalidate: 3600,
       tags: ["admin-dashboard-pilot", `admin-dashboard-synthesis-${section}`],
     }
   );
+};
 
-export const getMarketTrendsSynthesis = cachedSynthesis("market_trends");
-export const getRiskSignalsSynthesis = cachedSynthesis("risk_signals");
-export const getMatchingOpportunitiesSynthesis = cachedSynthesis(
-  "matching_opportunities"
-);
-export const getMarketVoiceSynthesis = cachedSynthesis("market_voice");
+export const getMarketTrendsSynthesis = (
+  periodInput?: DashboardPeriodInput
+): Promise<SynthesisResult> =>
+  computeCachedSynthesis("market_trends", periodInput)();
 
-export const getAllSyntheses = async (): Promise<SynthesisResult[]> => {
+export const getRiskSignalsSynthesis = (
+  periodInput?: DashboardPeriodInput
+): Promise<SynthesisResult> =>
+  computeCachedSynthesis("risk_signals", periodInput)();
+
+export const getMatchingOpportunitiesSynthesis = (
+  periodInput?: DashboardPeriodInput
+): Promise<SynthesisResult> =>
+  computeCachedSynthesis("matching_opportunities", periodInput)();
+
+export const getMarketVoiceSynthesis = (
+  periodInput?: DashboardPeriodInput
+): Promise<SynthesisResult> =>
+  computeCachedSynthesis("market_voice", periodInput)();
+
+export const getAllSyntheses = async (
+  periodInput?: DashboardPeriodInput
+): Promise<SynthesisResult[]> => {
   const [trends, risks, opportunities, voice] = await Promise.all([
-    getMarketTrendsSynthesis().catch(
+    getMarketTrendsSynthesis(periodInput).catch(
       () => null as SynthesisResult | null
     ),
-    getRiskSignalsSynthesis().catch(() => null as SynthesisResult | null),
-    getMatchingOpportunitiesSynthesis().catch(
+    getRiskSignalsSynthesis(periodInput).catch(
       () => null as SynthesisResult | null
     ),
-    getMarketVoiceSynthesis().catch(() => null as SynthesisResult | null),
+    getMatchingOpportunitiesSynthesis(periodInput).catch(
+      () => null as SynthesisResult | null
+    ),
+    getMarketVoiceSynthesis(periodInput).catch(
+      () => null as SynthesisResult | null
+    ),
   ]);
   return [trends, risks, opportunities, voice].filter(
     (s): s is SynthesisResult => s !== null
   );
 };
+
+// Re-export for callers that want to know the human label of a period
+// (used by the UI to display "Synthèse IA — 12 derniers mois").
+export const describeSynthesisPeriod = describePeriod;
+
+// `DashboardPeriodPreset` is re-exported so callers don't need to
+// reach into the aggregator for the type just to call into syntheses.
+export type { DashboardPeriodPreset };
 
 // supabaseAdmin is imported eagerly so any RLS regression on
 // ai_conversations / ai_messages would surface at boot rather than at

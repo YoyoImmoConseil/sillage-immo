@@ -34,7 +34,13 @@ const formatGeneratedAt = (iso: string) => {
   }
 };
 
-export function SynthesesGrid({ syntheses }: { syntheses: SynthesisResult[] }) {
+export function SynthesesGrid({
+  syntheses,
+  periodLabel,
+}: {
+  syntheses: SynthesisResult[];
+  periodLabel?: string;
+}) {
   if (syntheses.length === 0) {
     return (
       <Card className="bg-white/80">
@@ -47,29 +53,37 @@ export function SynthesesGrid({ syntheses }: { syntheses: SynthesisResult[] }) {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-      {syntheses.map((synthesis) => (
-        <Card key={synthesis.section} className="bg-white/80">
-          <div className="flex items-start justify-between gap-2">
-            <Title className="text-[#141446]">
-              {SECTION_LABELS[synthesis.section]}
-            </Title>
-            <Badge color={SECTION_BADGE_COLORS[synthesis.section]}>IA</Badge>
-          </div>
-          <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-[#141446]/85">
-            {synthesis.body}
-          </p>
-          <p className="mt-3 text-xs text-[#141446]/55">
-            Généré le {formatGeneratedAt(synthesis.generatedAt)} •{" "}
-            {synthesis.model}
-            {synthesis.warning ? (
-              <span className="ml-2 text-amber-700">
-                ({synthesis.warning})
-              </span>
-            ) : null}
-          </p>
-        </Card>
-      ))}
+    <div className="space-y-3">
+      {periodLabel ? (
+        <p className="text-xs text-[#141446]/60">
+          Synthèses IA calculées sur la période :{" "}
+          <span className="font-semibold text-[#141446]">{periodLabel}</span>.
+        </p>
+      ) : null}
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+        {syntheses.map((synthesis) => (
+          <Card key={synthesis.section} className="bg-white/80">
+            <div className="flex items-start justify-between gap-2">
+              <Title className="text-[#141446]">
+                {SECTION_LABELS[synthesis.section]}
+              </Title>
+              <Badge color={SECTION_BADGE_COLORS[synthesis.section]}>IA</Badge>
+            </div>
+            <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-[#141446]/85">
+              {synthesis.body}
+            </p>
+            <p className="mt-3 text-xs text-[#141446]/55">
+              Généré le {formatGeneratedAt(synthesis.generatedAt)} •{" "}
+              {synthesis.model}
+              {synthesis.warning ? (
+                <span className="ml-2 text-amber-700">
+                  ({synthesis.warning})
+                </span>
+              ) : null}
+            </p>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 }

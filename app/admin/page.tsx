@@ -11,7 +11,10 @@ import {
   type DashboardPeriodInput,
   type DashboardPeriodPreset,
 } from "@/services/admin/dashboard-aggregator.service";
-import { getAllSyntheses } from "@/services/admin/dashboard-syntheses.service";
+import {
+  getAllSyntheses,
+  describeSynthesisPeriod,
+} from "@/services/admin/dashboard-syntheses.service";
 import { KpiGrid } from "./dashboard-pilot/kpi-grid";
 import { FunnelChart } from "./dashboard-pilot/funnel-chart";
 import { TopZonesTable } from "./dashboard-pilot/top-zones-table";
@@ -124,7 +127,7 @@ async function PilotDashboardBody({
 }) {
   const [snapshot, syntheses] = await Promise.all([
     getDashboardSnapshot(periodInput),
-    getAllSyntheses(),
+    getAllSyntheses(periodInput),
   ]);
 
   const kpisArray = [
@@ -153,7 +156,10 @@ async function PilotDashboardBody({
 
       <ConversationsInsights snapshot={snapshot.conversations} />
 
-      <SynthesesGrid syntheses={syntheses} />
+      <SynthesesGrid
+        syntheses={syntheses}
+        periodLabel={describeSynthesisPeriod(periodInput)}
+      />
 
       <p className="text-xs text-[#141446]/55">
         Snapshot dashboard mis à jour toutes les 5 minutes (SSR cached) •
