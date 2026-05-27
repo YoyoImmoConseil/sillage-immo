@@ -28,15 +28,26 @@ export type MyNotaryEventType =
   | "register_letter_completed"
   | "legal_record_deleted";
 
+// Per the MyNotary spec, webhook events are POSTed with the payload
+// directly at the root of the body (no `data` wrapper). Each event
+// kind has its own envelope; we keep `MyNotaryWebhookEnvelope` as a
+// generic loose-typed wrapper because we still log `raw_payload` for
+// audit and only parse the fields we actually consume.
 export type MyNotaryWebhookEnvelope<TPayload = Record<string, unknown>> = {
-  event: MyNotaryEventType;
-  eventId?: string;
+  // Backwards-compat with the previous (non-spec) envelope shape we
+  // assumed before reading the OpenAPI spec. The webhook handler
+  // tolerates both `event` and `eventId` at the root.
+  event?: MyNotaryEventType;
+  eventId?: string | MyNotaryEventType;
   timestamp?: string;
   organizationId?: number | string;
-  data: TPayload;
-};
+  data?: TPayload;
+} & Partial<TPayload>;
 
 export type MyNotaryFile = {
+  // From WebhookSignatureCompletedFile (spec): { name, url } both
+  // required. We treat `url` as a short-lived signed link and download
+  // immediately on receipt (see archive-signed-document.service.ts).
   name: string;
   url: string;
   contentType?: string;
@@ -51,14 +62,24 @@ export type MyNotarySigner = {
   role?: string;
 };
 
+// Per `WebhookSignatureCompletedEvent` in the spec. `signatureTime`
+// is an int64 Unix-ms timestamp at the root of the payload; older
+// envelopes also carry ISO strings, so we tolerate both formats.
 export type MyNotarySignatureCompletedPayload = {
   signatureId: number | string;
-  signatureTime?: string;
+  // Unix ms (preferred per spec) or ISO 8601.
+  signatureTime?: number | string;
   signedAt?: string;
   contractId: number | string;
-  contractType: string;
+  // The spec does not include `contractType` in the webhook payload;
+  // it must be fetched via GET /contracts/{contractId}. We keep this
+  // field optional so the backfill (which does carry it) and any
+  // future webhook enrichment can populate it directly.
+  contractType?: string;
   operationId: number | string;
   operationType?: string;
+  userId?: number | string;
+  organizationId?: number | string;
   files?: MyNotaryFile[];
   signers?: MyNotarySigner[];
 };
@@ -76,12 +97,35 @@ export type MyNotaryOperationSummary = {
   createdAt?: string;
 };
 
+// Two distinct registers per the spec: `MANAGEMENT` (mandats) and
+// `TRANSACTION` (promesses / compromis / actes). The backfill loops
+// over both.
+export type MyNotaryRegisterType = "MANAGEMENT" | "TRANSACTION";
+
+// Per `RegisterEntry` in the spec. Only the fields we actually map
+// are typed; everything else is forwarded via `raw_payload`.
 export type MyNotaryRegisterEntry = {
-  id: number | string;
+  id: string | number;
+  entryNumber?: number;
+  type?: MyNotaryRegisterType;
+  status?: "CLOSED" | "RESERVED" | "VALIDATED" | string;
+  organizationId?: string | number;
+  legalOperationId?: string | number;
+  // Sillage convention: `contractId` + `operationId` are the foreign
+  // keys we persist. The spec exposes them via `legalOperationId` /
+  // `numeroRepertoire`; the field aliases here let the engine adapt
+  // without breaking the existing service contract.
   contractId?: number | string;
   contractType?: string;
-  operationId: number | string;
-  status?: string;
+  operationId?: number | string;
+  biens?: string;
+  mandants?: string;
+  typeDeMandat?: string;
+  dateFinMandat?: string;
+  numeroRepertoire?: string;
+  observations?: string;
+  creationTime?: string;
+  // Sillage extensions kept for downstream code:
   signedAt?: string;
   signatureTime?: string;
   files?: MyNotaryFile[];
@@ -89,9 +133,21 @@ export type MyNotaryRegisterEntry = {
   raw?: Record<string, unknown>;
 };
 
+// MyNotary's `RegisterEntryList { items: RegisterEntry[] }` uses page
+// numbers (no cursor). We expose `page` + `hasMore` to make the
+// backfill loop deterministic without leaking the underlying detail.
 export type MyNotaryRegisterEntriesPage = {
   entries: MyNotaryRegisterEntry[];
-  nextCursor?: string | null;
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
+};
+
+// Returned by POST /clients (cf. OrganizationDto in the spec).
+export type MyNotaryOrganizationDto = {
+  id: string;
+  name?: string;
+  address?: string;
 };
 
 // Mapping table from MyNotary's free-form `contractType` string to

@@ -1,8 +1,11 @@
 import "server-only";
+import { serverEnv } from "@/lib/env/server";
 import type {
   MyNotaryOperationSummary,
+  MyNotaryOrganizationDto,
   MyNotaryRecordSummary,
   MyNotaryRegisterEntriesPage,
+  MyNotaryRegisterType,
 } from "./types";
 
 // Minimal HTTP client for the MyNotary Public API
@@ -18,8 +21,10 @@ import type {
 //   - The OpenAPI surface we use is tiny (≤ 5 endpoints) and we
 //     want fine-grained control over the headers
 //     (`x-api-date-version: 2`) and the retry policy.
-
-const BASE_URL = "https://api.mynotary.fr/api/v1";
+//
+// Base URL is resolved at call-time via env so the same code can hit
+// preprod (`api-preprod.mynotary.fr/api/v1`) or production
+// (`api.mynotary.fr/api/v1`) without a rebuild.
 
 const TIMEOUT_MS = 20_000;
 const MAX_RETRIES = 4;
@@ -91,7 +96,8 @@ const callMyNotary = async <TResponse>(
     );
   }
 
-  const url = `${BASE_URL}${options.path}${buildQueryString(options.query)}`;
+  const baseUrl = serverEnv.MYNOTARY_API_BASE_URL.replace(/\/+$/, "");
+  const url = `${baseUrl}${options.path}${buildQueryString(options.query)}`;
   let lastError: MyNotaryRequestError | null = null;
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt += 1) {
@@ -176,21 +182,32 @@ const callMyNotary = async <TResponse>(
 // POST /clients — exchange a one-time organization token for an
 // organizationId. Called once via scripts/mynotary-link-organization.ts
 // when wiring up a new agency.
+//
+// Per the MyNotary spec (cf. ApiClientRequest + OrganizationDto):
+//   request body  : { "apiKey": "<organization-token>" }
+//   response 200  : { id: integer, name?: string, address?: string }
 export const linkOrganization = async (
   organizationToken: string
-): Promise<{ organizationId: string }> => {
-  const data = await callMyNotary<{ organizationId?: number | string }>({
+): Promise<MyNotaryOrganizationDto> => {
+  const data = await callMyNotary<{
+    id?: number | string;
+    name?: string;
+    address?: string;
+  }>({
     method: "POST",
     path: "/clients",
-    extraHeaders: { "x-organization-token": organizationToken },
-    body: {},
+    body: { apiKey: organizationToken },
   });
-  if (data?.organizationId === undefined || data?.organizationId === null) {
+  if (data?.id === undefined || data?.id === null) {
     throw new Error(
-      "MyNotary POST /clients did not return an organizationId; check the token."
+      "MyNotary POST /clients did not return an organization id; check the token."
     );
   }
-  return { organizationId: String(data.organizationId) };
+  return {
+    id: String(data.id),
+    name: typeof data.name === "string" ? data.name : undefined,
+    address: typeof data.address === "string" ? data.address : undefined,
+  };
 };
 
 // GET /operations/{id} — used by the auto-match service to fetch the
@@ -216,33 +233,54 @@ export const getRecord = async (
 };
 
 // GET /register-entries — used by the backfill cron + script to walk
-// the agency's mandate register and ingest signed contracts we may
-// have missed (e.g. delivered before the webhook was configured).
+// the agency's mandate / transaction registers and ingest signed
+// contracts we may have missed (e.g. delivered before the webhook was
+// configured).
+//
+// Per the spec, the endpoint is REQUIRED-paginated and a `type` filter
+// must be provided per call (MANAGEMENT for mandats, TRANSACTION for
+// promesses / compromis / actes). The caller is expected to iterate
+// `page` until the API returns fewer than `pageSize` entries — there
+// is no cursor / `nextCursor` field in the response.
 export type GetRegisterEntriesParams = {
   organizationId: string;
-  signedSince?: string;
-  cursor?: string | null;
-  limit?: number;
+  type: MyNotaryRegisterType;
+  page: number;
+  pageSize?: number;
+  status?: "CLOSED" | "RESERVED" | "VALIDATED";
 };
 
 export const getRegisterEntries = async (
   params: GetRegisterEntriesParams
 ): Promise<MyNotaryRegisterEntriesPage> => {
+  const pageSize = Math.min(Math.max(params.pageSize ?? 100, 1), 100);
   const data = await callMyNotary<{
+    items?: MyNotaryRegisterEntriesPage["entries"];
     entries?: MyNotaryRegisterEntriesPage["entries"];
-    nextCursor?: string | null;
+    totalCount?: number;
   }>({
     method: "GET",
     path: "/register-entries",
     query: {
       organizationId: params.organizationId,
-      signedSince: params.signedSince,
-      cursor: params.cursor ?? undefined,
-      limit: params.limit ?? 100,
+      type: params.type,
+      page: params.page,
+      pageSize,
+      status: params.status,
     },
   });
+  // Tolerate both `items` and `entries` keys — the spec uses
+  // `RegisterEntryList { items: RegisterEntry[] }` but we keep the
+  // fallback in case of inline variations.
+  const entries = Array.isArray(data?.items)
+    ? data.items
+    : Array.isArray(data?.entries)
+      ? data.entries
+      : [];
   return {
-    entries: Array.isArray(data?.entries) ? data.entries : [],
-    nextCursor: data?.nextCursor ?? null,
+    entries,
+    page: params.page,
+    pageSize,
+    hasMore: entries.length === pageSize,
   };
 };

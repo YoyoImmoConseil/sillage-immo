@@ -209,18 +209,40 @@ export function MyNotaryListClient({
                   <td className="px-3 py-2 text-[#141446]/80">{signersLabel}</td>
                   <td className="px-3 py-2 text-[#141446]/80">{formatConfidence(row)}</td>
                   <td className="px-3 py-2">
-                    {firstFile ? (
-                      <a
-                        href={firstFile.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="underline"
-                      >
-                        Ouvrir
-                      </a>
-                    ) : (
-                      "—"
-                    )}
+                    <div className="flex flex-col gap-1">
+                      {row.signed_document_path ? (
+                        <a
+                          href={`/api/admin/mynotary/${row.id}/download?kind=signed`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="underline"
+                        >
+                          PDF signé (archive)
+                        </a>
+                      ) : firstFile ? (
+                        <a
+                          href={firstFile.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="underline"
+                          title="Lien MyNotary direct (peut expirer)"
+                        >
+                          Ouvrir (MyNotary)
+                        </a>
+                      ) : (
+                        <span className="text-[#141446]/40">—</span>
+                      )}
+                      {row.signature_proof_path ? (
+                        <a
+                          href={`/api/admin/mynotary/${row.id}/download?kind=proof`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-xs underline text-[#141446]/70"
+                        >
+                          Preuve de signature
+                        </a>
+                      ) : null}
+                    </div>
                   </td>
                   <td className="px-3 py-2">
                     {canManage ? (

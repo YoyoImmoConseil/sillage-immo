@@ -43,6 +43,9 @@ export type SignedDocumentRow = {
   matched_property_id: string | null;
   match_confidence: number | null;
   match_method: string | null;
+  mynotary_register_type: "MANAGEMENT" | "TRANSACTION" | null;
+  signed_document_path: string | null;
+  signature_proof_path: string | null;
 };
 
 export type SignedDocumentsListFilters = {
@@ -73,7 +76,7 @@ export const listSignedDocuments = async (
   let query: MaybeChain = client
     .from("mynotary_signed_documents")
     .select(
-      "id, mynotary_contract_id, mynotary_operation_id, contract_kind, contract_type_raw, signed_at, signers, files, matched_seller_project_id, matched_property_id, match_confidence, match_method",
+      "id, mynotary_contract_id, mynotary_operation_id, contract_kind, contract_type_raw, signed_at, signers, files, matched_seller_project_id, matched_property_id, match_confidence, match_method, mynotary_register_type, signed_document_path, signature_proof_path",
       { count: "exact" }
     )
     .is("deleted_at", null);
@@ -119,7 +122,7 @@ export const getSignedDocumentByKey = async (
   let query: MaybeChain = client
     .from("mynotary_signed_documents")
     .select(
-      "id, mynotary_contract_id, mynotary_operation_id, contract_kind, contract_type_raw, signed_at, signers, files, matched_seller_project_id, matched_property_id, match_confidence, match_method",
+      "id, mynotary_contract_id, mynotary_operation_id, contract_kind, contract_type_raw, signed_at, signers, files, matched_seller_project_id, matched_property_id, match_confidence, match_method, mynotary_register_type, signed_document_path, signature_proof_path",
       { count: "exact" }
     )
     .is("deleted_at", null);

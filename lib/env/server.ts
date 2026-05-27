@@ -34,8 +34,18 @@ export const serverEnv = {
   // WEBHOOK_AUTH_HEADER / WEBHOOK_AUTH_VALUE: secret pair used by
   //   /api/webhooks/mynotary to authenticate inbound webhook calls.
   MYNOTARY_API_KEY: process.env.MYNOTARY_API_KEY ?? "",
+  // Defaults to production. Set this to the preprod URL
+  // (`https://api-preprod.mynotary.fr/api/v1`) on Vercel preview to
+  // hit the MyNotary staging environment with the preprod x-api-key.
+  MYNOTARY_API_BASE_URL:
+    process.env.MYNOTARY_API_BASE_URL ?? "https://api.mynotary.fr/api/v1",
   MYNOTARY_ORGANIZATION_ID: process.env.MYNOTARY_ORGANIZATION_ID ?? "",
   MYNOTARY_WEBHOOK_AUTH_HEADER:
     process.env.MYNOTARY_WEBHOOK_AUTH_HEADER ?? "x-mynotary-secret",
   MYNOTARY_WEBHOOK_AUTH_VALUE: process.env.MYNOTARY_WEBHOOK_AUTH_VALUE ?? "",
+  // Supabase Storage bucket used to archive the signed PDFs that
+  // MyNotary delivers via the `signature_completed` webhook
+  // (`files[].url`). Lazily created by migration 038.
+  MYNOTARY_ARCHIVE_BUCKET:
+    process.env.MYNOTARY_ARCHIVE_BUCKET ?? "mynotary-archives",
 } as const;
