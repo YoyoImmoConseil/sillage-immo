@@ -57,11 +57,13 @@ const main = async () => {
 
   console.log("Calling POST /clients on MyNotary…");
   try {
-    const { organizationId } = await linkOrganization(orgToken);
-    console.log("\nSuccess. organizationId =", organizationId);
+    const org = await linkOrganization(orgToken);
+    console.log("\nSuccess. organizationId =", org.id);
+    if (org.name) console.log("  name    :", org.name);
+    if (org.address) console.log("  address :", org.address);
     console.log(
       "\nNext: add this value to Vercel as MYNOTARY_ORGANIZATION_ID " +
-        "(Production + Preview), then redeploy."
+        "(matching environment), then redeploy."
     );
   } catch (err) {
     console.error(

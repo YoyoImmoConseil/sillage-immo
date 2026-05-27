@@ -9,6 +9,7 @@ import {
   type MyNotarySigner,
 } from "@/lib/mynotary/types";
 import { matchSignedDocument } from "./auto-match.service";
+import { archiveSignedDocument } from "./archive-signed-document.service";
 
 // Cast types for the new tables that are not in the generated Supabase
 // schema yet.
@@ -77,6 +78,10 @@ export type ProcessSignatureCompletedInput = {
   // Source of the event ("webhook" | "backfill" | "manual"). Stored
   // in raw_payload for audit.
   source: "webhook" | "backfill" | "manual";
+  // MyNotary register the entry came from (only when the source is a
+  // backfill via GET /register-entries — undefined for webhook
+  // delivery).
+  registerType?: "MANAGEMENT" | "TRANSACTION";
 };
 
 export type ProcessSignatureCompletedResult = {
@@ -114,11 +119,25 @@ const sanitizeFiles = (files: MyNotaryFile[] | undefined): MyNotaryFile[] => {
 const resolveSignedAt = (
   payload: MyNotarySignatureCompletedPayload
 ): string => {
+  // Per the spec, webhook payloads ship `signatureTime` as Unix ms
+  // (int64). Backfill entries ship ISO 8601 via `signedAt`. We
+  // tolerate both formats and any drift in between.
   const candidate = payload.signedAt ?? payload.signatureTime;
-  if (candidate) {
-    const ts = new Date(candidate);
-    if (!Number.isNaN(ts.getTime())) {
-      return ts.toISOString();
+  if (candidate !== undefined && candidate !== null) {
+    if (typeof candidate === "number" && Number.isFinite(candidate)) {
+      const fromMs = new Date(candidate > 1e12 ? candidate : candidate * 1000);
+      if (!Number.isNaN(fromMs.getTime())) return fromMs.toISOString();
+    }
+    if (typeof candidate === "string") {
+      const fromString = new Date(candidate);
+      if (!Number.isNaN(fromString.getTime())) {
+        return fromString.toISOString();
+      }
+      const asNum = Number(candidate);
+      if (Number.isFinite(asNum)) {
+        const fromMs = new Date(asNum > 1e12 ? asNum : asNum * 1000);
+        if (!Number.isNaN(fromMs.getTime())) return fromMs.toISOString();
+      }
     }
   }
   return new Date().toISOString();
@@ -127,7 +146,7 @@ const resolveSignedAt = (
 export const processSignatureCompleted = async (
   input: ProcessSignatureCompletedInput
 ): Promise<ProcessSignatureCompletedResult> => {
-  const { payload, inlineAddress, source } = input;
+  const { payload, inlineAddress, source, registerType } = input;
 
   const contractKind = resolveContractKind(payload.contractType);
   const mynotaryContractId = String(payload.contractId);
@@ -161,8 +180,10 @@ export const processSignatureCompleted = async (
         signed_at: signedAt,
         signers,
         files,
+        mynotary_register_type: registerType ?? null,
         raw_payload: {
           source,
+          register_type: registerType ?? null,
           payload: payload as unknown as Record<string, unknown>,
         },
       },
@@ -204,6 +225,37 @@ export const processSignatureCompleted = async (
       match_attempted_at: new Date().toISOString(),
     })
     .eq("id", documentId);
+
+  // Best-effort archive of the signed PDF (and the eIDAS proof when
+  // delivered). MyNotary's `files[].url` are short-lived signed
+  // links, so we download them right after the upsert. Failures here
+  // are non-blocking — the document row still exists and the link
+  // remains usable until it expires.
+  if (files.length > 0) {
+    try {
+      const archive = await archiveSignedDocument({
+        documentId,
+        mynotaryContractId,
+        files,
+      });
+      const archiveUpdate: Record<string, unknown> = {};
+      if (archive.signedDocumentPath) {
+        archiveUpdate.signed_document_path = archive.signedDocumentPath;
+      }
+      if (archive.signatureProofPath) {
+        archiveUpdate.signature_proof_path = archive.signatureProofPath;
+      }
+      if (Object.keys(archiveUpdate).length > 0) {
+        await docsWriter
+          .from("mynotary_signed_documents")
+          .update(archiveUpdate)
+          .eq("id", documentId);
+      }
+    } catch {
+      // Already swallowed by archiveSignedDocument; this is a belt
+      // and suspenders catch in case the function itself throws.
+    }
+  }
 
   let sellerProjectUpdated = false;
   if (

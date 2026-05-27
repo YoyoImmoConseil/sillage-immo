@@ -78,10 +78,25 @@ vi.mock("@/services/mynotary/auto-match.service", () => ({
   matchSignedDocument: (...args: unknown[]) => matchSignedDocumentMock(...args),
 }));
 
+const archiveSignedDocumentMock = vi.fn();
+vi.mock("@/services/mynotary/archive-signed-document.service", () => ({
+  archiveSignedDocument: (...args: unknown[]) =>
+    archiveSignedDocumentMock(...args),
+  createArchiveDownloadUrl: vi.fn(),
+}));
+
 beforeEach(() => {
   mockState.calls.length = 0;
   emitDomainEventMock.mockReset();
   matchSignedDocumentMock.mockReset();
+  archiveSignedDocumentMock.mockReset();
+  archiveSignedDocumentMock.mockResolvedValue({
+    signedDocumentPath: "42/signed_mandat.pdf",
+    signatureProofPath: null,
+    archived: 1,
+    skipped: 0,
+    errors: [],
+  });
 });
 
 afterEach(() => {
@@ -190,6 +205,52 @@ describe("processSignatureCompleted", () => {
     expect(
       mockState.calls.find((c) => c.table === "seller_projects")
     ).toBeUndefined();
+  });
+
+  it("forwards register_type to the upsert payload when backfill carries it", async () => {
+    matchSignedDocumentMock.mockResolvedValue({
+      sellerProjectId: null,
+      propertyId: null,
+      confidence: 0,
+      method: "none",
+    });
+    const { processSignatureCompleted } = await import(
+      "@/services/mynotary/signature-completed.service"
+    );
+    await processSignatureCompleted({
+      payload: baseMandatePayload,
+      source: "backfill",
+      registerType: "MANAGEMENT",
+    });
+    const upsertCall = mockState.calls.find(
+      (c) =>
+        c.table === "mynotary_signed_documents" &&
+        c.ops.some((o) => o.kind === "upsert")
+    );
+    const upsertArgs = upsertCall!.ops.find((o) => o.kind === "upsert")!
+      .args[0] as Record<string, unknown>;
+    expect(upsertArgs.mynotary_register_type).toBe("MANAGEMENT");
+  });
+
+  it("invokes the archive service with the webhook files when present", async () => {
+    matchSignedDocumentMock.mockResolvedValue({
+      sellerProjectId: null,
+      propertyId: null,
+      confidence: 0,
+      method: "none",
+    });
+    const { processSignatureCompleted } = await import(
+      "@/services/mynotary/signature-completed.service"
+    );
+    await processSignatureCompleted({
+      payload: baseMandatePayload,
+      source: "webhook",
+    });
+    expect(archiveSignedDocumentMock).toHaveBeenCalledTimes(1);
+    expect(archiveSignedDocumentMock.mock.calls[0][0]).toMatchObject({
+      mynotaryContractId: "42",
+      files: baseMandatePayload.files,
+    });
   });
 
   it("emits mynotary.offer_signed for a purchase offer", async () => {
