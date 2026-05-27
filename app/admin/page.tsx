@@ -116,7 +116,10 @@ const cards = [
   },
 ];
 
-async function PilotDashboardBody({
+// KPI/funnel/zones/advisors/conversations: all Supabase-driven, ~1s
+// total. We render these in their own Suspense block so they appear
+// immediately, while the (slow) IA syntheses stream in below.
+async function PilotDashboardCore({
   canSeeAdvisors,
   periodInput,
   preset,
@@ -125,10 +128,7 @@ async function PilotDashboardBody({
   periodInput: DashboardPeriodInput;
   preset: DashboardPeriodPreset;
 }) {
-  const [snapshot, syntheses] = await Promise.all([
-    getDashboardSnapshot(periodInput),
-    getAllSyntheses(periodInput),
-  ]);
+  const snapshot = await getDashboardSnapshot(periodInput);
 
   const kpisArray = [
     snapshot.kpis.sellerLeads,
@@ -156,11 +156,6 @@ async function PilotDashboardBody({
 
       <ConversationsInsights snapshot={snapshot.conversations} />
 
-      <SynthesesGrid
-        syntheses={syntheses}
-        periodLabel={describeSynthesisPeriod(periodInput)}
-      />
-
       <p className="text-xs text-[#141446]/55">
         Snapshot dashboard mis à jour toutes les 5 minutes (SSR cached) •
         synthèses IA mises à jour toutes les heures • dernière génération{" "}
@@ -171,6 +166,51 @@ async function PilotDashboardBody({
           minute: "2-digit",
         })}
       </p>
+    </div>
+  );
+}
+
+// IA syntheses : 4 × GPT-4o-mini en parallèle ≈ 5–15s par période non
+// cachée. Streamé séparément pour ne pas bloquer le rendu des KPI.
+async function PilotDashboardSyntheses({
+  periodInput,
+}: {
+  periodInput: DashboardPeriodInput;
+}) {
+  const syntheses = await getAllSyntheses(periodInput);
+  return (
+    <SynthesesGrid
+      syntheses={syntheses}
+      periodLabel={describeSynthesisPeriod(periodInput)}
+    />
+  );
+}
+
+function SynthesesFallback({ periodLabel }: { periodLabel: string }) {
+  // Skeleton matches the 2-column grid of real synthesis cards.
+  return (
+    <div className="space-y-3">
+      <p className="text-xs text-[#141446]/60">
+        Génération des synthèses IA sur la période :{" "}
+        <span className="font-semibold text-[#141446]">{periodLabel}</span>…
+      </p>
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div
+            key={i}
+            className="animate-pulse rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white/60 p-6"
+          >
+            <div className="h-4 w-1/3 rounded bg-[#141446]/15" />
+            <div className="mt-4 space-y-2">
+              <div className="h-3 w-full rounded bg-[#141446]/10" />
+              <div className="h-3 w-11/12 rounded bg-[#141446]/10" />
+              <div className="h-3 w-10/12 rounded bg-[#141446]/10" />
+              <div className="h-3 w-9/12 rounded bg-[#141446]/10" />
+            </div>
+            <div className="mt-4 h-2 w-1/4 rounded bg-[#141446]/10" />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -267,13 +307,25 @@ export default async function AdminDashboardPage({
       profileName={context.profile?.fullName ?? context.profile?.email ?? "Mode admin"}
     >
       {showPilotDashboard ? (
-        <Suspense fallback={<PilotDashboardFallback />}>
-          <PilotDashboardBody
-            canSeeAdvisors={true}
-            periodInput={periodInput}
-            preset={preset}
-          />
-        </Suspense>
+        <div className="space-y-6">
+          <Suspense fallback={<PilotDashboardFallback />}>
+            <PilotDashboardCore
+              canSeeAdvisors={true}
+              periodInput={periodInput}
+              preset={preset}
+            />
+          </Suspense>
+          {/* Streamed separately so 4×OpenAI calls don't block the KPI grid. */}
+          <Suspense
+            fallback={
+              <SynthesesFallback
+                periodLabel={describeSynthesisPeriod(periodInput)}
+              />
+            }
+          >
+            <PilotDashboardSyntheses periodInput={periodInput} />
+          </Suspense>
+        </div>
       ) : (
         <section className="grid gap-4 md:grid-cols-2">
           {visibleCards.map((card) => (

@@ -82,21 +82,32 @@ const isRetryable = (status: number) => status === 429 || status >= 500;
 
 type FetchOptions = Parameters<typeof fetch>[1];
 
+// Hard timeout per attempt. OpenAI occasionally hangs on long
+// prompts; without a deadline the whole admin dashboard SSR would
+// block until Vercel's function timeout (which is much higher than
+// what a human user is willing to wait for).
+const DEFAULT_OPENAI_TIMEOUT_MS = 25_000;
+
 const fetchWithRetry = async (
   url: string,
   init: FetchOptions,
-  attempts = 2
+  attempts = 2,
+  timeoutMs: number = DEFAULT_OPENAI_TIMEOUT_MS
 ): Promise<Response> => {
   let lastError: unknown = null;
   for (let attempt = 0; attempt < attempts; attempt += 1) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      const response = await fetch(url, init);
+      const response = await fetch(url, { ...init, signal: controller.signal });
+      clearTimeout(timer);
       if (!response.ok && isRetryable(response.status) && attempt < attempts - 1) {
         await sleep(1000);
         continue;
       }
       return response;
     } catch (error) {
+      clearTimeout(timer);
       lastError = error;
       if (attempt < attempts - 1) {
         await sleep(1000);
