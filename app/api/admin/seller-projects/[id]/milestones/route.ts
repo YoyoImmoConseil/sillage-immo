@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { getAdminPageContext, hasAdminPermission } from "@/lib/admin/auth";
 import { updateSellerProjectMilestones } from "@/services/clients/seller-project.service";
+import { DASHBOARD_PILOT_CACHE_TAG } from "@/services/admin/dashboard-aggregator.service";
 
 export const dynamic = "force-dynamic";
 
@@ -74,6 +76,17 @@ export const PUT = async (
     const milestones = await updateSellerProjectMilestones(sellerProjectId, body, {
       adminProfileId: context.profile.id,
     });
+    // Bust every cached dashboard period at once so the new
+    // milestone shows up immediately on /admin (otherwise the user
+    // would have to wait up to 5 minutes for the SSR cache to expire).
+    try {
+      // Next 16 requires the second argument (revalidation profile);
+      // "max" forces an immediate purge so the next render fetches
+      // fresh KPIs.
+      revalidateTag(DASHBOARD_PILOT_CACHE_TAG, "max");
+    } catch {
+      // best-effort; never fail the request because cache invalidation failed.
+    }
     return NextResponse.json({ ok: true, milestones });
   } catch (err) {
     return NextResponse.json(

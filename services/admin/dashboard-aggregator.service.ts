@@ -198,6 +198,12 @@ type SellerProjectsMilestoneReader = {
 // project) is counted ONCE. The `deed` milestone has no MyNotary
 // equivalent yet, so `kind` is nullable; the function then just
 // returns the seller_projects count for that window.
+//
+// When `fromIso === null`, the function counts the LIFETIME union
+// (no lower bound) — used by the milestone KPI cards which display
+// the cumulative total so a manual back-fill of historical
+// signatures shows up immediately, regardless of when the user
+// actually filled the date.
 const countSignedUnion = async (
   milestoneColumn:
     | "mandate_signed_at"
@@ -205,13 +211,16 @@ const countSignedUnion = async (
     | "preliminary_sale_signed_at"
     | "deed_signed_at",
   kind: "mandate" | "purchase_offer" | "preliminary_sale" | null,
-  fromIso: string,
+  fromIso: string | null,
   untilIso: string | undefined
 ): Promise<number> => {
   // Window end defaults to "now + 1 day" so .lt() with the cursor
   // works without special-casing the trailing-edge call site.
   const untilCursor =
     untilIso ?? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+  // Lifetime mode: a sentinel `fromIso` of `0001-01-01` is older than
+  // anything in the DB and lets us reuse the same query path.
+  const fromCursor = fromIso ?? "0001-01-01T00:00:00Z";
 
   // 1. MyNotary docs in window: collect their matched_seller_project_id
   //    (so we can de-dupe with the manual seller_project counts).
@@ -224,7 +233,7 @@ const countSignedUnion = async (
       .select("matched_seller_project_id")
       .eq("contract_kind", kind)
       .is("deleted_at", null)
-      .gte("signed_at", fromIso)
+      .gte("signed_at", fromCursor)
       .lt("signed_at", untilCursor);
     if (!error && docs) {
       for (const doc of docs) {
@@ -245,7 +254,7 @@ const countSignedUnion = async (
     .from("seller_projects")
     .select("id")
     .not(milestoneColumn, "is", null)
-    .gte(milestoneColumn, fromIso)
+    .gte(milestoneColumn, fromCursor)
     .lt(milestoneColumn, untilCursor);
   const manualProjectIds = new Set<string>((projects ?? []).map((p) => p.id));
 
@@ -268,14 +277,19 @@ const countSignedUnion = async (
 const fetchKpis = async (
   periodCursor: string,
   previousCursor: string,
-  scheduledUpcomingCursor: string
+  scheduledUpcomingCursor: string,
+  untilCursor: string
 ) => {
+  // `untilCursor` is the exclusive upper bound shared by every
+  // "current period" count. The "previous period" upper bound is
+  // `periodCursor` (i.e. when the current window starts).
   const rawCounts = await Promise.all([
     safeCount(
       supabaseAdmin
         .from("seller_leads")
         .select("id", { count: "exact", head: true })
         .gte("created_at", periodCursor)
+        .lt("created_at", untilCursor)
     ),
     safeCount(
       supabaseAdmin
@@ -289,6 +303,7 @@ const fetchKpis = async (
         .from("buyer_leads")
         .select("id", { count: "exact", head: true })
         .gte("created_at", periodCursor)
+        .lt("created_at", untilCursor)
     ),
     safeCount(
       supabaseAdmin
@@ -311,16 +326,17 @@ const fetchKpis = async (
         .select("id", { count: "exact", head: true })
         .eq("status", "completed")
         .gte("scheduled_at", periodCursor)
+        .lt("scheduled_at", untilCursor)
     ),
-    countSignedUnion("mandate_signed_at", "mandate", periodCursor, undefined),
+    countSignedUnion("mandate_signed_at", "mandate", periodCursor, untilCursor),
     countSignedUnion("mandate_signed_at", "mandate", previousCursor, periodCursor),
-    countSignedUnion("offer_received_at", "purchase_offer", periodCursor, undefined),
+    countSignedUnion("offer_received_at", "purchase_offer", periodCursor, untilCursor),
     countSignedUnion("offer_received_at", "purchase_offer", previousCursor, periodCursor),
     countSignedUnion(
       "preliminary_sale_signed_at",
       "preliminary_sale",
       periodCursor,
-      undefined
+      untilCursor
     ),
     countSignedUnion(
       "preliminary_sale_signed_at",
@@ -328,13 +344,14 @@ const fetchKpis = async (
       previousCursor,
       periodCursor
     ),
-    countSignedUnion("deed_signed_at", null, periodCursor, undefined),
+    countSignedUnion("deed_signed_at", null, periodCursor, untilCursor),
     countSignedUnion("deed_signed_at", null, previousCursor, periodCursor),
     safeCount(
       supabaseAdmin
         .from("ai_conversations")
         .select("id", { count: "exact", head: true })
         .gte("started_at", periodCursor)
+        .lt("started_at", untilCursor)
     ),
     safeCount(
       supabaseAdmin
@@ -688,20 +705,109 @@ const fetchConversationsSnapshot = async (
   };
 };
 
-const computeDashboardSnapshot = async (): Promise<DashboardSnapshot> => {
+// =====================================================================
+// Period selection
+// =====================================================================
+//
+// The dashboard accepts an optional `{ since, until }` window. When
+// omitted, both default to the legacy behaviour (last 30 days). A
+// preset of `"all"` means "no lower bound", i.e. every signed
+// document since the agency's first day. The aggregator computes the
+// "previous period" by mirroring the chosen window immediately
+// before `since`, so KPI trends stay meaningful regardless of the
+// chosen range.
+//
+// `since` and `until` are inclusive lower / exclusive upper bounds.
+// The KPIs that use `signed_at` / `created_at` / `started_at` all
+// apply `.gte(since)` and `.lt(until)` consistently.
+
+export type DashboardPeriodPreset = "7d" | "30d" | "90d" | "1y" | "all" | "custom";
+
+export type DashboardPeriodInput = {
+  since?: string | null;
+  until?: string | null;
+  preset?: DashboardPeriodPreset;
+};
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+const resolvePeriod = (
+  input: DashboardPeriodInput | undefined
+): {
+  since: string | null;
+  until: string;
+  previousSince: string | null;
+  previousUntil: string;
+  preset: DashboardPeriodPreset;
+  // periodDays is only meaningful when `since` is bounded; used for
+  // labels + the legacy `periodDays` field on the snapshot. For the
+  // "all" preset, we expose 0 to make UI code obvious.
+  periodDays: number;
+} => {
+  const nowMs = Date.now();
+  const untilIso = input?.until ?? new Date(nowMs).toISOString();
+
+  if (input?.preset === "all" || input?.since === null) {
+    return {
+      since: null,
+      until: untilIso,
+      previousSince: null,
+      previousUntil: untilIso,
+      preset: "all",
+      periodDays: 0,
+    };
+  }
+
+  let sinceIso = input?.since;
+  if (!sinceIso) {
+    const days =
+      input?.preset === "7d"
+        ? 7
+        : input?.preset === "90d"
+          ? 90
+          : input?.preset === "1y"
+            ? 365
+            : 30;
+    sinceIso = new Date(nowMs - days * DAY_MS).toISOString();
+  }
+
+  const sinceMs = Date.parse(sinceIso);
+  const untilMs = Date.parse(untilIso);
+  const windowMs = Math.max(untilMs - sinceMs, DAY_MS);
+  const previousSinceIso = new Date(sinceMs - windowMs).toISOString();
+
+  return {
+    since: sinceIso,
+    until: untilIso,
+    previousSince: previousSinceIso,
+    previousUntil: sinceIso,
+    preset: input?.preset ?? "custom",
+    periodDays: Math.round(windowMs / DAY_MS),
+  };
+};
+
+const computeDashboardSnapshot = async (
+  input?: DashboardPeriodInput
+): Promise<DashboardSnapshot> => {
+  const period = resolvePeriod(input);
   const now = new Date();
-  const periodCursor = isoDaysAgo(PERIOD_DAYS);
-  const previousCursor = new Date(
-    now.getTime() - PERIOD_DAYS * 2 * 24 * 60 * 60 * 1000
-  ).toISOString();
+  // Down-stream services still take a single "cursor" string for now;
+  // we feed them `since` (or `0001-01-01` when lifetime). The trend
+  // KPIs below explicitly use both `since` and `previousSince`.
+  const periodCursor =
+    period.since ?? "0001-01-01T00:00:00Z";
+  const previousCursor =
+    period.previousSince ?? "0001-01-01T00:00:00Z";
   const scheduledUpcomingCursor = now.toISOString();
 
   void ADVISOR_PERIOD_DAYS;
-  const advisorCursor = isoDaysAgo(ADVISOR_PERIOD_DAYS);
-  const heatmapCursor = isoDaysAgo(HEATMAP_PERIOD_DAYS);
+  const advisorCursor =
+    period.since ?? isoDaysAgo(ADVISOR_PERIOD_DAYS);
+  const heatmapCursor =
+    period.since ?? isoDaysAgo(HEATMAP_PERIOD_DAYS);
 
   const [kpis, funnel, topZones, advisors, conversations] = await Promise.all([
-    fetchKpis(periodCursor, previousCursor, scheduledUpcomingCursor),
+    fetchKpis(periodCursor, previousCursor, scheduledUpcomingCursor, period.until),
     fetchFunnel(periodCursor),
     fetchTopZones(heatmapCursor, 5),
     fetchAdvisorPerformance(advisorCursor, 10),
@@ -710,7 +816,7 @@ const computeDashboardSnapshot = async (): Promise<DashboardSnapshot> => {
 
   return {
     generatedAt: now.toISOString(),
-    periodDays: PERIOD_DAYS,
+    periodDays: period.periodDays || PERIOD_DAYS,
     kpis,
     funnel,
     topZones,
@@ -721,11 +827,27 @@ const computeDashboardSnapshot = async (): Promise<DashboardSnapshot> => {
 
 export const DASHBOARD_PILOT_CACHE_TAG = "admin-dashboard-pilot";
 
-export const getDashboardSnapshot = unstable_cache(
-  computeDashboardSnapshot,
-  ["admin-dashboard-pilot-snapshot-v1"],
-  {
-    revalidate: 300,
-    tags: [DASHBOARD_PILOT_CACHE_TAG],
-  }
-);
+// Build a deterministic cache key per period so the dashboard does
+// not serve cross-range snapshots. The tag stays shared so
+// `revalidateTag(DASHBOARD_PILOT_CACHE_TAG)` invalidates every period
+// at once when underlying data changes.
+const periodCacheKey = (input?: DashboardPeriodInput): string => {
+  const preset = input?.preset ?? "default";
+  const since = input?.since ?? "auto";
+  const until = input?.until ?? "now";
+  return `admin-dashboard-pilot-v2-${preset}-${since}-${until}`;
+};
+
+export const getDashboardSnapshot = async (
+  input?: DashboardPeriodInput
+): Promise<DashboardSnapshot> => {
+  const cached = unstable_cache(
+    () => computeDashboardSnapshot(input),
+    [periodCacheKey(input)],
+    {
+      revalidate: 300,
+      tags: [DASHBOARD_PILOT_CACHE_TAG],
+    }
+  );
+  return cached();
+};
