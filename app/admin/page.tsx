@@ -6,7 +6,11 @@ import { getAdminPageContext, hasAdminPermission } from "@/lib/admin/auth";
 import { TimeoutError, withTimeout } from "@/lib/async/timeout";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { AdminPermission } from "@/types/domain/admin";
-import { getDashboardSnapshot } from "@/services/admin/dashboard-aggregator.service";
+import {
+  getDashboardSnapshot,
+  type DashboardPeriodInput,
+  type DashboardPeriodPreset,
+} from "@/services/admin/dashboard-aggregator.service";
 import { getAllSyntheses } from "@/services/admin/dashboard-syntheses.service";
 import { KpiGrid } from "./dashboard-pilot/kpi-grid";
 import { FunnelChart } from "./dashboard-pilot/funnel-chart";
@@ -14,8 +18,55 @@ import { TopZonesTable } from "./dashboard-pilot/top-zones-table";
 import { AdvisorPerformanceTable } from "./dashboard-pilot/advisor-performance-table";
 import { ConversationsInsights } from "./dashboard-pilot/conversations-insights";
 import { SynthesesGrid } from "./dashboard-pilot/syntheses-grid";
+import { DashboardPeriodPicker } from "./dashboard-pilot/period-picker";
 
 export const dynamic = "force-dynamic";
+
+type AdminSearchParams = {
+  preset?: string;
+  since?: string;
+  until?: string;
+};
+
+const VALID_PRESETS: ReadonlySet<DashboardPeriodPreset> = new Set([
+  "7d",
+  "30d",
+  "90d",
+  "1y",
+  "all",
+  "custom",
+]);
+
+// Convert "YYYY-MM-DD" to a full ISO timestamp. Start dates use 00:00
+// UTC (inclusive lower bound); end dates use 23:59:59.999 UTC so the
+// chosen end day is included when we compute `.lt(until)`.
+const toIsoStart = (date: string): string => `${date}T00:00:00.000Z`;
+const toIsoEnd = (date: string): string => `${date}T23:59:59.999Z`;
+
+const buildPeriodInput = (
+  raw: AdminSearchParams
+): { input: DashboardPeriodInput; preset: DashboardPeriodPreset } => {
+  const requested = raw.preset as DashboardPeriodPreset | undefined;
+  const preset: DashboardPeriodPreset =
+    requested && VALID_PRESETS.has(requested) ? requested : "30d";
+
+  if (preset === "all") {
+    return { input: { preset: "all", since: null }, preset };
+  }
+
+  if (preset === "custom" && raw.since && raw.until) {
+    return {
+      input: {
+        preset: "custom",
+        since: toIsoStart(raw.since),
+        until: toIsoEnd(raw.until),
+      },
+      preset,
+    };
+  }
+
+  return { input: { preset }, preset };
+};
 
 const cards = [
   {
@@ -62,9 +113,17 @@ const cards = [
   },
 ];
 
-async function PilotDashboardBody({ canSeeAdvisors }: { canSeeAdvisors: boolean }) {
+async function PilotDashboardBody({
+  canSeeAdvisors,
+  periodInput,
+  preset,
+}: {
+  canSeeAdvisors: boolean;
+  periodInput: DashboardPeriodInput;
+  preset: DashboardPeriodPreset;
+}) {
   const [snapshot, syntheses] = await Promise.all([
-    getDashboardSnapshot(),
+    getDashboardSnapshot(periodInput),
     getAllSyntheses(),
   ]);
 
@@ -81,6 +140,8 @@ async function PilotDashboardBody({ canSeeAdvisors }: { canSeeAdvisors: boolean 
 
   return (
     <div className="space-y-6">
+      <DashboardPeriodPicker defaultPreset={preset} />
+
       <KpiGrid kpis={kpisArray} />
 
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
@@ -116,7 +177,14 @@ function PilotDashboardFallback() {
   );
 }
 
-export default async function AdminDashboardPage() {
+export default async function AdminDashboardPage({
+  searchParams,
+}: {
+  searchParams?: Promise<AdminSearchParams>;
+}) {
+  const rawParams = (await searchParams) ?? {};
+  const { input: periodInput, preset } = buildPeriodInput(rawParams);
+
   let warningMessage: string | null = null;
   let context = null;
 
@@ -186,7 +254,7 @@ export default async function AdminDashboardPage() {
       title={showPilotDashboard ? "Pilotage Sillage Immo" : "Dashboard admin"}
       description={
         showPilotDashboard
-          ? "Cockpit consolidé : KPI 30 jours, funnel acquisition, top zones, performance conseillers et synthèses IA."
+          ? "Cockpit consolidé : KPI configurable, funnel acquisition, top zones, performance conseillers et synthèses IA."
           : "Point d'entrée du back-office RBAC Sillage Immo."
       }
       role={context.role}
@@ -194,7 +262,11 @@ export default async function AdminDashboardPage() {
     >
       {showPilotDashboard ? (
         <Suspense fallback={<PilotDashboardFallback />}>
-          <PilotDashboardBody canSeeAdvisors={true} />
+          <PilotDashboardBody
+            canSeeAdvisors={true}
+            periodInput={periodInput}
+            preset={preset}
+          />
         </Suspense>
       ) : (
         <section className="grid gap-4 md:grid-cols-2">
