@@ -7,6 +7,10 @@ import type {
   MyNotaryRegisterType,
   MyNotarySignatureCompletedPayload,
 } from "@/lib/mynotary/types";
+import {
+  parseAddressFromBiens,
+  parseSignedAtFromObservations,
+} from "@/lib/mynotary/register-entry-parsers";
 import { processSignatureCompleted } from "./signature-completed.service";
 
 // Shared backfill engine used by:
@@ -107,28 +111,6 @@ const inferContractType = (
   return "";
 };
 
-// Register entries don't expose a structured signedAt; the date is
-// embedded inside the free-form `observations` text in DD/MM/YYYY
-// format ("Date de signature du mandat : 07/04/2026"). We do a
-// best-effort parse here so the backfilled KPIs land on the actual
-// signature day rather than on the day MyNotary recorded the entry.
-const SIGNATURE_DATE_RE =
-  /date de signature[^:]*:\s*(\d{1,2})\/(\d{1,2})\/(\d{4})/i;
-
-const parseSignedAtFromObservations = (
-  observations: string | undefined | null
-): string | null => {
-  if (!observations) return null;
-  const match = SIGNATURE_DATE_RE.exec(observations);
-  if (!match) return null;
-  const day = match[1].padStart(2, "0");
-  const month = match[2].padStart(2, "0");
-  const year = match[3];
-  // Anchor to noon UTC so the timestamp falls on the same calendar
-  // day in every common TZ (Europe/Paris in particular).
-  const iso = `${year}-${month}-${day}T12:00:00.000Z`;
-  return Number.isFinite(Date.parse(iso)) ? iso : null;
-};
 
 const entryToPayload = (
   entry: MyNotaryRegisterEntry,
@@ -224,9 +206,11 @@ export const runIncrementalBackfill = async (
           documentsSkipped += 1;
           continue;
         }
+        const inlineAddress = parseAddressFromBiens(entry.biens);
         try {
           const outcome = await processSignatureCompleted({
             payload,
+            inlineAddress,
             source: "backfill",
             registerType: register,
           });
