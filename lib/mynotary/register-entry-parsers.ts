@@ -52,3 +52,28 @@ export const parseAddressFromBiens = (
   if (!/\d/.test(stripped)) return null;
   return stripped;
 };
+
+// `RegisterEntry.status` semantics (cf. MyNotary OpenAPI):
+//   - "VALIDATED": the contract has been signed by every party.
+//   - "RESERVED" : the entry exists (number reserved) but the
+//                  signature flow is in progress and may still be
+//                  cancelled / relaunched. The `observations` text
+//                  lists the launches and cancellations.
+//   - "CLOSED"   : the entry was abandoned (signature flow cancelled,
+//                  contract archived).
+//
+// We must only treat VALIDATED entries (or entries whose observations
+// already record a confirmed signature date) as actually signed —
+// otherwise the dashboard counts mandates that are merely "en cours
+// de signature".
+export const isEntrySigned = (entry: {
+  status?: string;
+  observations?: string | null;
+}): boolean => {
+  if (entry.status === "VALIDATED") return true;
+  // Belt and suspenders: if the observations text already carries a
+  // confirmed "Date de signature : DD/MM/YYYY" line, treat the entry
+  // as signed even when the status is missing — this lets us keep
+  // tolerating the spec's slight ambiguity around CLOSED entries.
+  return parseSignedAtFromObservations(entry.observations ?? null) !== null;
+};

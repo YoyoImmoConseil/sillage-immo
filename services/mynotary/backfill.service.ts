@@ -8,10 +8,14 @@ import type {
   MyNotarySignatureCompletedPayload,
 } from "@/lib/mynotary/types";
 import {
+  isEntrySigned,
   parseAddressFromBiens,
   parseSignedAtFromObservations,
 } from "@/lib/mynotary/register-entry-parsers";
-import { processSignatureCompleted } from "./signature-completed.service";
+import {
+  processSignatureCompleted,
+  softDeleteByContractOrOperation,
+} from "./signature-completed.service";
 
 // Shared backfill engine used by:
 //   - scripts/mynotary-backfill.ts (one-shot, full history)
@@ -65,6 +69,7 @@ export type BackfillRunResult = {
   entriesSeen: number;
   documentsUpserted: number;
   documentsSkipped: number;
+  documentsSoftDeleted: number;
   errors: number;
   lastSyncedAt: string;
 };
@@ -181,6 +186,7 @@ export const runIncrementalBackfill = async (
   let entriesSeen = 0;
   let documentsUpserted = 0;
   let documentsSkipped = 0;
+  let documentsSoftDeleted = 0;
   let errors = 0;
 
   // Iterate both registers; each one is paginated independently.
@@ -199,6 +205,29 @@ export const runIncrementalBackfill = async (
       for (const entry of result.entries) {
         if (entryIsOlderThanCheckpoint(entry, checkpoint)) {
           documentsSkipped += 1;
+          continue;
+        }
+        // Filter out entries that are not actually signed yet
+        // (status RESERVED = signature flow in progress, CLOSED =
+        // abandoned). The MyNotary register exposes everything that
+        // got a register number, but only VALIDATED rows belong in
+        // our dashboard funnel.
+        if (!isEntrySigned(entry)) {
+          documentsSkipped += 1;
+          // Compensate any previous (buggy) sync that may have
+          // ingested this entry as signed: soft-delete it now that
+          // the API tells us it isn't signed.
+          const contractIdForCleanup = entry.contractId ?? entry.id ?? null;
+          if (contractIdForCleanup) {
+            try {
+              const { softDeleted } = await softDeleteByContractOrOperation({
+                mynotaryContractId: String(contractIdForCleanup),
+              });
+              documentsSoftDeleted += softDeleted;
+            } catch {
+              // best-effort, do not fail the run on cleanup errors
+            }
+          }
           continue;
         }
         const payload = entryToPayload(entry, register);
@@ -241,6 +270,7 @@ export const runIncrementalBackfill = async (
     entriesSeen,
     documentsUpserted,
     documentsSkipped,
+    documentsSoftDeleted,
     errors,
     lastSyncedAt: runStartedAt,
   };

@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { parseAddressFromBiens } from "@/lib/mynotary/register-entry-parsers";
+import {
+  isEntrySigned,
+  parseAddressFromBiens,
+} from "@/lib/mynotary/register-entry-parsers";
 
 describe("parseAddressFromBiens", () => {
   it("strips the 'Typologie :' prefix", () => {
@@ -38,5 +41,50 @@ describe("parseAddressFromBiens", () => {
     expect(parseAddressFromBiens(undefined)).toBeNull();
     expect(parseAddressFromBiens("")).toBeNull();
     expect(parseAddressFromBiens("   \n  ")).toBeNull();
+  });
+});
+
+describe("isEntrySigned", () => {
+  it("treats VALIDATED entries as signed", () => {
+    expect(
+      isEntrySigned({
+        status: "VALIDATED",
+        observations:
+          "Date de lancement de la signature du mandat : 26/03/2026\nDate de signature du mandat : 07/04/2026",
+      })
+    ).toBe(true);
+  });
+
+  it("treats RESERVED entries without confirmed signature as not signed", () => {
+    expect(
+      isEntrySigned({
+        status: "RESERVED",
+        observations:
+          "Date de lancement de la signature du mandat : 27/05/2026",
+      })
+    ).toBe(false);
+  });
+
+  it("treats RESERVED entries with an explicit signature date as signed (defensive)", () => {
+    expect(
+      isEntrySigned({
+        status: "RESERVED",
+        observations:
+          "Date de lancement de la signature du mandat : 27/05/2026\nDate de signature du mandat : 28/05/2026",
+      })
+    ).toBe(true);
+  });
+
+  it("treats CLOSED entries as not signed unless observations confirm a signature", () => {
+    expect(
+      isEntrySigned({
+        status: "CLOSED",
+        observations: "",
+      })
+    ).toBe(false);
+  });
+
+  it("treats entries without a status as not signed", () => {
+    expect(isEntrySigned({})).toBe(false);
   });
 });
