@@ -53,6 +53,43 @@ export const parseAddressFromBiens = (
   return stripped;
 };
 
+// Register entries ship the people who signed the contract as free-form
+// text in `mandants`, typically formatted as
+//   "Monsieur LEVI Mickaël Roland - 81 Rue Saint-Lazare, Paris (75009), France\n
+//    Madame UZZAN Vanessa Ketty - 81 Rue Saint-Lazare, Paris (75009), France"
+// Multi-signer mandates list each person on its own line.
+// We extract a list of normalized "NOM Prénom" strings so the auto-
+// matcher can fuzz-match them against `seller_leads.full_name`.
+const CIVILITY_PREFIX_RE =
+  /^\s*(monsieur|madame|mademoiselle|m\.|mme|mlle|me|maître|maitre|dr|docteur|sci|sasu?|sarl|sa|gie|eurl|sci|s\.c\.i\.?)\s+/i;
+
+export const parseSellerNamesFromMandants = (
+  mandants: string | undefined | null
+): string[] => {
+  if (!mandants) return [];
+  const lines = mandants
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+
+  const names: string[] = [];
+  for (const line of lines) {
+    // Drop the trailing address (everything after the first " - "
+    // or " — " separator).
+    const beforeAddress = line.split(/\s+[-—]\s+/)[0]?.trim() ?? line;
+    if (!beforeAddress) continue;
+    // Strip the leading civility / legal-form prefix.
+    const withoutCivility = beforeAddress.replace(CIVILITY_PREFIX_RE, "").trim();
+    if (withoutCivility.length === 0) continue;
+    // Re-collapse multiple whitespaces.
+    const normalized = withoutCivility.replace(/\s+/g, " ").trim();
+    if (normalized.length === 0) continue;
+    names.push(normalized);
+  }
+  // Dedup, preserve order.
+  return Array.from(new Set(names));
+};
+
 // `RegisterEntry.status` semantics (cf. MyNotary OpenAPI):
 //   - "VALIDATED": the contract has been signed by every party.
 //   - "RESERVED" : the entry exists (number reserved) but the

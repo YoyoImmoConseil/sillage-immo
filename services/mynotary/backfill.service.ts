@@ -10,6 +10,7 @@ import type {
 import {
   isEntrySigned,
   parseAddressFromBiens,
+  parseSellerNamesFromMandants,
   parseSignedAtFromObservations,
 } from "@/lib/mynotary/register-entry-parsers";
 import {
@@ -236,10 +237,13 @@ export const runIncrementalBackfill = async (
           continue;
         }
         const inlineAddress = parseAddressFromBiens(entry.biens);
+        const inlineSellerNames = parseSellerNamesFromMandants(entry.mandants);
         try {
           const outcome = await processSignatureCompleted({
             payload,
             inlineAddress,
+            inlineSellerNames,
+            inlineRawEntry: entry,
             source: "backfill",
             registerType: register,
           });

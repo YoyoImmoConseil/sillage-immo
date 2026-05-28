@@ -75,6 +75,17 @@ export type ProcessSignatureCompletedInput = {
   // already carry the property address — we forward it to the
   // matcher to avoid an extra API call.
   inlineAddress?: string | null;
+  // Optional list of seller names parsed from /register-entries'
+  // free-form `mandants` field. The matcher uses them as a fallback
+  // when no signer email is available (typical for the backfill
+  // path).
+  inlineSellerNames?: string[] | null;
+  // Optional verbatim register entry (only set on the backfill
+  // path). We persist it inside `raw_payload.entry` so downstream
+  // re-enrichment can read fields we don't model yet (e.g.
+  // `legalOperationLabel`, `dateFinMandat`) without re-hitting the
+  // MyNotary API.
+  inlineRawEntry?: Record<string, unknown> | null;
   // Source of the event ("webhook" | "backfill" | "manual"). Stored
   // in raw_payload for audit.
   source: "webhook" | "backfill" | "manual";
@@ -146,7 +157,14 @@ const resolveSignedAt = (
 export const processSignatureCompleted = async (
   input: ProcessSignatureCompletedInput
 ): Promise<ProcessSignatureCompletedResult> => {
-  const { payload, inlineAddress, source, registerType } = input;
+  const {
+    payload,
+    inlineAddress,
+    inlineSellerNames,
+    inlineRawEntry,
+    source,
+    registerType,
+  } = input;
 
   const contractKind = resolveContractKind(payload.contractType);
   const mynotaryContractId = String(payload.contractId);
@@ -185,6 +203,14 @@ export const processSignatureCompleted = async (
           source,
           register_type: registerType ?? null,
           payload: payload as unknown as Record<string, unknown>,
+          // Persist the verbatim register entry (when available) so
+          // re-enrichment / re-matching can run without a fresh
+          // MyNotary roundtrip.
+          entry: inlineRawEntry ?? null,
+          parsed: {
+            inline_address: inlineAddress ?? null,
+            inline_seller_names: inlineSellerNames ?? null,
+          },
         },
       },
       { onConflict: "mynotary_contract_id" }
@@ -202,13 +228,32 @@ export const processSignatureCompleted = async (
     sellerProjectId: null as string | null,
     propertyId: null as string | null,
     confidence: 0,
-    method: "none" as "email_exact" | "address_exact" | "address_fuzzy" | "manual" | "none",
+    method: "none" as
+      | "email_exact"
+      | "name_exact"
+      | "address_exact"
+      | "address_fuzzy"
+      | "name_fuzzy"
+      | "manual"
+      | "none",
   };
+  // When a webhook payload ships structured signers, synthesise a
+  // "Lastname Firstname" name list so the matcher's name-based path
+  // also runs against `seller_leads.full_name`. We dedupe between
+  // these names and any caller-supplied inlineSellerNames.
+  const namesFromSigners = signers
+    .map((s) => `${s.firstName ?? ""} ${s.lastName ?? ""}`.trim())
+    .filter((n) => n.length > 0);
+  const allInlineNames = Array.from(
+    new Set([...(inlineSellerNames ?? []), ...namesFromSigners])
+  );
+
   try {
     const m = await matchSignedDocument({
       mynotaryOperationId,
       signers,
       inlineAddress: inlineAddress ?? null,
+      inlineSellerNames: allInlineNames.length > 0 ? allInlineNames : null,
     });
     matchOutcome = m;
   } catch {

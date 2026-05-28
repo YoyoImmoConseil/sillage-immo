@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   isEntrySigned,
   parseAddressFromBiens,
+  parseSellerNamesFromMandants,
 } from "@/lib/mynotary/register-entry-parsers";
 
 describe("parseAddressFromBiens", () => {
@@ -86,5 +87,46 @@ describe("isEntrySigned", () => {
 
   it("treats entries without a status as not signed", () => {
     expect(isEntrySigned({})).toBe(false);
+  });
+});
+
+describe("parseSellerNamesFromMandants", () => {
+  it("extracts two mandants and strips civilities + addresses", () => {
+    const input =
+      "Monsieur LEVI Mickaël Roland - 81 Rue Saint-Lazare, Paris (75009), France\n" +
+      "Madame UZZAN Vanessa Ketty - 81 Rue Saint-Lazare, Paris (75009), France";
+    expect(parseSellerNamesFromMandants(input)).toEqual([
+      "LEVI Mickaël Roland",
+      "UZZAN Vanessa Ketty",
+    ]);
+  });
+
+  it("strips legal-form prefixes (SCI / SAS / SARL)", () => {
+    const input = "Autre, SCI NONO - 8 Impasse Jean Mermoz, CAGNES-SUR-MER (06800)";
+    // "Autre, " is a tag MyNotary puts before legal entities. We don't
+    // model it explicitly, but the parser must NOT keep the leading
+    // "Autre," fragment either — it should leave the SCI name visible.
+    const out = parseSellerNamesFromMandants(input);
+    expect(out.length).toBe(1);
+    expect(out[0]).toContain("SCI NONO");
+  });
+
+  it("supports the em-dash separator between name and address", () => {
+    expect(
+      parseSellerNamesFromMandants("Monsieur DUTTO Julien — 12 Rue X, Nice")
+    ).toEqual(["DUTTO Julien"]);
+  });
+
+  it("dedupes identical mandants", () => {
+    const input =
+      "Monsieur LEVI Mickaël - addr1\nMonsieur LEVI Mickaël - addr2";
+    expect(parseSellerNamesFromMandants(input)).toEqual(["LEVI Mickaël"]);
+  });
+
+  it("returns an empty list on empty / nullish input", () => {
+    expect(parseSellerNamesFromMandants(null)).toEqual([]);
+    expect(parseSellerNamesFromMandants(undefined)).toEqual([]);
+    expect(parseSellerNamesFromMandants("")).toEqual([]);
+    expect(parseSellerNamesFromMandants("   \n  ")).toEqual([]);
   });
 });
