@@ -37,6 +37,27 @@ Headers used on every call:
 - `x-api-key`         : application token (per environment)
 - `x-api-date-version`: `2` (ISO timestamps in responses)
 
+### Register entry filtering rules
+
+`/register-entries` returns **every** entry that ever got a register
+number, including those that are still mid-signature or were
+abandoned. Only `status = "VALIDATED"` entries are actually signed.
+Our backfill engine filters on `isEntrySigned()`:
+
+- `VALIDATED`                                                   → ingest as signed
+- `RESERVED` (signature launched, not yet completed)            → skip + soft-delete any stale row we may have stored
+- `CLOSED`   (abandoned)                                        → skip + soft-delete
+
+The `observations` field is a free-form French text — we additionally
+parse it to recover the actual signature date (`Date de signature du
+mandat : DD/MM/YYYY`), because the entry's `creationTime` is the day
+the register number was reserved, not the signature day.
+
+The TRANSACTION register at Sillage currently only holds exclusive
+sale mandates (`Mandat de vente Exclusif`) reserving a future
+transaction slot; actual offers, compromis, and actes will appear in
+this register once a contract is launched against the operation.
+
 We also receive 3 webhook event types:
 
 - `signature_completed` — the only event that actually ingests rows.
