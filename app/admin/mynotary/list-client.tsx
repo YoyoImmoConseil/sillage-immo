@@ -14,8 +14,29 @@ type Filters = {
 
 const KIND_LABEL: Record<string, string> = {
   mandate: "Mandat",
-  purchase_offer: "Offre",
+  purchase_offer: "Offre d'achat",
   preliminary_sale: "Compromis",
+};
+
+const REGISTER_LABEL: Record<string, string> = {
+  MANAGEMENT: "Gestion",
+  TRANSACTION: "Transaction",
+};
+
+const MATCH_METHOD_LABEL: Record<string, string> = {
+  email_exact: "Rattaché par e-mail",
+  address_exact: "Adresse identique",
+  address_fuzzy: "Adresse approchante",
+  manual: "Rattachement manuel",
+  none: "À rattacher",
+};
+
+const MATCH_METHOD_TONE: Record<string, string> = {
+  email_exact: "bg-emerald-100 text-emerald-900 border-emerald-300",
+  address_exact: "bg-emerald-100 text-emerald-900 border-emerald-300",
+  address_fuzzy: "bg-amber-100 text-amber-900 border-amber-300",
+  manual: "bg-blue-100 text-blue-900 border-blue-300",
+  none: "bg-[#141446]/5 text-[#141446]/60 border-[#141446]/15",
 };
 
 const formatDate = (iso: string) =>
@@ -24,12 +45,38 @@ const formatDate = (iso: string) =>
     timeStyle: "short",
   }).format(new Date(iso));
 
-const formatConfidence = (row: SignedDocumentRow) => {
-  if (row.matched_seller_project_id === null && row.matched_property_id === null) {
-    return "Non matché";
+const formatTypeBadges = (row: SignedDocumentRow) => {
+  const kindLabel = KIND_LABEL[row.contract_kind] ?? row.contract_kind;
+  const subLabel = row.contract_type_raw?.trim() || null;
+  const registerLabel = row.mynotary_register_type
+    ? REGISTER_LABEL[row.mynotary_register_type]
+    : null;
+  return { kindLabel, subLabel, registerLabel };
+};
+
+const formatMatching = (row: SignedDocumentRow) => {
+  const method = (row.match_method ?? "none") as keyof typeof MATCH_METHOD_LABEL;
+  const isMatched =
+    row.matched_seller_project_id !== null ||
+    row.matched_property_id !== null;
+  if (!isMatched) {
+    return {
+      label: "À rattacher",
+      tone: MATCH_METHOD_TONE.none,
+      hint: "Aucun rapprochement automatique trouvé.",
+    } as const;
   }
   const pct = Math.round((row.match_confidence ?? 0) * 100);
-  return `${pct}% (${row.match_method ?? "n/a"})`;
+  return {
+    label: MATCH_METHOD_LABEL[method] ?? method,
+    tone: MATCH_METHOD_TONE[method] ?? MATCH_METHOD_TONE.none,
+    hint:
+      method === "address_fuzzy"
+        ? `Confiance ${pct}% — à valider manuellement avant de remonter dans les KPIs.`
+        : method === "address_exact" || method === "email_exact"
+          ? `Confiance ${pct}% — rattachement fiable.`
+          : `Confiance ${pct}%.`,
+  } as const;
 };
 
 export function MyNotaryListClient({
@@ -200,14 +247,35 @@ export function MyNotaryListClient({
                     return name || s.email || "—";
                   })
                   .join(", ") || "—";
+              const { kindLabel, subLabel, registerLabel } = formatTypeBadges(row);
+              const matching = formatMatching(row);
               return (
                 <tr key={row.id} className="text-[#141446]">
-                  <td className="px-3 py-2 font-medium">
-                    {KIND_LABEL[row.contract_kind] ?? row.contract_kind}
+                  <td className="px-3 py-2 font-medium align-top">
+                    <div className="flex flex-col gap-0.5">
+                      <span>{kindLabel}</span>
+                      {subLabel ? (
+                        <span className="text-xs font-normal text-[#141446]/70">
+                          {subLabel}
+                        </span>
+                      ) : null}
+                      {registerLabel ? (
+                        <span className="inline-flex w-fit items-center rounded-full bg-[#141446]/8 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-[#141446]/70">
+                          {registerLabel}
+                        </span>
+                      ) : null}
+                    </div>
                   </td>
-                  <td className="px-3 py-2 text-[#141446]/80">{formatDate(row.signed_at)}</td>
-                  <td className="px-3 py-2 text-[#141446]/80">{signersLabel}</td>
-                  <td className="px-3 py-2 text-[#141446]/80">{formatConfidence(row)}</td>
+                  <td className="px-3 py-2 text-[#141446]/80 align-top">{formatDate(row.signed_at)}</td>
+                  <td className="px-3 py-2 text-[#141446]/80 align-top">{signersLabel}</td>
+                  <td className="px-3 py-2 align-top">
+                    <span
+                      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${matching.tone}`}
+                      title={matching.hint}
+                    >
+                      {matching.label}
+                    </span>
+                  </td>
                   <td className="px-3 py-2">
                     <div className="flex flex-col gap-1">
                       {row.signed_document_path || firstFile ? (
