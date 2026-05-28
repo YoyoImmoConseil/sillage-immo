@@ -127,17 +127,44 @@ type MatchSellerProjectAddressRpc = {
   }>;
 };
 
+type MatchSellerProjectNamesRpc = {
+  rpc: (
+    name: "mynotary_match_seller_project_by_names",
+    args: { p_names: string[]; p_min_similarity: number; p_limit: number }
+  ) => Promise<{
+    data: Array<{
+      seller_project_id: string;
+      seller_lead_id: string;
+      full_name: string | null;
+      matched_query: string | null;
+      similarity: number;
+    }> | null;
+    error: { message: string } | null;
+  }>;
+};
+
 type MatchOutcome = {
   sellerProjectId: string | null;
   propertyId: string | null;
   confidence: number;
-  method: "email_exact" | "address_exact" | "address_fuzzy" | "none";
+  method:
+    | "email_exact"
+    | "name_exact"
+    | "address_exact"
+    | "address_fuzzy"
+    | "name_fuzzy"
+    | "none";
 };
 
 export type AutoMatchInput = {
   mynotaryOperationId: string;
   signers: MyNotarySigner[];
   inlineAddress?: string | null;
+  // Names parsed from a register entry's free-form `mandants` field.
+  // Webhooks ship structured `signers[]` instead; in that case we
+  // synthesise this list from signer first+last names so the same
+  // code path works for both ingestion sources.
+  inlineSellerNames?: string[] | null;
 };
 
 const normalizeAddress = (raw: string | null | undefined): string => {
@@ -284,6 +311,35 @@ const findPropertyByFuzzyAddress = async (
   return data[0].property_id ?? null;
 };
 
+// Same as findSellerProjectByLeadAddress but on `seller_leads.full_name`.
+// Triggered when we cannot find a signer email (typical for the
+// /register-entries backfill path: MyNotary ships free-form
+// `mandants` text instead of structured signers).
+const findSellerProjectByNames = async (
+  names: string[]
+): Promise<{
+  sellerProjectId: string;
+  similarity: number;
+} | null> => {
+  if (!names || names.length === 0) return null;
+  const rpcClient = supabaseAdmin as unknown as MatchSellerProjectNamesRpc;
+  const { data, error } = await rpcClient.rpc(
+    "mynotary_match_seller_project_by_names",
+    {
+      p_names: names,
+      p_min_similarity: 0.55,
+      p_limit: 1,
+    }
+  );
+  if (error || !data || data.length === 0) return null;
+  const top = data[0];
+  if (!top?.seller_project_id) return null;
+  return {
+    sellerProjectId: top.seller_project_id,
+    similarity: top.similarity ?? 0,
+  };
+};
+
 // Search seller_leads.property_address for the MyNotary mandate's
 // property address. Returns the most recently-updated seller_project
 // tied to that lead, with the trigram similarity score so the caller
@@ -343,6 +399,33 @@ export const matchSignedDocument = async (
     }
   }
 
+  // Name-based path: when emails are absent (backfill case), try
+  // to recover the seller_project via the free-form `mandants` text
+  // parsed upstream (or signer first+last names synthesised from a
+  // webhook). A high-similarity hit on `seller_leads.full_name`
+  // (≥ 0.85) is treated as an "exact name" match (confidence 0.85)
+  // and promotes the mandate. A weaker hit (0.55–0.85) becomes a
+  // `name_fuzzy` candidate that the operator confirms manually.
+  const inlineNames = (input.inlineSellerNames ?? []).filter(
+    (n) => typeof n === "string" && n.trim().length > 0
+  );
+  let weakNameMatch: { sellerProjectId: string; similarity: number } | null =
+    null;
+  if (inlineNames.length > 0) {
+    const byNames = await findSellerProjectByNames(inlineNames);
+    if (byNames) {
+      if (byNames.similarity >= 0.85) {
+        return {
+          sellerProjectId: byNames.sellerProjectId,
+          propertyId: null,
+          confidence: 0.85,
+          method: "name_exact",
+        };
+      }
+      weakNameMatch = byNames;
+    }
+  }
+
   const rawAddress =
     input.inlineAddress && input.inlineAddress.length > 0
       ? input.inlineAddress
@@ -390,6 +473,18 @@ export const matchSignedDocument = async (
         method: "address_fuzzy",
       };
     }
+  }
+
+  // Last resort: a weak name-similarity hit that we collected
+  // earlier — surface it so the operator sees a candidate in the
+  // "Rattacher" modal instead of facing "À rattacher" with no hint.
+  if (weakNameMatch) {
+    return {
+      sellerProjectId: weakNameMatch.sellerProjectId,
+      propertyId: null,
+      confidence: 0.4,
+      method: "name_fuzzy",
+    };
   }
 
   return {

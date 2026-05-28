@@ -25,16 +25,20 @@ const REGISTER_LABEL: Record<string, string> = {
 
 const MATCH_METHOD_LABEL: Record<string, string> = {
   email_exact: "Rattaché par e-mail",
+  name_exact: "Rattaché par nom",
   address_exact: "Adresse identique",
   address_fuzzy: "Adresse approchante",
+  name_fuzzy: "Nom approchant",
   manual: "Rattachement manuel",
   none: "À rattacher",
 };
 
 const MATCH_METHOD_TONE: Record<string, string> = {
   email_exact: "bg-emerald-100 text-emerald-900 border-emerald-300",
+  name_exact: "bg-emerald-100 text-emerald-900 border-emerald-300",
   address_exact: "bg-emerald-100 text-emerald-900 border-emerald-300",
   address_fuzzy: "bg-amber-100 text-amber-900 border-amber-300",
+  name_fuzzy: "bg-amber-100 text-amber-900 border-amber-300",
   manual: "bg-blue-100 text-blue-900 border-blue-300",
   none: "bg-[#141446]/5 text-[#141446]/60 border-[#141446]/15",
 };
@@ -71,9 +75,11 @@ const formatMatching = (row: SignedDocumentRow) => {
     label: MATCH_METHOD_LABEL[method] ?? method,
     tone: MATCH_METHOD_TONE[method] ?? MATCH_METHOD_TONE.none,
     hint:
-      method === "address_fuzzy"
+      method === "address_fuzzy" || method === "name_fuzzy"
         ? `Confiance ${pct}% — à valider manuellement avant de remonter dans les KPIs.`
-        : method === "address_exact" || method === "email_exact"
+        : method === "address_exact" ||
+            method === "email_exact" ||
+            method === "name_exact"
           ? `Confiance ${pct}% — rattachement fiable.`
           : `Confiance ${pct}%.`,
   } as const;
