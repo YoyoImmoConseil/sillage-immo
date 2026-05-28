@@ -182,8 +182,18 @@ export const runIncrementalBackfill = async (
   }
   const organizationId = serverEnv.MYNOTARY_ORGANIZATION_ID;
   const runStartedAt = new Date().toISOString();
+  // Manual runs always do a full re-scan: a human pressing the
+  // "Synchroniser MyNotary" button expects to recover lost / missed
+  // documents, not to be filtered by a checkpoint that the previous
+  // (possibly broken) run set.
+  // Scripts also bypass the checkpoint unless an explicit
+  // `signedSince` is provided.
+  const useCheckpoint =
+    input.trigger === "cron" && input.signedSince === undefined;
   const checkpoint =
-    input.signedSince ?? (await readLastSyncedAt()) ?? null;
+    input.signedSince ??
+    (useCheckpoint ? await readLastSyncedAt() : null) ??
+    null;
 
   let pagesScanned = 0;
   let entriesSeen = 0;
@@ -231,7 +241,14 @@ export const runIncrementalBackfill = async (
     }
   }
 
-  if (input.trigger !== "manual" || errors === 0) {
+  // Only advance the checkpoint if the run was clean AND actually
+  // observed entries. Advancing on "0 seen / 0 upserted" would
+  // poison the next run (it'd skip every historical entry as
+  // "older than checkpoint"), which is exactly the bug that
+  // surfaced on the very first prod backfill.
+  const cleanRun = errors === 0;
+  const sawSomething = entriesSeen > 0;
+  if (cleanRun && sawSomething) {
     await writeLastSyncedAt(runStartedAt);
   }
 
