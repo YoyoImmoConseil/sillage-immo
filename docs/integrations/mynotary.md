@@ -40,9 +40,15 @@ Headers used on every call:
 We also receive 3 webhook event types:
 
 - `signature_completed` — the only event that actually ingests rows.
-  Payload ships `files[].url` with **short-lived signed URLs** for the
-  signed PDFs; we download + archive them in our Storage bucket on
-  receipt.
+  Payload ships `files[].url`. MyNotary's dev team confirmed (Q3 2026)
+  that these URLs **do not expire**, but they require the same
+  `x-api-key` header as the rest of the API. We therefore:
+  - mirror the PDFs into our private Supabase Storage bucket on
+    receipt (best-effort, fault tolerant), so a browser link can be
+    minted later without exposing the API key, AND
+  - keep a server-side proxy (`/api/admin/mynotary/[id]/download`)
+    that streams the file from MyNotary with the key when no archive
+    exists.
 - `signature_cancel`    — soft-deletes a previously stored document.
 - `operation_deleted`   — soft-deletes any document tied to the operation.
 
@@ -156,21 +162,34 @@ A manager can manually attach an unmatched document via
 ## How the signed PDF is archived
 
 `services/mynotary/archive-signed-document.service.ts` downloads each
-file in `signature_completed.files[]` (max 20 MB / file) and pushes
-it to the **private** `mynotary-archives` Supabase Storage bucket.
+file in `signature_completed.files[]` (max 20 MB / file) **with the
+`x-api-key` header set to `MYNOTARY_API_KEY`** (their CDN rejects
+unauthenticated requests) and pushes it to the **private**
+`mynotary-archives` Supabase Storage bucket.
 
 - Files whose name hints at an eIDAS audit trail (`preuve`,
   `proof`, `certificat`, `audit`, `eidas`) are stored as
-  `signature_proof_path`.
+  `signature_proof_path`. As of Q3 2026 MyNotary does not yet ship a
+  dedicated eIDAS proof file — they re-evaluate at T4. The column
+  stays nullable until then.
 - Every other file is stored as `signed_document_path`.
 
-The admin UI exposes short-lived (5 min) signed download URLs via
-`GET /api/admin/mynotary/<id>/download?kind=signed|proof`. The
-underlying objects never leave the bucket — RLS is service-role-only.
+### Download endpoint
 
-If MyNotary later confirms a dedicated endpoint for the eIDAS proof,
-the archive service can be extended to fetch it on demand without a
-schema change (the column already exists).
+`GET /api/admin/mynotary/<id>/download?kind=signed|proof` has two
+fallbacks:
+
+1. If an archive object exists in Supabase Storage, mint a 5 min
+   signed URL and 302 the browser to it. The bucket RLS is
+   service-role-only so the underlying object never leaves the
+   bucket directly.
+2. Otherwise (archive failed, or pre-existing document delivered
+   before the archive service was wired), proxy the bytes from
+   MyNotary on the server side, injecting `x-api-key` so the
+   browser doesn't need to know it.
+
+This guarantees a working download link for every row without ever
+exposing the API key to the client.
 
 ## Operations runbook
 
@@ -184,6 +203,7 @@ schema change (the column already exists).
 - To purge a wrongly-stored document: soft-delete via
   `update mynotary_signed_documents set deleted_at = now()` — the
   dashboard and MCP tools both filter on `deleted_at is null`.
-- Archive failures are non-blocking: the document row still exists
-  and the original (short-lived) `files[].url` remains visible in the
-  list UI under "Ouvrir (MyNotary)" until it expires.
+- Archive failures are non-blocking: the document row still exists,
+  and the list UI link continues to work because the download
+  endpoint transparently falls back to a server-side proxy fetch
+  from MyNotary.

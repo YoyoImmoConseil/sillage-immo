@@ -47,13 +47,21 @@ const looksLikeProofFile = (name: string): boolean => {
   );
 };
 
+// MyNotary's signed-document URLs are **not** time-limited (confirmed
+// by their dev team, Q3 2026) but they DO require our application
+// `x-api-key` header to authorize the download — without it the CDN
+// returns 401/403. We therefore re-use the same key as the rest of
+// the MyNotary client (`MYNOTARY_API_KEY`).
 const downloadFile = async (
   url: string
 ): Promise<{ bytes: Buffer; contentType: string }> => {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+  const apiKey = process.env.MYNOTARY_API_KEY ?? "";
   try {
-    const response = await fetch(url, { signal: ctrl.signal });
+    const headers: Record<string, string> = {};
+    if (apiKey) headers["x-api-key"] = apiKey;
+    const response = await fetch(url, { signal: ctrl.signal, headers });
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
     }

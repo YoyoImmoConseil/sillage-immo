@@ -210,24 +210,21 @@ export function MyNotaryListClient({
                   <td className="px-3 py-2 text-[#141446]/80">{formatConfidence(row)}</td>
                   <td className="px-3 py-2">
                     <div className="flex flex-col gap-1">
-                      {row.signed_document_path ? (
+                      {row.signed_document_path || firstFile ? (
                         <a
                           href={`/api/admin/mynotary/${row.id}/download?kind=signed`}
                           target="_blank"
                           rel="noreferrer"
                           className="underline"
+                          title={
+                            row.signed_document_path
+                              ? "PDF archivé localement"
+                              : "Téléchargement via proxy MyNotary"
+                          }
                         >
-                          PDF signé (archive)
-                        </a>
-                      ) : firstFile ? (
-                        <a
-                          href={firstFile.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="underline"
-                          title="Lien MyNotary direct (peut expirer)"
-                        >
-                          Ouvrir (MyNotary)
+                          {row.signed_document_path
+                            ? "PDF signé (archive)"
+                            : "PDF signé (MyNotary)"}
                         </a>
                       ) : (
                         <span className="text-[#141446]/40">—</span>
