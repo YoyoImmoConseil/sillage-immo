@@ -240,8 +240,17 @@ export const getRecord = async (
 // Per the spec, the endpoint is REQUIRED-paginated and a `type` filter
 // must be provided per call (MANAGEMENT for mandats, TRANSACTION for
 // promesses / compromis / actes). The caller is expected to iterate
-// `page` until the API returns fewer than `pageSize` entries — there
-// is no cursor / `nextCursor` field in the response.
+// `page` until the API returns fewer than `pageSize` entries.
+//
+// IMPORTANT — pagination is **0-indexed** (empirically confirmed
+// against api.mynotary.fr/api/v1, Q2 2026): page=0 returns the first
+// batch, page=1 the next, etc. Asking for page=1 on a register that
+// has fewer than pageSize entries returns `{ items: [], total: N }`
+// instead of repeating the same page or erroring out — which is the
+// bug we hit on the very first prod backfill.
+//
+// We expose a `total` field on the response so the caller can also
+// stop early when `(page + 1) * pageSize >= total`.
 export type GetRegisterEntriesParams = {
   organizationId: string;
   type: MyNotaryRegisterType;
@@ -257,6 +266,7 @@ export const getRegisterEntries = async (
   const data = await callMyNotary<{
     items?: MyNotaryRegisterEntriesPage["entries"];
     entries?: MyNotaryRegisterEntriesPage["entries"];
+    total?: number;
     totalCount?: number;
   }>({
     method: "GET",
@@ -269,18 +279,28 @@ export const getRegisterEntries = async (
       status: params.status,
     },
   });
-  // Tolerate both `items` and `entries` keys — the spec uses
-  // `RegisterEntryList { items: RegisterEntry[] }` but we keep the
-  // fallback in case of inline variations.
   const entries = Array.isArray(data?.items)
     ? data.items
     : Array.isArray(data?.entries)
       ? data.entries
       : [];
+  const total =
+    typeof data?.total === "number"
+      ? data.total
+      : typeof data?.totalCount === "number"
+        ? data.totalCount
+        : undefined;
+  // Two complementary signals for the caller:
+  // - `hasMore=false` if we fetched fewer than `pageSize` items, OR
+  //   if we know `total` and the next page is past the end.
+  const consumed = (params.page + 1) * pageSize;
+  const hasMore =
+    entries.length === pageSize && (total === undefined || consumed < total);
   return {
     entries,
     page: params.page,
     pageSize,
-    hasMore: entries.length === pageSize,
+    hasMore,
+    total,
   };
 };
