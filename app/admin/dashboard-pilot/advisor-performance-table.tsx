@@ -12,15 +12,28 @@ import {
 } from "@tremor/react";
 import type { AdvisorRow } from "@/services/admin/dashboard-aggregator.service";
 
-export function AdvisorPerformanceTable({ rows }: { rows: AdvisorRow[] }) {
+export function AdvisorPerformanceTable({
+  rows,
+  periodLabel,
+}: {
+  rows: AdvisorRow[];
+  periodLabel?: string;
+}) {
   return (
     <Card className="bg-white/80">
       <Title className="text-[#141446]">
-        Performance conseillers (90 j) — manager &amp; admin uniquement
+        Performance conseillers — manager &amp; admin uniquement
       </Title>
+      {periodLabel ? (
+        <p className="mt-1 text-xs text-[#141446]/60">
+          Activité projets sur la période :{" "}
+          <span className="font-semibold text-[#141446]">{periodLabel}</span>.
+          Les conseillers sans projet sur la période apparaissent à 0.
+        </p>
+      ) : null}
       {rows.length === 0 ? (
         <p className="mt-4 text-sm text-[#141446]/60">
-          Aucun conseiller actif sur la période.
+          Aucun conseiller actif.
         </p>
       ) : (
         <Table className="mt-3">

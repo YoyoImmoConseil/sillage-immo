@@ -152,7 +152,12 @@ async function PilotDashboardCore({
         <TopZonesTable rows={snapshot.topZones} />
       </div>
 
-      {canSeeAdvisors ? <AdvisorPerformanceTable rows={snapshot.advisors} /> : null}
+      {canSeeAdvisors ? (
+        <AdvisorPerformanceTable
+          rows={snapshot.advisors}
+          periodLabel={describeSynthesisPeriod(periodInput)}
+        />
+      ) : null}
 
       <ConversationsInsights snapshot={snapshot.conversations} />
 

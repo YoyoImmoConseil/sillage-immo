@@ -568,12 +568,15 @@ const fetchAdvisorPerformance = async (
   periodCursor: string,
   topN = 10
 ): Promise<AdvisorRow[]> => {
-  const { data: projectRows } = await supabaseAdmin
-    .from("seller_projects")
-    .select("assigned_admin_profile_id, mandate_status, updated_at")
-    .gte("updated_at", periodCursor)
-    .not("assigned_admin_profile_id", "is", null)
-    .limit(5000);
+  // List every ACTIVE admin profile first, so a conseiller with 0
+  // assigned projects in the period still appears with zeros. This
+  // matches the manager's mental model ("show me my whole team's
+  // numbers, not only the ones who already moved a project").
+  const { data: profileRows } = await supabaseAdmin
+    .from("admin_profiles")
+    .select("id, first_name, last_name, email, is_active")
+    .eq("is_active", true)
+    .limit(500);
 
   type AdvisorAgg = {
     projectsTotal: number;
@@ -581,33 +584,9 @@ const fetchAdvisorPerformance = async (
     mandatesPending: number;
   };
   const agg = new Map<string, AdvisorAgg>();
-  for (const row of (projectRows ?? []) as Array<{
-    assigned_admin_profile_id: string | null;
-    mandate_status: string;
-  }>) {
-    if (!row.assigned_admin_profile_id) continue;
-    const id = row.assigned_admin_profile_id;
-    const current = agg.get(id) ?? {
-      projectsTotal: 0,
-      mandatesSigned: 0,
-      mandatesPending: 0,
-    };
-    current.projectsTotal += 1;
-    if (row.mandate_status === "signed") current.mandatesSigned += 1;
-    else if (row.mandate_status && row.mandate_status !== "none") {
-      current.mandatesPending += 1;
-    }
-    agg.set(id, current);
-  }
 
-  const ids = Array.from(agg.keys());
-  if (ids.length === 0) return [];
-
-  const { data: profileRows } = await supabaseAdmin
-    .from("admin_profiles")
-    .select("id, first_name, last_name, email")
-    .in("id", ids);
-
+  // Seed the aggregator with every active advisor at zero so they
+  // appear even with no project activity in the period.
   const profileById = new Map<string, { displayName: string }>();
   for (const row of (profileRows ?? []) as Array<{
     id: string;
@@ -620,11 +599,48 @@ const fetchAdvisorPerformance = async (
       row.email ||
       "Conseiller";
     profileById.set(row.id, { displayName });
+    agg.set(row.id, {
+      projectsTotal: 0,
+      mandatesSigned: 0,
+      mandatesPending: 0,
+    });
   }
 
-  return ids
-    .map((id) => {
-      const a = agg.get(id)!;
+  // Overlay seller_project activity for the chosen window.
+  const { data: projectRows } = await supabaseAdmin
+    .from("seller_projects")
+    .select("assigned_admin_profile_id, mandate_status, updated_at")
+    .gte("updated_at", periodCursor)
+    .not("assigned_admin_profile_id", "is", null)
+    .limit(5000);
+
+  for (const row of (projectRows ?? []) as Array<{
+    assigned_admin_profile_id: string | null;
+    mandate_status: string;
+  }>) {
+    if (!row.assigned_admin_profile_id) continue;
+    const id = row.assigned_admin_profile_id;
+    // Edge case: a project assigned to an inactive / removed profile.
+    // We still want it counted somewhere, so we insert a placeholder.
+    const current =
+      agg.get(id) ?? {
+        projectsTotal: 0,
+        mandatesSigned: 0,
+        mandatesPending: 0,
+      };
+    current.projectsTotal += 1;
+    if (row.mandate_status === "signed") current.mandatesSigned += 1;
+    else if (row.mandate_status && row.mandate_status !== "none") {
+      current.mandatesPending += 1;
+    }
+    agg.set(id, current);
+    if (!profileById.has(id)) {
+      profileById.set(id, { displayName: "Conseiller (inactif)" });
+    }
+  }
+
+  return Array.from(agg.entries())
+    .map(([id, a]) => {
       const profile = profileById.get(id);
       return {
         adminProfileId: id,
@@ -634,7 +650,15 @@ const fetchAdvisorPerformance = async (
         mandatesPending: a.mandatesPending,
       };
     })
-    .sort((a, b) => b.mandatesSigned - a.mandatesSigned || b.projectsTotal - a.projectsTotal)
+    // Active advisors with most activity first; ties broken by
+    // alphabetic display name so the order is stable and the user
+    // can scan the team list predictably.
+    .sort(
+      (a, b) =>
+        b.mandatesSigned - a.mandatesSigned ||
+        b.projectsTotal - a.projectsTotal ||
+        a.displayName.localeCompare(b.displayName, "fr")
+    )
     .slice(0, topN);
 };
 
