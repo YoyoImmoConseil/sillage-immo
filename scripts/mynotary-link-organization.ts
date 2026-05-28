@@ -6,21 +6,25 @@
  * application.
  *
  * What it does:
- *   1. Reads the application token from `MYNOTARY_API_KEY` (env)
+ *   1. Reads the application token from `MYNOTARY_API_KEY` (env).
  *   2. Reads the agency's one-time organization token from --org-token
- *      (or from MYNOTARY_ORGANIZATION_TOKEN env)
- *   3. Calls POST /clients with both headers
- *   4. Prints the returned organizationId
+ *      (or from MYNOTARY_ORGANIZATION_TOKEN env).
+ *   3. Reads the API base URL from `MYNOTARY_API_BASE_URL` (env)
+ *      so the same script works against preprod or production.
+ *   4. Calls POST /clients and prints the returned organizationId.
  *
  * The organizationId is then stored once in Vercel as
  * `MYNOTARY_ORGANIZATION_ID` and reused by every other MyNotary call.
  *
+ * Standalone : this script does NOT import lib/mynotary/client.ts so
+ * it can run via tsx without dragging the Next.js-only
+ * `server-only` module into the dependency graph.
+ *
  * Usage:
- *   MYNOTARY_API_KEY=xxx \
- *   npm run mynotary:link-organization -- --org-token=<org-one-time-token>
+ *   MYNOTARY_API_KEY=<app-key> \
+ *   MYNOTARY_API_BASE_URL=https://api.mynotary.fr/api/v1 \
+ *   npm run mynotary:link-organization -- --org-token=<one-time-org-token>
  */
-
-import { linkOrganization } from "@/lib/mynotary/client";
 
 const readFlag = (name: string): string | null => {
   const prefix = `--${name}=`;
@@ -30,6 +34,12 @@ const readFlag = (name: string): string | null => {
     }
   }
   return null;
+};
+
+type OrganizationDto = {
+  id?: number | string;
+  name?: string;
+  address?: string;
 };
 
 const main = async () => {
@@ -42,39 +52,79 @@ const main = async () => {
       "Missing organization token.\n" +
         "Usage:\n" +
         "  MYNOTARY_API_KEY=<app-key> \\\n" +
+        "  MYNOTARY_API_BASE_URL=https://api.mynotary.fr/api/v1 \\\n" +
         "  npm run mynotary:link-organization -- --org-token=<one-time-org-token>\n" +
         "or set MYNOTARY_ORGANIZATION_TOKEN in your env."
     );
     process.exit(1);
   }
 
-  if (!process.env.MYNOTARY_API_KEY) {
+  const apiKey = process.env.MYNOTARY_API_KEY;
+  if (!apiKey) {
     console.error(
       "Missing MYNOTARY_API_KEY env var (the application token issued by MyNotary support)."
     );
     process.exit(1);
   }
 
-  console.log("Calling POST /clients on MyNotary…");
+  const baseUrl = (
+    process.env.MYNOTARY_API_BASE_URL ?? "https://api.mynotary.fr/api/v1"
+  ).replace(/\/+$/, "");
+
+  console.log(`Calling POST ${baseUrl}/clients on MyNotary…`);
+  let response: Response;
   try {
-    const org = await linkOrganization(orgToken);
-    console.log("\nSuccess. organizationId =", org.id);
-    if (org.name) console.log("  name    :", org.name);
-    if (org.address) console.log("  address :", org.address);
-    console.log(
-      "\nNext: add this value to Vercel as MYNOTARY_ORGANIZATION_ID " +
-        "(matching environment), then redeploy."
-    );
+    response = await fetch(`${baseUrl}/clients`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "x-api-date-version": "2",
+      },
+      body: JSON.stringify({ apiKey: orgToken }),
+    });
   } catch (err) {
     console.error(
-      "Linking failed:",
+      "Network error:",
       err instanceof Error ? err.message : String(err)
     );
-    if (err && typeof err === "object" && "responseBody" in err) {
-      console.error("Response body:", (err as { responseBody?: unknown }).responseBody);
-    }
     process.exit(1);
   }
+
+  const text = await response.text();
+  let parsed: unknown = null;
+  if (text.length > 0) {
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      parsed = text;
+    }
+  }
+
+  if (!response.ok) {
+    console.error(
+      `MyNotary POST /clients returned ${response.status}.`
+    );
+    console.error("Response body:", parsed);
+    process.exit(1);
+  }
+
+  const data = (parsed ?? {}) as OrganizationDto;
+  if (data.id === undefined || data.id === null) {
+    console.error(
+      "MyNotary POST /clients did not return an organization id; check the token."
+    );
+    console.error("Response body:", parsed);
+    process.exit(1);
+  }
+
+  console.log("\nSuccess. organizationId =", String(data.id));
+  if (data.name) console.log("  name    :", data.name);
+  if (data.address) console.log("  address :", data.address);
+  console.log(
+    "\nNext: add this value to Vercel as MYNOTARY_ORGANIZATION_ID " +
+      "(matching environment), then redeploy."
+  );
 };
 
 main();
