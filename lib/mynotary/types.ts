@@ -133,14 +133,17 @@ export type MyNotaryRegisterEntry = {
   raw?: Record<string, unknown>;
 };
 
-// MyNotary's `RegisterEntryList { items: RegisterEntry[] }` uses page
-// numbers (no cursor). We expose `page` + `hasMore` to make the
-// backfill loop deterministic without leaking the underlying detail.
+// MyNotary's `RegisterEntryList { items: RegisterEntry[] }` uses
+// 0-indexed page numbers (no cursor). We expose `page`, `hasMore`,
+// and the raw `total` so the backfill loop can stop early.
 export type MyNotaryRegisterEntriesPage = {
   entries: MyNotaryRegisterEntry[];
   page: number;
   pageSize: number;
   hasMore: boolean;
+  // Total count of entries in the register (across all pages), when
+  // the API reports it. Undefined when MyNotary omits the field.
+  total?: number;
 };
 
 // Returned by POST /clients (cf. OrganizationDto in the spec).

@@ -107,6 +107,29 @@ const inferContractType = (
   return "";
 };
 
+// Register entries don't expose a structured signedAt; the date is
+// embedded inside the free-form `observations` text in DD/MM/YYYY
+// format ("Date de signature du mandat : 07/04/2026"). We do a
+// best-effort parse here so the backfilled KPIs land on the actual
+// signature day rather than on the day MyNotary recorded the entry.
+const SIGNATURE_DATE_RE =
+  /date de signature[^:]*:\s*(\d{1,2})\/(\d{1,2})\/(\d{4})/i;
+
+const parseSignedAtFromObservations = (
+  observations: string | undefined | null
+): string | null => {
+  if (!observations) return null;
+  const match = SIGNATURE_DATE_RE.exec(observations);
+  if (!match) return null;
+  const day = match[1].padStart(2, "0");
+  const month = match[2].padStart(2, "0");
+  const year = match[3];
+  // Anchor to noon UTC so the timestamp falls on the same calendar
+  // day in every common TZ (Europe/Paris in particular).
+  const iso = `${year}-${month}-${day}T12:00:00.000Z`;
+  return Number.isFinite(Date.parse(iso)) ? iso : null;
+};
+
 const entryToPayload = (
   entry: MyNotaryRegisterEntry,
   register: MyNotaryRegisterType
@@ -117,12 +140,19 @@ const entryToPayload = (
   const operationId = entry.operationId ?? entry.legalOperationId ?? null;
   const contractId = entry.contractId ?? entry.id ?? null;
   if (!operationId || !contractId) return null;
+  const observationsSignedAt = parseSignedAtFromObservations(
+    entry.observations
+  );
   return {
     signatureId: entry.id ?? contractId,
     contractId,
     contractType: inferContractType(entry, register),
     operationId,
-    signedAt: entry.signedAt ?? entry.signatureTime ?? entry.creationTime,
+    signedAt:
+      entry.signedAt ??
+      entry.signatureTime ??
+      observationsSignedAt ??
+      entry.creationTime,
     signers: entry.signers,
     files: entry.files,
   };
@@ -162,8 +192,9 @@ export const runIncrementalBackfill = async (
   let errors = 0;
 
   // Iterate both registers; each one is paginated independently.
+  // Page is 0-indexed (cf. lib/mynotary/client.ts comment).
   for (const register of REGISTERS) {
-    for (let page = 1; page <= MAX_PAGES_PER_REGISTER; page += 1) {
+    for (let page = 0; page < MAX_PAGES_PER_REGISTER; page += 1) {
       const result = await getRegisterEntries({
         organizationId,
         type: register,
