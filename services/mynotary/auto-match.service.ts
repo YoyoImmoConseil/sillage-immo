@@ -112,6 +112,21 @@ type MatchAddressRpc = {
   }>;
 };
 
+type MatchSellerProjectAddressRpc = {
+  rpc: (
+    name: "mynotary_match_seller_project_by_address",
+    args: { p_query: string; p_min_similarity: number; p_limit: number }
+  ) => Promise<{
+    data: Array<{
+      seller_project_id: string;
+      seller_lead_id: string;
+      property_address: string | null;
+      similarity: number;
+    }> | null;
+    error: { message: string } | null;
+  }>;
+};
+
 type MatchOutcome = {
   sellerProjectId: string | null;
   propertyId: string | null;
@@ -269,6 +284,42 @@ const findPropertyByFuzzyAddress = async (
   return data[0].property_id ?? null;
 };
 
+// Search seller_leads.property_address for the MyNotary mandate's
+// property address. Returns the most recently-updated seller_project
+// tied to that lead, with the trigram similarity score so the caller
+// can decide whether to trust it as an exact match (≥ 0.85) or only
+// a fuzzy hint.
+//
+// Why both an exact and a fuzzy check share one RPC?
+//   The MyNotary `biens` text frequently re-orders the
+//   street/city/postal code, so a strict normalized equality often
+//   fails. pg_trgm similarity ≥ 0.85 reliably catches those
+//   reorderings without admitting unrelated streets.
+const findSellerProjectByLeadAddress = async (
+  normalizedAddress: string
+): Promise<{
+  sellerProjectId: string;
+  similarity: number;
+} | null> => {
+  if (!normalizedAddress) return null;
+  const rpcClient = supabaseAdmin as unknown as MatchSellerProjectAddressRpc;
+  const { data, error } = await rpcClient.rpc(
+    "mynotary_match_seller_project_by_address",
+    {
+      p_query: normalizedAddress,
+      p_min_similarity: 0.6,
+      p_limit: 1,
+    }
+  );
+  if (error || !data || data.length === 0) return null;
+  const top = data[0];
+  if (!top?.seller_project_id) return null;
+  return {
+    sellerProjectId: top.seller_project_id,
+    similarity: top.similarity ?? 0,
+  };
+};
+
 export const matchSignedDocument = async (
   input: AutoMatchInput
 ): Promise<MatchOutcome> => {
@@ -299,20 +350,41 @@ export const matchSignedDocument = async (
   const normalizedAddress = normalizeAddress(rawAddress);
 
   if (normalizedAddress) {
-    const exactPropertyId = await findPropertyByExactAddress(normalizedAddress);
-    if (exactPropertyId) {
+    // Run the 3 address-based lookups in parallel — they all read
+    // from independent indexes and the auto-match path runs at most
+    // 24 times per sync, so any extra latency is well within budget.
+    const [exactPropertyId, fuzzyPropertyId, leadMatch] = await Promise.all([
+      findPropertyByExactAddress(normalizedAddress),
+      findPropertyByFuzzyAddress(normalizedAddress),
+      findSellerProjectByLeadAddress(normalizedAddress),
+    ]);
+
+    // Strong match: an exact property hit OR a high-similarity hit on
+    // a seller_lead's property_address (≥ 0.85). Either path produces
+    // a confidence ≥ 0.7 — the threshold at which
+    // signature-completed promotes seller_projects.mandate_status to
+    // 'signed'.
+    const strongLead =
+      leadMatch && leadMatch.similarity >= 0.85 ? leadMatch : null;
+    if (exactPropertyId || strongLead) {
       return {
-        sellerProjectId: null,
+        sellerProjectId: strongLead?.sellerProjectId ?? null,
         propertyId: exactPropertyId,
-        confidence: 0.7,
+        // Bump confidence to 0.8 when both sides agree (property
+        // catalog + lead address) so the operator sees the
+        // difference in the table.
+        confidence: exactPropertyId && strongLead ? 0.9 : 0.7,
         method: "address_exact",
       };
     }
 
-    const fuzzyPropertyId = await findPropertyByFuzzyAddress(normalizedAddress);
-    if (fuzzyPropertyId) {
+    // Weaker match: trigram similarity in the 0.6–0.85 band on
+    // either side. We still surface the candidate (the operator can
+    // confirm via the "Rattacher" modal) but we do NOT auto-promote
+    // the seller_project KPIs.
+    if (fuzzyPropertyId || leadMatch) {
       return {
-        sellerProjectId: null,
+        sellerProjectId: leadMatch?.sellerProjectId ?? null,
         propertyId: fuzzyPropertyId,
         confidence: 0.4,
         method: "address_fuzzy",
