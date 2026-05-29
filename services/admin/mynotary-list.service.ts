@@ -15,6 +15,7 @@ type SignedDocumentReader = {
 
 type MaybeChain = {
   eq: (col: string, value: string) => MaybeChain;
+  in: (col: string, values: readonly string[]) => MaybeChain;
   is: (col: string, value: unknown) => MaybeChain;
   gte: (col: string, value: string) => MaybeChain;
   lte: (col: string, value: string) => MaybeChain;
@@ -56,8 +57,20 @@ export type SignedDocumentRow = {
   signature_proof_path: string | null;
 };
 
+// Sale-side contracts that belong to the property/seller reconciliation
+// flow. Everything else (rental_mandate, lease, guarantee,
+// management_mandate, other) is location/gestion and is hidden by default
+// from the matching dashboard.
+export const SALE_CONTRACT_KINDS = [
+  "mandate",
+  "purchase_offer",
+  "preliminary_sale",
+] as const;
+
 export type SignedDocumentsListFilters = {
-  kind?: MyNotaryContractKind | "all";
+  // "all" → sale contracts only (default scope); "all_with_rental" → every
+  // contract incl. location/gestion; a specific kind → that kind only.
+  kind?: MyNotaryContractKind | "all" | "all_with_rental";
   matched?: "matched" | "unmatched" | "all";
   since?: string;
   until?: string;
@@ -89,8 +102,11 @@ export const listSignedDocuments = async (
     )
     .is("deleted_at", null);
 
-  if (filters.kind && filters.kind !== "all") {
+  if (filters.kind && filters.kind !== "all" && filters.kind !== "all_with_rental") {
     query = query.eq("contract_kind", filters.kind);
+  } else if (!filters.kind || filters.kind === "all") {
+    // Default scope: hide location/gestion contracts.
+    query = query.in("contract_kind", SALE_CONTRACT_KINDS);
   }
   if (filters.matched === "matched") {
     query = query.is("matched_seller_project_id", null);

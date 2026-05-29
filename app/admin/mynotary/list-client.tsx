@@ -15,7 +15,8 @@ type Filters = {
     | "guarantee"
     | "management_mandate"
     | "other"
-    | "all";
+    | "all"
+    | "all_with_rental";
   matched: "matched" | "unmatched" | "all";
   since?: string;
   until?: string;
@@ -189,7 +190,8 @@ export function MyNotaryListClient({
             onChange={(e) => updateFilter("kind", e.target.value)}
             aria-label="Type de contrat"
           >
-            <option value="all">Tous les contrats</option>
+            <option value="all">Vente (tous)</option>
+            <option value="all_with_rental">Tous (vente + location)</option>
             <optgroup label="Vente (KPI)">
               <option value="mandate">Mandats de vente</option>
               <option value="purchase_offer">{"Offres d'achat"}</option>

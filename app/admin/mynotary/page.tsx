@@ -28,6 +28,7 @@ const KIND_VALUES = [
 ] as const;
 
 const parseKind = (raw: string | undefined) => {
+  if (raw === "all_with_rental") return "all_with_rental" as const;
   if (raw && (KIND_VALUES as readonly string[]).includes(raw)) {
     return raw as (typeof KIND_VALUES)[number];
   }
