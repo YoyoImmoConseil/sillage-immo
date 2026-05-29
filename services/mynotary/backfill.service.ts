@@ -1,46 +1,41 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { serverEnv } from "@/lib/env/server";
-import { getRegisterEntries } from "@/lib/mynotary/client";
-import type {
-  MyNotaryRegisterEntry,
-  MyNotaryRegisterType,
-  MyNotarySignatureCompletedPayload,
+import { listOperations } from "@/lib/mynotary/client";
+import {
+  isContractSigned,
+  type MyNotaryContractSummary,
+  type MyNotaryOperationListItem,
+  type MyNotarySignatureCompletedPayload,
 } from "@/lib/mynotary/types";
-import {
-  isEntrySigned,
-  parseAddressFromBiens,
-  parseSellerNamesFromMandants,
-  parseSignedAtFromObservations,
-} from "@/lib/mynotary/register-entry-parsers";
-import {
-  processSignatureCompleted,
-  softDeleteByContractOrOperation,
-} from "./signature-completed.service";
+import { parseAddressFromOperationLabel } from "@/lib/mynotary/register-entry-parsers";
+import { processSignatureCompleted } from "./signature-completed.service";
 
 // Shared backfill engine used by:
 //   - scripts/mynotary-backfill.ts (one-shot, full history)
-//   - app/api/internal/cron/mynotary-sync/route.ts (daily incremental,
-//     bumps `app_settings.mynotary.last_synced_at`)
+//   - app/api/internal/cron/mynotary-sync/route.ts (daily incremental)
 //   - app/api/admin/mynotary/sync/route.ts (manual button)
 //
-// Per the MyNotary spec the `/register-entries` endpoint is paginated
-// by integer pages (no cursor / no `signedSince` filter) and a
-// `type` filter is required per request. The engine therefore loops
-// over both registers (MANAGEMENT for mandats, TRANSACTION for
-// promesses / compromis / actes) and walks pages until the page
-// returns fewer than `pageSize` items.
+// CANONICAL SOURCE (since 29/05/2026): `GET /operations`. Per MyNotary
+// support the `/register-entries` endpoint only tracks the carte-T
+// mandate ledger and never exposes offers / preliminary sales, so we
+// switched to walking the organization's operations, each of which
+// embeds a `contracts[]` array carrying a precise `status`. We ingest
+// every contract whose status is SIGNATURE_COMPLETED and classify it
+// via its `model`.
 //
-// For incremental runs we keep the `last_synced_at` timestamp as a
-// SAFETY CHECKPOINT — entries whose `creationTime` is strictly older
-// than the checkpoint are skipped (the API itself does not support a
-// date filter, so we do it client-side). On the first run the
-// checkpoint is null and we walk the full history.
+// Pagination is best-effort: the `page` param appears to be ignored on
+// the agency's org (it returns the full set), so we dedupe operations
+// by id and stop as soon as a page introduces no new operation.
+//
+// For incremental runs we keep `last_synced_at` as a client-side
+// checkpoint — contracts whose `signatureTime` is strictly older than
+// the checkpoint are skipped (the API has no date filter on this
+// endpoint).
 
 const APP_SETTINGS_KEY = "mynotary.last_synced_at";
-const MAX_PAGES_PER_REGISTER = 50;
+const MAX_PAGES = 50;
 const PAGE_SIZE = 100;
-const REGISTERS: MyNotaryRegisterType[] = ["MANAGEMENT", "TRANSACTION"];
 
 type AppSettingsClient = {
   from: (table: "app_settings") => {
@@ -67,6 +62,11 @@ export type BackfillRunInput = {
 
 export type BackfillRunResult = {
   pagesScanned: number;
+  // Number of operations walked.
+  operationsSeen: number;
+  // Number of contracts inspected across all operations.
+  contractsSeen: number;
+  // Back-compat alias kept for existing callers / logs.
   entriesSeen: number;
   documentsUpserted: number;
   documentsSkipped: number;
@@ -98,61 +98,35 @@ const writeLastSyncedAt = async (iso: string): Promise<void> => {
   );
 };
 
-// Per-register heuristic: the MANAGEMENT register only holds
-// mandates, so we hint the contract type for entries that don't ship
-// `contractType` explicitly. TRANSACTION entries cover purchase
-// offers + preliminary sales + deeds — we let `resolveContractKind`
-// figure it out from the entry's free-form fields.
-const inferContractType = (
-  entry: MyNotaryRegisterEntry,
-  register: MyNotaryRegisterType
-): string => {
-  if (entry.contractType && entry.contractType.trim().length > 0) {
-    return entry.contractType;
-  }
-  if (typeof entry.typeDeMandat === "string" && entry.typeDeMandat.trim().length > 0) {
-    return entry.typeDeMandat;
-  }
-  if (register === "MANAGEMENT") return "mandat";
-  return "";
-};
-
-
-const entryToPayload = (
-  entry: MyNotaryRegisterEntry,
-  register: MyNotaryRegisterType
+const contractToPayload = (
+  operation: MyNotaryOperationListItem,
+  contract: MyNotaryContractSummary
 ): MyNotarySignatureCompletedPayload | null => {
-  // Per the spec, the register entry exposes `legalOperationId` and
-  // `id` (string). Sillage's earlier shape used `operationId` /
-  // `contractId`; we read whichever is present.
-  const operationId = entry.operationId ?? entry.legalOperationId ?? null;
-  const contractId = entry.contractId ?? entry.id ?? null;
-  if (!operationId || !contractId) return null;
-  const observationsSignedAt = parseSignedAtFromObservations(
-    entry.observations
-  );
+  const operationId = operation.id ?? null;
+  const contractId = contract.id ?? null;
+  if (operationId === null || contractId === null) return null;
   return {
-    signatureId: entry.id ?? contractId,
+    signatureId: contractId,
     contractId,
-    contractType: inferContractType(entry, register),
     operationId,
-    signedAt:
-      entry.signedAt ??
-      entry.signatureTime ??
-      observationsSignedAt ??
-      entry.creationTime,
-    signers: entry.signers,
-    files: entry.files,
+    // The machine model is the most reliable classifier input; the
+    // signature service runs it through classifyContractModel.
+    contractType: contract.model,
+    signedAt: contract.signatureTime ?? contract.creationTime,
+    // Operations/contracts list does NOT carry signers or file URLs —
+    // those only arrive via the webhook. Backfilled rows therefore have
+    // no archived PDF (expected for historical data).
+    signers: [],
+    files: [],
   };
 };
 
-const entryIsOlderThanCheckpoint = (
-  entry: MyNotaryRegisterEntry,
+const contractIsOlderThanCheckpoint = (
+  contract: MyNotaryContractSummary,
   checkpoint: string | null
 ): boolean => {
   if (!checkpoint) return false;
-  const candidate =
-    entry.signatureTime ?? entry.signedAt ?? entry.creationTime ?? null;
+  const candidate = contract.signatureTime ?? contract.creationTime ?? null;
   if (!candidate) return false;
   const ts = Date.parse(candidate);
   if (!Number.isFinite(ts)) return false;
@@ -170,12 +144,8 @@ export const runIncrementalBackfill = async (
   }
   const organizationId = serverEnv.MYNOTARY_ORGANIZATION_ID;
   const runStartedAt = new Date().toISOString();
-  // Manual runs always do a full re-scan: a human pressing the
-  // "Synchroniser MyNotary" button expects to recover lost / missed
-  // documents, not to be filtered by a checkpoint that the previous
-  // (possibly broken) run set.
-  // Scripts also bypass the checkpoint unless an explicit
-  // `signedSince` is provided.
+  // Manual + script runs do a full re-scan; only the cron uses the
+  // checkpoint (and only when no explicit signedSince override).
   const useCheckpoint =
     input.trigger === "cron" && input.signedSince === undefined;
   const checkpoint =
@@ -184,68 +154,72 @@ export const runIncrementalBackfill = async (
     null;
 
   let pagesScanned = 0;
-  let entriesSeen = 0;
+  let operationsSeen = 0;
+  let contractsSeen = 0;
   let documentsUpserted = 0;
   let documentsSkipped = 0;
-  let documentsSoftDeleted = 0;
+  const documentsSoftDeleted = 0;
   let errors = 0;
 
-  // Iterate both registers; each one is paginated independently.
-  // Page is 0-indexed (cf. lib/mynotary/client.ts comment).
-  for (const register of REGISTERS) {
-    for (let page = 0; page < MAX_PAGES_PER_REGISTER; page += 1) {
-      const result = await getRegisterEntries({
+  const seenOperationIds = new Set<string>();
+
+  for (let page = 0; page < MAX_PAGES; page += 1) {
+    let operations: MyNotaryOperationListItem[] = [];
+    try {
+      operations = await listOperations({
         organizationId,
-        type: register,
         page,
         pageSize: PAGE_SIZE,
       });
-      pagesScanned += 1;
-      entriesSeen += result.entries.length;
+    } catch {
+      errors += 1;
+      break;
+    }
+    pagesScanned += 1;
 
-      for (const entry of result.entries) {
-        if (entryIsOlderThanCheckpoint(entry, checkpoint)) {
+    // Dedupe across pages (the `page` param may be ignored server-side).
+    let newOnThisPage = 0;
+    for (const operation of operations) {
+      const opId = String(operation.id);
+      if (seenOperationIds.has(opId)) continue;
+      seenOperationIds.add(opId);
+      newOnThisPage += 1;
+      operationsSeen += 1;
+
+      const inlineAddress = parseAddressFromOperationLabel(operation.label);
+      const contracts = Array.isArray(operation.contracts)
+        ? operation.contracts
+        : [];
+
+      for (const contract of contracts) {
+        contractsSeen += 1;
+
+        // Only signed contracts belong in the canonical table.
+        if (!isContractSigned(contract.status)) {
           documentsSkipped += 1;
           continue;
         }
-        // Filter out entries that are not actually signed yet
-        // (status RESERVED = signature flow in progress, CLOSED =
-        // abandoned). The MyNotary register exposes everything that
-        // got a register number, but only VALIDATED rows belong in
-        // our dashboard funnel.
-        if (!isEntrySigned(entry)) {
+        if (contractIsOlderThanCheckpoint(contract, checkpoint)) {
           documentsSkipped += 1;
-          // Compensate any previous (buggy) sync that may have
-          // ingested this entry as signed: soft-delete it now that
-          // the API tells us it isn't signed.
-          const contractIdForCleanup = entry.contractId ?? entry.id ?? null;
-          if (contractIdForCleanup) {
-            try {
-              const { softDeleted } = await softDeleteByContractOrOperation({
-                mynotaryContractId: String(contractIdForCleanup),
-              });
-              documentsSoftDeleted += softDeleted;
-            } catch {
-              // best-effort, do not fail the run on cleanup errors
-            }
-          }
           continue;
         }
-        const payload = entryToPayload(entry, register);
+
+        const payload = contractToPayload(operation, contract);
         if (!payload) {
           documentsSkipped += 1;
           continue;
         }
-        const inlineAddress = parseAddressFromBiens(entry.biens);
-        const inlineSellerNames = parseSellerNamesFromMandants(entry.mandants);
+
         try {
           const outcome = await processSignatureCompleted({
             payload,
             inlineAddress,
-            inlineSellerNames,
-            inlineRawEntry: entry,
+            inlineRawEntry: {
+              operation_label: operation.label ?? null,
+              operation_type: operation.type ?? null,
+              contract,
+            },
             source: "backfill",
-            registerType: register,
           });
           if (outcome.skipped) documentsSkipped += 1;
           else documentsUpserted += 1;
@@ -253,25 +227,23 @@ export const runIncrementalBackfill = async (
           errors += 1;
         }
       }
-
-      if (!result.hasMore) break;
     }
+
+    // Stop when the API returns nothing new (or an empty page).
+    if (operations.length === 0 || newOnThisPage === 0) break;
   }
 
-  // Only advance the checkpoint if the run was clean AND actually
-  // observed entries. Advancing on "0 seen / 0 upserted" would
-  // poison the next run (it'd skip every historical entry as
-  // "older than checkpoint"), which is exactly the bug that
-  // surfaced on the very first prod backfill.
-  const cleanRun = errors === 0;
-  const sawSomething = entriesSeen > 0;
-  if (cleanRun && sawSomething) {
+  // Only advance the checkpoint on a clean run that actually saw data,
+  // to avoid poisoning the next incremental run.
+  if (errors === 0 && operationsSeen > 0) {
     await writeLastSyncedAt(runStartedAt);
   }
 
   return {
     pagesScanned,
-    entriesSeen,
+    operationsSeen,
+    contractsSeen,
+    entriesSeen: contractsSeen,
     documentsUpserted,
     documentsSkipped,
     documentsSoftDeleted,

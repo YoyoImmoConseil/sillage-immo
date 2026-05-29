@@ -1,5 +1,6 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import type { MyNotaryContractKind } from "@/lib/mynotary/types";
 
 // Read service consumed by:
 //   - GET /admin/mynotary (SSR list)
@@ -29,7 +30,7 @@ export type SignedDocumentRow = {
   id: string;
   mynotary_contract_id: string;
   mynotary_operation_id: string;
-  contract_kind: "mandate" | "purchase_offer" | "preliminary_sale";
+  contract_kind: MyNotaryContractKind;
   contract_type_raw: string | null;
   signed_at: string;
   signers: Array<{
@@ -49,7 +50,7 @@ export type SignedDocumentRow = {
 };
 
 export type SignedDocumentsListFilters = {
-  kind?: "mandate" | "purchase_offer" | "preliminary_sale" | "all";
+  kind?: MyNotaryContractKind | "all";
   matched?: "matched" | "unmatched" | "all";
   since?: string;
   until?: string;

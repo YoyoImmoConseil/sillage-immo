@@ -114,7 +114,7 @@ const baseMandatePayload = {
 };
 
 describe("processSignatureCompleted", () => {
-  it("ignores contracts that do not map to a known kind", async () => {
+  it("stores non-sale contracts (e.g. a lease) but emits no sale domain event", async () => {
     matchSignedDocumentMock.mockResolvedValue({
       sellerProjectId: null,
       propertyId: null,
@@ -126,11 +126,37 @@ describe("processSignatureCompleted", () => {
       "@/services/mynotary/signature-completed.service"
     );
     const result = await processSignatureCompleted({
-      payload: { ...baseMandatePayload, contractType: "Avenant au bail" },
+      payload: {
+        ...baseMandatePayload,
+        contractType: "IMMOBILIER_LOCATION_BAIL",
+      },
       source: "webhook",
     });
-    expect(result.skipped).toBe(true);
-    expect(result.contractKind).toBeNull();
+    // Stored (not skipped) so the MCP / AI layer can see it...
+    expect(result.skipped).toBe(false);
+    expect(result.contractKind).toBe("lease");
+    // ...but it must NOT trigger a sale-funnel domain event.
+    expect(emitDomainEventMock).not.toHaveBeenCalled();
+  });
+
+  it("classifies a signed rental mandate as rental_mandate (out of sale KPIs)", async () => {
+    matchSignedDocumentMock.mockResolvedValue({
+      sellerProjectId: null,
+      propertyId: null,
+      confidence: 0,
+      method: "none",
+    });
+    const { processSignatureCompleted } = await import(
+      "@/services/mynotary/signature-completed.service"
+    );
+    const result = await processSignatureCompleted({
+      payload: {
+        ...baseMandatePayload,
+        contractType: "IMMOBILIER_LOCATION_MANDAT_LOCATION",
+      },
+      source: "backfill",
+    });
+    expect(result.contractKind).toBe("rental_mandate");
     expect(emitDomainEventMock).not.toHaveBeenCalled();
   });
 

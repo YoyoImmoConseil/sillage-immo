@@ -6,16 +6,30 @@ import type { SignedDocumentRow } from "@/services/admin/mynotary-list.service";
 import { ManualMatchModal } from "./manual-match-modal";
 
 type Filters = {
-  kind: "mandate" | "purchase_offer" | "preliminary_sale" | "all";
+  kind:
+    | "mandate"
+    | "purchase_offer"
+    | "preliminary_sale"
+    | "rental_mandate"
+    | "lease"
+    | "guarantee"
+    | "management_mandate"
+    | "other"
+    | "all";
   matched: "matched" | "unmatched" | "all";
   since?: string;
   until?: string;
 };
 
 const KIND_LABEL: Record<string, string> = {
-  mandate: "Mandat",
+  mandate: "Mandat de vente",
   purchase_offer: "Offre d'achat",
   preliminary_sale: "Compromis",
+  rental_mandate: "Mandat de location",
+  lease: "Bail",
+  guarantee: "Cautionnement",
+  management_mandate: "Mandat de gestion",
+  other: "Autre",
 };
 
 const REGISTER_LABEL: Record<string, string> = {
@@ -176,9 +190,18 @@ export function MyNotaryListClient({
             aria-label="Type de contrat"
           >
             <option value="all">Tous les contrats</option>
-            <option value="mandate">Mandats</option>
-            <option value="purchase_offer">Offres</option>
-            <option value="preliminary_sale">Compromis</option>
+            <optgroup label="Vente (KPI)">
+              <option value="mandate">Mandats de vente</option>
+              <option value="purchase_offer">{"Offres d'achat"}</option>
+              <option value="preliminary_sale">Compromis</option>
+            </optgroup>
+            <optgroup label="Location / gestion">
+              <option value="rental_mandate">Mandats de location</option>
+              <option value="lease">Baux</option>
+              <option value="guarantee">Cautionnements</option>
+              <option value="management_mandate">Mandats de gestion</option>
+              <option value="other">Autres</option>
+            </optgroup>
           </select>
           <select
             className="rounded-md border border-[rgba(20,20,70,0.2)] bg-white px-2 py-1"
