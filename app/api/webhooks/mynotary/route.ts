@@ -12,6 +12,7 @@ import {
   processSignatureCompleted,
   softDeleteByContractOrOperation,
 } from "@/services/mynotary/signature-completed.service";
+import { getContract } from "@/lib/mynotary/client";
 
 type EventsWriter = {
   from: (table: "mynotary_events") => {
@@ -209,6 +210,24 @@ export const POST = async (request: Request) => {
       if (!payload || typeof payload.contractId === "undefined") {
         await markProcessed(eventDbId, "missing_contract_id");
         return NextResponse.json({ ok: true, ignored: true });
+      }
+      // The signature_completed payload does NOT carry the contract
+      // `model` (its template id) — only contractId / operationId /
+      // files / signatureTime. We fetch the contract to classify it
+      // (mandate / offre / compromis / location…) before ingesting.
+      // Best-effort: if the fetch fails, we still ingest with whatever
+      // contractType the payload happened to carry (-> classified as
+      // "other") rather than dropping the event.
+      if (!payload.contractType) {
+        try {
+          const contract = await getContract(String(payload.contractId));
+          if (contract?.model) payload.contractType = contract.model;
+          if (!payload.operationType && contract?.label) {
+            payload.operationType = contract.label;
+          }
+        } catch {
+          // non-blocking enrichment
+        }
       }
       const result = await processSignatureCompleted({
         payload,

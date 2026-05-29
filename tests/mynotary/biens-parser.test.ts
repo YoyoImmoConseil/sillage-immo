@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   isEntrySigned,
   parseAddressFromBiens,
+  parseAddressFromOperationLabel,
   parseSellerNamesFromMandants,
 } from "@/lib/mynotary/register-entry-parsers";
 
@@ -128,5 +129,32 @@ describe("parseSellerNamesFromMandants", () => {
     expect(parseSellerNamesFromMandants(undefined)).toEqual([]);
     expect(parseSellerNamesFromMandants("")).toEqual([]);
     expect(parseSellerNamesFromMandants("   \n  ")).toEqual([]);
+  });
+});
+
+describe("parseAddressFromOperationLabel", () => {
+  it("extracts the address from a simple operation label", () => {
+    const out = parseAddressFromOperationLabel(
+      "8 Boulevard de Riquier, Nice (06300), FranceNom vendeurNom acquéreur"
+    );
+    expect(out).toContain("8 Boulevard de Riquier");
+    expect(out).toContain("Nice");
+    expect(out).toContain("France");
+    expect(out).not.toContain("vendeur");
+  });
+
+  it("strips a leading register-number prefix", () => {
+    const out = parseAddressFromOperationLabel(
+      "N°169 / 2 Boulevard Jean-Baptiste Vérany, Nice, France (06300) / SCI NONO / Nom acquéreur"
+    );
+    expect(out).toContain("2 Boulevard Jean-Baptiste Vérany");
+    expect(out).toContain("France");
+    expect(out).not.toContain("SCI NONO");
+  });
+
+  it("returns null when there is no plausible address", () => {
+    expect(parseAddressFromOperationLabel("Nom vendeurNom acquéreur")).toBeNull();
+    expect(parseAddressFromOperationLabel(null)).toBeNull();
+    expect(parseAddressFromOperationLabel("")).toBeNull();
   });
 });

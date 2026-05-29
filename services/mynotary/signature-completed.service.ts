@@ -2,7 +2,7 @@ import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { emitDomainEvent } from "@/lib/events/domain-events";
 import {
-  resolveContractKind,
+  classifyContractModel,
   type MyNotaryContractKind,
   type MyNotaryFile,
   type MyNotarySignatureCompletedPayload,
@@ -166,25 +166,19 @@ export const processSignatureCompleted = async (
     registerType,
   } = input;
 
-  const contractKind = resolveContractKind(payload.contractType);
+  // Classify from the MyNotary `model` (or free-form label). The
+  // classifier always returns a concrete kind ("other" as catch-all),
+  // so every SIGNATURE_COMPLETED contract is ingested for the MCP / AI
+  // layer. Only the 3 sale kinds feed the dashboard KPIs (filtered
+  // downstream in the aggregator).
+  const contractKind: MyNotaryContractKind = classifyContractModel(
+    payload.contractType
+  );
   const mynotaryContractId = String(payload.contractId);
   const mynotaryOperationId = String(payload.operationId);
   const signedAt = resolveSignedAt(payload);
   const signers = sanitizeSigners(payload.signers);
   const files = sanitizeFiles(payload.files);
-
-  if (!contractKind) {
-    // We still log this in mynotary_events (handled upstream by the
-    // webhook route). Nothing to ingest in the canonical table.
-    return {
-      documentId: "",
-      contractKind: null,
-      skipped: true,
-      matched: false,
-      confidence: 0,
-      sellerProjectUpdated: false,
-    };
-  }
 
   const docsWriter = supabaseAdmin as unknown as SignedDocsWriter;
   const { data: upsertRow, error: upsertError } = await docsWriter
@@ -322,27 +316,36 @@ export const processSignatureCompleted = async (
     }
   }
 
+  // Domain events drive the embedding worker + downstream automations.
+  // We only emit the 3 canonical sale events; non-sale contracts
+  // (rental / lease / guarantee…) are stored but don't trigger a
+  // sale-funnel domain event.
+  const saleEventName =
+    contractKind === "mandate"
+      ? "mynotary.mandate_signed"
+      : contractKind === "purchase_offer"
+        ? "mynotary.offer_signed"
+        : contractKind === "preliminary_sale"
+          ? "mynotary.preliminary_sale_signed"
+          : null;
   try {
-    await emitDomainEvent({
-      aggregateType: "mynotary_document",
-      aggregateId: documentId,
-      eventName:
-        contractKind === "mandate"
-          ? "mynotary.mandate_signed"
-          : contractKind === "purchase_offer"
-            ? "mynotary.offer_signed"
-            : "mynotary.preliminary_sale_signed",
-      payload: {
-        mynotary_contract_id: mynotaryContractId,
-        mynotary_operation_id: mynotaryOperationId,
-        contract_kind: contractKind,
-        matched: matchOutcome.sellerProjectId !== null,
-        confidence: matchOutcome.confidence,
-        match_method: matchOutcome.method,
-        signed_at: signedAt,
-        source,
-      },
-    });
+    if (saleEventName) {
+      await emitDomainEvent({
+        aggregateType: "mynotary_document",
+        aggregateId: documentId,
+        eventName: saleEventName,
+        payload: {
+          mynotary_contract_id: mynotaryContractId,
+          mynotary_operation_id: mynotaryOperationId,
+          contract_kind: contractKind,
+          matched: matchOutcome.sellerProjectId !== null,
+          confidence: matchOutcome.confidence,
+          match_method: matchOutcome.method,
+          signed_at: signedAt,
+          source,
+        },
+      });
+    }
   } catch {
     // non-blocking
   }

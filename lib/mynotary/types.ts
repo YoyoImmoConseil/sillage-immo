@@ -13,7 +13,30 @@
 // `mynotary_events.raw_payload` / `mynotary_signed_documents.raw_payload`,
 // so we can extract more fields later without re-shipping a migration.
 
-export type MyNotaryContractKind = "mandate" | "purchase_offer" | "preliminary_sale";
+// Canonical contract buckets. The first three are the "sale side"
+// surfaced in the /admin dashboard KPI cards; the rest are stored for
+// the MCP / AI layer and traceability but excluded from the headline
+// KPIs (decision: 29/05/2026 — KPI = vente uniquement).
+export type MyNotaryContractKind =
+  | "mandate"
+  | "purchase_offer"
+  | "preliminary_sale"
+  | "rental_mandate"
+  | "lease"
+  | "guarantee"
+  | "management_mandate"
+  | "other";
+
+// The three kinds that feed the dashboard KPI cards.
+export const SALE_CONTRACT_KINDS: ReadonlySet<MyNotaryContractKind> = new Set([
+  "mandate",
+  "purchase_offer",
+  "preliminary_sale",
+]);
+
+export const isSaleContractKind = (
+  kind: MyNotaryContractKind | null | undefined
+): boolean => kind != null && SALE_CONTRACT_KINDS.has(kind);
 
 export type MyNotaryEventType =
   | "signature_completed"
@@ -97,6 +120,47 @@ export type MyNotaryOperationSummary = {
   createdAt?: string;
 };
 
+// Shape returned by `GET /operations` (list) and embedded in each
+// operation's `contracts[]`. Confirmed empirically against
+// api.mynotary.fr (29/05/2026). `status` drives ingestion:
+// "SIGNATURE_COMPLETED" = fully signed. `model` is the machine
+// template id we classify into a MyNotaryContractKind.
+export type MyNotaryContractStatus =
+  | "REDACTION"
+  | "VALIDATED"
+  | "SIGNATURE_PENDING"
+  | "NOTIFICATION_PENDING"
+  | "SIGNATURE_COMPLETED"
+  | string;
+
+export type MyNotaryContractSummary = {
+  id: number | string;
+  model: string;
+  label?: string;
+  status: MyNotaryContractStatus;
+  creationTime?: string;
+  signatureTime?: string;
+  signatureType?: string;
+};
+
+// One element of the `GET /operations` array. We only model the
+// fields the backfill reads; the verbatim object is still persisted
+// in `raw_payload` for downstream re-enrichment.
+export type MyNotaryOperationListItem = {
+  id: number | string;
+  label?: string;
+  type?: string;
+  organizationId?: number | string;
+  creationTime?: string;
+  archived?: boolean;
+  contracts?: MyNotaryContractSummary[];
+};
+
+// A signed contract is one whose status is SIGNATURE_COMPLETED.
+export const isContractSigned = (
+  status: MyNotaryContractStatus | undefined | null
+): boolean => status === "SIGNATURE_COMPLETED";
+
 // Two distinct registers per the spec: `MANAGEMENT` (mandats) and
 // `TRANSACTION` (promesses / compromis / actes). The backfill loops
 // over both.
@@ -160,7 +224,10 @@ export type MyNotaryOrganizationDto = {
 //
 // Built from the MyNotary contract catalog. New aliases can be added
 // without ever shipping a migration.
-const CONTRACT_KIND_ALIASES: Record<MyNotaryContractKind, string[]> = {
+// Only the sale kinds have free-form French aliases (used by
+// resolveContractKind as a fallback). Non-sale kinds are resolved
+// structurally from the machine `model` in classifyContractModel.
+const CONTRACT_KIND_ALIASES: Partial<Record<MyNotaryContractKind, string[]>> = {
   mandate: [
     "mandat",
     "mandat de vente",
@@ -221,4 +288,46 @@ export const resolveContractKind = (
     }
   }
   return null;
+};
+
+// Classify a MyNotary contract `model` (the machine template id, e.g.
+// "IMMOBILIER_VENTE_ANCIEN_OFFRE_ACHAT") into one of our canonical
+// buckets. Unlike `resolveContractKind` (which works on free-form
+// French labels), this MUST distinguish the sale side (VENTE) from the
+// rental side (LOCATION) — otherwise the 39 signed rental mandates
+// would land in the "mandate" KPI alongside the sale mandates.
+//
+// Decision rules (most specific first), case-insensitive on the
+// uppercased model token. Always returns a concrete kind ("other" as
+// the catch-all) so every SIGNATURE_COMPLETED contract is ingested.
+export const classifyContractModel = (
+  model: string | null | undefined,
+  fallbackLabel?: string | null
+): MyNotaryContractKind => {
+  const m = (model ?? "").toUpperCase();
+
+  if (m.length > 0) {
+    const isRental = m.includes("LOCATION") || m.includes("BAIL");
+    if (isRental) {
+      if (m.includes("BAIL")) return "lease";
+      if (m.includes("CAUTIONNEMENT")) return "guarantee";
+      if (m.includes("MANDAT") || m.includes("GESTION")) return "rental_mandate";
+      return "other";
+    }
+    // Sale side (VENTE / TRANSACTION) and everything else.
+    if (m.includes("CAUTIONNEMENT")) return "guarantee";
+    if (m.includes("GESTION")) return "management_mandate";
+    if (m.includes("OFFRE_ACHAT") || m.includes("OFFRE")) return "purchase_offer";
+    if (m.includes("COMPROMIS") || m.includes("PROMESSE")) {
+      return "preliminary_sale";
+    }
+    if (m.includes("MANDAT")) return "mandate";
+    if (m.includes("BON_VISITE")) return "other";
+    // Fall through to the free-form resolver before giving up.
+  }
+
+  // No (or unrecognized) model: best-effort on the human label, else
+  // "other" so the contract is still stored.
+  const fromLabel = resolveContractKind(fallbackLabel ?? model ?? null);
+  return fromLabel ?? "other";
 };

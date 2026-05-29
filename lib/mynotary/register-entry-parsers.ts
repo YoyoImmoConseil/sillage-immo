@@ -53,6 +53,36 @@ export const parseAddressFromBiens = (
   return stripped;
 };
 
+// Operations (`GET /operations`) carry a free-form `label` that
+// concatenates the property address with seller/buyer placeholders,
+// e.g.
+//   "8 Boulevard de Riquier, Nice (06300), FranceNom vendeurNom acquéreur"
+//   "N°169 / 2 Boulevard Jean-Baptiste Vérany, Nice, France (06300) / SCI NONO / Nom acquéreur"
+// We extract the address-looking chunk (street + city + postal code,
+// ending at "France") so the auto-matcher can run an address lookup
+// without a per-operation `GET /operations/{id}` roundtrip.
+const ADDRESS_IN_LABEL_RE =
+  /(\d{1,4}[^,/]*,\s*[^,/]+(?:\s*\(\d{5}\))?,?\s*France(?:\s*\(\d{5}\))?)/i;
+
+export const parseAddressFromOperationLabel = (
+  label: string | undefined | null
+): string | null => {
+  if (!label) return null;
+  // Strip a leading register-number prefix like "N°169 / ".
+  const cleaned = label.replace(/^\s*N°\s*\d+\s*\/\s*/i, "").trim();
+  const match = ADDRESS_IN_LABEL_RE.exec(cleaned);
+  if (match && match[1]) {
+    return match[1].replace(/\s+/g, " ").trim();
+  }
+  // Fallback: take everything up to and including the first "France".
+  const idx = cleaned.toLowerCase().indexOf("france");
+  if (idx > 0) {
+    const slice = cleaned.slice(0, idx + "france".length).trim();
+    if (/\d/.test(slice)) return slice.replace(/\s+/g, " ").trim();
+  }
+  return null;
+};
+
 // Register entries ship the people who signed the contract as free-form
 // text in `mandants`, typically formatted as
 //   "Monsieur LEVI Mickaël Roland - 81 Rue Saint-Lazare, Paris (75009), France\n

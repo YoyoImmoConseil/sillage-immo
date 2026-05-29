@@ -1,6 +1,8 @@
 import "server-only";
 import { serverEnv } from "@/lib/env/server";
 import type {
+  MyNotaryContractSummary,
+  MyNotaryOperationListItem,
   MyNotaryOperationSummary,
   MyNotaryOrganizationDto,
   MyNotaryRecordSummary,
@@ -230,6 +232,63 @@ export const getRecord = async (
     method: "GET",
     path: `/records/${encodeURIComponent(recordId)}`,
   });
+};
+
+// GET /contracts/{id} — fetch a single contract's metadata.
+//
+// Why we need it: the `signature_completed` webhook payload ships
+// `contractId`, `operationId`, `files[]` and `signatureTime` but NOT
+// the contract `model` (its template id). Without the model we cannot
+// classify the contract (mandate / offre / compromis / location…), so
+// the webhook path enriches the payload with this call before
+// ingesting. The response is metadata-only (no records, no PDF URL):
+//   { id, model, label, status, creationTime, signatureTime, signatureType }
+export const getContract = async (
+  contractId: string
+): Promise<MyNotaryContractSummary> => {
+  return callMyNotary<MyNotaryContractSummary>({
+    method: "GET",
+    path: `/contracts/${encodeURIComponent(contractId)}`,
+  });
+};
+
+// GET /operations — list the organization's operations, each with an
+// embedded `contracts[]` array (id / model / status / signatureTime).
+//
+// This is the canonical backfill source (per MyNotary support): the
+// `/register-entries` endpoint only tracks the carte-T mandate ledger
+// and never exposes offers / preliminary sales. Operations expose
+// every contract with a precise `status` so we can ingest exactly the
+// SIGNATURE_COMPLETED ones.
+//
+// Pagination caveat (empirically observed, 29/05/2026): the `page`
+// param appears to be ignored on this org (page=0 and page=1 returned
+// the identical 65-operation set). The backfill therefore dedupes by
+// operation id and stops when a page introduces no new operations.
+export type ListOperationsParams = {
+  organizationId: string;
+  page?: number;
+  pageSize?: number;
+};
+
+export const listOperations = async (
+  params: ListOperationsParams
+): Promise<MyNotaryOperationListItem[]> => {
+  const pageSize = Math.min(Math.max(params.pageSize ?? 100, 1), 100);
+  const data = await callMyNotary<MyNotaryOperationListItem[] | {
+    items?: MyNotaryOperationListItem[];
+  }>({
+    method: "GET",
+    path: "/operations",
+    query: {
+      organizationId: params.organizationId,
+      page: params.page ?? 0,
+      pageSize,
+    },
+  });
+  if (Array.isArray(data)) return data;
+  if (data && Array.isArray(data.items)) return data.items;
+  return [];
 };
 
 // GET /register-entries — used by the backfill cron + script to walk
