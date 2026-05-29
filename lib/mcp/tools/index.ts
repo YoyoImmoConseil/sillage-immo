@@ -16,6 +16,7 @@ import { contactsTools } from "./contacts";
 import { aiTools } from "./ai";
 import { conversationsTools } from "./conversations";
 import { mynotaryTools } from "./mynotary";
+import { reconciliationTools } from "./reconciliation";
 import { auditTools } from "./audit";
 
 // Aggregated MCP tool registry. Re-exported from "../tools" via the
@@ -39,6 +40,7 @@ export const tools: ToolDefinition<unknown, unknown>[] = [
   ...aiTools,
   ...conversationsTools,
   ...mynotaryTools,
+  ...reconciliationTools,
   ...auditTools,
 ];
 
@@ -59,4 +61,5 @@ export { contactsTools } from "./contacts";
 export { aiTools } from "./ai";
 export { conversationsTools } from "./conversations";
 export { mynotaryTools } from "./mynotary";
+export { reconciliationTools } from "./reconciliation";
 export { auditTools } from "./audit";

@@ -10,6 +10,7 @@ import {
 } from "@/lib/mynotary/types";
 import { parseAddressFromOperationLabel } from "@/lib/mynotary/register-entry-parsers";
 import { processSignatureCompleted } from "./signature-completed.service";
+import { enrichFromOperation } from "./operation-enrichment.service";
 
 // Shared backfill engine used by:
 //   - scripts/mynotary-backfill.ts (one-shot, full history)
@@ -191,6 +192,14 @@ export const runIncrementalBackfill = async (
         ? operation.contracts
         : [];
 
+      // Enrich once per operation (records + questions are shared by all
+      // contracts of the operation). Best-effort: failures are swallowed
+      // inside enrichFromOperation so the backfill keeps ingesting.
+      const hasSignedContract = contracts.some((c) => isContractSigned(c.status));
+      const inlineEnrichment = hasSignedContract
+        ? await enrichFromOperation(opId)
+        : null;
+
       for (const contract of contracts) {
         contractsSeen += 1;
 
@@ -214,6 +223,7 @@ export const runIncrementalBackfill = async (
           const outcome = await processSignatureCompleted({
             payload,
             inlineAddress,
+            inlineEnrichment,
             inlineRawEntry: {
               operation_label: operation.label ?? null,
               operation_type: operation.type ?? null,

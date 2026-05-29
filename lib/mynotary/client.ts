@@ -234,6 +234,33 @@ export const getRecord = async (
   });
 };
 
+// GET /operations/{id} — raw operation detail. Unlike `getOperation`
+// (whose typed shape predates our knowledge of the real payload), this
+// returns the verbatim JSON so the enrichment service can read the
+// `records` role map ({ VENDEUR: [id], BIEN_VENDU: [id], OFFRANT: [id] })
+// and the free-form `questions` map (offre_prix, prix_vente_total…).
+export const getOperationRaw = async (
+  operationId: string
+): Promise<Record<string, unknown>> => {
+  return callMyNotary<Record<string, unknown>>({
+    method: "GET",
+    path: `/operations/${encodeURIComponent(operationId)}`,
+  });
+};
+
+// GET /records/{id} — raw record detail. Person records
+// (RECORD__PERSONNE__PHYSIQUE / __MORALE) expose
+// questions.{nom,prenoms,email,telephone,adresse}; property records
+// (RECORD__BIEN__*) expose questions.{adresse,mesurage_carrez_superficie}.
+export const getRecordRaw = async (
+  recordId: string
+): Promise<Record<string, unknown>> => {
+  return callMyNotary<Record<string, unknown>>({
+    method: "GET",
+    path: `/records/${encodeURIComponent(recordId)}`,
+  });
+};
+
 // GET /contracts/{id} — fetch a single contract's metadata.
 //
 // Why we need it: the `signature_completed` webhook payload ships

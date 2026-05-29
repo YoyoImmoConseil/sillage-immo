@@ -19,6 +19,7 @@ const NAV_ITEMS = [
   { href: "/admin/seller-leads", label: "Leads vendeurs", permission: "leads.sellers.view" as AdminPermission },
   { href: "/admin/buyer-leads", label: "Leads acquéreurs", permission: "leads.buyers.view" as AdminPermission },
   { href: "/admin/properties", label: "Biens", permission: "properties.view" as AdminPermission },
+  { href: "/admin/reconciliation", label: "Réconciliation", permission: "clients.view" as AdminPermission },
   { href: "/admin/sweepbright-sync", label: "Sync SweepBright", permission: "operations.view" as AdminPermission },
 ];
 

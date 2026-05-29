@@ -6,6 +6,7 @@ import {
   SILLAGE_AGENCY_KNOWLEDGE,
   SILLAGE_AGENCY_KNOWLEDGE_VERSION,
 } from "@/lib/ai/knowledge/sillage-agency-knowledge";
+import { computePropertyGoldenRecord } from "@/services/properties/golden-record.service";
 
 export type EmbedEntityType =
   | "property"
@@ -233,6 +234,38 @@ const buildClientProjectSourceText = async (
     if (t) propertyTexts.push(t);
   }
 
+  // Consolidated multi-source golden record so the copilot reasons on
+  // the reconciled property/seller facts (estimateur + SweepBright +
+  // MyNotary), not just one source. Best-effort.
+  let goldenText: string | null = null;
+  try {
+    const golden = await computePropertyGoldenRecord(clientProjectId);
+    if (golden) {
+      const activeSources = [
+        golden.sources.sweepbright ? "SweepBright" : null,
+        golden.sources.mynotary ? "MyNotary" : null,
+        golden.sources.estimator ? "Estimateur" : null,
+      ].filter(Boolean);
+      const lines = [
+        golden.address.value ? `Adresse: ${golden.address.value}` : null,
+        typeof golden.price.value === "number" ? `Prix retenu: ${golden.price.value} EUR` : null,
+        typeof golden.livingArea.value === "number"
+          ? `Surface retenue: ${golden.livingArea.value} m2`
+          : null,
+        golden.propertyType.value ? `Type: ${golden.propertyType.value}` : null,
+        golden.seller.fullName.value ? `Vendeur: ${golden.seller.fullName.value}` : null,
+        golden.seller.email.value ? `Email vendeur: ${golden.seller.email.value}` : null,
+        golden.seller.phone.value ? `Tel vendeur: ${golden.seller.phone.value}` : null,
+        activeSources.length ? `Sources: ${activeSources.join(", ")}` : null,
+      ].filter((v): v is string => typeof v === "string" && v.length > 0);
+      if (lines.length > 0) {
+        goldenText = `Fiche unifiee:\n${lines.join("\n")}`;
+      }
+    }
+  } catch {
+    // golden record enrichment is best-effort
+  }
+
   return [
     project.title,
     project.project_type ? `Type: ${project.project_type}` : null,
@@ -244,6 +277,7 @@ const buildClientProjectSourceText = async (
     sellerProject.mandate_status
       ? `Mandat: ${sellerProject.mandate_status}`
       : null,
+    goldenText,
     propertyTexts.length ? `Biens lies:\n${propertyTexts.join("\n---\n")}` : null,
   ]
     .filter((v): v is string => typeof v === "string" && v.trim().length > 0)

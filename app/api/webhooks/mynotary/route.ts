@@ -13,6 +13,7 @@ import {
   softDeleteByContractOrOperation,
 } from "@/services/mynotary/signature-completed.service";
 import { getContract } from "@/lib/mynotary/client";
+import { enrichFromOperation } from "@/services/mynotary/operation-enrichment.service";
 
 type EventsWriter = {
   from: (table: "mynotary_events") => {
@@ -229,8 +230,18 @@ export const POST = async (request: Request) => {
           // non-blocking enrichment
         }
       }
+      // Enrich from the operation detail (seller/buyer parties, exact
+      // price, Loi Carrez surface). Best-effort: a failure must not drop
+      // the event — we still ingest with whatever the payload carried.
+      let inlineEnrichment = null;
+      try {
+        inlineEnrichment = await enrichFromOperation(String(payload.operationId));
+      } catch {
+        // non-blocking enrichment
+      }
       const result = await processSignatureCompleted({
         payload,
+        inlineEnrichment,
         source: "webhook",
       });
       await markProcessed(eventDbId, null);

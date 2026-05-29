@@ -295,6 +295,19 @@ export const createSellerLead = async (
     };
   }
 
+  // Multi-source reconciliation (Phase 2): a brand-new estimator lead may
+  // describe a property that already has a SweepBright/MyNotary dossier.
+  // Queue a suggestion (or auto-link) so the operator can merge instead
+  // of ending up with a doublon. Best-effort, never blocks lead capture.
+  try {
+    const { reconcileEstimatorLead } = await import(
+      "@/services/reconciliation/reconcile.service"
+    );
+    await reconcileEstimatorLead(data.id as string);
+  } catch (reconcileError) {
+    console.error("[seller-lead] reconciliation failed", reconcileError);
+  }
+
   const auditResult = await supabaseAdmin.from("audit_log").insert({
     actor_type: meta?.actor ?? "anonymous",
     actor_id: null,

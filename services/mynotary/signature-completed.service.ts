@@ -10,6 +10,7 @@ import {
 } from "@/lib/mynotary/types";
 import { matchSignedDocument } from "./auto-match.service";
 import { archiveSignedDocument } from "./archive-signed-document.service";
+import type { OperationEnrichment } from "./operation-enrichment.service";
 
 // Cast types for the new tables that are not in the generated Supabase
 // schema yet.
@@ -86,6 +87,13 @@ export type ProcessSignatureCompletedInput = {
   // `legalOperationLabel`, `dateFinMandat`) without re-hitting the
   // MyNotary API.
   inlineRawEntry?: Record<string, unknown> | null;
+  // Structured facts parsed from GET /operations/{id} (+ /records/{id}):
+  // seller/buyer parties, property address, Loi Carrez surface and the
+  // headline price. Computed by the caller (webhook / backfill) so this
+  // service stays pure + unit-testable. When present, the seller
+  // identities feed the matcher (email/name) and the facts are persisted
+  // into the structured columns for the reconciliation engine.
+  inlineEnrichment?: OperationEnrichment | null;
   // Source of the event ("webhook" | "backfill" | "manual"). Stored
   // in raw_payload for audit.
   source: "webhook" | "backfill" | "manual";
@@ -162,9 +170,12 @@ export const processSignatureCompleted = async (
     inlineAddress,
     inlineSellerNames,
     inlineRawEntry,
+    inlineEnrichment,
     source,
     registerType,
   } = input;
+
+  const enrichment = inlineEnrichment ?? null;
 
   // Classify from the MyNotary `model` (or free-form label). The
   // classifier always returns a concrete kind ("other" as catch-all),
@@ -193,6 +204,12 @@ export const processSignatureCompleted = async (
         signers,
         files,
         mynotary_register_type: registerType ?? null,
+        // Structured facts (Phase 1 reconciliation socle). Persisted as
+        // dedicated columns so the reconciliation engine + golden record
+        // can match on price / surface / seller identity.
+        seller_contacts: enrichment?.sellerContacts ?? [],
+        property_price: enrichment?.price ?? null,
+        living_area: enrichment?.livingArea ?? null,
         raw_payload: {
           source,
           register_type: registerType ?? null,
@@ -202,9 +219,13 @@ export const processSignatureCompleted = async (
           // MyNotary roundtrip.
           entry: inlineRawEntry ?? null,
           parsed: {
-            inline_address: inlineAddress ?? null,
+            inline_address: inlineAddress ?? enrichment?.propertyAddress ?? null,
             inline_seller_names: inlineSellerNames ?? null,
           },
+          // Full enrichment snapshot (buyer side incl.) for audit / replay.
+          enrichment: enrichment
+            ? (enrichment as unknown as Record<string, unknown>)
+            : null,
         },
       },
       { onConflict: "mynotary_contract_id" }
@@ -238,15 +259,38 @@ export const processSignatureCompleted = async (
   const namesFromSigners = signers
     .map((s) => `${s.firstName ?? ""} ${s.lastName ?? ""}`.trim())
     .filter((n) => n.length > 0);
+  // The enrichment recovers the seller identity from the VENDEUR /
+  // MANDANT records even when it is absent from the signers list (the
+  // typical "case 1": SweepBright/MyNotary mandate where Sillage never
+  // saw the seller email). Feed those identities into the matcher as
+  // synthetic signers (email path) + names (name path).
+  const sellerContacts = enrichment?.sellerContacts ?? [];
+  const namesFromEnrichment = sellerContacts
+    .map((c) => c.fullName?.trim() ?? "")
+    .filter((n) => n.length > 0);
+  const enrichmentSigners: MyNotarySigner[] = sellerContacts
+    .filter((c) => (c.email && c.email.length > 0) || (c.phone && c.phone.length > 0))
+    .map((c) => ({
+      firstName: c.firstName ?? undefined,
+      lastName: c.lastName ?? undefined,
+      email: c.email ? c.email.trim().toLowerCase() : undefined,
+      phone: c.phone ?? undefined,
+      role: c.role,
+    }));
+  const allSigners = [...signers, ...enrichmentSigners];
   const allInlineNames = Array.from(
-    new Set([...(inlineSellerNames ?? []), ...namesFromSigners])
+    new Set([
+      ...(inlineSellerNames ?? []),
+      ...namesFromSigners,
+      ...namesFromEnrichment,
+    ])
   );
 
   try {
     const m = await matchSignedDocument({
       mynotaryOperationId,
-      signers,
-      inlineAddress: inlineAddress ?? null,
+      signers: allSigners,
+      inlineAddress: inlineAddress ?? enrichment?.propertyAddress ?? null,
       inlineSellerNames: allInlineNames.length > 0 ? allInlineNames : null,
     });
     matchOutcome = m;
@@ -293,6 +337,59 @@ export const processSignatureCompleted = async (
     } catch {
       // Already swallowed by archiveSignedDocument; this is a belt
       // and suspenders catch in case the function itself throws.
+    }
+  }
+
+  // Multi-source reconciliation (Phase 2). When the legacy matcher
+  // didn't attach a seller_project, run the reconciliation engine which
+  // also considers the enriched seller identity + price/surface bands,
+  // and (case 1) can auto-create the dossier from a matching SweepBright
+  // property. Best-effort, never blocks ingestion.
+  if (!matchOutcome.sellerProjectId) {
+    try {
+      const { reconcileMyNotaryDocument } = await import(
+        "@/services/reconciliation/reconcile.service"
+      );
+      const reconcileResult = await reconcileMyNotaryDocument(documentId, {
+        autoCreate: contractKind === "mandate",
+      });
+      if (
+        reconcileResult.decision === "auto_link" &&
+        reconcileResult.clientProjectId
+      ) {
+        // Re-read the freshly written match so downstream logic
+        // (mandate promotion) sees the reconciled seller_project.
+        const docsReader = supabaseAdmin as unknown as {
+          from: (table: "mynotary_signed_documents") => {
+            select: (cols: string) => {
+              eq: (col: string, value: string) => {
+                maybeSingle: () => Promise<{
+                  data: {
+                    matched_seller_project_id: string | null;
+                    match_confidence: number | null;
+                    match_method: string | null;
+                  } | null;
+                }>;
+              };
+            };
+          };
+        };
+        const { data: reread } = await docsReader
+          .from("mynotary_signed_documents")
+          .select("matched_seller_project_id, match_confidence, match_method")
+          .eq("id", documentId)
+          .maybeSingle();
+        if (reread?.matched_seller_project_id) {
+          matchOutcome = {
+            sellerProjectId: reread.matched_seller_project_id,
+            propertyId: matchOutcome.propertyId,
+            confidence: reread.match_confidence ?? reconcileResult.score,
+            method: (reread.match_method as typeof matchOutcome.method) ?? "address_exact",
+          };
+        }
+      }
+    } catch {
+      // reconciliation is best-effort
     }
   }
 

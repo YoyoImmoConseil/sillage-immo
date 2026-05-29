@@ -13,10 +13,12 @@ import {
 import { getProjectEvents } from "@/services/clients/client-project-invitation.service";
 import { SELLER_PROJECT_STATUS_LABELS } from "@/types/domain/client";
 import { formatPropertyTypeLabel } from "@/lib/properties/property-type-label";
+import { computePropertyGoldenRecord } from "@/services/properties/golden-record.service";
 import { SellerProjectActions } from "./seller-project-actions";
 import { InviteButton } from "./invite-button";
 import { AssignAdvisorForm } from "./assign-advisor-form";
 import { MilestonesForm } from "./milestones-form";
+import { UnifiedPropertyCard } from "./unified-property-card";
 
 export const dynamic = "force-dynamic";
 
@@ -61,6 +63,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
   );
 
   const sellerProjectRow = await getSellerProjectByClientProjectId(projectId);
+  const goldenRecord = await computePropertyGoldenRecord(projectId);
 
   return (
     <AdminShell
@@ -142,6 +145,15 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
             </div>
           )}
         </section>
+
+        {goldenRecord ? (
+          <UnifiedPropertyCard
+            clientProjectId={projectId}
+            sellerProjectId={sellerProjectRow?.id ?? null}
+            initialGolden={goldenRecord}
+            canEdit={canEdit}
+          />
+        ) : null}
 
         {canEdit ? (
           <MilestonesForm

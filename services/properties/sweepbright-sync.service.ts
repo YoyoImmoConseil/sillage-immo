@@ -9,6 +9,7 @@ import type { Database } from "@/types/db/supabase";
 import { recomputeMatchesForProperty } from "@/services/buyers/buyer-matching.service";
 import { processBuyerAlertsForNewMatches } from "@/services/buyers/buyer-alert.service";
 import { isPublicAvailabilityStatus } from "@/lib/properties/canonical-types";
+import { ensureContactIdentity } from "@/services/contacts/contact-identity.service";
 
 type WebhookDeliveryRow = Database["public"]["Tables"]["crm_webhook_deliveries"]["Row"];
 type PropertyRow = Database["public"]["Tables"]["properties"]["Row"];
@@ -437,6 +438,146 @@ const upsertPropertyProjection = async (estate: SweepBrightEstateData) => {
   };
 };
 
+// ── SweepBright vendor (owner) extraction ───────────────────────────
+//
+// `estate.vendors` carries the owner PII. The exact shape depends on the
+// SweepBright integration (REST estate vs Zapier), so the extractor is
+// intentionally defensive: it accepts a name as `name` / `first_name` +
+// `last_name` / `firstname` + `lastname`, an email as `email` /
+// `emails[].address|email|value`, and a phone as `phone` /
+// `phones[].number|phone|value`.
+
+export type SweepBrightVendor = {
+  firstName: string | null;
+  lastName: string | null;
+  fullName: string | null;
+  email: string | null;
+  phone: string | null;
+  isCompany: boolean;
+};
+
+const firstStringFromCollection = (
+  value: unknown,
+  keys: string[]
+): string | null => {
+  if (typeof value === "string") return value.trim() || null;
+  if (Array.isArray(value)) {
+    for (const entry of value) {
+      if (typeof entry === "string" && entry.trim()) return entry.trim();
+      const record = asRecord(entry);
+      if (record) {
+        for (const key of keys) {
+          const candidate = record[key];
+          if (typeof candidate === "string" && candidate.trim()) {
+            return candidate.trim();
+          }
+        }
+      }
+    }
+  }
+  const record = asRecord(value);
+  if (record) {
+    for (const key of keys) {
+      const candidate = record[key];
+      if (typeof candidate === "string" && candidate.trim()) {
+        return candidate.trim();
+      }
+    }
+  }
+  return null;
+};
+
+const parseVendor = (raw: unknown): SweepBrightVendor | null => {
+  const record = asRecord(raw);
+  if (!record) return null;
+  const firstName =
+    (typeof record.first_name === "string" && record.first_name.trim()) ||
+    (typeof record.firstname === "string" && record.firstname.trim()) ||
+    null;
+  const lastName =
+    (typeof record.last_name === "string" && record.last_name.trim()) ||
+    (typeof record.lastname === "string" && record.lastname.trim()) ||
+    null;
+  const company =
+    (typeof record.company === "string" && record.company.trim()) ||
+    (typeof record.company_name === "string" && record.company_name.trim()) ||
+    (typeof record.denomination === "string" && record.denomination.trim()) ||
+    null;
+  const explicitName =
+    typeof record.name === "string" && record.name.trim()
+      ? record.name.trim()
+      : null;
+  const fullName =
+    [firstName, lastName].filter(Boolean).join(" ").trim() ||
+    explicitName ||
+    company ||
+    null;
+  const email = firstStringFromCollection(record.email ?? record.emails, [
+    "address",
+    "email",
+    "value",
+  ]);
+  const phone = firstStringFromCollection(record.phone ?? record.phones, [
+    "number",
+    "phone",
+    "value",
+  ]);
+  if (!fullName && !email && !phone) return null;
+  return {
+    firstName: firstName || null,
+    lastName: lastName || null,
+    fullName,
+    email,
+    phone,
+    isCompany: Boolean(company) && !firstName && !lastName,
+  };
+};
+
+export const extractSweepBrightVendors = (
+  estate: SweepBrightEstateData
+): SweepBrightVendor[] => {
+  const raw = (estate as unknown as Record<string, unknown>).vendors;
+  const list = Array.isArray(raw) ? raw : raw ? [raw] : [];
+  const vendors: SweepBrightVendor[] = [];
+  for (const entry of list) {
+    const parsed = parseVendor(entry);
+    if (parsed) vendors.push(parsed);
+  }
+  return vendors;
+};
+
+// Ensure a `contact_identities` row exists (deduped on email/phone) for
+// every SweepBright vendor. RGPD-sensitive — runs server-side only.
+const syncSweepBrightVendors = async (
+  estate: SweepBrightEstateData,
+  propertyId: string
+) => {
+  const vendors = extractSweepBrightVendors(estate);
+  for (const vendor of vendors) {
+    try {
+      await ensureContactIdentity({
+        email: vendor.email,
+        phone: vendor.phone,
+        firstName: vendor.firstName,
+        lastName: vendor.lastName,
+        fullName: vendor.fullName,
+        metadata: {
+          sources: { sweepbright_vendor: true },
+          sweepbright: {
+            estate_id: estate.id,
+            property_id: propertyId,
+            role: "vendor",
+          },
+        },
+      });
+    } catch (error) {
+      // Non-blocking: vendor identity extraction must never break the
+      // property sync.
+      console.error("[sweepbright-sync] vendor identity upsert failed", error);
+    }
+  }
+};
+
 const markEstateDeleted = async (estateId: string) => {
   const now = new Date().toISOString();
 
@@ -552,6 +693,21 @@ export const processSweepBrightDelivery = async (deliveryId: string) => {
 
     const estate = await sweepBrightClient.getEstate(estateId);
     const projection = await upsertPropertyProjection(estate);
+    // Extract owner PII (vendors) into the deduped contact_identities
+    // graph so the reconciliation engine can match the seller across
+    // sources. Best-effort, never blocks the sync.
+    await syncSweepBrightVendors(estate, projection.property.id);
+    // Multi-source reconciliation (Phase 2): attach this SweepBright line
+    // to an existing Sillage dossier (case 2 doublon) or queue a
+    // suggestion. Best-effort, never blocks the sync.
+    try {
+      const { reconcileSweepBrightProperty } = await import(
+        "@/services/reconciliation/reconcile.service"
+      );
+      await reconcileSweepBrightProperty(projection.property.id);
+    } catch (reconcileError) {
+      console.error("[sweepbright-sync] reconciliation failed", reconcileError);
+    }
     await sweepBrightClient.setEstateUrl(
       estateId,
       buildPublicListingUrl(projection.listing.canonical_path)
