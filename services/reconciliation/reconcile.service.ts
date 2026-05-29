@@ -439,9 +439,12 @@ const applyAutoLink = async (
   }
 };
 
-export const reconcileSourceRecord = async (
+// Generate + score candidate client_project hubs for a source record,
+// sorted by descending score (best first). No side effects — reused by
+// both reconcileSourceRecord and the manual rattachement preview.
+const buildScoredCandidates = async (
   facts: ReconcileFacts
-): Promise<ReconcileResult> => {
+): Promise<Candidate[]> => {
   const candidates = new Map<string, Candidate>();
   const normalizedAddress = normalizeAddress(facts.address);
 
@@ -566,16 +569,6 @@ export const reconcileSourceRecord = async (
     candidates.delete(facts.ownClientProjectId);
   }
 
-  if (candidates.size === 0) {
-    return {
-      decision: "none",
-      clientProjectId: null,
-      score: 0,
-      reasons: [],
-      candidatesEvaluated: 0,
-    };
-  }
-
   // 4. Confirmation bands (price + living area) per candidate.
   for (const candidate of candidates.values()) {
     const projectFacts = await getProjectFacts(
@@ -603,8 +596,25 @@ export const reconcileSourceRecord = async (
     }
   }
 
-  // 5. Pick the best candidate.
-  const best = Array.from(candidates.values()).sort((a, b) => b.score - a.score)[0];
+  return Array.from(candidates.values()).sort((a, b) => b.score - a.score);
+};
+
+export const reconcileSourceRecord = async (
+  facts: ReconcileFacts
+): Promise<ReconcileResult> => {
+  const scored = await buildScoredCandidates(facts);
+  if (scored.length === 0) {
+    return {
+      decision: "none",
+      clientProjectId: null,
+      score: 0,
+      reasons: [],
+      candidatesEvaluated: 0,
+    };
+  }
+
+  // Pick the best candidate.
+  const best = scored[0];
   const reasons = Array.from(best.reasons);
 
   const fieldsPreview: Record<string, unknown> = {
@@ -629,7 +639,7 @@ export const reconcileSourceRecord = async (
       clientProjectId: best.clientProjectId,
       score: best.score,
       reasons,
-      candidatesEvaluated: candidates.size,
+      candidatesEvaluated: scored.length,
     };
   }
 
@@ -651,7 +661,7 @@ export const reconcileSourceRecord = async (
       clientProjectId: best.clientProjectId,
       score: best.score,
       reasons,
-      candidatesEvaluated: candidates.size,
+      candidatesEvaluated: scored.length,
     };
   }
 
@@ -660,7 +670,7 @@ export const reconcileSourceRecord = async (
     clientProjectId: null,
     score: best.score,
     reasons,
-    candidatesEvaluated: candidates.size,
+    candidatesEvaluated: scored.length,
   };
 };
 
@@ -702,7 +712,7 @@ type PropertyMatchRpc = {
 const tryAutoCreateProjectFromMyNotary = async (
   facts: ReconcileFacts,
   documentId: string
-): Promise<string | null> => {
+): Promise<{ clientProjectId: string; sellerProjectId: string } | null> => {
   const identities = facts.identities ?? [];
   const primary = identities.find((i) => i.email && i.email.trim().length > 0);
   if (!primary?.email) return null;
@@ -752,7 +762,10 @@ const tryAutoCreateProjectFromMyNotary = async (
     })
     .eq("id", documentId);
 
-  return created.clientProjectId;
+  return {
+    clientProjectId: created.clientProjectId,
+    sellerProjectId: created.sellerProjectId,
+  };
 };
 
 export const reconcileMyNotaryDocument = async (
@@ -796,11 +809,11 @@ export const reconcileMyNotaryDocument = async (
     !doc.matched_seller_project_id
   ) {
     try {
-      const clientProjectId = await tryAutoCreateProjectFromMyNotary(facts, documentId);
-      if (clientProjectId) {
+      const created = await tryAutoCreateProjectFromMyNotary(facts, documentId);
+      if (created) {
         return {
           decision: "auto_link",
-          clientProjectId,
+          clientProjectId: created.clientProjectId,
           score: 0.85,
           reasons: ["auto_created_from_property"],
           candidatesEvaluated: result.candidatesEvaluated,
@@ -812,6 +825,192 @@ export const reconcileMyNotaryDocument = async (
   }
 
   return result;
+};
+
+// Manual trigger of the Case-1 dossier creation from a MyNotary document
+// (used by the rattachement UI when no existing dossier matches). Returns a
+// reason code when it cannot proceed so the UI can explain it.
+export const createProjectFromMyNotaryDocument = async (
+  documentId: string
+): Promise<{
+  ok: boolean;
+  clientProjectId: string | null;
+  sellerProjectId: string | null;
+  reason?: string;
+}> => {
+  const { data } = await supabaseAdmin
+    .from("mynotary_signed_documents")
+    .select(
+      "id, matched_seller_project_id, seller_contacts, property_price, living_area, raw_payload"
+    )
+    .eq("id", documentId)
+    .maybeSingle();
+  const doc = data as unknown as SignedDocFactsRow | null;
+  if (!doc) {
+    return { ok: false, clientProjectId: null, sellerProjectId: null, reason: "document_introuvable" };
+  }
+  if (doc.matched_seller_project_id) {
+    return { ok: false, clientProjectId: null, sellerProjectId: null, reason: "deja_rattache" };
+  }
+
+  const identities: ReconcileIdentity[] = (doc.seller_contacts ?? []).map((c) => ({
+    email: c.email,
+    phone: c.phone,
+    fullName: c.fullName,
+  }));
+  const facts: ReconcileFacts = {
+    kind: "mynotary_document",
+    sourceRef: documentId,
+    address: doc.raw_payload?.parsed?.inline_address ?? null,
+    price: doc.property_price ?? null,
+    livingArea: doc.living_area ?? null,
+    identities,
+  };
+
+  const created = await tryAutoCreateProjectFromMyNotary(facts, documentId);
+  if (created) {
+    return {
+      ok: true,
+      clientProjectId: created.clientProjectId,
+      sellerProjectId: created.sellerProjectId,
+    };
+  }
+
+  // Explain the blocker for the UI.
+  const hasEmail = identities.some((i) => i.email && i.email.trim().length > 0);
+  const reason = !hasEmail
+    ? "pas_email_vendeur"
+    : !normalizeAddress(facts.address)
+      ? "pas_adresse"
+      : "aucun_bien_correspondant";
+  return { ok: false, clientProjectId: null, sellerProjectId: null, reason };
+};
+
+// ─────────────────────────────────────────────────────────────────────
+// Read-only ranked candidate preview for the manual rattachement UI.
+// ─────────────────────────────────────────────────────────────────────
+
+export type ReconcileCandidatePreview = {
+  clientProjectId: string;
+  clientProfileId: string | null;
+  sellerProjectId: string | null;
+  primaryPropertyId: string | null;
+  label: string;
+  address: string | null;
+  score: number;
+  reasons: string[];
+};
+
+const labelForClientProject = async (
+  clientProjectId: string
+): Promise<{ label: string; clientProfileId: string | null }> => {
+  const { data: project } = await supabaseAdmin
+    .from("client_projects")
+    .select("client_profile_id, title")
+    .eq("id", clientProjectId)
+    .maybeSingle();
+  const clientProfileId =
+    (project as { client_profile_id: string | null } | null)?.client_profile_id ??
+    null;
+  const title = (project as { title: string | null } | null)?.title ?? null;
+  let label = title ?? `Dossier ${clientProjectId.slice(0, 8)}`;
+  if (clientProfileId) {
+    const { data: profile } = await supabaseAdmin
+      .from("client_profiles")
+      .select("full_name, email")
+      .eq("id", clientProfileId)
+      .maybeSingle();
+    const row = profile as { full_name: string | null; email: string | null } | null;
+    label = row?.full_name ?? row?.email ?? label;
+  }
+  return { label, clientProfileId };
+};
+
+// Mirrors the auto-link engine (same buildScoredCandidates) but performs no
+// write: returns the top candidate dossiers for a MyNotary document, each
+// enriched with a human label, the dossier's primary property + address, the
+// score and the matching signals (reasons).
+export const previewMyNotaryCandidates = async (
+  documentId: string,
+  limit = 5
+): Promise<ReconcileCandidatePreview[]> => {
+  const { data } = await supabaseAdmin
+    .from("mynotary_signed_documents")
+    .select("id, seller_contacts, property_price, living_area, raw_payload")
+    .eq("id", documentId)
+    .maybeSingle();
+  const doc = data as unknown as SignedDocFactsRow | null;
+  if (!doc) return [];
+
+  const identities: ReconcileIdentity[] = (doc.seller_contacts ?? []).map((c) => ({
+    email: c.email,
+    phone: c.phone,
+    fullName: c.fullName,
+  }));
+  const facts: ReconcileFacts = {
+    kind: "mynotary_document",
+    sourceRef: documentId,
+    address: doc.raw_payload?.parsed?.inline_address ?? null,
+    price: doc.property_price ?? null,
+    livingArea: doc.living_area ?? null,
+    identities,
+  };
+
+  const scored = (await buildScoredCandidates(facts)).slice(0, limit);
+  if (scored.length === 0) return [];
+
+  // Resolve the primary property + its address per candidate dossier.
+  const clientProjectIds = scored.map((c) => c.clientProjectId);
+  const { data: links } = await supabaseAdmin
+    .from("project_properties")
+    .select("client_project_id, property_id, is_primary")
+    .in("client_project_id", clientProjectIds)
+    .is("unlinked_at", null);
+  const linkRows = (links ?? []) as Array<{
+    client_project_id: string;
+    property_id: string;
+    is_primary: boolean | null;
+  }>;
+  const primaryByProject = new Map<string, string>();
+  for (const l of linkRows) {
+    if (!primaryByProject.has(l.client_project_id) || l.is_primary) {
+      primaryByProject.set(l.client_project_id, l.property_id);
+    }
+  }
+  const propertyIds = Array.from(new Set(linkRows.map((l) => l.property_id)));
+  const addressByProperty = new Map<string, string | null>();
+  if (propertyIds.length > 0) {
+    const { data: props } = await supabaseAdmin
+      .from("properties")
+      .select("id, formatted_address")
+      .in("id", propertyIds);
+    for (const p of (props ?? []) as Array<{
+      id: string;
+      formatted_address: string | null;
+    }>) {
+      addressByProperty.set(p.id, p.formatted_address);
+    }
+  }
+
+  const out: ReconcileCandidatePreview[] = [];
+  for (const c of scored) {
+    const primaryPropertyId = primaryByProject.get(c.clientProjectId) ?? null;
+    const address = primaryPropertyId
+      ? addressByProperty.get(primaryPropertyId) ?? null
+      : null;
+    const { label, clientProfileId } = await labelForClientProject(c.clientProjectId);
+    out.push({
+      clientProjectId: c.clientProjectId,
+      clientProfileId,
+      sellerProjectId: c.sellerProjectId,
+      primaryPropertyId,
+      label,
+      address,
+      score: Math.min(c.score, 1),
+      reasons: Array.from(c.reasons),
+    });
+  }
+  return out;
 };
 
 export const reconcileSweepBrightProperty = async (

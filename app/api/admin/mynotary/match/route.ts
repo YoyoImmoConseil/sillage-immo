@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAdminPageContext, hasAdminPermission } from "@/lib/admin/auth";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { goldenForSellerProject } from "@/services/admin/mynotary-match.service";
 
 export const dynamic = "force-dynamic";
 
@@ -129,5 +130,17 @@ export const POST = async (request: Request) => {
       .eq("id", sellerProjectId);
   }
 
-  return NextResponse.json({ ok: true });
+  // Return the golden record for the now-linked dossier so the UI can show
+  // divergences (step 2) without an extra round-trip.
+  const resolved = sellerProjectId
+    ? await goldenForSellerProject(sellerProjectId)
+    : { golden: null, clientProfileId: null };
+
+  return NextResponse.json({
+    ok: true,
+    sellerProjectId,
+    clientProjectId: resolved.golden?.clientProjectId ?? null,
+    clientProfileId: resolved.clientProfileId,
+    golden: resolved.golden,
+  });
 };
