@@ -120,6 +120,25 @@ const loadSellerProjects = async (
   return map;
 };
 
+// Resolve client_project ids → their seller_project row (one is enough for
+// reconciliation). Used by the property-based candidate path, where the hub
+// is found via project_properties → client_project rather than a seller_lead.
+const loadSellerProjectsByClientProject = async (
+  clientProjectIds: string[]
+): Promise<Map<string, SellerProjectLite>> => {
+  const map = new Map<string, SellerProjectLite>();
+  const unique = Array.from(new Set(clientProjectIds.filter(Boolean)));
+  if (unique.length === 0) return map;
+  const { data } = await supabaseAdmin
+    .from("seller_projects")
+    .select("id, client_project_id, seller_lead_id")
+    .in("client_project_id", unique);
+  for (const row of (data ?? []) as SellerProjectLite[]) {
+    if (!map.has(row.client_project_id)) map.set(row.client_project_id, row);
+  }
+  return map;
+};
+
 type AddressRpc = {
   rpc: (
     name: "mynotary_match_seller_project_by_address",
@@ -445,6 +464,63 @@ export const reconcileSourceRecord = async (
     }
   }
 
+  // 1b. Address candidates via SweepBright properties → project_properties.
+  //     Covers dossiers created from a SweepBright property *without* an
+  //     estimator lead (seller_lead_id NULL): the matching address lives on
+  //     the property, not on a seller_lead, so the lead-based RPC above
+  //     would never surface them.
+  if (normalizedAddress) {
+    const propRpc = supabaseAdmin as unknown as PropertyMatchRpc;
+    // Low threshold on purpose: the RPC compares the *raw* formatted_address
+    // against the normalized query, so formatting differences (e.g.
+    // "… Alpes-Maritimes" vs "… France 06000") drag the trigram score down
+    // even for the same street. A weak address contributes little on its own
+    // (0.3 × 0.7 ≈ 0.21, below the suggestion threshold), so a candidate only
+    // survives here if the price + surface bands also confirm it — gated by
+    // the address_price_surface rule below.
+    const { data: propRows } = await propRpc.rpc("mynotary_match_address", {
+      p_query: normalizedAddress,
+      p_min_similarity: 0.3,
+      p_limit: 8,
+    });
+    const simByProperty = new Map<string, number>();
+    for (const row of propRows ?? []) {
+      // SweepBright source reconciling against itself → skip its own line.
+      if (
+        facts.kind === "sweepbright_property" &&
+        row.property_id === facts.propertyId
+      ) {
+        continue;
+      }
+      simByProperty.set(row.property_id, Math.min(row.similarity, 1));
+    }
+    if (simByProperty.size > 0) {
+      const { data: links } = await supabaseAdmin
+        .from("project_properties")
+        .select("client_project_id, property_id")
+        .in("property_id", Array.from(simByProperty.keys()))
+        .is("unlinked_at", null);
+      const linkRows = (links ?? []) as Array<{
+        client_project_id: string;
+        property_id: string;
+      }>;
+      const spByClientProject = await loadSellerProjectsByClientProject(
+        linkRows.map((l) => l.client_project_id)
+      );
+      for (const link of linkRows) {
+        const sim = simByProperty.get(link.property_id) ?? 0;
+        const sp = spByClientProject.get(link.client_project_id) ?? null;
+        upsertCandidate(
+          candidates,
+          sp,
+          link.client_project_id,
+          sim * 0.7,
+          "address"
+        );
+      }
+    }
+  }
+
   // 2. Identity candidates (email / phone exact on seller_leads).
   const identities = facts.identities ?? [];
   if (identities.length > 0) {
@@ -513,6 +589,17 @@ export const reconcileSourceRecord = async (
     if (withinBand(facts.livingArea, projectFacts.livingArea)) {
       candidate.score = Math.min(candidate.score + 0.12, 1);
       candidate.reasons.add("surface_band");
+    }
+    // Address + price + surface all concordent → same physical property.
+    // This is strong enough to auto-link even when the raw address
+    // similarity alone stays modest (different formatting between sources).
+    if (
+      candidate.reasons.has("address") &&
+      candidate.reasons.has("price_band") &&
+      candidate.reasons.has("surface_band")
+    ) {
+      candidate.score = Math.max(candidate.score, 0.85);
+      candidate.reasons.add("address_price_surface");
     }
   }
 
