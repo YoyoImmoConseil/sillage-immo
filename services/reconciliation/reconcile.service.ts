@@ -323,7 +323,22 @@ const upsertSuggestion = async (input: {
   // The uniqueness guard is a *partial* index (… where status = 'pending'),
   // which PostgREST upsert/onConflict cannot target. Do an explicit
   // select-then-update/insert keyed on the live (pending) row instead.
-  const { data: existing, error: selectError } = await supabaseAdmin
+  // `reconciliation_suggestions` is not in the generated Database types,
+  // so cast a minimal builder shape (same pattern as applyAutoLink).
+  type Result = { error: { message: string } | null };
+  type Filterable = {
+    select: (cols: string) => Filterable;
+    eq: (col: string, val: string) => Filterable;
+    maybeSingle: () => Promise<{ data: { id: string } | null; error: { message: string } | null }>;
+  };
+  const db = supabaseAdmin as unknown as {
+    from: (table: "reconciliation_suggestions") => Filterable & {
+      update: (row: Record<string, unknown>) => { eq: (col: string, val: string) => Promise<Result> };
+      insert: (row: Record<string, unknown>) => Promise<Result>;
+    };
+  };
+
+  const { data: existing, error: selectError } = await db
     .from("reconciliation_suggestions")
     .select("id")
     .eq("source_kind", input.kind)
@@ -337,21 +352,21 @@ const upsertSuggestion = async (input: {
   }
 
   if (existing?.id) {
-    const { error: updateError } = await supabaseAdmin
+    const { error: updateError } = await db
       .from("reconciliation_suggestions")
       .update({
         score: input.score,
         reasons: input.reasons,
         fields_preview: input.fieldsPreview,
       })
-      .eq("id", (existing as { id: string }).id);
+      .eq("id", existing.id);
     if (updateError) {
       console.error("[reconcile] suggestion update failed", updateError.message);
     }
     return;
   }
 
-  const { error: insertError } = await supabaseAdmin
+  const { error: insertError } = await db
     .from("reconciliation_suggestions")
     .insert({
       source_kind: input.kind,
