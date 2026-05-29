@@ -16,9 +16,21 @@ type SearchParams = {
   until?: string;
 };
 
+const KIND_VALUES = [
+  "mandate",
+  "purchase_offer",
+  "preliminary_sale",
+  "rental_mandate",
+  "lease",
+  "guarantee",
+  "management_mandate",
+  "other",
+] as const;
+
 const parseKind = (raw: string | undefined) => {
-  if (raw === "mandate" || raw === "purchase_offer" || raw === "preliminary_sale")
-    return raw;
+  if (raw && (KIND_VALUES as readonly string[]).includes(raw)) {
+    return raw as (typeof KIND_VALUES)[number];
+  }
   return "all";
 };
 
