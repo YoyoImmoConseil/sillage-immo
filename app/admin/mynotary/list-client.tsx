@@ -268,14 +268,30 @@ export function MyNotaryListClient({
             ) : null}
             {initialRows.map((row) => {
               const firstFile = row.files?.[0];
+              const signersFromSigners = (row.signers ?? [])
+                .slice(0, 3)
+                .map((s) => {
+                  const name = `${s.firstName ?? ""} ${s.lastName ?? ""}`.trim();
+                  return name || s.email || "";
+                })
+                .filter(Boolean)
+                .join(", ");
+              // Fallback to the MyNotary-enriched seller parties when the
+              // raw signers payload is empty (older ingested docs).
+              const signersFromSellers = (row.seller_contacts ?? [])
+                .slice(0, 3)
+                .map((c) => {
+                  const name =
+                    c.fullName?.trim() ||
+                    `${c.firstName ?? ""} ${c.lastName ?? ""}`.trim();
+                  return name || c.email || "";
+                })
+                .filter(Boolean)
+                .join(", ");
               const signersLabel =
-                (row.signers ?? [])
-                  .slice(0, 3)
-                  .map((s) => {
-                    const name = `${s.firstName ?? ""} ${s.lastName ?? ""}`.trim();
-                    return name || s.email || "—";
-                  })
-                  .join(", ") || "—";
+                signersFromSigners || signersFromSellers || "—";
+              const signersIsSeller =
+                !signersFromSigners && Boolean(signersFromSellers);
               const { kindLabel, subLabel, registerLabel } = formatTypeBadges(row);
               const matching = formatMatching(row);
               return (
@@ -296,7 +312,16 @@ export function MyNotaryListClient({
                     </div>
                   </td>
                   <td className="px-3 py-2 text-[#141446]/80 align-top">{formatDate(row.signed_at)}</td>
-                  <td className="px-3 py-2 text-[#141446]/80 align-top">{signersLabel}</td>
+                  <td className="px-3 py-2 text-[#141446]/80 align-top">
+                    <div className="flex flex-col gap-0.5">
+                      <span>{signersLabel}</span>
+                      {signersIsSeller ? (
+                        <span className="text-[10px] font-medium uppercase tracking-wide text-[#141446]/45">
+                          Vendeur (MyNotary)
+                        </span>
+                      ) : null}
+                    </div>
+                  </td>
                   <td className="px-3 py-2 align-top">
                     <span
                       className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${matching.tone}`}
