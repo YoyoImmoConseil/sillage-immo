@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { isAdminRequest } from "@/lib/admin/auth";
+import { getAdminRequestContext, hasAdminPermission } from "@/lib/admin/auth";
+import type { AdminPermission } from "@/types/domain/admin";
 import {
   getDomainEventQueueStats,
   processPendingDomainEvents,
@@ -9,9 +10,14 @@ const jsonError = (status: number, message: string) => {
   return NextResponse.json({ ok: false, message }, { status });
 };
 
+const isAuthorized = async (request: Request, permission: AdminPermission) => {
+  const context = await getAdminRequestContext(request);
+  return context !== null && hasAdminPermission(context, permission);
+};
+
 export const GET = async (request: Request) => {
-  if (!(await isAdminRequest(request))) {
-    return jsonError(401, "Unauthorized.");
+  if (!(await isAuthorized(request, "operations.view"))) {
+    return jsonError(403, "Acces refuse.");
   }
 
   try {
@@ -25,8 +31,8 @@ export const GET = async (request: Request) => {
 };
 
 export const POST = async (request: Request) => {
-  if (!(await isAdminRequest(request))) {
-    return jsonError(401, "Unauthorized.");
+  if (!(await isAuthorized(request, "operations.manage"))) {
+    return jsonError(403, "Acces refuse.");
   }
 
   let limit: number | undefined;

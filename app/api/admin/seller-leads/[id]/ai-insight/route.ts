@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { isAdminRequest } from "@/lib/admin/auth";
+import { getAdminRequestContext, hasAdminPermission } from "@/lib/admin/auth";
 import { generateSellerAiInsight } from "@/services/sellers/seller-ai-insight.service";
 
 type RouteParams = {
@@ -7,8 +7,9 @@ type RouteParams = {
 };
 
 export const POST = async (request: Request, { params }: RouteParams) => {
-  if (!(await isAdminRequest(request))) {
-    return NextResponse.json({ ok: false, message: "Unauthorized." }, { status: 401 });
+  const context = await getAdminRequestContext(request);
+  if (!context || !hasAdminPermission(context, "leads.sellers.manage")) {
+    return NextResponse.json({ ok: false, message: "Acces refuse." }, { status: 403 });
   }
 
   const { id } = await params;

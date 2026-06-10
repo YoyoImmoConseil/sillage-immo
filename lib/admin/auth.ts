@@ -49,7 +49,7 @@ const buildContext = (
   permissions: ADMIN_ROLE_PERMISSIONS[role],
 });
 
-const getAdminContextByUser = async (user: User): Promise<AdminContext | null> => {
+export const getAdminContextByUser = async (user: User): Promise<AdminContext | null> => {
   const { data: profileData, error: profileError } = await supabaseAdmin
     .from("admin_profiles")
     .select("id, auth_user_id, email, first_name, last_name, full_name, is_active, metadata")

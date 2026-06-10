@@ -1,8 +1,14 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { isAdminRequest } from "@/lib/admin/auth";
+import { getAdminRequestContext, hasAdminPermission } from "@/lib/admin/auth";
 import { zoneCatalog } from "@/lib/scoring/zone-catalog";
 import { clearZoneCatalogCache } from "@/lib/scoring/zone-repository";
+import type { AdminPermission } from "@/types/domain/admin";
+
+const isAuthorized = async (request: Request, permission: AdminPermission) => {
+  const context = await getAdminRequestContext(request);
+  return context !== null && hasAdminPermission(context, permission);
+};
 
 type ZoneCatalogWriteInput = {
   slug: string;
@@ -32,8 +38,8 @@ const isStringArray = (value: unknown): value is string[] => {
 const normalizeSlug = (value: string) => value.trim().toLowerCase();
 
 export const GET = async (request: Request) => {
-  if (!(await isAdminRequest(request))) {
-    return jsonError(401, "Unauthorized.");
+  if (!(await isAuthorized(request, "matching.view"))) {
+    return jsonError(403, "Acces refuse.");
   }
 
   const { data, error } = await supabaseAdmin
@@ -50,8 +56,8 @@ export const GET = async (request: Request) => {
 };
 
 export const POST = async (request: Request) => {
-  if (!(await isAdminRequest(request))) {
-    return jsonError(401, "Unauthorized.");
+  if (!(await isAuthorized(request, "matching.manage"))) {
+    return jsonError(403, "Acces refuse.");
   }
 
   let body: SeedInput | ZoneCatalogWriteInput | null = null;
@@ -155,8 +161,8 @@ export const POST = async (request: Request) => {
 };
 
 export const PUT = async (request: Request) => {
-  if (!(await isAdminRequest(request))) {
-    return jsonError(401, "Unauthorized.");
+  if (!(await isAuthorized(request, "matching.manage"))) {
+    return jsonError(403, "Acces refuse.");
   }
 
   let body: ZoneCatalogWriteInput | null = null;
@@ -213,8 +219,8 @@ export const PUT = async (request: Request) => {
 };
 
 export const DELETE = async (request: Request) => {
-  if (!(await isAdminRequest(request))) {
-    return jsonError(401, "Unauthorized.");
+  if (!(await isAuthorized(request, "matching.manage"))) {
+    return jsonError(403, "Acces refuse.");
   }
 
   let body: { slug?: string } | null = null;
