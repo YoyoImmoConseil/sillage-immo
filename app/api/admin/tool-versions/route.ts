@@ -66,7 +66,8 @@ export const GET = async (request: Request) => {
     .order("created_at", { ascending: false });
 
   if (error) {
-    return jsonError(500, error.message);
+    console.error("[admin-api] db error:", error.message);
+    return jsonError(500, "Erreur interne.");
   }
 
   return NextResponse.json({ ok: true, data });
@@ -112,7 +113,8 @@ export const POST = async (request: Request) => {
     .single();
 
   if (error) {
-    return jsonError(500, error.message);
+    console.error("[admin-api] db error:", error.message);
+    return jsonError(500, "Erreur interne.");
   }
 
   return NextResponse.json({ ok: true, data }, { status: 201 });
@@ -193,7 +195,8 @@ export const PUT = async (request: Request) => {
     .maybeSingle();
 
   if (error) {
-    return jsonError(500, error.message);
+    console.error("[admin-api] db error:", error.message);
+    return jsonError(500, "Erreur interne.");
   }
 
   if (!data) {
@@ -232,7 +235,8 @@ export const DELETE = async (request: Request) => {
     .maybeSingle();
 
   if (error) {
-    return jsonError(500, error.message);
+    console.error("[admin-api] db error:", error.message);
+    return jsonError(500, "Erreur interne.");
   }
 
   if (!data) {

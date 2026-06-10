@@ -73,11 +73,14 @@ export const POST = async (request: Request) => {
     }
     return NextResponse.json(payload);
   } catch (error) {
-    const rawMessage = error instanceof Error ? error.message : "Impossible d'envoyer le code.";
-    const message = rawMessage.includes("seller_email_verifications")
-      ? "La table de verification email n'est pas installee. Execute la migration 20260305_007_create_seller_email_verifications.sql."
-      : rawMessage;
-    const payload: SellerApiErrorResponse = { ok: false, message };
+    console.error(
+      "[seller-send-otp] failed:",
+      error instanceof Error ? error.message : error
+    );
+    const payload: SellerApiErrorResponse = {
+      ok: false,
+      message: "Impossible d'envoyer le code. Merci de reessayer.",
+    };
     if (idempotencyKey.trim().length > 0) {
       try {
         await persistIdempotencyResponse("seller.email.send_otp", idempotencyKey, 500, payload);

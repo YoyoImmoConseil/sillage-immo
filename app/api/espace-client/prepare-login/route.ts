@@ -30,19 +30,27 @@ export async function POST(request: Request) {
     });
 
     if (!result.ok) {
-      return NextResponse.json(result, { status: 404 });
+      // Anti-enumeration : reponse uniforme, sans confirmer l'existence
+      // ou non d'un acces portail pour cette adresse.
+      return NextResponse.json({
+        ok: true,
+        code: "sent_if_exists",
+        message:
+          "Si un espace client existe pour cette adresse, vous recevrez les instructions de connexion.",
+      });
     }
 
     return NextResponse.json(result);
   } catch (error) {
+    console.error(
+      "[prepare-login] failed:",
+      error instanceof Error ? error.message : error
+    );
     return NextResponse.json(
       {
         ok: false,
         code: "prepare_login_failed",
-        message:
-          error instanceof Error
-            ? error.message
-            : "Impossible de preparer votre acces a l'espace client.",
+        message: "Impossible de preparer votre acces a l'espace client.",
       },
       { status: 500 }
     );

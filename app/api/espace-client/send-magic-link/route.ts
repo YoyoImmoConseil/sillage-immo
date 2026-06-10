@@ -50,27 +50,31 @@ export async function POST(request: Request) {
     });
 
     if (!result.ok) {
-      const status =
-        result.code === "invalid_email"
-          ? 422
-          : result.code === "no_portal_access"
-            ? 404
-            : result.code === "email_send_failed"
-              ? 502
-              : 400;
+      // Anti-enumeration : ne pas reveler si un email dispose ou non d'un
+      // acces portail. On repond comme si l'envoi avait eu lieu.
+      if (result.code === "no_portal_access") {
+        return NextResponse.json({
+          ok: true,
+          code: "sent_if_exists",
+          message:
+            "Si un espace client existe pour cette adresse, un lien de connexion vient d'etre envoye.",
+        });
+      }
+      const status = result.code === "invalid_email" ? 422 : result.code === "email_send_failed" ? 502 : 400;
       return NextResponse.json(result, { status });
     }
 
     return NextResponse.json(result);
   } catch (error) {
+    console.error(
+      "[send-magic-link] failed:",
+      error instanceof Error ? error.message : error
+    );
     return NextResponse.json(
       {
         ok: false,
         code: "send_magic_link_failed",
-        message:
-          error instanceof Error
-            ? error.message
-            : "Impossible d'envoyer le lien de connexion a l'espace client.",
+        message: "Impossible d'envoyer le lien de connexion a l'espace client.",
       },
       { status: 500 }
     );

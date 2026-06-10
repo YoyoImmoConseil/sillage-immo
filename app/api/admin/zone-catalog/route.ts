@@ -49,7 +49,8 @@ export const GET = async (request: Request) => {
     .order("slug", { ascending: true });
 
   if (error) {
-    return jsonError(500, error.message);
+    console.error("[admin-api] db error:", error.message);
+    return jsonError(500, "Erreur interne.");
   }
 
   return NextResponse.json({ ok: true, data });
@@ -109,7 +110,8 @@ export const POST = async (request: Request) => {
       .select("slug, city, score");
 
     if (error) {
-      return jsonError(500, error.message);
+      console.error("[admin-api] db error:", error.message);
+      return jsonError(500, "Erreur interne.");
     }
 
     clearZoneCatalogCache();
@@ -153,7 +155,8 @@ export const POST = async (request: Request) => {
     .single();
 
   if (error) {
-    return jsonError(500, error.message);
+    console.error("[admin-api] db error:", error.message);
+    return jsonError(500, "Erreur interne.");
   }
 
   clearZoneCatalogCache();
@@ -208,7 +211,8 @@ export const PUT = async (request: Request) => {
     .maybeSingle();
 
   if (error) {
-    return jsonError(500, error.message);
+    console.error("[admin-api] db error:", error.message);
+    return jsonError(500, "Erreur interne.");
   }
   if (!data) {
     return jsonError(404, "Zone not found.");
@@ -242,7 +246,8 @@ export const DELETE = async (request: Request) => {
     .maybeSingle();
 
   if (error) {
-    return jsonError(500, error.message);
+    console.error("[admin-api] db error:", error.message);
+    return jsonError(500, "Erreur interne.");
   }
   if (!data) {
     return jsonError(404, "Zone not found.");
