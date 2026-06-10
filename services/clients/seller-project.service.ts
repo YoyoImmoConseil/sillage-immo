@@ -187,30 +187,41 @@ export const createSellerProjectFromLead = async (
     })
     .select("id")
     .single();
-  if (spErr) throw spErr;
+  if (spErr) {
+    // Rollback : ne pas laisser un client_project orphelin (le profil
+    // client est réutilisé au prochain essai, on le conserve).
+    await supabaseAdmin.from("client_projects").delete().eq("id", projectId);
+    throw spErr;
+  }
 
-  await createAdvisorHistoryAssignment({
-    sellerProjectId: sp.id,
-    adminProfileId: input.adminProfileId ?? lead.assigned_admin_profile_id ?? null,
-    assignedByAdminId: input.adminProfileId,
-    reason: "Creation depuis lead vendeur",
-  });
+  try {
+    await createAdvisorHistoryAssignment({
+      sellerProjectId: sp.id,
+      adminProfileId: input.adminProfileId ?? lead.assigned_admin_profile_id ?? null,
+      assignedByAdminId: input.adminProfileId,
+      reason: "Creation depuis lead vendeur",
+    });
 
-  await emitClientProjectEvent({
-    clientProjectId: projectId,
-    sellerProjectId: sp.id,
-    eventName: "seller_project.created_from_lead",
-    eventCategory: "project",
-    actorType: "admin",
-    actorId: input.adminProfileId ?? undefined,
-    payload: { seller_lead_id: input.sellerLeadId },
-  });
+    await emitClientProjectEvent({
+      clientProjectId: projectId,
+      sellerProjectId: sp.id,
+      eventName: "seller_project.created_from_lead",
+      eventCategory: "project",
+      actorType: "admin",
+      actorId: input.adminProfileId ?? undefined,
+      payload: { seller_lead_id: input.sellerLeadId },
+    });
 
-  await ensureEstimationProperty({
-    sellerLeadId: input.sellerLeadId,
-    clientProjectId: projectId,
-    linkedByAdminProfileId: input.adminProfileId ?? lead.assigned_admin_profile_id ?? null,
-  });
+    await ensureEstimationProperty({
+      sellerLeadId: input.sellerLeadId,
+      clientProjectId: projectId,
+      linkedByAdminProfileId: input.adminProfileId ?? lead.assigned_admin_profile_id ?? null,
+    });
+  } catch (error) {
+    await supabaseAdmin.from("seller_projects").delete().eq("id", sp.id);
+    await supabaseAdmin.from("client_projects").delete().eq("id", projectId);
+    throw error;
+  }
 
   return { clientProjectId: projectId, sellerProjectId: sp.id, clientProfileId: clientProfileIdResolved };
 };

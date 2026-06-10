@@ -193,104 +193,137 @@ export const createBuyerSearchSignup = async (
     source: origin,
   });
 
-  const { data: searchProfile, error: searchProfileError } = await supabaseAdmin
-    .from("buyer_search_profiles")
-    .insert({
-      buyer_lead_id: buyerLead.id,
-      client_project_id: clientProjectId,
-      business_type: input.criteria.businessType,
-      status: "active",
-      location_text: input.criteria.locationText?.trim() || null,
-      cities: input.criteria.cities,
-      property_types: input.criteria.propertyTypes,
-      budget_min: input.criteria.budgetMin ?? null,
-      budget_max: input.criteria.budgetMax ?? null,
-      rooms_min: input.criteria.roomsMin ?? null,
-      rooms_max: input.criteria.roomsMax ?? null,
-      bedrooms_min: input.criteria.bedroomsMin ?? null,
-      living_area_min: input.criteria.livingAreaMin ?? null,
-      living_area_max: input.criteria.livingAreaMax ?? null,
-      floor_min: input.criteria.floorMin ?? null,
-      floor_max: input.criteria.floorMax ?? null,
-      requires_terrace: input.criteria.requiresTerrace ?? null,
-      requires_elevator: input.criteria.requiresElevator ?? null,
-      criteria: {
-        source: origin,
-        ...(input.criteria.zonePolygon && input.criteria.zonePolygon.length >= 3
-          ? { zonePolygon: input.criteria.zonePolygon }
-          : {}),
-      },
-    })
-    .select("id")
-    .single();
-  if (searchProfileError || !searchProfile) {
-    throw searchProfileError ?? new Error("Impossible de creer le profil de recherche acquereur.");
-  }
-
-  const { data: buyerProject, error: buyerProjectError } = await supabaseAdmin
-    .from("buyer_projects")
-    .insert({
-      client_project_id: clientProjectId,
-      buyer_lead_id: buyerLead.id,
-      active_search_profile_id: searchProfile.id,
-      metadata: {
-        origin,
-        sourceUrl: input.sourceUrl ?? null,
-      },
-    })
-    .select("id")
-    .single();
-  if (buyerProjectError || !buyerProject) {
-    throw buyerProjectError ?? new Error("Impossible de creer le projet acquereur.");
-  }
-
-  await emitClientProjectEvent({
-    clientProjectId,
-    eventName: "buyer_project.created_from_signup",
-    eventCategory: "project",
-    actorType: "client",
-    visibleToClient: true,
-    payload: {
-      buyer_lead_id: buyerLead.id,
-      buyer_search_profile_id: searchProfile.id,
-      origin,
-    },
-  });
-
-  const invitation = await createInvitation({
-    clientProjectId,
-    clientProfileId,
-    email,
-    providerHint: "email",
-  });
+  // Compensation : Supabase ne permet pas de transaction multi-tables côté
+  // API, donc en cas d'échec d'une étape on supprime ce qui vient d'être
+  // créé (le lead et le profil client sont réutilisés au prochain essai,
+  // inutile de les supprimer).
+  let createdSearchProfileId: string | null = null;
+  let createdBuyerProjectId: string | null = null;
+  const rollbackSignupArtifacts = async () => {
+    try {
+      if (createdBuyerProjectId) {
+        await supabaseAdmin.from("buyer_projects").delete().eq("id", createdBuyerProjectId);
+      }
+      if (createdSearchProfileId) {
+        await supabaseAdmin
+          .from("buyer_search_profiles")
+          .delete()
+          .eq("id", createdSearchProfileId);
+      }
+      await supabaseAdmin.from("client_projects").delete().eq("id", clientProjectId);
+    } catch (rollbackError) {
+      console.error(
+        "[buyer-signup] rollback failed (artefacts orphelins a nettoyer):",
+        rollbackError instanceof Error ? rollbackError.message : rollbackError
+      );
+    }
+  };
 
   try {
-    const { recomputeMatchesForBuyerLead } = await import("./buyer-matching.service");
-    await recomputeMatchesForBuyerLead(buyerLead.id);
-  } catch (error) {
-    console.error("[buyer-signup] initial recompute failed", error);
-  }
+    const { data: searchProfile, error: searchProfileError } = await supabaseAdmin
+      .from("buyer_search_profiles")
+      .insert({
+        buyer_lead_id: buyerLead.id,
+        client_project_id: clientProjectId,
+        business_type: input.criteria.businessType,
+        status: "active",
+        location_text: input.criteria.locationText?.trim() || null,
+        cities: input.criteria.cities,
+        property_types: input.criteria.propertyTypes,
+        budget_min: input.criteria.budgetMin ?? null,
+        budget_max: input.criteria.budgetMax ?? null,
+        rooms_min: input.criteria.roomsMin ?? null,
+        rooms_max: input.criteria.roomsMax ?? null,
+        bedrooms_min: input.criteria.bedroomsMin ?? null,
+        living_area_min: input.criteria.livingAreaMin ?? null,
+        living_area_max: input.criteria.livingAreaMax ?? null,
+        floor_min: input.criteria.floorMin ?? null,
+        floor_max: input.criteria.floorMax ?? null,
+        requires_terrace: input.criteria.requiresTerrace ?? null,
+        requires_elevator: input.criteria.requiresElevator ?? null,
+        criteria: {
+          source: origin,
+          ...(input.criteria.zonePolygon && input.criteria.zonePolygon.length >= 3
+            ? { zonePolygon: input.criteria.zonePolygon }
+            : {}),
+        },
+      })
+      .select("id")
+      .single();
+    if (searchProfileError || !searchProfile) {
+      throw searchProfileError ?? new Error("Impossible de creer le profil de recherche acquereur.");
+    }
+    createdSearchProfileId = searchProfile.id;
 
-  // Audit
-  await supabaseAdmin.from("audit_log").insert({
-    actor_type: "anonymous",
-    action: "buyer_signup_created",
-    entity_type: "buyer_lead",
-    entity_id: buyerLead.id,
-    data: {
+    const { data: buyerProject, error: buyerProjectError } = await supabaseAdmin
+      .from("buyer_projects")
+      .insert({
+        client_project_id: clientProjectId,
+        buyer_lead_id: buyerLead.id,
+        active_search_profile_id: searchProfile.id,
+        metadata: {
+          origin,
+          sourceUrl: input.sourceUrl ?? null,
+        },
+      })
+      .select("id")
+      .single();
+    if (buyerProjectError || !buyerProject) {
+      throw buyerProjectError ?? new Error("Impossible de creer le projet acquereur.");
+    }
+    createdBuyerProjectId = buyerProject.id;
+
+    await emitClientProjectEvent({
+      clientProjectId,
+      eventName: "buyer_project.created_from_signup",
+      eventCategory: "project",
+      actorType: "client",
+      visibleToClient: true,
+      payload: {
+        buyer_lead_id: buyerLead.id,
+        buyer_search_profile_id: searchProfile.id,
+        origin,
+      },
+    });
+
+    const invitation = await createInvitation({
+      clientProjectId,
+      clientProfileId,
       email,
-      client_project_id: clientProjectId,
-      buyer_search_profile_id: searchProfile.id,
-      origin,
-    },
-  });
+      providerHint: "email",
+    });
 
-  return {
-    buyerLeadId: buyerLead.id,
-    clientProfileId,
-    clientProjectId,
-    buyerProjectId: buyerProject.id,
-    buyerSearchProfileId: searchProfile.id,
-    invitationToken: invitation.token,
-  };
+    try {
+      const { recomputeMatchesForBuyerLead } = await import("./buyer-matching.service");
+      await recomputeMatchesForBuyerLead(buyerLead.id);
+    } catch (error) {
+      console.error("[buyer-signup] initial recompute failed", error);
+    }
+
+    // Audit
+    await supabaseAdmin.from("audit_log").insert({
+      actor_type: "anonymous",
+      action: "buyer_signup_created",
+      entity_type: "buyer_lead",
+      entity_id: buyerLead.id,
+      data: {
+        email,
+        client_project_id: clientProjectId,
+        buyer_search_profile_id: searchProfile.id,
+        origin,
+      },
+    });
+
+    return {
+      buyerLeadId: buyerLead.id,
+      clientProfileId,
+      clientProjectId,
+      buyerProjectId: buyerProject.id,
+      buyerSearchProfileId: searchProfile.id,
+      invitationToken: invitation.token,
+    };
+  } catch (error) {
+    await rollbackSignupArtifacts();
+    throw error;
+  }
 };
