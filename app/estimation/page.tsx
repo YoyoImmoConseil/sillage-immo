@@ -12,7 +12,7 @@ export default async function EstimationPage() {
     <main className="min-h-screen">
       <section
         aria-labelledby="estimation-hero-title"
-        className="relative isolate overflow-hidden bg-[#141446] text-[#f4ece4]"
+        className="relative isolate overflow-hidden bg-navy text-sand"
       >
         <Image
           src="/decor-sillage-blue.svg"
@@ -28,7 +28,7 @@ export default async function EstimationPage() {
               <SillageLogo priority className="h-auto w-full" />
             </div>
             <div className="space-y-5 max-w-3xl">
-              <p className="text-[11px] md:text-xs uppercase tracking-[0.22em] text-[#f4ece4]/75">
+              <p className="text-[11px] md:text-xs uppercase tracking-[0.22em] text-sand/75">
                 {copy.eyebrow}
               </p>
               <h1
@@ -37,14 +37,14 @@ export default async function EstimationPage() {
               >
                 {copy.title}
               </h1>
-              <p className="sillage-editorial-text text-[#f4ece4]/90 max-w-3xl">
+              <p className="sillage-editorial-text text-sand/90 max-w-3xl">
                 {copy.subtitle}
               </p>
               <ul className="flex flex-wrap gap-2 pt-2">
                 {copy.microProofs.map((proof) => (
                   <li
                     key={proof}
-                    className="inline-flex items-center rounded-full border border-[#f4ece4]/40 bg-[#f4ece4]/5 px-3 py-1.5 text-xs md:text-[13px] text-[#f4ece4]/90"
+                    className="inline-flex items-center rounded-full border border-sand/40 bg-sand/5 px-3 py-1.5 text-xs md:text-[13px] text-sand/90"
                   >
                     {proof}
                   </li>
@@ -57,19 +57,19 @@ export default async function EstimationPage() {
 
       <section
         aria-label="Sillage Immo - réassurance estimation"
-        className="bg-[#f4ece4] text-[#141446] border-b border-[#141446]/10"
+        className="bg-sand text-navy border-b border-navy/10"
       >
         <div className="w-full px-6 py-10 md:px-10 md:py-12 xl:px-14 2xl:px-20">
           <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
             {copy.reassurance.map((item) => (
               <li
                 key={item.title}
-                className="rounded-[20px] bg-white p-5 ring-1 ring-[#141446]/5"
+                className="rounded-[20px] bg-white p-5 ring-1 ring-navy/5"
               >
-                <h2 className="font-serif text-base font-semibold text-[#141446]">
+                <h2 className="font-serif text-base font-semibold text-navy">
                   {item.title}
                 </h2>
-                <p className="mt-2 text-sm leading-relaxed text-[#141446]/75">
+                <p className="mt-2 text-sm leading-relaxed text-navy/75">
                   {item.body}
                 </p>
               </li>
@@ -80,11 +80,11 @@ export default async function EstimationPage() {
 
       <section
         aria-labelledby="estimation-what-title"
-        className="bg-[#f4ece4] text-[#141446]"
+        className="bg-sand text-navy"
       >
         <div className="w-full px-6 py-12 md:px-10 md:py-16 xl:px-14 2xl:px-20 space-y-8">
           <div className="max-w-3xl space-y-3">
-            <p className="text-xs uppercase tracking-[0.22em] text-[#141446]/65">
+            <p className="text-xs uppercase tracking-[0.22em] text-navy/65">
               {copy.whatYouGet.eyebrow}
             </p>
             <h2 id="estimation-what-title" className="sillage-section-title">
@@ -95,27 +95,27 @@ export default async function EstimationPage() {
             {copy.whatYouGet.cards.map((card, index) => (
               <li
                 key={card.title}
-                className="rounded-[24px] bg-white p-6 ring-1 ring-[#141446]/5"
+                className="rounded-[24px] bg-white p-6 ring-1 ring-navy/5"
               >
-                <span className="font-serif text-sm text-[#141446]/50">
+                <span className="font-serif text-sm text-navy/50">
                   0{index + 1}
                 </span>
-                <h3 className="mt-2 font-serif text-lg font-semibold text-[#141446]">
+                <h3 className="mt-2 font-serif text-lg font-semibold text-navy">
                   {card.title}
                 </h3>
-                <p className="mt-2 text-sm leading-relaxed text-[#141446]/75">
+                <p className="mt-2 text-sm leading-relaxed text-navy/75">
                   {card.body}
                 </p>
               </li>
             ))}
           </ul>
-          <p className="max-w-4xl rounded-[20px] border-l-4 border-[#141446] bg-white/70 px-5 py-4 text-sm md:text-base italic text-[#141446]/85 leading-relaxed">
+          <p className="max-w-4xl rounded-[20px] border-l-4 border-navy bg-white/70 px-5 py-4 text-sm md:text-base italic text-navy/85 leading-relaxed">
             {copy.differentiation}
           </p>
         </div>
       </section>
 
-      <section className="bg-[#f4ece4] text-[#141446]">
+      <section className="bg-sand text-navy">
         <div className="w-full px-6 py-8 md:px-10 md:py-12 xl:px-14 2xl:px-20">
           <SellerApiFirstFlow locale={locale} />
         </div>

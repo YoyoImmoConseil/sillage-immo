@@ -34,7 +34,7 @@ export function SellerEstimationResultSection({
   const formatLocalizedEur = (value: number) => formatCurrency(value, locale, "EUR");
 
   return (
-    <section className="rounded-2xl border border-[rgba(20,20,70,0.2)] bg-[#f4ece4] p-6 space-y-3">
+    <section className="rounded-2xl border border-[rgba(20,20,70,0.2)] bg-sand p-6 space-y-3">
       <h2 className="sillage-section-title">{copy.title}</h2>
       <p className="text-sm opacity-75">
         {valuation.addressLabel ?? form.propertyAddress} {valuation.cityZipCode ?? form.postalCode}{" "}
@@ -99,7 +99,7 @@ export function SellerEstimationResultSection({
           {portalAccessStatus === "error" && onResendPortalAccess ? (
             <button
               type="button"
-              className="rounded border border-[#141446]/20 px-4 py-2 text-sm text-[#141446]"
+              className="rounded border border-navy/20 px-4 py-2 text-sm text-navy"
               onClick={onResendPortalAccess}
             >
               {copy.resend}

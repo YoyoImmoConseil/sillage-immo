@@ -140,8 +140,8 @@ export function PropertyDocumentsAdminPanel({ propertyId }: PropertyDocumentsAdm
     <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold text-[#141446]">Documents</h2>
-          <p className="text-sm text-[#141446]/70">
+          <h2 className="text-xl font-semibold text-navy">Documents</h2>
+          <p className="text-sm text-navy/70">
             PDF et liens partagés avec les propriétaires (25 Mo maximum par fichier).
           </p>
         </div>
@@ -156,7 +156,7 @@ export function PropertyDocumentsAdminPanel({ propertyId }: PropertyDocumentsAdm
           <button
             type="button"
             onClick={() => setShowLinkModal(true)}
-            className="rounded border border-[rgba(20,20,70,0.16)] px-4 py-2 text-sm text-[#141446]"
+            className="rounded border border-[rgba(20,20,70,0.16)] px-4 py-2 text-sm text-navy"
           >
             Ajouter un lien
           </button>
@@ -192,7 +192,7 @@ export function PropertyDocumentsAdminPanel({ propertyId }: PropertyDocumentsAdm
               {doc.visibility === "admin_only" ? "Interne admin" : "Visible client"}
             </span>
             {doc.kind === "link" ? (
-              <span className="rounded-full bg-[rgba(20,20,70,0.06)] px-2 py-0.5 text-[#141446]/80">
+              <span className="rounded-full bg-[rgba(20,20,70,0.06)] px-2 py-0.5 text-navy/80">
                 Lien externe
               </span>
             ) : null}
@@ -205,7 +205,7 @@ export function PropertyDocumentsAdminPanel({ propertyId }: PropertyDocumentsAdm
                 href={doc.externalUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="rounded border border-[rgba(20,20,70,0.16)] px-3 py-1 text-sm text-[#141446]"
+                className="rounded border border-[rgba(20,20,70,0.16)] px-3 py-1 text-sm text-navy"
               >
                 Ouvrir
               </a>
@@ -213,7 +213,7 @@ export function PropertyDocumentsAdminPanel({ propertyId }: PropertyDocumentsAdm
               <button
                 type="button"
                 onClick={() => downloadDocument(doc.id)}
-                className="rounded border border-[rgba(20,20,70,0.16)] px-3 py-1 text-sm text-[#141446]"
+                className="rounded border border-[rgba(20,20,70,0.16)] px-3 py-1 text-sm text-navy"
               >
                 Télécharger
               </button>
@@ -227,7 +227,7 @@ export function PropertyDocumentsAdminPanel({ propertyId }: PropertyDocumentsAdm
                     doc.visibility === "admin_only" ? "admin_and_client" : "admin_only"
                   )
                 }
-                className="rounded border border-[rgba(20,20,70,0.16)] px-3 py-1 text-sm text-[#141446]"
+                className="rounded border border-[rgba(20,20,70,0.16)] px-3 py-1 text-sm text-navy"
               >
                 {doc.visibility === "admin_only" ? "Partager au client" : "Passer en interne"}
               </button>

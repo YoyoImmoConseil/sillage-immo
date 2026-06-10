@@ -87,7 +87,7 @@ export function DeleteConversationsForm() {
       {step === "request" ? (
         <form onSubmit={requestCode} className="space-y-4">
           <label className="block">
-            <span className="text-sm font-medium text-[#141446]">
+            <span className="text-sm font-medium text-navy">
               Votre adresse e-mail
             </span>
             <input
@@ -96,7 +96,7 @@ export function DeleteConversationsForm() {
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-[rgba(20,20,70,0.2)] bg-white px-3 py-2 text-sm focus:border-[#141446] focus:outline-none"
+              className="mt-1 w-full rounded-lg border border-[rgba(20,20,70,0.2)] bg-white px-3 py-2 text-sm focus:border-navy focus:outline-none"
               placeholder="vous@exemple.com"
             />
           </label>
@@ -108,20 +108,20 @@ export function DeleteConversationsForm() {
           <button
             type="submit"
             disabled={loading || email.length < 3}
-            className="rounded-lg bg-[#141446] px-4 py-2 text-sm font-medium text-[#f4ece4] hover:bg-[#1c1c5a] disabled:opacity-50"
+            className="rounded-lg bg-navy px-4 py-2 text-sm font-medium text-sand hover:bg-[#1c1c5a] disabled:opacity-50"
           >
             {loading ? "Envoi…" : "Recevoir un code de vérification"}
           </button>
         </form>
       ) : (
         <form onSubmit={submitCode} className="space-y-4">
-          <p className="text-sm text-[#141446]/80">
+          <p className="text-sm text-navy/80">
             Un code à 6 chiffres a été envoyé à{" "}
             <strong>{email}</strong>. Saisissez-le ci-dessous (valable 15
             minutes).
           </p>
           <label className="block">
-            <span className="text-sm font-medium text-[#141446]">
+            <span className="text-sm font-medium text-navy">
               Code de vérification
             </span>
             <input
@@ -132,7 +132,7 @@ export function DeleteConversationsForm() {
               required
               value={code}
               onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-              className="mt-1 w-full rounded-lg border border-[rgba(20,20,70,0.2)] bg-white px-3 py-2 text-sm tracking-[0.4em] focus:border-[#141446] focus:outline-none"
+              className="mt-1 w-full rounded-lg border border-[rgba(20,20,70,0.2)] bg-white px-3 py-2 text-sm tracking-[0.4em] focus:border-navy focus:outline-none"
               placeholder="123456"
             />
           </label>
@@ -156,7 +156,7 @@ export function DeleteConversationsForm() {
             <button
               type="submit"
               disabled={loading || code.length !== 6}
-              className="rounded-lg bg-[#141446] px-4 py-2 text-sm font-medium text-[#f4ece4] hover:bg-[#1c1c5a] disabled:opacity-50"
+              className="rounded-lg bg-navy px-4 py-2 text-sm font-medium text-sand hover:bg-[#1c1c5a] disabled:opacity-50"
             >
               {loading ? "Vérification…" : "Confirmer la suppression"}
             </button>

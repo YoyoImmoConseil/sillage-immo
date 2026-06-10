@@ -24,7 +24,7 @@ export default async function NewProjectPage({ params }: NewProjectPageProps) {
       profileName={context.profile?.fullName ?? context.profile?.email ?? "Mode admin"}
     >
       <div className="mb-4">
-        <Link href={`/admin/clients/${clientId}`} className="text-sm underline text-[#141446]">
+        <Link href={`/admin/clients/${clientId}`} className="text-sm underline text-navy">
           Retour au client
         </Link>
       </div>

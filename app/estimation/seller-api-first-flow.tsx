@@ -332,7 +332,7 @@ export function SellerApiFirstFlow({ locale = "fr" }: { locale?: AppLocale }) {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-2xl bg-[#141446] p-6 text-[#f4ece4] space-y-4">
+      <section className="rounded-2xl bg-navy p-6 text-sand space-y-4">
         <h2 className="text-2xl font-semibold">{copy.title}</h2>
         <p className="text-sm opacity-80">{copy.intro}</p>
       </section>

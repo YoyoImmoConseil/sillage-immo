@@ -42,10 +42,10 @@ export function SellerProjectFormSection({
     toOptionalInteger(form.buildingTotalFloors) !== undefined;
 
   return (
-    <section className="rounded-2xl border border-[rgba(20,20,70,0.2)] bg-[#f4ece4] p-6 space-y-4">
+    <section className="rounded-2xl border border-[rgba(20,20,70,0.2)] bg-sand p-6 space-y-4">
       <h2 className="sillage-section-title">{copy.title}</h2>
       <p className="text-sm opacity-75">{copy.intro}</p>
-      <p className="rounded-[16px] border-l-4 border-[#141446] bg-white/70 px-4 py-3 text-sm italic text-[#141446]/85 leading-relaxed">
+      <p className="rounded-[16px] border-l-4 border-navy bg-white/70 px-4 py-3 text-sm italic text-navy/85 leading-relaxed">
         {copy.antiFriction}
       </p>
       <div className="grid gap-3 sm:grid-cols-2 text-sm">

@@ -23,7 +23,7 @@ export function BuyerSignupContactStep({
   return (
     <form className="space-y-6" onSubmit={onSubmit}>
       <h2 className="text-xl font-semibold">{copy.sections.contact}</h2>
-      <p className="text-sm leading-relaxed text-[#141446]/80">
+      <p className="text-sm leading-relaxed text-navy/80">
         {copy.sections.contactIntro}
       </p>
       <div className="grid gap-4 md:grid-cols-2">
@@ -71,7 +71,7 @@ export function BuyerSignupContactStep({
         </label>
       </div>
 
-      <p className="rounded-[16px] border-l-4 border-[#141446] bg-white/70 px-4 py-3 text-sm italic text-[#141446]/85 leading-relaxed">
+      <p className="rounded-[16px] border-l-4 border-navy bg-white/70 px-4 py-3 text-sm italic text-navy/85 leading-relaxed">
         {copy.sections.contactControl}
       </p>
 

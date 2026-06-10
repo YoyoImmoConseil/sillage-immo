@@ -195,7 +195,7 @@ export function PropertyGallery({
                   type="button"
                   className={`relative aspect-square overflow-hidden rounded-xl border ${
                     index === safeActiveIndex
-                      ? "border-[#141446] ring-2 ring-[rgba(20,20,70,0.25)]"
+                      ? "border-navy ring-2 ring-[rgba(20,20,70,0.25)]"
                       : "border-[rgba(20,20,70,0.14)]"
                   }`}
                   onClick={() => setActiveIndex(index)}

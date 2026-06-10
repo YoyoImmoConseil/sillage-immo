@@ -104,7 +104,7 @@ export function UploadPdfModal({
             type="button"
             onClick={onClose}
             disabled={busy}
-            className="rounded border border-[rgba(20,20,70,0.16)] px-4 py-2 text-sm text-[#141446] disabled:opacity-50"
+            className="rounded border border-[rgba(20,20,70,0.16)] px-4 py-2 text-sm text-navy disabled:opacity-50"
           >
             {copy.cancel}
           </button>
@@ -118,7 +118,7 @@ export function UploadPdfModal({
         <label
           onDragOver={(e) => e.preventDefault()}
           onDrop={handleDrop}
-          className="flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-[rgba(20,20,70,0.20)] p-6 text-center text-sm text-[#141446]/70 hover:bg-[rgba(20,20,70,0.04)]"
+          className="flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-[rgba(20,20,70,0.20)] p-6 text-center text-sm text-navy/70 hover:bg-[rgba(20,20,70,0.04)]"
         >
           <input
             ref={fileInputRef}
@@ -127,7 +127,7 @@ export function UploadPdfModal({
             className="hidden"
             onChange={(e) => onSelect(e.target.files?.[0] ?? null)}
           />
-          <span className="font-medium text-[#141446]">
+          <span className="font-medium text-navy">
             {file ? file.name : copy.hint}
           </span>
           <span>{copy.help}</span>
@@ -144,7 +144,7 @@ export function UploadPdfModal({
         />
 
         {showVisibilityToggle ? (
-          <label className="flex items-center gap-2 text-sm text-[#141446]">
+          <label className="flex items-center gap-2 text-sm text-navy">
             <input
               type="checkbox"
               checked={adminOnly}

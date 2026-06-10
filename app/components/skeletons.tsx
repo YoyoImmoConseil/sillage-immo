@@ -17,7 +17,7 @@ export function SkeletonCard({
 }) {
   return (
     <div
-      className={`rounded-3xl border border-[rgba(20,20,70,0.16)] bg-[#f4ece4] p-8 ${className}`}
+      className={`rounded-3xl border border-[rgba(20,20,70,0.16)] bg-sand p-8 ${className}`}
     >
       {children}
     </div>
@@ -57,7 +57,7 @@ export function SkeletonListingsGrid({ count = 6 }: { count?: number }) {
       {Array.from({ length: count }).map((_, index) => (
         <div
           key={index}
-          className="overflow-hidden rounded-2xl border border-[rgba(20,20,70,0.16)] bg-[#f4ece4]"
+          className="overflow-hidden rounded-2xl border border-[rgba(20,20,70,0.16)] bg-sand"
         >
           <SkeletonBar className="h-52 w-full rounded-none" />
           <div className="space-y-3 p-5">

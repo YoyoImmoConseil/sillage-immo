@@ -75,13 +75,13 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
       profileName={context.profile?.fullName ?? context.profile?.email ?? "Mode admin"}
     >
       <div className="mb-4 flex flex-wrap gap-4">
-        <Link href={`/admin/clients/${clientId}`} className="text-sm underline text-[#141446]">
+        <Link href={`/admin/clients/${clientId}`} className="text-sm underline text-navy">
           Retour au client
         </Link>
         {detail.sellerLead && (
           <Link
             href={`/admin/seller-leads/${detail.sellerLead.id}`}
-            className="text-sm underline text-[#141446]"
+            className="text-sm underline text-navy"
           >
             Voir le lead vendeur
           </Link>
@@ -90,44 +90,44 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
 
       <div className="space-y-6">
         <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6">
-          <h2 className="text-xl font-semibold text-[#141446]">Rattachements</h2>
+          <h2 className="text-xl font-semibold text-navy">Rattachements</h2>
           <div className="mt-4 space-y-4">
             <div>
-              <p className="text-xs uppercase text-[#141446]/60">Lead vendeur</p>
+              <p className="text-xs uppercase text-navy/60">Lead vendeur</p>
               {detail.sellerLead ? (
-                <p className="text-[#141446]">
+                <p className="text-navy">
                   <Link href={`/admin/seller-leads/${detail.sellerLead.id}`} className="underline">
                     {detail.sellerLead.full_name} · {detail.sellerLead.email}
                   </Link>
                   {detail.sellerLead.estimated_price && (
-                    <span className="ml-2 text-[#141446]/70">
+                    <span className="ml-2 text-navy/70">
                       Estimation : {detail.sellerLead.estimated_price.toLocaleString("fr-FR")} EUR
                     </span>
                   )}
                 </p>
               ) : (
-                <p className="text-[#141446]/70">Aucun lead rattaché</p>
+                <p className="text-navy/70">Aucun lead rattaché</p>
               )}
             </div>
             <div>
-              <p className="text-xs uppercase text-[#141446]/60">Biens</p>
+              <p className="text-xs uppercase text-navy/60">Biens</p>
               {detail.properties.length === 0 ? (
-                <p className="text-[#141446]/70">Aucun bien rattaché</p>
+                <p className="text-navy/70">Aucun bien rattaché</p>
               ) : (
                 <ul className="space-y-2">
                   {detail.properties.map((pp) => (
-                    <li key={pp.id} className="text-[#141446]">
+                    <li key={pp.id} className="text-navy">
                       <Link href={`/admin/properties/${pp.propertyId}`} className="underline">
                         {pp.property?.formatted_address ?? pp.propertyId}
                       </Link>
                       {pp.property?.property_type && (
-                        <span className="ml-2 text-[#141446]/70">
+                        <span className="ml-2 text-navy/70">
                           {formatPropertyTypeLabel(pp.property.property_type)}
                           {pp.property.living_area && ` · ${pp.property.living_area} m²`}
                         </span>
                       )}
                       {pp.isPrimary && (
-                        <span className="ml-2 text-xs text-[#141446]/60">(principal)</span>
+                        <span className="ml-2 text-xs text-navy/60">(principal)</span>
                       )}
                     </li>
                   ))}
@@ -167,8 +167,8 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
           detail.milestones.preliminarySaleSignedAt ||
           detail.milestones.deedSignedAt ? (
           <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6">
-            <h2 className="text-xl font-semibold text-[#141446]">Étapes du projet</h2>
-            <ul className="mt-3 space-y-1 text-sm text-[#141446]">
+            <h2 className="text-xl font-semibold text-navy">Étapes du projet</h2>
+            <ul className="mt-3 space-y-1 text-sm text-navy">
               {detail.milestones.mandateSignedAt ? (
                 <li>Mandat signé le {formatDate(detail.milestones.mandateSignedAt)}</li>
               ) : null}
@@ -195,10 +195,10 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
         ) : null}
 
         <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6">
-          <h2 className="text-xl font-semibold text-[#141446]">Conseiller</h2>
+          <h2 className="text-xl font-semibold text-navy">Conseiller</h2>
           <div className="mt-4">
             {detail.assignedAdvisor ? (
-              <div className="space-y-1 text-[#141446]">
+              <div className="space-y-1 text-navy">
                 {(() => {
                   const advisorName =
                     detail.assignedAdvisor.fullName ??
@@ -215,7 +215,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
                   </a>
                 </p>
                 <p className="text-sm">{detail.assignedAdvisor.phone ?? "Téléphone non renseigné"}</p>
-                <p className="text-sm text-[#141446]/75">
+                <p className="text-sm text-navy/75">
                   Rendez-vous : {detail.assignedAdvisor.bookingUrl ? "lien configuré" : "non configuré"}
                 </p>
                 {detail.assignedAdvisor.bookingUrl ? (
@@ -230,7 +230,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
                 ) : null}
               </div>
             ) : (
-              <p className="text-[#141446]/70">Aucun conseiller affecté</p>
+              <p className="text-navy/70">Aucun conseiller affecté</p>
             )}
           </div>
           {canAssignAdvisor && sellerProjectRow && (
@@ -245,15 +245,15 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
         </section>
 
         <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6">
-          <h2 className="text-xl font-semibold text-[#141446]">Invitation client</h2>
+          <h2 className="text-xl font-semibold text-navy">Invitation client</h2>
           <div className="mt-4">
             {detail.latestInvitation ? (
               <div>
-                <p className="text-[#141446]">
+                <p className="text-navy">
                   Envoyée le {formatDate(detail.latestInvitation.createdAt)} · expire le{" "}
                   {formatDate(detail.latestInvitation.expiresAt)}
                 </p>
-                <p className="text-sm text-[#141446]/75">
+                <p className="text-sm text-navy/75">
                   Statut :{" "}
                   {formatInvitationStatus({
                     acceptedAt: detail.latestInvitation.acceptedAt,
@@ -269,7 +269,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
                 )}
               </div>
             ) : (
-              <p className="text-[#141446]/70">Aucune invitation envoyée</p>
+              <p className="text-navy/70">Aucune invitation envoyée</p>
             )}
           </div>
           {canInvite && (
@@ -285,15 +285,15 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
         </section>
 
         <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6">
-          <h2 className="text-xl font-semibold text-[#141446]">Timeline</h2>
+          <h2 className="text-xl font-semibold text-navy">Timeline</h2>
           <div className="mt-4 space-y-2">
             {events.length === 0 ? (
-              <p className="text-sm text-[#141446]/70">Aucun événement</p>
+              <p className="text-sm text-navy/70">Aucun événement</p>
             ) : (
               events.map((ev) => (
                 <div key={ev.id} className="flex gap-3 text-sm">
-                  <span className="text-[#141446]/60">{formatDate(ev.created_at)}</span>
-                  <span className="text-[#141446]">{ev.event_name}</span>
+                  <span className="text-navy/60">{formatDate(ev.created_at)}</span>
+                  <span className="text-navy">{ev.event_name}</span>
                 </div>
               ))
             )}

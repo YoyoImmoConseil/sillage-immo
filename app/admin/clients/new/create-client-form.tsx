@@ -38,7 +38,7 @@ export function CreateClientForm() {
   return (
     <form onSubmit={handleSubmit} className="max-w-md space-y-4 rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6">
       <div>
-        <label className="block text-sm font-medium text-[#141446]">Email *</label>
+        <label className="block text-sm font-medium text-navy">Email *</label>
         <input
           className="mt-1 w-full rounded border px-3 py-2 text-sm"
           type="email"
@@ -50,7 +50,7 @@ export function CreateClientForm() {
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-[#141446]">Prenom</label>
+        <label className="block text-sm font-medium text-navy">Prenom</label>
         <input
           className="mt-1 w-full rounded border px-3 py-2 text-sm"
           value={firstName}
@@ -60,7 +60,7 @@ export function CreateClientForm() {
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-[#141446]">Nom</label>
+        <label className="block text-sm font-medium text-navy">Nom</label>
         <input
           className="mt-1 w-full rounded border px-3 py-2 text-sm"
           value={lastName}
@@ -70,7 +70,7 @@ export function CreateClientForm() {
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-[#141446]">Telephone</label>
+        <label className="block text-sm font-medium text-navy">Telephone</label>
         <input
           className="mt-1 w-full rounded border px-3 py-2 text-sm"
           value={phone}

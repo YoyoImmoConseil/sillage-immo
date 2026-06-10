@@ -124,9 +124,9 @@ export function PropertyDocumentList({
   return (
     <div className="mt-5 space-y-3">
       {loading ? (
-        <p className="text-sm text-[#141446]/70">{loadingText}</p>
+        <p className="text-sm text-navy/70">{loadingText}</p>
       ) : documents.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-[rgba(20,20,70,0.16)] p-4 text-sm text-[#141446]/60">
+        <p className="rounded-2xl border border-dashed border-[rgba(20,20,70,0.16)] p-4 text-sm text-navy/60">
           {emptyText}
         </p>
       ) : (
@@ -139,13 +139,13 @@ export function PropertyDocumentList({
               <div className="flex items-center gap-2">
                 <span
                   aria-hidden
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[rgba(20,20,70,0.08)] text-xs font-semibold text-[#141446]"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[rgba(20,20,70,0.08)] text-xs font-semibold text-navy"
                 >
                   {doc.kind === "link" ? "↗" : "PDF"}
                 </span>
-                <Heading className="font-medium text-[#141446]">{doc.label}</Heading>
+                <Heading className="font-medium text-navy">{doc.label}</Heading>
               </div>
-              <p className="text-xs text-[#141446]/70">{renderMeta(doc, uploaders[doc.id])}</p>
+              <p className="text-xs text-navy/70">{renderMeta(doc, uploaders[doc.id])}</p>
               {renderBadges?.(doc) ?? null}
             </div>
             <div className="flex flex-wrap items-center gap-2">{renderActions(doc)}</div>

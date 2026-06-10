@@ -158,13 +158,13 @@ export function UserProfileForm({ user, canManage }: { user: UserProfile; canMan
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <p className="text-sm text-[#141446]/68">Utilisateur</p>
-          <h2 className="text-2xl font-semibold text-[#141446]">{user.fullName ?? user.email}</h2>
-          <p className="mt-1 text-sm text-[#141446]/72">
+          <p className="text-sm text-navy/68">Utilisateur</p>
+          <h2 className="text-2xl font-semibold text-navy">{user.fullName ?? user.email}</h2>
+          <p className="mt-1 text-sm text-navy/72">
             {roleLabel[user.role]} · {user.isActive ? "Actif" : "Suspendu"}
           </p>
         </div>
-        <Link href="/admin/users" className="rounded border px-4 py-2 text-sm text-[#141446]">
+        <Link href="/admin/users" className="rounded border px-4 py-2 text-sm text-navy">
           Retour à la liste
         </Link>
       </div>
@@ -172,7 +172,7 @@ export function UserProfileForm({ user, canManage }: { user: UserProfile; canMan
       <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6">
         <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
           <div className="space-y-3">
-            <div className="relative aspect-[3/4] overflow-hidden rounded-3xl bg-[#f4ece4]">
+            <div className="relative aspect-[3/4] overflow-hidden rounded-3xl bg-sand">
               {avatarUrl ? (
                 <NextImage
                   src={avatarUrl}
@@ -182,12 +182,12 @@ export function UserProfileForm({ user, canManage }: { user: UserProfile; canMan
                   className="object-cover"
                 />
               ) : (
-                <div className="flex h-full items-center justify-center text-sm text-[#141446]/55">
+                <div className="flex h-full items-center justify-center text-sm text-navy/55">
                   Aucun portrait
                 </div>
               )}
             </div>
-            <label className="block text-sm text-[#141446]">
+            <label className="block text-sm text-navy">
               <span className="mb-2 block font-medium">Photo portrait</span>
               <input
                 type="file"
@@ -203,11 +203,11 @@ export function UserProfileForm({ user, canManage }: { user: UserProfile; canMan
                 }}
               />
             </label>
-            <p className="text-xs text-[#141446]/60">Format portrait recommandé. PNG, JPG ou WebP, 5 Mo max.</p>
+            <p className="text-xs text-navy/60">Format portrait recommandé. PNG, JPG ou WebP, 5 Mo max.</p>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
-            <label className="text-sm text-[#141446]">
+            <label className="text-sm text-navy">
               <span className="mb-2 block font-medium">Prénom</span>
               <input
                 className="w-full rounded border px-3 py-2"
@@ -216,7 +216,7 @@ export function UserProfileForm({ user, canManage }: { user: UserProfile; canMan
                 onChange={(event) => setFirstName(event.target.value)}
               />
             </label>
-            <label className="text-sm text-[#141446]">
+            <label className="text-sm text-navy">
               <span className="mb-2 block font-medium">Nom</span>
               <input
                 className="w-full rounded border px-3 py-2"
@@ -225,7 +225,7 @@ export function UserProfileForm({ user, canManage }: { user: UserProfile; canMan
                 onChange={(event) => setLastName(event.target.value)}
               />
             </label>
-            <label className="text-sm text-[#141446]">
+            <label className="text-sm text-navy">
               <span className="mb-2 block font-medium">Titre</span>
               <select
                 className="w-full rounded border px-3 py-2"
@@ -241,7 +241,7 @@ export function UserProfileForm({ user, canManage }: { user: UserProfile; canMan
                 ))}
               </select>
             </label>
-            <label className="text-sm text-[#141446]">
+            <label className="text-sm text-navy">
               <span className="mb-2 block font-medium">Téléphone</span>
               <input
                 className="w-full rounded border px-3 py-2"
@@ -251,7 +251,7 @@ export function UserProfileForm({ user, canManage }: { user: UserProfile; canMan
                 onChange={(event) => setPhone(event.target.value)}
               />
             </label>
-            <label className="text-sm text-[#141446]">
+            <label className="text-sm text-navy">
               <span className="mb-2 block font-medium">Lien Google de prise de rendez-vous</span>
               <input
                 className="w-full rounded border px-3 py-2"
@@ -260,7 +260,7 @@ export function UserProfileForm({ user, canManage }: { user: UserProfile; canMan
                 disabled={!canManage || isPending}
                 onChange={(event) => setBookingUrl(event.target.value)}
               />
-              <span className="mt-2 block text-xs text-[#141446]/60">
+              <span className="mt-2 block text-xs text-navy/60">
                 Collez ici le lien Google Agenda ou Google Appointment Schedule du conseiller. Quand il est
                 renseigné, le client peut reserver directement un rendez-vous physique ou visio depuis son espace.
               </span>
@@ -269,17 +269,17 @@ export function UserProfileForm({ user, canManage }: { user: UserProfile; canMan
                   href={bookingUrl.trim()}
                   target="_blank"
                   rel="noreferrer"
-                  className="mt-2 inline-block text-xs underline text-[#141446]"
+                  className="mt-2 inline-block text-xs underline text-navy"
                 >
                   Ouvrir le lien configuré
                 </a>
               ) : null}
             </label>
-            <label className="text-sm text-[#141446] md:col-span-2">
+            <label className="text-sm text-navy md:col-span-2">
               <span className="mb-2 block font-medium">Email affiché</span>
               <input className="w-full rounded border px-3 py-2 bg-[#f8f5f1]" value={user.email} disabled />
             </label>
-            <label className="text-sm text-[#141446] md:col-span-2">
+            <label className="text-sm text-navy md:col-span-2">
               <span className="mb-2 block font-medium">Présentation</span>
               <textarea
                 className="min-h-40 w-full rounded border px-3 py-2"
@@ -288,7 +288,7 @@ export function UserProfileForm({ user, canManage }: { user: UserProfile; canMan
                 disabled={!canManage || isPending}
                 onChange={(event) => setBio(event.target.value)}
               />
-              <span className={`mt-2 block text-xs ${words > 250 ? "text-red-700" : "text-[#141446]/60"}`}>
+              <span className={`mt-2 block text-xs ${words > 250 ? "text-red-700" : "text-navy/60"}`}>
                 {words}/250 mots
               </span>
             </label>

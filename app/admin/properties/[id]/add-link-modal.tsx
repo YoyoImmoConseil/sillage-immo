@@ -74,7 +74,7 @@ export function AddLinkModal({ createPath, onClose, onCreated }: AddLinkModalPro
             type="button"
             onClick={onClose}
             disabled={submitting}
-            className="rounded border border-[rgba(20,20,70,0.16)] px-4 py-2 text-sm text-[#141446] disabled:opacity-50"
+            className="rounded border border-[rgba(20,20,70,0.16)] px-4 py-2 text-sm text-navy disabled:opacity-50"
           >
             Annuler
           </button>
@@ -108,7 +108,7 @@ export function AddLinkModal({ createPath, onClose, onCreated }: AddLinkModalPro
           className="w-full rounded-xl border border-[rgba(20,20,70,0.16)] px-4 py-2 text-sm"
           required
         />
-        <label className="flex items-center gap-2 text-sm text-[#141446]">
+        <label className="flex items-center gap-2 text-sm text-navy">
           <input
             type="checkbox"
             checked={adminOnly}

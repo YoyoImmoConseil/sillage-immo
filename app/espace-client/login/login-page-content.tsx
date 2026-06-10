@@ -114,8 +114,8 @@ export function SellerLoginPageContent({ locale = "fr" }: { locale?: AppLocale }
   return (
     <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-8">
       <div className="space-y-2">
-        <h2 className="text-2xl font-semibold text-[#141446]">{copy.title}</h2>
-        <p className="text-sm text-[#141446]/75">{copy.intro}</p>
+        <h2 className="text-2xl font-semibold text-navy">{copy.title}</h2>
+        <p className="text-sm text-navy/75">{copy.intro}</p>
       </div>
 
       {errorMessage ? (
@@ -130,22 +130,22 @@ export function SellerLoginPageContent({ locale = "fr" }: { locale?: AppLocale }
           submitLabel={copy.submit}
           successMessage={copy.success}
         />
-        <p className="text-xs text-[#141446]/60">{copy.passwordlessHint}</p>
+        <p className="text-xs text-navy/60">{copy.passwordlessHint}</p>
       </div>
 
-      <div className="mt-8 rounded-2xl border border-[rgba(20,20,70,0.12)] bg-[#141446]/[0.03] p-5">
-        <p className="text-sm font-semibold text-[#141446]">{copy.noAccountTitle}</p>
-        <p className="mt-1 text-sm text-[#141446]/75">{copy.noAccountBody}</p>
+      <div className="mt-8 rounded-2xl border border-[rgba(20,20,70,0.12)] bg-navy/[0.03] p-5">
+        <p className="text-sm font-semibold text-navy">{copy.noAccountTitle}</p>
+        <p className="mt-1 text-sm text-navy/75">{copy.noAccountBody}</p>
         <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:gap-3">
           <Link
             href={localizePath("/estimation", locale)}
-            className="inline-flex items-center justify-center rounded-full bg-[#141446] px-5 py-2.5 text-sm font-semibold text-[#f4ece4] transition hover:opacity-95"
+            className="inline-flex items-center justify-center rounded-full bg-navy px-5 py-2.5 text-sm font-semibold text-sand transition hover:opacity-95"
           >
             {copy.ctaSeller}
           </Link>
           <Link
             href={localizePath("/recherche/nouvelle", locale)}
-            className="inline-flex items-center justify-center rounded-full border border-[#141446] bg-transparent px-5 py-2.5 text-sm font-semibold text-[#141446] transition hover:bg-[#141446]/5"
+            className="inline-flex items-center justify-center rounded-full border border-navy bg-transparent px-5 py-2.5 text-sm font-semibold text-navy transition hover:bg-navy/5"
           >
             {copy.ctaBuyer}
           </Link>

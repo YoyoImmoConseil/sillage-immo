@@ -208,7 +208,7 @@ export function HomeCommercialAssistant({ locale = "fr" }: { locale?: AppLocale 
         </button>
       </div>
 
-      <div className="max-h-64 overflow-auto rounded-xl bg-[rgba(244,236,228,0.9)] p-3 text-[#141446] space-y-2">
+      <div className="max-h-64 overflow-auto rounded-xl bg-[rgba(244,236,228,0.9)] p-3 text-navy space-y-2">
         {chat.map((item, index) => (
           <div
             key={`${item.role}-${index}`}

@@ -26,9 +26,9 @@ export function BuyerSearchSummarySection({
   submitPatch,
 }: BuyerSearchSummarySectionProps) {
   return (
-    <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-[#f4ece4] p-8">
+    <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-sand p-8">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-xl font-semibold text-[#141446]">{copy.sectionSummary}</h2>
+        <h2 className="text-xl font-semibold text-navy">{copy.sectionSummary}</h2>
         {!archived ? (
           <button
             type="button"
@@ -45,8 +45,8 @@ export function BuyerSearchSummarySection({
         <dl className="mt-4 grid gap-x-6 gap-y-3 md:grid-cols-2">
           {criteriaSummary.map((row) => (
             <div key={row.label} className="flex items-start justify-between gap-3 border-b border-[rgba(20,20,70,0.08)] py-2 text-sm">
-              <dt className="font-medium text-[#141446]/70">{row.label}</dt>
-              <dd className="text-right text-[#141446]">{row.value}</dd>
+              <dt className="font-medium text-navy/70">{row.label}</dt>
+              <dd className="text-right text-navy">{row.value}</dd>
             </div>
           ))}
         </dl>

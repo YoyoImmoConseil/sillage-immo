@@ -124,9 +124,9 @@ export function AnalyticsConsentBanner({ locale = "fr" }: { locale?: AppLocale }
       role="dialog"
       aria-modal="false"
       aria-label={t.title}
-      className="fixed inset-x-0 bottom-0 z-[1000] border-t border-[rgba(20,20,70,0.18)] bg-[#f4ece4]/98 px-4 py-4 shadow-[0_-8px_24px_rgba(20,20,70,0.12)] backdrop-blur"
+      className="fixed inset-x-0 bottom-0 z-[1000] border-t border-[rgba(20,20,70,0.18)] bg-sand/98 px-4 py-4 shadow-[0_-8px_24px_rgba(20,20,70,0.12)] backdrop-blur"
     >
-      <div className="mx-auto flex max-w-6xl flex-col gap-3 text-[#141446] sm:flex-row sm:items-start sm:justify-between">
+      <div className="mx-auto flex max-w-6xl flex-col gap-3 text-navy sm:flex-row sm:items-start sm:justify-between">
         {mode === "summary" ? (
           <>
             <div className="max-w-3xl space-y-1">
@@ -160,7 +160,7 @@ export function AnalyticsConsentBanner({ locale = "fr" }: { locale?: AppLocale }
               </button>
               <button
                 type="button"
-                className="rounded-md bg-[#141446] px-4 py-2 text-sm font-medium text-[#f4ece4] hover:bg-[#1c1c5a]"
+                className="rounded-md bg-navy px-4 py-2 text-sm font-medium text-sand hover:bg-[#1c1c5a]"
                 data-track-cta="consent_accept_all"
                 onClick={() => persist(grantAll())}
               >
@@ -215,7 +215,7 @@ export function AnalyticsConsentBanner({ locale = "fr" }: { locale?: AppLocale }
               </button>
               <button
                 type="button"
-                className="rounded-md bg-[#141446] px-4 py-2 text-sm font-medium text-[#f4ece4] hover:bg-[#1c1c5a]"
+                className="rounded-md bg-navy px-4 py-2 text-sm font-medium text-sand hover:bg-[#1c1c5a]"
                 data-track-cta="consent_save_custom"
                 onClick={() =>
                   persist(

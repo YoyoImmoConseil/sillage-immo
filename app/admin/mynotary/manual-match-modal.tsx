@@ -233,7 +233,7 @@ export function ManualMatchModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md border border-[#141446]/30 px-3 py-1 text-sm text-[#141446]"
+            className="rounded-md border border-navy/30 px-3 py-1 text-sm text-navy"
           >
             Annuler
           </button>
@@ -241,7 +241,7 @@ export function ManualMatchModal({
           <button
             type="button"
             onClick={onMatched}
-            className="rounded-md bg-[#141446] px-4 py-1 text-sm font-medium text-white"
+            className="rounded-md bg-navy px-4 py-1 text-sm font-medium text-white"
           >
             Terminer
           </button>

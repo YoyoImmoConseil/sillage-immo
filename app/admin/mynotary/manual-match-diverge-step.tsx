@@ -34,7 +34,7 @@ export function ManualMatchDivergeStep({
     : [];
 
   return (
-    <div className="space-y-4 text-sm text-[#141446]">
+    <div className="space-y-4 text-sm text-navy">
       <div className="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs text-emerald-900">
         Contrat rattaché. {divergentFields.length > 0
           ? "Quelques données divergent entre les sources — choisissez la bonne valeur."
@@ -47,7 +47,7 @@ export function ManualMatchDivergeStep({
             const isBusy = busyField === def.field;
             return (
               <div key={def.field} className="grid grid-cols-[120px_1fr] gap-3 py-3">
-                <dt className="text-xs uppercase tracking-wide text-[#141446]/60">{def.label}</dt>
+                <dt className="text-xs uppercase tracking-wide text-navy/60">{def.label}</dt>
                 <dd className="space-y-2">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-medium">{formatGoldenFieldValue(f.value, def.kind)}</span>
@@ -59,7 +59,7 @@ export function ManualMatchDivergeStep({
                     <span className="rounded-full border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-[10px] uppercase text-emerald-800">
                       retenue
                     </span>
-                    {isBusy ? <span className="text-xs text-[#141446]/60">…</span> : null}
+                    {isBusy ? <span className="text-xs text-navy/60">…</span> : null}
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {f.alternatives.map((alt, i) => (
@@ -68,7 +68,7 @@ export function ManualMatchDivergeStep({
                         type="button"
                         disabled={isBusy}
                         onClick={() => onPersistOverride(def.field, alt.value)}
-                        className="flex items-center gap-1 rounded-md border border-[rgba(20,20,70,0.2)] bg-white px-2 py-1 text-xs hover:bg-[#f4ece4] disabled:opacity-60"
+                        className="flex items-center gap-1 rounded-md border border-[rgba(20,20,70,0.2)] bg-white px-2 py-1 text-xs hover:bg-sand disabled:opacity-60"
                         title="Garder cette valeur"
                       >
                         <span className={`rounded-full border px-1.5 py-0.5 text-[9px] uppercase ${GOLDEN_SOURCE_BADGE_CLASS[alt.source]}`}>
@@ -90,7 +90,7 @@ export function ManualMatchDivergeStep({
           href={`/admin/clients/${link.clientProfileId}/projects/${link.clientProjectId}`}
           target="_blank"
           rel="noreferrer"
-          className="inline-block text-xs underline text-[#141446]/70"
+          className="inline-block text-xs underline text-navy/70"
         >
           Ouvrir la fiche bien unifiée →
         </a>

@@ -60,7 +60,7 @@ export function ReconciliationListClient({
   if (rows.length === 0) {
     return (
       <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6">
-        <p className="text-[#141446]/70">
+        <p className="text-navy/70">
           Aucune suggestion de réconciliation en attente. Les rapprochements
           forts sont rattachés automatiquement ; seuls les cas douteux
           apparaissent ici.
@@ -88,13 +88,13 @@ export function ReconciliationListClient({
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <span className="rounded-full border border-[rgba(20,20,70,0.2)] bg-white px-2 py-0.5 text-xs uppercase text-[#141446]/70">
+                  <span className="rounded-full border border-[rgba(20,20,70,0.2)] bg-white px-2 py-0.5 text-xs uppercase text-navy/70">
                     {KIND_LABEL[row.sourceKind]}
                   </span>
-                  <span className="text-xs text-[#141446]/50">{formatDate(row.createdAt)}</span>
+                  <span className="text-xs text-navy/50">{formatDate(row.createdAt)}</span>
                 </div>
-                <p className="font-medium text-[#141446]">{row.sourceLabel}</p>
-                <p className="text-sm text-[#141446]/70">
+                <p className="font-medium text-navy">{row.sourceLabel}</p>
+                <p className="text-sm text-navy/70">
                   → Dossier suggéré :{" "}
                   {row.targetClientId && row.targetClientProjectId ? (
                     <Link
@@ -111,7 +111,7 @@ export function ReconciliationListClient({
                   {row.reasons.map((reason) => (
                     <span
                       key={reason}
-                      className="rounded-full border border-[rgba(20,20,70,0.15)] bg-[#f7f5f0] px-2 py-0.5 text-[10px] text-[#141446]/70"
+                      className="rounded-full border border-[rgba(20,20,70,0.15)] bg-[#f7f5f0] px-2 py-0.5 text-[10px] text-navy/70"
                     >
                       {REASON_LABEL[reason] ?? reason}
                     </span>
@@ -119,8 +119,8 @@ export function ReconciliationListClient({
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-2xl font-semibold text-[#141446]">{scorePct}%</p>
-                <p className="text-xs text-[#141446]/50">confiance</p>
+                <p className="text-2xl font-semibold text-navy">{scorePct}%</p>
+                <p className="text-xs text-navy/50">confiance</p>
               </div>
             </div>
 
@@ -130,7 +130,7 @@ export function ReconciliationListClient({
                   type="button"
                   disabled={isBusy}
                   onClick={() => act(row.id, "accept")}
-                  className="rounded-md bg-[#141446] px-3 py-1.5 text-sm text-white disabled:opacity-60"
+                  className="rounded-md bg-navy px-3 py-1.5 text-sm text-white disabled:opacity-60"
                 >
                   Rattacher
                 </button>
@@ -138,12 +138,12 @@ export function ReconciliationListClient({
                   type="button"
                   disabled={isBusy}
                   onClick={() => act(row.id, "reject")}
-                  className="rounded-md border border-[#141446]/30 px-3 py-1.5 text-sm text-[#141446] disabled:opacity-60"
+                  className="rounded-md border border-navy/30 px-3 py-1.5 text-sm text-navy disabled:opacity-60"
                 >
                   Rejeter
                 </button>
                 {isBusy ? (
-                  <span className="self-center text-xs text-[#141446]/60">…</span>
+                  <span className="self-center text-xs text-navy/60">…</span>
                 ) : null}
               </div>
             ) : null}

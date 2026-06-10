@@ -101,7 +101,7 @@ export function SellerMagicLinkForm({
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <label className="block text-sm text-[#141446]">
+      <label className="block text-sm text-navy">
         {copy.email}
         <input
           className="mt-1 w-full rounded border border-[rgba(20,20,70,0.16)] bg-white px-3 py-2"

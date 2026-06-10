@@ -18,7 +18,7 @@ const KNOWN_OUTCOMES: ReadonlySet<string> = new Set(
   Object.keys(VISIT_OUTCOME_BADGE_CLASS)
 );
 
-const OUTCOME_FALLBACK_BADGE_CLASS = "bg-[#141446]/10 text-[#141446]";
+const OUTCOME_FALLBACK_BADGE_CLASS = "bg-navy/10 text-navy";
 
 const COPY: Record<
   AppLocale,
@@ -203,24 +203,24 @@ const VisitRow = ({
   return (
     <>
       <tr className="border-t border-[rgba(20,20,70,0.08)]">
-        <td className="py-3 pr-3 text-sm text-[#141446]">
+        <td className="py-3 pr-3 text-sm text-navy">
           {formatDate(visit.scheduledAt, locale)}
         </td>
-        <td className="py-3 pr-3 text-sm text-[#141446]">
+        <td className="py-3 pr-3 text-sm text-navy">
           {formatTimeRange(visit.scheduledAt, visit.endedAt, locale)}
         </td>
-        <td className="py-3 pr-3 text-sm text-[#141446]/80">
+        <td className="py-3 pr-3 text-sm text-navy/80">
           {typeof visit.durationMinutes === "number"
             ? copy.durationMinutes(visit.durationMinutes)
             : "—"}
         </td>
-        <td className="py-3 pr-3 text-sm text-[#141446]">
+        <td className="py-3 pr-3 text-sm text-navy">
           {visit.negotiatorName ?? "—"}
         </td>
         <td className="py-3 pr-3 text-sm">
           <span
             aria-label={copy.visitorAriaLabel}
-            className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#141446]/10 text-xs font-semibold text-[#141446]"
+            className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-navy/10 text-xs font-semibold text-navy"
           >
             {visit.contactInitials}
           </span>
@@ -238,9 +238,9 @@ const VisitRow = ({
           <td
             colSpan={6}
             aria-label={copy.feedbackAriaLabel}
-            className="bg-[#141446]/[0.03] px-3 py-3 text-sm text-[#141446]"
+            className="bg-navy/[0.03] px-3 py-3 text-sm text-navy"
           >
-            <p className="text-xs uppercase tracking-wide text-[#141446]/60">
+            <p className="text-xs uppercase tracking-wide text-navy/60">
               {copy.feedbackHeader}
             </p>
             {visit.feedbackOutcome ? (
@@ -262,7 +262,7 @@ const VisitRow = ({
               })()
             ) : null}
             {visit.feedbackComment ? (
-              <p className="mt-2 whitespace-pre-line text-sm text-[#141446]">
+              <p className="mt-2 whitespace-pre-line text-sm text-navy">
                 {visit.feedbackComment}
               </p>
             ) : null}
@@ -287,7 +287,7 @@ const VisitTable = ({
       <table className="w-full min-w-[640px] border-collapse text-left">
         <caption className="sr-only">{copy.title}</caption>
         <thead>
-          <tr className="text-xs uppercase tracking-wide text-[#141446]/60">
+          <tr className="text-xs uppercase tracking-wide text-navy/60">
             <th scope="col" className="py-2 pr-3 font-medium">
               {copy.columnDate}
             </th>
@@ -337,40 +337,40 @@ export const PropertyVisitsClientPanel = ({
       className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-8"
     >
       <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <h3 className="text-xl font-semibold text-[#141446]">{copy.title}</h3>
+        <h3 className="text-xl font-semibold text-navy">{copy.title}</h3>
       </div>
 
       {totalCount === 0 ? (
-        <p className="mt-4 text-sm text-[#141446]/70">{copy.empty}</p>
+        <p className="mt-4 text-sm text-navy/70">{copy.empty}</p>
       ) : (
         <div className="mt-4 space-y-6">
           <div>
-            <h4 className="mb-2 text-xs uppercase tracking-wide text-[#141446]/60">
+            <h4 className="mb-2 text-xs uppercase tracking-wide text-navy/60">
               {copy.upcomingHeader}
-              <span className="ml-2 text-[#141446]/40">
+              <span className="ml-2 text-navy/40">
                 ({upcoming.length})
               </span>
             </h4>
             {upcoming.length === 0 ? (
-              <p className="text-sm text-[#141446]/70">{copy.empty}</p>
+              <p className="text-sm text-navy/70">{copy.empty}</p>
             ) : (
               <VisitTable visits={upcoming} copy={copy} locale={locale} />
             )}
           </div>
 
           <div>
-            <h4 className="mb-2 text-xs uppercase tracking-wide text-[#141446]/60">
+            <h4 className="mb-2 text-xs uppercase tracking-wide text-navy/60">
               {copy.pastHeader}
-              <span className="ml-2 text-[#141446]/40">({past.length})</span>
+              <span className="ml-2 text-navy/40">({past.length})</span>
             </h4>
             {past.length === 0 ? (
-              <p className="text-sm text-[#141446]/70">{copy.pastEmpty}</p>
+              <p className="text-sm text-navy/70">{copy.pastEmpty}</p>
             ) : (
               <VisitTable visits={past} copy={copy} locale={locale} />
             )}
           </div>
 
-          <p className="text-xs text-[#141446]/50">{copy.privacyNote}</p>
+          <p className="text-xs text-navy/50">{copy.privacyNote}</p>
         </div>
       )}
     </section>

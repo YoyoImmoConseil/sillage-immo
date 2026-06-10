@@ -137,8 +137,8 @@ export default async function SellerInvitationPage({
   return (
     <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-8">
       <div className="space-y-2">
-        <h2 className="text-2xl font-semibold text-[#141446]">{copy.title}</h2>
-        <p className="text-sm text-[#141446]/75">{copy.intro}</p>
+        <h2 className="text-2xl font-semibold text-navy">{copy.title}</h2>
+        <p className="text-sm text-navy/75">{copy.intro}</p>
       </div>
 
       {shouldShowErrorMessage ? (
@@ -149,17 +149,17 @@ export default async function SellerInvitationPage({
 
       {!token || !invitation ? (
         <div className="mt-6 space-y-3">
-          <p className="text-sm text-[#141446]/75">{copy.noInvitation}</p>
-          <Link href={localizePath("/espace-client/login", locale)} className="text-sm underline text-[#141446]">
+          <p className="text-sm text-navy/75">{copy.noInvitation}</p>
+          <Link href={localizePath("/espace-client/login", locale)} className="text-sm underline text-navy">
             {copy.goToLogin}
           </Link>
         </div>
       ) : invitation.status === "revoked" ? (
-        <p className="mt-6 text-sm text-[#141446]/75">
+        <p className="mt-6 text-sm text-navy/75">
           {copy.revoked}
         </p>
       ) : invitation.status === "expired" ? (
-        <p className="mt-6 text-sm text-[#141446]/75">
+        <p className="mt-6 text-sm text-navy/75">
           {copy.expired}
         </p>
       ) : invitation.status === "accepted" ? (
@@ -173,7 +173,7 @@ export default async function SellerInvitationPage({
           </div>
           <Link
             href={localizePath("/espace-client", locale)}
-            className="inline-flex w-full items-center justify-center rounded-full bg-[#141446] px-5 py-2.5 text-sm font-semibold text-[#f4ece4] transition hover:opacity-95 sm:w-auto"
+            className="inline-flex w-full items-center justify-center rounded-full bg-navy px-5 py-2.5 text-sm font-semibold text-sand transition hover:opacity-95 sm:w-auto"
           >
             {copy.acceptedGoToHub}
           </Link>
@@ -188,7 +188,7 @@ export default async function SellerInvitationPage({
         </div>
       ) : (
         <div className="mt-6 space-y-4">
-          <div className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-[#141446]/[0.03] p-4 text-sm text-[#141446]/78">
+          <div className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-navy/[0.03] p-4 text-sm text-navy/78">
             {copy.sentTo} <strong>{invitation.email}</strong>.
           </div>
           <SellerMagicLinkForm

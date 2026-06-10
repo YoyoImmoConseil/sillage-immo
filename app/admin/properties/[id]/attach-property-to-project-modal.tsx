@@ -301,13 +301,13 @@ export function AttachPropertyToProjectModal({ propertyId }: AttachPropertyToPro
     >
       <section className="space-y-3">
         <div className="flex items-center justify-between gap-3">
-          <h3 className="text-sm font-semibold text-[#141446]">
+          <h3 className="text-sm font-semibold text-navy">
             Rechercher un client existant
           </h3>
           <button
             type="button"
             onClick={() => setShowNewForm((prev) => !prev)}
-            className="text-sm text-[#141446] underline"
+            className="text-sm text-navy underline"
           >
             {showNewForm ? "Masquer le formulaire nouveau client" : "+ Créer un nouveau client"}
           </button>
@@ -321,11 +321,11 @@ export function AttachPropertyToProjectModal({ propertyId }: AttachPropertyToPro
           className="w-full rounded-xl border border-[rgba(20,20,70,0.16)] px-4 py-2 text-sm"
         />
         {searching ? (
-          <p className="text-sm text-[#141446]/60">Recherche en cours…</p>
+          <p className="text-sm text-navy/60">Recherche en cours…</p>
         ) : searchError ? (
           <p className="text-sm text-red-600">{searchError}</p>
         ) : searchTerm.trim() && searchResults.length === 0 ? (
-          <p className="text-sm text-[#141446]/60">Aucun client correspondant.</p>
+          <p className="text-sm text-navy/60">Aucun client correspondant.</p>
         ) : null}
         <ul className="space-y-2">
           {searchResults.map((result) => {
@@ -336,10 +336,10 @@ export function AttachPropertyToProjectModal({ propertyId }: AttachPropertyToPro
                 className="flex items-center justify-between gap-3 rounded-2xl border border-[rgba(20,20,70,0.12)] px-4 py-3"
               >
                 <div>
-                  <p className="text-sm font-medium text-[#141446]">
+                  <p className="text-sm font-medium text-navy">
                     {formatDisplayName(result)}
                   </p>
-                  <p className="text-xs text-[#141446]/70">
+                  <p className="text-xs text-navy/70">
                     {result.email}
                     {result.phone ? ` · ${result.phone}` : ""}
                   </p>
@@ -348,7 +348,7 @@ export function AttachPropertyToProjectModal({ propertyId }: AttachPropertyToPro
                   type="button"
                   disabled={alreadyStacked}
                   onClick={() => addExistingToStack(result)}
-                  className="rounded-full border border-[rgba(20,20,70,0.16)] px-3 py-1 text-sm text-[#141446] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-full border border-[rgba(20,20,70,0.16)] px-3 py-1 text-sm text-navy disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {alreadyStacked ? "Déjà ajouté" : "+ Ajouter"}
                 </button>
@@ -360,7 +360,7 @@ export function AttachPropertyToProjectModal({ propertyId }: AttachPropertyToPro
 
       {showNewForm ? (
         <section className="mt-6 space-y-3 rounded-2xl border border-dashed border-[rgba(20,20,70,0.20)] p-4">
-          <h3 className="text-sm font-semibold text-[#141446]">Nouveau client</h3>
+          <h3 className="text-sm font-semibold text-navy">Nouveau client</h3>
           <div className="grid gap-3 sm:grid-cols-2">
             <input
               type="email"
@@ -410,17 +410,17 @@ export function AttachPropertyToProjectModal({ propertyId }: AttachPropertyToPro
 
       <section className="mt-6 space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-[#141446]">
+          <h3 className="text-sm font-semibold text-navy">
             Propriétaires sélectionnés ({stack.length})
           </h3>
           {stack.length > 1 ? (
-            <p className="text-xs text-[#141446]/60">
+            <p className="text-xs text-navy/60">
               Le premier est le porteur principal du mandat
             </p>
           ) : null}
         </div>
         {stack.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-[rgba(20,20,70,0.16)] p-4 text-sm text-[#141446]/60">
+          <p className="rounded-2xl border border-dashed border-[rgba(20,20,70,0.16)] p-4 text-sm text-navy/60">
             Aucun propriétaire ajouté pour le moment.
           </p>
         ) : (
@@ -431,16 +431,16 @@ export function AttachPropertyToProjectModal({ propertyId }: AttachPropertyToPro
                 className="flex items-center justify-between gap-3 rounded-2xl border border-[rgba(20,20,70,0.12)] px-4 py-3"
               >
                 <div className="flex items-start gap-3">
-                  <span className="rounded-full bg-[rgba(20,20,70,0.08)] px-2 py-1 text-xs font-semibold text-[#141446]">
+                  <span className="rounded-full bg-[rgba(20,20,70,0.08)] px-2 py-1 text-xs font-semibold text-navy">
                     {index === 0 ? "Porteur" : `Co-propriétaire ${index}`}
                   </span>
                   <div>
-                    <p className="text-sm font-medium text-[#141446]">
+                    <p className="text-sm font-medium text-navy">
                       {owner.kind === "existing"
                         ? owner.fullName ?? owner.email
                         : [owner.firstName, owner.lastName].filter(Boolean).join(" ") || owner.email}
                     </p>
-                    <p className="text-xs text-[#141446]/70">
+                    <p className="text-xs text-navy/70">
                       {owner.email}
                       {owner.phone ? ` · ${owner.phone}` : ""}
                       {owner.kind === "new" ? " · Nouveau" : ""}
@@ -452,7 +452,7 @@ export function AttachPropertyToProjectModal({ propertyId }: AttachPropertyToPro
                     type="button"
                     onClick={() => moveOwnerUp(owner.uiKey)}
                     disabled={index === 0}
-                    className="rounded p-1 text-sm text-[#141446] hover:bg-[rgba(20,20,70,0.06)] disabled:opacity-30"
+                    className="rounded p-1 text-sm text-navy hover:bg-[rgba(20,20,70,0.06)] disabled:opacity-30"
                     aria-label="Monter"
                   >
                     ↑
@@ -461,7 +461,7 @@ export function AttachPropertyToProjectModal({ propertyId }: AttachPropertyToPro
                     type="button"
                     onClick={() => moveOwnerDown(owner.uiKey)}
                     disabled={index === stack.length - 1}
-                    className="rounded p-1 text-sm text-[#141446] hover:bg-[rgba(20,20,70,0.06)] disabled:opacity-30"
+                    className="rounded p-1 text-sm text-navy hover:bg-[rgba(20,20,70,0.06)] disabled:opacity-30"
                     aria-label="Descendre"
                   >
                     ↓

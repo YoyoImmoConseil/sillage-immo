@@ -78,10 +78,10 @@ export default async function NouvelleRecherchePage({ searchParams }: NouvelleRe
     <main className="min-h-screen">
       <section
         aria-labelledby="recherche-hero-title"
-        className="bg-[#141446] text-[#f4ece4]"
+        className="bg-navy text-sand"
       >
         <div className="w-full px-6 py-12 md:px-10 md:py-20 xl:px-14 xl:py-24 2xl:px-20 space-y-5">
-          <p className="text-[11px] md:text-xs uppercase tracking-[0.22em] text-[#f4ece4]/75">
+          <p className="text-[11px] md:text-xs uppercase tracking-[0.22em] text-sand/75">
             {copy.kicker}
           </p>
           <h1
@@ -90,7 +90,7 @@ export default async function NouvelleRecherchePage({ searchParams }: NouvelleRe
           >
             {copy.title}
           </h1>
-          <p className="sillage-editorial-text max-w-3xl text-[#f4ece4]/90">{copy.intro}</p>
+          <p className="sillage-editorial-text max-w-3xl text-sand/90">{copy.intro}</p>
           <ul
             aria-label={copy.kicker}
             className="flex flex-col gap-1.5 pt-2 sm:flex-row sm:flex-wrap sm:gap-x-6 sm:gap-y-1.5"
@@ -98,7 +98,7 @@ export default async function NouvelleRecherchePage({ searchParams }: NouvelleRe
             {copy.microProofs.map((proof) => (
               <li
                 key={proof}
-                className="inline-flex items-center gap-2 text-xs md:text-[13px] text-[#f4ece4]/85"
+                className="inline-flex items-center gap-2 text-xs md:text-[13px] text-sand/85"
               >
                 <svg
                   aria-hidden="true"
@@ -121,7 +121,7 @@ export default async function NouvelleRecherchePage({ searchParams }: NouvelleRe
 
       <section
         aria-labelledby="recherche-why-title"
-        className="bg-[#f4ece4] text-[#141446] border-b border-[#141446]/10"
+        className="bg-sand text-navy border-b border-navy/10"
       >
         <div className="w-full px-6 py-12 md:px-10 md:py-16 xl:px-14 2xl:px-20 space-y-8">
           <h2 id="recherche-why-title" className="sillage-section-title max-w-3xl">
@@ -131,12 +131,12 @@ export default async function NouvelleRecherchePage({ searchParams }: NouvelleRe
             {copy.whyCards.map((card) => (
               <li
                 key={card.title}
-                className="rounded-[20px] bg-white p-5 ring-1 ring-[#141446]/5"
+                className="rounded-[20px] bg-white p-5 ring-1 ring-navy/5"
               >
-                <h3 className="font-serif text-base font-semibold text-[#141446]">
+                <h3 className="font-serif text-base font-semibold text-navy">
                   {card.title}
                 </h3>
-                <p className="mt-2 text-sm leading-relaxed text-[#141446]/75">{card.body}</p>
+                <p className="mt-2 text-sm leading-relaxed text-navy/75">{card.body}</p>
               </li>
             ))}
           </ul>
@@ -145,7 +145,7 @@ export default async function NouvelleRecherchePage({ searchParams }: NouvelleRe
 
       <section
         aria-labelledby="recherche-after-title"
-        className="bg-[#f4ece4] text-[#141446]"
+        className="bg-sand text-navy"
       >
         <div className="w-full px-6 py-12 md:px-10 md:py-16 xl:px-14 2xl:px-20 space-y-8">
           <h2 id="recherche-after-title" className="sillage-section-title max-w-3xl">
@@ -155,34 +155,34 @@ export default async function NouvelleRecherchePage({ searchParams }: NouvelleRe
             {copy.afterSteps.map((step, index) => (
               <li
                 key={step.title}
-                className="rounded-[24px] bg-white p-6 ring-1 ring-[#141446]/5"
+                className="rounded-[24px] bg-white p-6 ring-1 ring-navy/5"
               >
-                <span className="font-serif text-sm text-[#141446]/50">
+                <span className="font-serif text-sm text-navy/50">
                   0{index + 1}
                 </span>
-                <h3 className="mt-2 font-serif text-lg font-semibold text-[#141446]">
+                <h3 className="mt-2 font-serif text-lg font-semibold text-navy">
                   {step.title}
                 </h3>
-                <p className="mt-2 text-sm leading-relaxed text-[#141446]/75">
+                <p className="mt-2 text-sm leading-relaxed text-navy/75">
                   {step.body}
                 </p>
               </li>
             ))}
           </ol>
-          <p className="max-w-4xl rounded-[20px] border-l-4 border-[#141446] bg-white/70 px-5 py-4 text-sm md:text-base italic text-[#141446]/85 leading-relaxed">
+          <p className="max-w-4xl rounded-[20px] border-l-4 border-navy bg-white/70 px-5 py-4 text-sm md:text-base italic text-navy/85 leading-relaxed">
             {copy.differentiation}
           </p>
         </div>
       </section>
 
-      <section className="bg-[#f4ece4] text-[#141446]">
+      <section className="bg-sand text-navy">
         <div className="w-full px-6 py-10 md:px-10 xl:px-14 2xl:px-20 space-y-8">
           <div className="grid gap-4 md:grid-cols-2">
             <article className="rounded-2xl border border-[rgba(20,20,70,0.18)] bg-white/70 p-5 shadow-sm">
-              <h2 className="text-base font-semibold uppercase tracking-[0.12em] text-[#141446]">
+              <h2 className="text-base font-semibold uppercase tracking-[0.12em] text-navy">
                 {copy.existingAccountTitle}
               </h2>
-              <p className="mt-2 text-sm text-[#141446]/80">{copy.existingAccountBody}</p>
+              <p className="mt-2 text-sm text-navy/80">{copy.existingAccountBody}</p>
               <Link
                 href={loginHref}
                 className="sillage-btn-secondary mt-4 inline-flex rounded px-4 py-2 text-sm"
@@ -190,11 +190,11 @@ export default async function NouvelleRecherchePage({ searchParams }: NouvelleRe
                 {copy.existingAccountCta}
               </Link>
             </article>
-            <article className="rounded-2xl border border-[#141446] bg-[#141446] p-5 text-[#f4ece4] shadow-sm">
+            <article className="rounded-2xl border border-navy bg-navy p-5 text-sand shadow-sm">
               <h2 className="text-base font-semibold uppercase tracking-[0.12em] text-[#f4c47a]">
                 {copy.newAccountTitle}
               </h2>
-              <p className="mt-2 text-sm text-[#f4ece4]/82">{copy.newAccountBody}</p>
+              <p className="mt-2 text-sm text-sand/82">{copy.newAccountBody}</p>
             </article>
           </div>
 

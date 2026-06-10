@@ -156,14 +156,14 @@ export function InviteButton({
   return (
     <div className="space-y-4">
       {latestInvitation ? (
-        <div className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-4 text-sm text-[#141446]">
+        <div className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-4 text-sm text-navy">
           <p>
             Invitation adressée à <strong>{latestInvitation.email}</strong>
           </p>
-          <p className="mt-1 text-[#141446]/75">
+          <p className="mt-1 text-navy/75">
             Créée le {formatDate(latestInvitation.createdAt)} · expire le {formatDate(latestInvitation.expiresAt)}
           </p>
-          <p className="mt-1 text-[#141446]/75">
+          <p className="mt-1 text-navy/75">
             Statut :{" "}
             {invitationStatus === "acceptee"
               ? "Acceptée"
@@ -178,7 +178,7 @@ export function InviteButton({
           ) : null}
         </div>
       ) : (
-        <p className="text-sm text-[#141446]/70">Aucune invitation envoyée pour ce projet.</p>
+        <p className="text-sm text-navy/70">Aucune invitation envoyée pour ce projet.</p>
       )}
 
       <div className="flex flex-wrap gap-2">
@@ -193,7 +193,7 @@ export function InviteButton({
           <button
             type="button"
             onClick={handleCopy}
-            className="rounded border border-[#141446]/20 px-4 py-2 text-sm text-[#141446]"
+            className="rounded border border-navy/20 px-4 py-2 text-sm text-navy"
           >
             Copier le lien
           </button>
@@ -203,7 +203,7 @@ export function InviteButton({
             type="button"
             onClick={handleDirectAccessCopy}
             disabled={directAccessLoading}
-            className="rounded border border-[#141446]/20 px-4 py-2 text-sm text-[#141446] disabled:opacity-50"
+            className="rounded border border-navy/20 px-4 py-2 text-sm text-navy disabled:opacity-50"
           >
             {directAccessLoading ? "Preparation..." : "Copier lien d'acces direct"}
           </button>
@@ -221,12 +221,12 @@ export function InviteButton({
       </div>
 
       {inviteLink ? (
-        <p className="rounded-xl border border-[rgba(20,20,70,0.12)] bg-[#141446]/[0.03] px-4 py-3 text-xs text-[#141446]/75">
+        <p className="rounded-xl border border-[rgba(20,20,70,0.12)] bg-navy/[0.03] px-4 py-3 text-xs text-navy/75">
           {inviteLink}
         </p>
       ) : null}
       {directAccessLink ? (
-        <p className="rounded-xl border border-[rgba(20,20,70,0.12)] bg-[#141446]/[0.03] px-4 py-3 text-xs text-[#141446]/75">
+        <p className="rounded-xl border border-[rgba(20,20,70,0.12)] bg-navy/[0.03] px-4 py-3 text-xs text-navy/75">
           {directAccessLink}
         </p>
       ) : null}

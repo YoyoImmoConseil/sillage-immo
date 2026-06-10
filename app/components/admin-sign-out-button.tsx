@@ -32,7 +32,7 @@ export function AdminSignOutButton() {
         type="button"
         onClick={onSignOut}
         disabled={isPending}
-        className="rounded border border-[#141446]/20 px-3 py-2 text-sm disabled:opacity-60"
+        className="rounded border border-navy/20 px-3 py-2 text-sm disabled:opacity-60"
       >
         {isPending ? "Déconnexion..." : "Se déconnecter"}
       </button>

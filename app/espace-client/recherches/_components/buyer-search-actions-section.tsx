@@ -20,8 +20,8 @@ export function BuyerSearchActionsSection({
   archive,
 }: BuyerSearchActionsSectionProps) {
   return (
-    <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-[#f4ece4] p-8">
-      <h2 className="text-xl font-semibold text-[#141446]">{copy.sectionActions}</h2>
+    <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-sand p-8">
+      <h2 className="text-xl font-semibold text-navy">{copy.sectionActions}</h2>
       <div className="mt-4 flex flex-wrap gap-3">
         <button
           type="button"

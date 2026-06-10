@@ -39,7 +39,7 @@ export function BuyerSignupCriteriaStep({
   return (
     <form className="space-y-6" onSubmit={onSubmit}>
       <h2 className="text-xl font-semibold">{copy.sections.criteria}</h2>
-      <p className="rounded-[16px] border-l-4 border-[#141446] bg-white/70 px-4 py-3 text-sm italic text-[#141446]/85 leading-relaxed">
+      <p className="rounded-[16px] border-l-4 border-navy bg-white/70 px-4 py-3 text-sm italic text-navy/85 leading-relaxed">
         {copy.sections.criteriaIntro}
       </p>
       <fieldset className="space-y-2">
@@ -51,8 +51,8 @@ export function BuyerSignupCriteriaStep({
               type="button"
               className={`rounded-full border px-4 py-2 text-sm ${
                 form.businessType === bt
-                  ? "border-[#141446] bg-[#141446] text-[#f4ece4]"
-                  : "border-[rgba(20,20,70,0.18)] bg-white/70 text-[#141446]"
+                  ? "border-navy bg-navy text-sand"
+                  : "border-[rgba(20,20,70,0.18)] bg-white/70 text-navy"
               }`}
               onClick={() => updateField("businessType", bt)}
             >

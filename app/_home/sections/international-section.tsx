@@ -19,25 +19,25 @@ export function InternationalSection({ locale }: Props) {
     >
       <div className="w-full px-6 py-16 md:px-10 md:py-24 xl:px-14 2xl:px-20 space-y-10">
         <div className="max-w-3xl space-y-4">
-          <p className="text-xs uppercase tracking-[0.22em] text-[#141446]/65">
+          <p className="text-xs uppercase tracking-[0.22em] text-navy/65">
             {copy.eyebrow}
           </p>
           <h2 id="international-title" className="sillage-section-title">
             {copy.title}
           </h2>
-          <p className="sillage-editorial-text text-[#141446]/80">{copy.subtitle}</p>
+          <p className="sillage-editorial-text text-navy/80">{copy.subtitle}</p>
         </div>
 
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
           {copy.benefits.map((benefit) => (
             <article
               key={benefit.title}
-              className="flex flex-col gap-3 rounded-[24px] bg-[#f4ece4] p-6 ring-1 ring-[#141446]/5"
+              className="flex flex-col gap-3 rounded-[24px] bg-sand p-6 ring-1 ring-navy/5"
             >
-              <h3 className="font-serif text-lg font-semibold text-[#141446]">
+              <h3 className="font-serif text-lg font-semibold text-navy">
                 {benefit.title}
               </h3>
-              <p className="text-sm leading-relaxed text-[#141446]/75">
+              <p className="text-sm leading-relaxed text-navy/75">
                 {benefit.body}
               </p>
             </article>
@@ -48,7 +48,7 @@ export function InternationalSection({ locale }: Props) {
           <a
             href={`tel:${SILLAGE_PHONE_RAW}`}
             aria-label={phoneAria}
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-[#141446] px-6 py-3 text-sm font-semibold text-[#f4ece4] transition hover:-translate-y-[1px] hover:opacity-95"
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-navy px-6 py-3 text-sm font-semibold text-sand transition hover:-translate-y-[1px] hover:opacity-95"
           >
             <PhoneIcon className="h-4 w-4" />
             {copy.ctaLabel}

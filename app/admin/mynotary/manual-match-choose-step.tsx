@@ -72,21 +72,21 @@ export function ManualMatchChooseStep({
     >
       <div className="min-w-0 space-y-1">
         <div className="flex items-center gap-2">
-          <span className="truncate font-medium text-[#141446]">{c.label}</span>
+          <span className="truncate font-medium text-navy">{c.label}</span>
           {c.score > 0 ? (
-            <span className="shrink-0 rounded-full bg-[#141446]/8 px-2 py-0.5 text-[10px] font-semibold text-[#141446]/70">
+            <span className="shrink-0 rounded-full bg-navy/8 px-2 py-0.5 text-[10px] font-semibold text-navy/70">
               {Math.round(c.score * 100)}%
             </span>
           ) : null}
         </div>
         {c.address ? (
-          <p className="truncate text-xs text-[#141446]/60">{c.address}</p>
+          <p className="truncate text-xs text-navy/60">{c.address}</p>
         ) : null}
         <div className="flex flex-wrap gap-1">
           {c.reasons.map((r) => (
             <span
               key={r}
-              className="rounded-full border border-[rgba(20,20,70,0.15)] bg-[#f4ece4] px-1.5 py-0.5 text-[10px] text-[#141446]/80"
+              className="rounded-full border border-[rgba(20,20,70,0.15)] bg-sand px-1.5 py-0.5 text-[10px] text-navy/80"
             >
               {REASON_LABEL[r] ?? r}
             </span>
@@ -97,7 +97,7 @@ export function ManualMatchChooseStep({
         type="button"
         disabled={busy || !c.sellerProjectId}
         onClick={() => onAttach(c.sellerProjectId, c.primaryPropertyId)}
-        className="shrink-0 rounded-md bg-[#141446] px-3 py-1 text-xs font-medium text-white disabled:opacity-50"
+        className="shrink-0 rounded-md bg-navy px-3 py-1 text-xs font-medium text-white disabled:opacity-50"
         title={c.sellerProjectId ? "Rattacher à ce dossier" : "Dossier sans projet vendeur matérialisé"}
       >
         Rattacher
@@ -106,28 +106,28 @@ export function ManualMatchChooseStep({
   );
 
   return (
-    <div className="space-y-5 text-sm text-[#141446]">
+    <div className="space-y-5 text-sm text-navy">
       {/* Recap contrat */}
       {ctx ? (
-        <section className="rounded-lg border border-[rgba(20,20,70,0.12)] bg-[#f4ece4]/40 px-3 py-3">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#141446]/60">
+        <section className="rounded-lg border border-[rgba(20,20,70,0.12)] bg-sand/40 px-3 py-3">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-navy/60">
             Données du contrat
           </p>
           <div className="grid grid-cols-1 gap-1.5 text-xs sm:grid-cols-2">
             <div>
-              <span className="text-[#141446]/50">Adresse : </span>
+              <span className="text-navy/50">Adresse : </span>
               {ctx.contract.address ?? "—"}
             </div>
             <div>
-              <span className="text-[#141446]/50">Prix : </span>
+              <span className="text-navy/50">Prix : </span>
               {ctx.contract.price != null ? `${ctx.contract.price.toLocaleString("fr-FR")} €` : "—"}
             </div>
             <div>
-              <span className="text-[#141446]/50">Surface : </span>
+              <span className="text-navy/50">Surface : </span>
               {ctx.contract.livingArea != null ? `${ctx.contract.livingArea} m²` : "—"}
             </div>
             <div className="sm:col-span-2">
-              <span className="text-[#141446]/50">Vendeur(s) : </span>
+              <span className="text-navy/50">Vendeur(s) : </span>
               {ctx.contract.sellerContacts.length > 0
                 ? ctx.contract.sellerContacts.map(sellerLine).join(", ")
                 : "—"}
@@ -135,18 +135,18 @@ export function ManualMatchChooseStep({
           </div>
         </section>
       ) : loadingCtx ? (
-        <p className="text-xs text-[#141446]/60">Chargement du contexte…</p>
+        <p className="text-xs text-navy/60">Chargement du contexte…</p>
       ) : null}
 
       {/* Suggestions */}
       <section className="space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-wide text-[#141446]/60">
+        <p className="text-xs font-semibold uppercase tracking-wide text-navy/60">
           Suggestions
         </p>
         {ctx && ctx.candidates.length > 0 ? (
           <div className="space-y-2">{ctx.candidates.map(renderCandidate)}</div>
         ) : (
-          <p className="text-xs text-[#141446]/55">
+          <p className="text-xs text-navy/55">
             Aucune suggestion automatique. Cherchez un dossier ou créez-en un depuis le contrat.
           </p>
         )}
@@ -154,7 +154,7 @@ export function ManualMatchChooseStep({
 
       {/* Recherche */}
       <section className="space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-wide text-[#141446]/60">
+        <p className="text-xs font-semibold uppercase tracking-wide text-navy/60">
           Rechercher un dossier
         </p>
         <input
@@ -166,29 +166,29 @@ export function ManualMatchChooseStep({
           className="w-full rounded-md border border-[rgba(20,20,70,0.2)] px-3 py-2 text-sm"
         />
         {searching ? (
-          <p className="text-xs text-[#141446]/50">Recherche…</p>
+          <p className="text-xs text-navy/50">Recherche…</p>
         ) : null}
         {searchResults.length > 0 ? (
           <div className="space-y-2">{searchResults.map(renderCandidate)}</div>
         ) : term.trim().length >= 2 && !searching ? (
-          <p className="text-xs text-[#141446]/50">Aucun dossier trouvé.</p>
+          <p className="text-xs text-navy/50">Aucun dossier trouvé.</p>
         ) : null}
       </section>
 
       {/* Créer un dossier */}
       <section className="space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-wide text-[#141446]/60">
+        <p className="text-xs font-semibold uppercase tracking-wide text-navy/60">
           Aucun dossier ne correspond ?
         </p>
         <button
           type="button"
           disabled={busy}
           onClick={onCreateFromContract}
-          className="rounded-md border border-[#141446]/30 px-3 py-1.5 text-sm font-medium text-[#141446] disabled:opacity-60"
+          className="rounded-md border border-navy/30 px-3 py-1.5 text-sm font-medium text-navy disabled:opacity-60"
         >
           Créer un dossier depuis ce contrat
         </button>
-        <p className="text-[11px] text-[#141446]/50">
+        <p className="text-[11px] text-navy/50">
           Crée le dossier vendeur depuis le bien SweepBright correspondant + l&apos;identité MyNotary
           (nécessite un bien à cette adresse et un e-mail vendeur).
         </p>
@@ -199,7 +199,7 @@ export function ManualMatchChooseStep({
         <button
           type="button"
           onClick={onToggleAdvanced}
-          className="text-xs underline text-[#141446]/60"
+          className="text-xs underline text-navy/60"
         >
           {showAdvanced ? "Masquer" : "Avancé : coller les UUID"}
         </button>
@@ -225,7 +225,7 @@ export function ManualMatchChooseStep({
               type="button"
               disabled={busy || (!manualSeller && !manualProperty)}
               onClick={() => onAttach(manualSeller || null, manualProperty || null)}
-              className="rounded-md bg-[#141446] px-3 py-1 text-xs font-medium text-white disabled:opacity-60"
+              className="rounded-md bg-navy px-3 py-1 text-xs font-medium text-white disabled:opacity-60"
             >
               Rattacher (manuel)
             </button>

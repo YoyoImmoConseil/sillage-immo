@@ -18,7 +18,7 @@ export function FinalCtaSection({ locale }: Props) {
   return (
     <section
       aria-labelledby="final-cta-title"
-      className="bg-[#141446] text-[#f4ece4]"
+      className="bg-navy text-sand"
     >
       <div className="w-full px-6 py-16 md:px-10 md:py-24 xl:px-14 2xl:px-20">
         <div className="max-w-3xl space-y-6">
@@ -28,11 +28,11 @@ export function FinalCtaSection({ locale }: Props) {
           >
             {copy.title}
           </h2>
-          <p className="sillage-editorial-text text-[#f4ece4]/85">{copy.body}</p>
+          <p className="sillage-editorial-text text-sand/85">{copy.body}</p>
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <Link
               href={localizePath("/estimation", locale)}
-              className="inline-flex items-center justify-center rounded-full bg-[#f4ece4] px-6 py-3 text-sm font-semibold text-[#141446] shadow-sm transition hover:-translate-y-[1px] hover:opacity-95"
+              className="inline-flex items-center justify-center rounded-full bg-sand px-6 py-3 text-sm font-semibold text-navy shadow-sm transition hover:-translate-y-[1px] hover:opacity-95"
               data-track-cta="final_cta_estimate"
               data-track-location="final_cta"
             >
@@ -40,7 +40,7 @@ export function FinalCtaSection({ locale }: Props) {
             </Link>
             <Link
               href={localizePath("/recherche/nouvelle", locale)}
-              className="inline-flex items-center justify-center rounded-full border border-[#f4ece4] bg-transparent px-6 py-3 text-sm font-semibold text-[#f4ece4] transition hover:bg-[#f4ece4]/10"
+              className="inline-flex items-center justify-center rounded-full border border-sand bg-transparent px-6 py-3 text-sm font-semibold text-sand transition hover:bg-sand/10"
               data-track-cta="final_cta_buyer_search"
               data-track-location="final_cta"
             >
@@ -49,14 +49,14 @@ export function FinalCtaSection({ locale }: Props) {
             <a
               href={`tel:${SILLAGE_PHONE_RAW}`}
               aria-label={phoneAria}
-              className="inline-flex items-center justify-center gap-2 rounded-full border border-[#f4ece4]/50 bg-transparent px-6 py-3 text-sm font-semibold text-[#f4ece4] transition hover:border-[#f4ece4] hover:bg-[#f4ece4]/10"
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-sand/50 bg-transparent px-6 py-3 text-sm font-semibold text-sand transition hover:border-sand hover:bg-sand/10"
               data-track-location="final_cta"
             >
               <PhoneIcon className="h-4 w-4" />
               {ctaCopy.callSillage}
             </a>
           </div>
-          <p className="text-xs md:text-sm text-[#f4ece4]/60">{copy.microcopy}</p>
+          <p className="text-xs md:text-sm text-sand/60">{copy.microcopy}</p>
         </div>
       </div>
     </section>

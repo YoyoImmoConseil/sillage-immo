@@ -30,9 +30,9 @@ export function SellerEmailVerificationSection({
 }: SellerEmailVerificationSectionProps) {
   const copy = SELLER_EMAIL_VERIFICATION_COPY[locale];
   return (
-    <section className="rounded-2xl bg-[#141446] p-6 text-[#f4ece4] space-y-4">
+    <section className="rounded-2xl bg-navy p-6 text-sand space-y-4">
       <h2 className="sillage-section-title">{copy.title}</h2>
-      <p className="text-sm text-[#f4ece4]/80">{copy.intro}</p>
+      <p className="text-sm text-sand/80">{copy.intro}</p>
       <div className="flex gap-3 items-end flex-wrap">
         <label className="text-sm">
           {copy.code}
@@ -43,7 +43,7 @@ export function SellerEmailVerificationSection({
           />
         </label>
         <button
-          className="rounded bg-[#f4ece4] px-4 py-2 text-sm text-[#141446] disabled:opacity-60"
+          className="rounded bg-sand px-4 py-2 text-sm text-navy disabled:opacity-60"
           type="button"
           disabled={loading || otp.trim().length < 4}
           onClick={onVerifyOtp}
@@ -58,11 +58,11 @@ export function SellerEmailVerificationSection({
       ) : null}
       {verificationToken ? (
         <div className="space-y-3">
-          <p className="rounded-[16px] border-l-4 border-[#f4ece4] bg-[#f4ece4]/10 px-4 py-3 text-sm italic text-[#f4ece4]/90 leading-relaxed">
+          <p className="rounded-[16px] border-l-4 border-sand bg-sand/10 px-4 py-3 text-sm italic text-sand/90 leading-relaxed">
             {copy.nonEngagement}
           </p>
           <button
-            className="rounded bg-[#f4ece4] px-4 py-2 text-sm text-[#141446] disabled:opacity-60"
+            className="rounded bg-sand px-4 py-2 text-sm text-navy disabled:opacity-60"
             type="button"
             disabled={loading}
             onClick={onEstimateAndCreate}

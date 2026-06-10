@@ -38,7 +38,7 @@ export function AdminLoginForm({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-[#141446]/[0.03] p-4 text-sm text-[#141446]/78">
+      <div className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-navy/[0.03] p-4 text-sm text-navy/78">
         Connecte-toi avec Google en utilisant une adresse déjà autorisée dans le back-office.
       </div>
       <div className="flex flex-wrap items-center gap-3">

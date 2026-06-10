@@ -199,15 +199,15 @@ export default async function OwnerPropertyPage({ params }: OwnerPropertyPagePro
         city={detail.property.city ?? null}
       />
       <div className="flex flex-wrap gap-4">
-        <Link href={backHref} className="text-sm underline text-[#141446]">
+        <Link href={backHref} className="text-sm underline text-navy">
           {detail.linkedProjectId ? copy.backToProject : copy.backToProjects}
         </Link>
       </div>
 
       <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-8">
-        <p className="text-xs uppercase tracking-[0.18em] text-[#141446]/60">{copy.eyebrow}</p>
-        <h2 className="mt-2 text-2xl font-semibold text-[#141446]">{title}</h2>
-        <p className="mt-3 text-sm text-[#141446]/75">
+        <p className="text-xs uppercase tracking-[0.18em] text-navy/60">{copy.eyebrow}</p>
+        <h2 className="mt-2 text-2xl font-semibold text-navy">{title}</h2>
+        <p className="mt-3 text-sm text-navy/75">
           {displayAddress}
         </p>
       </section>
@@ -215,33 +215,33 @@ export default async function OwnerPropertyPage({ params }: OwnerPropertyPagePro
       <section className="grid gap-6 lg:grid-cols-[1.35fr_1fr]">
         <div className="space-y-6">
           <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-8">
-            <h3 className="text-xl font-semibold text-[#141446]">{copy.overview}</h3>
+            <h3 className="text-xl font-semibold text-navy">{copy.overview}</h3>
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               <div className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-4">
-                <p className="text-xs uppercase text-[#141446]/60">{copy.type}</p>
-                <p className="mt-2 text-[#141446]">
+                <p className="text-xs uppercase text-navy/60">{copy.type}</p>
+                <p className="mt-2 text-navy">
                   {detail.property.propertyType
                     ? formatPropertyTypeLabel(detail.property.propertyType, locale)
                     : copy.unavailable}
                 </p>
               </div>
               <div className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-4">
-                <p className="text-xs uppercase text-[#141446]/60">{copy.market}</p>
-                <p className="mt-2 text-[#141446]">
+                <p className="text-xs uppercase text-navy/60">{copy.market}</p>
+                <p className="mt-2 text-navy">
                   {getBusinessTypeLabel(detail.listing?.businessType, locale)}
                 </p>
               </div>
               <div className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-4">
-                <p className="text-xs uppercase text-[#141446]/60">{copy.price}</p>
-                <p className="mt-2 text-[#141446]">
+                <p className="text-xs uppercase text-navy/60">{copy.price}</p>
+                <p className="mt-2 text-navy">
                   {typeof detail.listing?.priceAmount === "number"
                     ? formatCurrency(detail.listing.priceAmount, locale, "EUR")
                     : copy.unavailable}
                 </p>
               </div>
               <div className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-4">
-                <p className="text-xs uppercase text-[#141446]/60">{copy.surface}</p>
-                <p className="mt-2 text-[#141446]">
+                <p className="text-xs uppercase text-navy/60">{copy.surface}</p>
+                <p className="mt-2 text-navy">
                   {detail.property.livingArea ? `${detail.property.livingArea} m²` : copy.unavailable}
                 </p>
               </div>
@@ -249,45 +249,45 @@ export default async function OwnerPropertyPage({ params }: OwnerPropertyPagePro
           </section>
 
           <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-8">
-            <h3 className="text-xl font-semibold text-[#141446]">{copy.details}</h3>
+            <h3 className="text-xl font-semibold text-navy">{copy.details}</h3>
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               <div className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-4">
-                <p className="text-xs uppercase text-[#141446]/60">{copy.address}</p>
-                <p className="mt-2 text-[#141446]">{displayAddress}</p>
+                <p className="text-xs uppercase text-navy/60">{copy.address}</p>
+                <p className="mt-2 text-navy">{displayAddress}</p>
               </div>
               <div className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-4">
-                <p className="text-xs uppercase text-[#141446]/60">{copy.rooms}</p>
-                <p className="mt-2 text-[#141446]">{detail.property.rooms ?? copy.unavailable}</p>
+                <p className="text-xs uppercase text-navy/60">{copy.rooms}</p>
+                <p className="mt-2 text-navy">{detail.property.rooms ?? copy.unavailable}</p>
               </div>
               <div className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-4">
-                <p className="text-xs uppercase text-[#141446]/60">{copy.bedrooms}</p>
-                <p className="mt-2 text-[#141446]">{detail.property.bedrooms ?? copy.unavailable}</p>
+                <p className="text-xs uppercase text-navy/60">{copy.bedrooms}</p>
+                <p className="mt-2 text-navy">{detail.property.bedrooms ?? copy.unavailable}</p>
               </div>
               <div className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-4">
-                <p className="text-xs uppercase text-[#141446]/60">{copy.floor}</p>
-                <p className="mt-2 text-[#141446]">{detail.property.floor ?? copy.unavailable}</p>
+                <p className="text-xs uppercase text-navy/60">{copy.floor}</p>
+                <p className="mt-2 text-navy">{detail.property.floor ?? copy.unavailable}</p>
               </div>
               <div className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-4">
-                <p className="text-xs uppercase text-[#141446]/60">{copy.terrace}</p>
-                <p className="mt-2 text-[#141446]">{getBooleanLabel(detail.property.hasTerrace, locale)}</p>
+                <p className="text-xs uppercase text-navy/60">{copy.terrace}</p>
+                <p className="mt-2 text-navy">{getBooleanLabel(detail.property.hasTerrace, locale)}</p>
               </div>
               <div className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-4">
-                <p className="text-xs uppercase text-[#141446]/60">{copy.elevator}</p>
-                <p className="mt-2 text-[#141446]">{getBooleanLabel(detail.property.hasElevator, locale)}</p>
+                <p className="text-xs uppercase text-navy/60">{copy.elevator}</p>
+                <p className="mt-2 text-navy">{getBooleanLabel(detail.property.hasElevator, locale)}</p>
               </div>
             </div>
           </section>
 
           <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-8">
-            <h3 className="text-xl font-semibold text-[#141446]">{copy.description}</h3>
-            <p className="mt-4 text-sm text-[#141446]/75">
+            <h3 className="text-xl font-semibold text-navy">{copy.description}</h3>
+            <p className="mt-4 text-sm text-navy/75">
               {detail.property.description ?? copy.noDescription}
             </p>
           </section>
 
           {hasLocationMap ? (
             <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-8">
-              <h3 className="text-xl font-semibold text-[#141446]">{copy.location}</h3>
+              <h3 className="text-xl font-semibold text-navy">{copy.location}</h3>
               <div className="mt-4">
                 <PropertyLocationMap
                   latitude={detail.property.latitude}
@@ -315,14 +315,14 @@ export default async function OwnerPropertyPage({ params }: OwnerPropertyPagePro
 
         <div className="space-y-6">
           <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-8">
-            <h3 className="text-xl font-semibold text-[#141446]">{copy.actions}</h3>
-            <div className="mt-4 space-y-3 text-sm text-[#141446]">
+            <h3 className="text-xl font-semibold text-navy">{copy.actions}</h3>
+            <div className="mt-4 space-y-3 text-sm text-navy">
               {detail.property.appointmentServiceUrl ? (
                 <a
                   href={detail.property.appointmentServiceUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-block rounded bg-[#141446] px-4 py-2 text-[#f4ece4]"
+                  className="inline-block rounded bg-navy px-4 py-2 text-sand"
                 >
                   {copy.book}
                 </a>

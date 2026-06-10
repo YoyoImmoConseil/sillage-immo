@@ -262,8 +262,8 @@ export function BuyerSignupForm(props: BuyerSignupFormProps) {
               key={label}
               className={`flex flex-1 items-center gap-2 rounded-full border px-3 py-1.5 ${
                 isActive
-                  ? "border-[#141446] bg-[#141446] text-[#f4ece4]"
-                  : "border-[rgba(20,20,70,0.18)] bg-white/60 text-[#141446]"
+                  ? "border-navy bg-navy text-sand"
+                  : "border-[rgba(20,20,70,0.18)] bg-white/60 text-navy"
               }`}
             >
               <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white/20 text-xs font-semibold">

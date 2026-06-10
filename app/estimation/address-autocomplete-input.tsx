@@ -163,7 +163,7 @@ export function AddressAutocompleteInput({
           autoComplete="off"
         />
         {isOpen && value.trim().length >= 3 && suggestions.length > 0 ? (
-          <div className="absolute z-20 mt-1 w-full rounded border bg-[#f4ece4] shadow">
+          <div className="absolute z-20 mt-1 w-full rounded border bg-sand shadow">
             {suggestions.map((suggestion) => (
               <button
                 key={suggestion.label}

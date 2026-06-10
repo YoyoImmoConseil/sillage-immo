@@ -161,7 +161,7 @@ async function PilotDashboardCore({
 
       <ConversationsInsights snapshot={snapshot.conversations} />
 
-      <p className="text-xs text-[#141446]/55">
+      <p className="text-xs text-navy/55">
         Snapshot dashboard mis à jour toutes les 5 minutes (SSR cached) •
         synthèses IA mises à jour toutes les heures • dernière génération{" "}
         {new Date(snapshot.generatedAt).toLocaleString("fr-FR", {
@@ -195,9 +195,9 @@ function SynthesesFallback({ periodLabel }: { periodLabel: string }) {
   // Skeleton matches the 2-column grid of real synthesis cards.
   return (
     <div className="space-y-3">
-      <p className="text-xs text-[#141446]/60">
+      <p className="text-xs text-navy/60">
         Génération des synthèses IA sur la période :{" "}
-        <span className="font-semibold text-[#141446]">{periodLabel}</span>…
+        <span className="font-semibold text-navy">{periodLabel}</span>…
       </p>
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         {Array.from({ length: 4 }).map((_, i) => (
@@ -205,14 +205,14 @@ function SynthesesFallback({ periodLabel }: { periodLabel: string }) {
             key={i}
             className="animate-pulse rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white/60 p-6"
           >
-            <div className="h-4 w-1/3 rounded bg-[#141446]/15" />
+            <div className="h-4 w-1/3 rounded bg-navy/15" />
             <div className="mt-4 space-y-2">
-              <div className="h-3 w-full rounded bg-[#141446]/10" />
-              <div className="h-3 w-11/12 rounded bg-[#141446]/10" />
-              <div className="h-3 w-10/12 rounded bg-[#141446]/10" />
-              <div className="h-3 w-9/12 rounded bg-[#141446]/10" />
+              <div className="h-3 w-full rounded bg-navy/10" />
+              <div className="h-3 w-11/12 rounded bg-navy/10" />
+              <div className="h-3 w-10/12 rounded bg-navy/10" />
+              <div className="h-3 w-9/12 rounded bg-navy/10" />
             </div>
-            <div className="mt-4 h-2 w-1/4 rounded bg-[#141446]/10" />
+            <div className="mt-4 h-2 w-1/4 rounded bg-navy/10" />
           </div>
         ))}
       </div>
@@ -222,7 +222,7 @@ function SynthesesFallback({ periodLabel }: { periodLabel: string }) {
 
 function PilotDashboardFallback() {
   return (
-    <div className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6 text-sm text-[#141446]/70">
+    <div className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6 text-sm text-navy/70">
       Chargement du dashboard de pilotage…
     </div>
   );
@@ -279,13 +279,13 @@ export default async function AdminDashboardPage({
 
   if (!context) {
     return (
-      <main className="min-h-screen bg-[#f4ece4] px-6 py-10 md:px-10 xl:px-14 2xl:px-20">
+      <main className="min-h-screen bg-sand px-6 py-10 md:px-10 xl:px-14 2xl:px-20">
         <section className="mx-auto max-w-3xl rounded-3xl border border-[rgba(20,20,70,0.18)] bg-white/70 p-8">
-          <h1 className="text-3xl font-semibold text-[#141446]">Dashboard admin</h1>
+          <h1 className="text-3xl font-semibold text-navy">Dashboard admin</h1>
           <p className="mt-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
             {warningMessage ?? "La page est temporairement indisponible."}
           </p>
-          <Link href="/admin/login" className="mt-4 inline-block text-sm underline text-[#141446]">
+          <Link href="/admin/login" className="mt-4 inline-block text-sm underline text-navy">
             Retour à la connexion admin
           </Link>
         </section>
@@ -339,8 +339,8 @@ export default async function AdminDashboardPage({
               href={card.href}
               className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6 transition hover:border-[rgba(20,20,70,0.3)]"
             >
-              <h2 className="text-xl font-semibold text-[#141446]">{card.title}</h2>
-              <p className="mt-2 text-sm text-[#141446]/75">{card.description}</p>
+              <h2 className="text-xl font-semibold text-navy">{card.title}</h2>
+              <p className="mt-2 text-sm text-navy/75">{card.description}</p>
             </Link>
           ))}
         </section>
@@ -348,7 +348,7 @@ export default async function AdminDashboardPage({
 
       {showPilotDashboard && visibleCards.length > 0 ? (
         <section className="mt-10">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-[#141446]/70">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-navy/70">
             Navigation rapide
           </h2>
           <div className="mt-3 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
@@ -358,8 +358,8 @@ export default async function AdminDashboardPage({
                 href={card.href}
                 className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white/60 px-4 py-3 text-sm transition hover:border-[rgba(20,20,70,0.3)]"
               >
-                <span className="font-semibold text-[#141446]">{card.title}</span>
-                <span className="ml-2 text-[#141446]/60">→</span>
+                <span className="font-semibold text-navy">{card.title}</span>
+                <span className="ml-2 text-navy/60">→</span>
               </Link>
             ))}
           </div>

@@ -50,13 +50,13 @@ export default async function ClientsAdminPage({ searchParams }: ClientsAdminPag
 
   if (!context) {
     return (
-      <main className="min-h-screen bg-[#f4ece4] px-6 py-10 md:px-10 xl:px-14 2xl:px-20">
+      <main className="min-h-screen bg-sand px-6 py-10 md:px-10 xl:px-14 2xl:px-20">
         <section className="mx-auto max-w-3xl rounded-3xl border border-[rgba(20,20,70,0.18)] bg-white/70 p-8">
-          <h1 className="text-3xl font-semibold text-[#141446]">Clients vendeurs</h1>
+          <h1 className="text-3xl font-semibold text-navy">Clients vendeurs</h1>
           <p className="mt-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
             {warningMessage ?? "La page est temporairement indisponible."}
           </p>
-          <Link href="/admin/login" className="mt-4 inline-block text-sm underline text-[#141446]">
+          <Link href="/admin/login" className="mt-4 inline-block text-sm underline text-navy">
             Retour à la connexion admin
           </Link>
         </section>
@@ -128,7 +128,7 @@ export default async function ClientsAdminPage({ searchParams }: ClientsAdminPag
           </p>
         ) : null}
         <div className="mb-3">
-          <p className="text-sm text-[#141446]/75">{total} client(s)</p>
+          <p className="text-sm text-navy/75">{total} client(s)</p>
         </div>
         <table className="w-full text-sm">
           <thead>
@@ -145,7 +145,7 @@ export default async function ClientsAdminPage({ searchParams }: ClientsAdminPag
           <tbody>
             {items.length === 0 ? (
               <tr>
-                <td className="p-3 text-[#141446]/70" colSpan={7}>
+                <td className="p-3 text-navy/70" colSpan={7}>
                   Aucun client pour le moment.
                 </td>
               </tr>
@@ -159,7 +159,7 @@ export default async function ClientsAdminPage({ searchParams }: ClientsAdminPag
                   <td className="p-3">{formatAccountStatus(item)}</td>
                   <td className="p-3">{item.lastLoginAt ? formatDate(item.lastLoginAt) : "-"}</td>
                   <td className="p-3">
-                    <Link className="underline text-[#141446]" href={`/admin/clients/${item.id}`}>
+                    <Link className="underline text-navy" href={`/admin/clients/${item.id}`}>
                       Voir
                     </Link>
                   </td>

@@ -55,17 +55,17 @@ const CATALOG_EYEBROW: Record<AppLocale, string> = {
 export function PublicListingsPage(props: PublicListingsPageProps) {
   return (
     <main className="min-h-screen">
-      <section className="bg-[#141446] text-[#f4ece4]">
+      <section className="bg-navy text-sand">
         <div className="w-full px-6 py-10 md:px-10 md:py-14 xl:px-14 2xl:px-20 space-y-4">
-          <p className="text-xs uppercase tracking-[0.18em] text-[#f4ece4]/70">
+          <p className="text-xs uppercase tracking-[0.18em] text-sand/70">
             {CATALOG_EYEBROW[props.locale]}
           </p>
-          <h1 className="sillage-section-title text-[#f4ece4]">{props.title}</h1>
-          <p className="sillage-editorial-text max-w-3xl text-[#f4ece4]/82">{props.intro}</p>
+          <h1 className="sillage-section-title text-sand">{props.title}</h1>
+          <p className="sillage-editorial-text max-w-3xl text-sand/82">{props.intro}</p>
         </div>
       </section>
 
-      <section className="bg-[#f4ece4] text-[#141446]">
+      <section className="bg-sand text-navy">
         <div className="w-full px-6 py-8 md:px-10 xl:px-14 2xl:px-20 space-y-8">
           <Suspense
             fallback={

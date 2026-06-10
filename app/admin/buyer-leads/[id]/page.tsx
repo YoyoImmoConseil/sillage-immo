@@ -36,7 +36,7 @@ export default async function BuyerLeadDetailPage({ params }: BuyerLeadDetailPag
       profileName={context.profile?.fullName ?? context.profile?.email ?? "Mode admin"}
     >
       <div className="mb-4">
-        <Link href="/admin/buyer-leads" className="text-sm underline text-[#141446]">
+        <Link href="/admin/buyer-leads" className="text-sm underline text-navy">
           Retour aux leads acquereurs
         </Link>
       </div>
@@ -53,7 +53,7 @@ export default async function BuyerLeadDetailPage({ params }: BuyerLeadDetailPag
 
         {adminProjects.length > 0 ? (
           <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6">
-            <h2 className="text-xl font-semibold text-[#141446]">
+            <h2 className="text-xl font-semibold text-navy">
               Recherches sauvegardées ({adminProjects.length})
             </h2>
             <div className="mt-4 grid gap-3">
@@ -64,17 +64,17 @@ export default async function BuyerLeadDetailPage({ params }: BuyerLeadDetailPag
                 >
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <p className="font-semibold text-[#141446]">
+                      <p className="font-semibold text-navy">
                         {project.title ?? "Recherche acquéreur"}
                       </p>
-                      <p className="text-[#141446]/70">
+                      <p className="text-navy/70">
                         Statut projet : {project.status} ·{" "}
                         {project.searchProfile
                           ? `Recherche : ${project.searchProfile.status}`
                           : "Aucun profil de recherche actif"}
                       </p>
                       {project.searchProfile ? (
-                        <p className="text-xs text-[#141446]/60">
+                        <p className="text-xs text-navy/60">
                           {project.searchProfile.businessType === "rental"
                             ? "Location"
                             : "Achat"}{" "}
@@ -138,7 +138,7 @@ export default async function BuyerLeadDetailPage({ params }: BuyerLeadDetailPag
         />
 
         <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6">
-          <h2 className="text-xl font-semibold text-[#141446]">Biens compatibles</h2>
+          <h2 className="text-xl font-semibold text-navy">Biens compatibles</h2>
           <div className="mt-4 grid gap-3">
             {matches.length === 0 ? (
               <p className="text-sm opacity-70">
@@ -149,8 +149,8 @@ export default async function BuyerLeadDetailPage({ params }: BuyerLeadDetailPag
                 <article key={match.id} className="rounded-2xl border border-[rgba(20,20,70,0.14)] p-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <h3 className="font-semibold text-[#141446]">{match.title ?? "Bien sans titre"}</h3>
-                      <p className="text-sm text-[#141446]/70">
+                      <h3 className="font-semibold text-navy">{match.title ?? "Bien sans titre"}</h3>
+                      <p className="text-sm text-navy/70">
                         {match.city ?? "-"} · {formatPropertyTypeLabel(match.propertyType) ?? "-"} · Score {match.score}/100
                       </p>
                     </div>

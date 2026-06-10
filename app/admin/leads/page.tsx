@@ -57,7 +57,7 @@ export default async function AdminLeadSearchPage({ searchParams }: LeadsSearchP
 
       <div className="grid gap-6 xl:grid-cols-2">
         <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6">
-          <h2 className="text-xl font-semibold text-[#141446]">Leads vendeurs</h2>
+          <h2 className="text-xl font-semibold text-navy">Leads vendeurs</h2>
           <div className="mt-4 space-y-3">
             {sellerLeads.length === 0 ? (
               <p className="text-sm opacity-70">Aucun resultat vendeur.</p>
@@ -66,8 +66,8 @@ export default async function AdminLeadSearchPage({ searchParams }: LeadsSearchP
                 <article key={lead.id} className="rounded-2xl border border-[rgba(20,20,70,0.12)] p-4">
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <h3 className="font-semibold text-[#141446]">{lead.full_name}</h3>
-                      <p className="text-sm text-[#141446]/70">
+                      <h3 className="font-semibold text-navy">{lead.full_name}</h3>
+                      <p className="text-sm text-navy/70">
                         {lead.email} · {lead.city ?? "-"} · {lead.status}
                       </p>
                     </div>
@@ -82,7 +82,7 @@ export default async function AdminLeadSearchPage({ searchParams }: LeadsSearchP
         </section>
 
         <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6">
-          <h2 className="text-xl font-semibold text-[#141446]">Leads acquereurs</h2>
+          <h2 className="text-xl font-semibold text-navy">Leads acquereurs</h2>
           <div className="mt-4 space-y-3">
             {buyerLeads.length === 0 ? (
               <p className="text-sm opacity-70">Aucun resultat acquereur.</p>
@@ -91,8 +91,8 @@ export default async function AdminLeadSearchPage({ searchParams }: LeadsSearchP
                 <article key={lead.id} className="rounded-2xl border border-[rgba(20,20,70,0.12)] p-4">
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <h3 className="font-semibold text-[#141446]">{lead.fullName}</h3>
-                      <p className="text-sm text-[#141446]/70">
+                      <h3 className="font-semibold text-navy">{lead.fullName}</h3>
+                      <p className="text-sm text-navy/70">
                         {lead.email} · {lead.searchProfile?.businessType === "rental" ? "Location" : "Achat"} · {lead.status}
                       </p>
                     </div>

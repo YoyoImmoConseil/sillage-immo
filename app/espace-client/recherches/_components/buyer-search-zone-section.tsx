@@ -44,9 +44,9 @@ export function BuyerSearchZoneSection({
   cancelZoneEdit,
 }: BuyerSearchZoneSectionProps) {
   return (
-    <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-[#f4ece4] p-8">
+    <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-sand p-8">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-xl font-semibold text-[#141446]">{copy.sectionZone}</h2>
+        <h2 className="text-xl font-semibold text-navy">{copy.sectionZone}</h2>
         {!archived ? (
           <div className="flex gap-2">
             {isEditingZone ? (
@@ -81,7 +81,7 @@ export function BuyerSearchZoneSection({
           </div>
         ) : null}
       </div>
-      <p className="mt-1 text-xs text-[#141446]/70">{copy.sectionZoneHint}</p>
+      <p className="mt-1 text-xs text-navy/70">{copy.sectionZoneHint}</p>
       {isEditingZone ? (
         <div className="mt-4">
           <BuyerSearchZoneMap
@@ -100,7 +100,7 @@ export function BuyerSearchZoneSection({
           />
         </div>
       ) : (
-        <p className="mt-4 text-sm text-[#141446]/70">{copy.zoneNotSet}</p>
+        <p className="mt-4 text-sm text-navy/70">{copy.zoneNotSet}</p>
       )}
     </section>
   );

@@ -39,7 +39,7 @@ export function CreateProjectForm({ clientId, clientEmail }: CreateProjectFormPr
   return (
     <form onSubmit={handleSubmit} className="max-w-md space-y-4 rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6">
       <div>
-        <label className="block text-sm font-medium text-[#141446]">Titre du projet</label>
+        <label className="block text-sm font-medium text-navy">Titre du projet</label>
         <input
           className="mt-1 w-full rounded border px-3 py-2 text-sm"
           value={title}
@@ -49,7 +49,7 @@ export function CreateProjectForm({ clientId, clientEmail }: CreateProjectFormPr
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-[#141446]">Rattacher un bien (optionnel)</label>
+        <label className="block text-sm font-medium text-navy">Rattacher un bien (optionnel)</label>
         <input
           className="mt-1 w-full rounded border px-3 py-2 text-sm"
           value={propertyId}

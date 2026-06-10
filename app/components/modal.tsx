@@ -56,15 +56,15 @@ export function Modal({
     <>
       <div className="flex items-start justify-between gap-4 border-b border-[rgba(20,20,70,0.12)] p-6">
         <div>
-          <h2 className="text-xl font-semibold text-[#141446]">{title}</h2>
+          <h2 className="text-xl font-semibold text-navy">{title}</h2>
           {description ? (
-            <p className="mt-1 text-sm text-[#141446]/70">{description}</p>
+            <p className="mt-1 text-sm text-navy/70">{description}</p>
           ) : null}
         </div>
         <button
           type="button"
           onClick={onClose}
-          className="rounded-full p-2 text-[#141446]/70 hover:bg-[rgba(20,20,70,0.06)]"
+          className="rounded-full p-2 text-navy/70 hover:bg-[rgba(20,20,70,0.06)]"
           aria-label="Fermer"
         >
           ✕

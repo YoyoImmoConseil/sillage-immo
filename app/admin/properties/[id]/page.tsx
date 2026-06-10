@@ -130,11 +130,11 @@ export default async function AdminPropertyDetailPage({ params }: AdminPropertyD
       profileName={context.profile?.fullName ?? context.profile?.email ?? "Mode admin"}
     >
       <div className="mb-4 flex gap-3">
-        <Link href="/admin/properties" className="text-sm underline text-[#141446]">
+        <Link href="/admin/properties" className="text-sm underline text-navy">
           Retour aux biens
         </Link>
         {detail.listing?.canonical_path ? (
-          <Link href={detail.listing.canonical_path} className="text-sm underline text-[#141446]">
+          <Link href={detail.listing.canonical_path} className="text-sm underline text-navy">
             Voir la fiche publique
           </Link>
         ) : null}
@@ -174,7 +174,7 @@ export default async function AdminPropertyDetailPage({ params }: AdminPropertyD
 
         {hasLocationMap ? (
           <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6">
-            <h2 className="text-xl font-semibold text-[#141446]">Emplacement</h2>
+            <h2 className="text-xl font-semibold text-navy">Emplacement</h2>
             <div className="mt-4">
               <PropertyLocationMap
                 latitude={detail.property.latitude}
@@ -189,25 +189,25 @@ export default async function AdminPropertyDetailPage({ params }: AdminPropertyD
 
         {(canEditClients || projectDetails.length > 0) && (
           <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6">
-            <h2 className="text-xl font-semibold text-[#141446]">Projets clients</h2>
+            <h2 className="text-xl font-semibold text-navy">Projets clients</h2>
             <div className="mt-4 space-y-3">
               {projectDetails.length === 0 ? (
-                <p className="text-sm text-[#141446]/70">Aucun projet client rattaché.</p>
+                <p className="text-sm text-navy/70">Aucun projet client rattaché.</p>
               ) : (
                 projectDetails.map((p) => (
                   <div key={p.client_project_id} className="rounded-2xl border border-[rgba(20,20,70,0.12)] p-4">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="space-y-1">
-                        <p className="text-xs uppercase tracking-wide text-[#141446]/60">
+                        <p className="text-xs uppercase tracking-wide text-navy/60">
                           {p.owners.length > 1 ? "Indivision" : "Propriétaire"}
                         </p>
                         <ul className="space-y-1">
                           {p.owners.map((owner) => (
-                            <li key={owner.clientProfileId} className="text-sm text-[#141446]">
+                            <li key={owner.clientProfileId} className="text-sm text-navy">
                               <span className="font-medium">
                                 {owner.fullName ?? owner.email ?? "Client"}
                               </span>
-                              <span className="ml-2 text-xs text-[#141446]/60">
+                              <span className="ml-2 text-xs text-navy/60">
                                 {owner.role === "primary" ? "Porteur" : "Co-propriétaire"}
                                 {owner.email ? ` · ${owner.email}` : ""}
                               </span>
@@ -239,7 +239,7 @@ export default async function AdminPropertyDetailPage({ params }: AdminPropertyD
         <PropertyVisitsAdminPanel propertyId={id} />
 
         <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6">
-          <h2 className="text-xl font-semibold text-[#141446]">Acquéreurs compatibles</h2>
+          <h2 className="text-xl font-semibold text-navy">Acquéreurs compatibles</h2>
           <div className="mt-4 space-y-3">
             {matches.length === 0 ? (
               <p className="text-sm opacity-70">
@@ -250,8 +250,8 @@ export default async function AdminPropertyDetailPage({ params }: AdminPropertyD
                 <article key={match.id} className="rounded-2xl border border-[rgba(20,20,70,0.12)] p-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <h3 className="font-semibold text-[#141446]">{match.fullName}</h3>
-                      <p className="text-sm text-[#141446]/70">
+                      <h3 className="font-semibold text-navy">{match.fullName}</h3>
+                      <p className="text-sm text-navy/70">
                         {match.email} · {match.statusLabel} · Score {match.score}/100
                       </p>
                     </div>

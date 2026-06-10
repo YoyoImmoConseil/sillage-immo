@@ -37,8 +37,8 @@ export function LanguageSwitcher({ theme = "dark" }: LanguageSwitcherProps) {
         }}
         className={
           theme === "dark"
-            ? "rounded border border-white/16 bg-[#141446] px-3 py-2 text-[#f4ece4]"
-            : "rounded border border-[#141446]/16 bg-white px-3 py-2 text-[#141446]"
+            ? "rounded border border-white/16 bg-navy px-3 py-2 text-sand"
+            : "rounded border border-navy/16 bg-white px-3 py-2 text-navy"
         }
         aria-label="Select language"
       >

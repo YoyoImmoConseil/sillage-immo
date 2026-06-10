@@ -7,7 +7,7 @@ type Props = { locale: AppLocale };
 
 function DrawnZoneMap({ caption }: { caption: string }) {
   return (
-    <figure className="relative overflow-hidden rounded-[28px] bg-[#141446] shadow-xl ring-1 ring-[#141446]/10">
+    <figure className="relative overflow-hidden rounded-[28px] bg-navy shadow-xl ring-1 ring-navy/10">
       <svg
         viewBox="0 0 600 420"
         role="img"
@@ -86,7 +86,7 @@ function DrawnZoneMap({ caption }: { caption: string }) {
           <circle r="4" fill="#141446" />
         </g>
       </svg>
-      <figcaption className="absolute bottom-4 left-4 right-4 rounded-full bg-[#f4ece4]/90 px-4 py-2 text-xs text-[#141446]/80 backdrop-blur">
+      <figcaption className="absolute bottom-4 left-4 right-4 rounded-full bg-sand/90 px-4 py-2 text-xs text-navy/80 backdrop-blur">
         {caption}
       </figcaption>
     </figure>
@@ -106,13 +106,13 @@ export function BuyerSection({ locale }: Props) {
         <div className="grid gap-10 lg:grid-cols-[55%_45%] lg:items-center">
           <div className="space-y-8">
             <div className="max-w-2xl space-y-4">
-              <p className="text-xs uppercase tracking-[0.22em] text-[#141446]/65">
+              <p className="text-xs uppercase tracking-[0.22em] text-navy/65">
                 {copy.eyebrow}
               </p>
               <h2 id="buyer-title" className="sillage-section-title">
                 {copy.title}
               </h2>
-              <p className="sillage-editorial-text text-[#141446]/80">
+              <p className="sillage-editorial-text text-navy/80">
                 {copy.subtitle}
               </p>
             </div>
@@ -120,12 +120,12 @@ export function BuyerSection({ locale }: Props) {
               {copy.benefits.map((benefit) => (
                 <article
                   key={benefit.title}
-                  className="flex flex-col gap-2 rounded-[20px] bg-[#f4ece4] p-5 ring-1 ring-[#141446]/5"
+                  className="flex flex-col gap-2 rounded-[20px] bg-sand p-5 ring-1 ring-navy/5"
                 >
-                  <h3 className="font-serif text-base font-semibold text-[#141446]">
+                  <h3 className="font-serif text-base font-semibold text-navy">
                     {benefit.title}
                   </h3>
-                  <p className="text-sm leading-relaxed text-[#141446]/75">
+                  <p className="text-sm leading-relaxed text-navy/75">
                     {benefit.body}
                   </p>
                 </article>
@@ -134,13 +134,13 @@ export function BuyerSection({ locale }: Props) {
             <div className="flex flex-col gap-3 sm:flex-row">
               <Link
                 href={localizePath("/recherche/nouvelle", locale)}
-                className="inline-flex items-center justify-center rounded-full bg-[#141446] px-6 py-3 text-sm font-semibold text-[#f4ece4] shadow-sm transition hover:-translate-y-[1px] hover:opacity-95"
+                className="inline-flex items-center justify-center rounded-full bg-navy px-6 py-3 text-sm font-semibold text-sand shadow-sm transition hover:-translate-y-[1px] hover:opacity-95"
               >
                 {ctaCopy.search}
               </Link>
               <Link
                 href={localizePath("/vente", locale)}
-                className="inline-flex items-center justify-center rounded-full border border-[#141446] bg-transparent px-6 py-3 text-sm font-semibold text-[#141446] transition hover:bg-[#141446]/5"
+                className="inline-flex items-center justify-center rounded-full border border-navy bg-transparent px-6 py-3 text-sm font-semibold text-navy transition hover:bg-navy/5"
               >
                 {ctaCopy.viewSales}
               </Link>

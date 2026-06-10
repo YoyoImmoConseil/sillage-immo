@@ -10,7 +10,7 @@ export type PropertyVisitStatus =
   | "completed";
 
 export const VISIT_STATUS_BADGE_CLASS: Record<PropertyVisitStatus, string> = {
-  scheduled: "bg-[#141446]/10 text-[#141446]",
+  scheduled: "bg-navy/10 text-navy",
   updated: "bg-amber-100 text-amber-900",
   cancelled: "bg-rose-100 text-rose-900",
   completed: "bg-emerald-100 text-emerald-900",

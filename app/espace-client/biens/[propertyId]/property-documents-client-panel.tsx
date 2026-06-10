@@ -232,13 +232,13 @@ export function PropertyDocumentsClientPanel({ propertyId, clientProfileId, loca
     <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="text-xl font-semibold text-[#141446]">{copy.title}</h3>
-          <p className="text-sm text-[#141446]/70">{copy.description}</p>
+          <h3 className="text-xl font-semibold text-navy">{copy.title}</h3>
+          <p className="text-sm text-navy/70">{copy.description}</p>
         </div>
         <button
           type="button"
           onClick={() => setShowUpload(true)}
-          className="rounded bg-[#141446] px-4 py-2 text-sm text-[#f4ece4]"
+          className="rounded bg-navy px-4 py-2 text-sm text-sand"
         >
           {copy.uploadCta}
         </button>
@@ -264,7 +264,7 @@ export function PropertyDocumentsClientPanel({ propertyId, clientProfileId, loca
         renderBadges={(doc) =>
           doc.kind === "link" ? (
             <p className="text-xs">
-              <span className="rounded-full bg-[rgba(20,20,70,0.06)] px-2 py-0.5 text-[#141446]/80">
+              <span className="rounded-full bg-[rgba(20,20,70,0.06)] px-2 py-0.5 text-navy/80">
                 {copy.externalLink}
               </span>
             </p>
@@ -277,7 +277,7 @@ export function PropertyDocumentsClientPanel({ propertyId, clientProfileId, loca
                 href={doc.externalUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="rounded border border-[rgba(20,20,70,0.16)] px-3 py-1 text-sm text-[#141446]"
+                className="rounded border border-[rgba(20,20,70,0.16)] px-3 py-1 text-sm text-navy"
               >
                 {copy.open}
               </a>
@@ -285,7 +285,7 @@ export function PropertyDocumentsClientPanel({ propertyId, clientProfileId, loca
               <button
                 type="button"
                 onClick={() => downloadDocument(doc.id)}
-                className="rounded border border-[rgba(20,20,70,0.16)] px-3 py-1 text-sm text-[#141446]"
+                className="rounded border border-[rgba(20,20,70,0.16)] px-3 py-1 text-sm text-navy"
               >
                 {copy.download}
               </button>
@@ -321,7 +321,7 @@ export function PropertyDocumentsClientPanel({ propertyId, clientProfileId, loca
           error={uploadError}
           onClose={() => setShowUpload(false)}
           onSubmit={handleUpload}
-          submitClassName="rounded bg-[#141446] px-4 py-2 text-sm text-[#f4ece4] disabled:opacity-50"
+          submitClassName="rounded bg-navy px-4 py-2 text-sm text-sand disabled:opacity-50"
         />
       ) : null}
     </section>

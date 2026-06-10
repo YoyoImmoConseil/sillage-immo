@@ -100,22 +100,22 @@ export function UsersManager(props: {
   return (
     <div className="space-y-6">
       <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6">
-        <h2 className="text-xl font-semibold text-[#141446]">Règle V1 des droits</h2>
-        <p className="mt-2 text-sm text-[#141446]/72">
+        <h2 className="text-xl font-semibold text-navy">Règle V1 des droits</h2>
+        <p className="mt-2 text-sm text-navy/72">
           Les droits sont attribués automatiquement selon le rôle. Aucun droit individuel n&apos;est
           configuré dans cette version.
         </p>
         <div className="mt-4 grid gap-3 md:grid-cols-3">
-          <article className="rounded-2xl border border-[rgba(20,20,70,0.12)] p-4 text-sm text-[#141446]/78">
-            <p className="font-semibold text-[#141446]">Collaborateur</p>
+          <article className="rounded-2xl border border-[rgba(20,20,70,0.12)] p-4 text-sm text-navy/78">
+            <p className="font-semibold text-navy">Collaborateur</p>
             <p className="mt-2">Travaille sur les leads et les biens selon le périmètre métier standard.</p>
           </article>
-          <article className="rounded-2xl border border-[rgba(20,20,70,0.12)] p-4 text-sm text-[#141446]/78">
-            <p className="font-semibold text-[#141446]">Manager</p>
+          <article className="rounded-2xl border border-[rgba(20,20,70,0.12)] p-4 text-sm text-navy/78">
+            <p className="font-semibold text-navy">Manager</p>
             <p className="mt-2">Pilote l&apos;activité métier mais ne gère pas les accès ni les rôles.</p>
           </article>
-          <article className="rounded-2xl border border-[rgba(20,20,70,0.12)] p-4 text-sm text-[#141446]/78">
-            <p className="font-semibold text-[#141446]">Administrateur</p>
+          <article className="rounded-2xl border border-[rgba(20,20,70,0.12)] p-4 text-sm text-navy/78">
+            <p className="font-semibold text-navy">Administrateur</p>
             <p className="mt-2">Gère tous les accès, les changements de rôle et les activations.</p>
           </article>
         </div>
@@ -123,8 +123,8 @@ export function UsersManager(props: {
 
       {props.canManage ? (
         <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6">
-          <h2 className="text-xl font-semibold text-[#141446]">Créer un accès admin</h2>
-          <p className="mt-2 text-sm text-[#141446]/72">
+          <h2 className="text-xl font-semibold text-navy">Créer un accès admin</h2>
+          <p className="mt-2 text-sm text-navy/72">
             On autorise ici une adresse email interne, puis la connexion se fait ensuite avec Google.
           </p>
           <form onSubmit={createUser} className="mt-4 grid gap-3 md:grid-cols-5">
@@ -187,7 +187,7 @@ export function UsersManager(props: {
               <tr key={user.id} className="border-b border-[rgba(20,20,70,0.1)] last:border-0 align-top">
                 <td className="p-3">
                   <div className="flex items-center gap-3">
-                    <div className="relative h-12 w-9 overflow-hidden rounded-xl bg-[#f4ece4]">
+                    <div className="relative h-12 w-9 overflow-hidden rounded-xl bg-sand">
                       {user.avatarUrl ? (
                         <Image
                           src={user.avatarUrl}
@@ -200,7 +200,7 @@ export function UsersManager(props: {
                     </div>
                     <div>
                       <p>{user.fullName ?? "-"}</p>
-                      {user.title ? <p className="mt-1 text-xs text-[#141446]/60">{user.title}</p> : null}
+                      {user.title ? <p className="mt-1 text-xs text-navy/60">{user.title}</p> : null}
                     </div>
                   </div>
                 </td>
@@ -235,10 +235,10 @@ export function UsersManager(props: {
                     user.role
                   )}
                   {props.currentProfileId === user.id ? (
-                    <p className="mt-2 text-xs text-[#141446]/60">Votre propre rôle ne peut pas être modifié ici.</p>
+                    <p className="mt-2 text-xs text-navy/60">Votre propre rôle ne peut pas être modifié ici.</p>
                   ) : null}
                   {user.role === "administrateur" && user.isActive && activeAdministrators <= 1 ? (
-                    <p className="mt-2 text-xs text-[#141446]/60">Dernier administrateur actif : rôle verrouillé.</p>
+                    <p className="mt-2 text-xs text-navy/60">Dernier administrateur actif : rôle verrouillé.</p>
                   ) : null}
                 </td>
                 <td className="p-3">
@@ -271,10 +271,10 @@ export function UsersManager(props: {
                               {user.isActive ? "Suspendre" : "Réactiver"}
                             </button>
                             {isSelf ? (
-                              <p className="text-xs text-[#141446]/60">Vous ne pouvez pas suspendre votre propre accès.</p>
+                              <p className="text-xs text-navy/60">Vous ne pouvez pas suspendre votre propre accès.</p>
                             ) : null}
                             {isLastActiveAdmin ? (
-                              <p className="text-xs text-[#141446]/60">Le dernier administrateur actif ne peut pas être suspendu.</p>
+                              <p className="text-xs text-navy/60">Le dernier administrateur actif ne peut pas être suspendu.</p>
                             ) : null}
                           </>
                         );
