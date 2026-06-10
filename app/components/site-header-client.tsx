@@ -5,6 +5,7 @@ import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { LanguageSwitcher } from "./language-switcher";
 import { getPathLocale, localizePath } from "@/lib/i18n/routing";
+import { SITE_HEADER_COPY } from "./site-header-copy";
 
 export function SiteHeaderClient() {
   const [isOpen, setIsOpen] = useState(false);
@@ -12,48 +13,7 @@ export function SiteHeaderClient() {
   const locale = getPathLocale(pathname);
   const isAdminArea = pathname === "/admin" || pathname.startsWith("/admin/") || pathname === "/auth/callback";
 
-  const copy = {
-    fr: {
-      home: "Accueil",
-      sale: "Vente",
-      rental: "Location",
-      valuation: "Estimation",
-      buy: "Acheter",
-      clientSpace: "Mon Espace Sillage",
-      openMenu: "Ouvrir le menu",
-      closeMenu: "Fermer le menu",
-    },
-    en: {
-      home: "Home",
-      sale: "Sales",
-      rental: "Rentals",
-      valuation: "Valuation",
-      buy: "Buy",
-      clientSpace: "My Sillage Space",
-      openMenu: "Open menu",
-      closeMenu: "Close menu",
-    },
-    es: {
-      home: "Inicio",
-      sale: "Venta",
-      rental: "Alquiler",
-      valuation: "Valoración",
-      buy: "Comprar",
-      clientSpace: "Mi Espacio Sillage",
-      openMenu: "Abrir el menú",
-      closeMenu: "Cerrar el menú",
-    },
-    ru: {
-      home: "Главная",
-      sale: "Продажа",
-      rental: "Аренда",
-      valuation: "Оценка",
-      buy: "Купить",
-      clientSpace: "Моё пространство Sillage",
-      openMenu: "Открыть меню",
-      closeMenu: "Закрыть меню",
-    },
-  }[locale];
+  const copy = SITE_HEADER_COPY[locale];
 
   const navItems = [
     { href: localizePath("/vente", locale), label: copy.sale, ctaId: "header_nav_sale" },
