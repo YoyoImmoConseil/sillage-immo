@@ -1,4 +1,4 @@
-/* eslint-disable @next/next/no-img-element */
+import Image from "next/image";
 import Link from "next/link";
 import type { AppLocale } from "@/lib/i18n/config";
 import { formatCurrency } from "@/lib/i18n/format";
@@ -130,10 +130,12 @@ export function PropertyCard({ listing, locale = "fr" }: PropertyCardProps) {
       >
         <div className="relative aspect-[4/3] w-full overflow-hidden bg-[rgba(20,20,70,0.08)]">
           {listing.coverImageUrl ? (
-            <img
+            <Image
               src={listing.coverImageUrl}
               alt={listing.title ?? copy.coverFallback}
-              className="h-full w-full object-cover"
+              fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
+              className="object-cover"
             />
           ) : (
             <div className="flex h-full items-center justify-center text-sm text-[#141446]/65">

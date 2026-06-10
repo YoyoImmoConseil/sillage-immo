@@ -22,7 +22,7 @@ export default function GlobalError({
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      // eslint-disable-next-line no-console
+       
       console.error("[app] render error", {
         digest: error.digest,
         message: error.message,

@@ -15,7 +15,6 @@ import { buildPropertyDerivedFields } from "./property-presentation";
 import {
   CACHE_TAG_LISTINGS_PUBLIC,
   cacheTagListingByExternalRef,
-  cacheTagListingById,
   cacheTagListingBySlug,
 } from "@/lib/cache/tags";
 import { isPublicAvailabilityStatus } from "@/lib/properties/canonical-types";

@@ -65,9 +65,9 @@ export default async function SellerLeadsAdminPage({ searchParams }: SellerLeads
     >
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <form className="grid flex-1 gap-3 rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-5 md:grid-cols-4">
-          <input className="rounded border px-3 py-2 text-sm" name="search" defaultValue={filters.search ?? ""} placeholder="Nom, email, telephone, message" />
-          <input className="rounded border px-3 py-2 text-sm" name="city" defaultValue={filters.city ?? ""} placeholder="Ville" />
-          <select className="rounded border px-3 py-2 text-sm" name="status" defaultValue={filters.status ?? ""}>
+          <input className="rounded border px-3 py-2 text-sm" name="search" defaultValue={filters.search ?? ""} placeholder="Nom, email, telephone, message" aria-label="Rechercher un lead vendeur" />
+          <input className="rounded border px-3 py-2 text-sm" name="city" defaultValue={filters.city ?? ""} placeholder="Ville" aria-label="Filtrer par ville" />
+          <select className="rounded border px-3 py-2 text-sm" name="status" defaultValue={filters.status ?? ""} aria-label="Filtrer par statut">
             <option value="">Tous les statuts</option>
             <option value="new">Nouveau</option>
             <option value="to_call">A rappeler</option>

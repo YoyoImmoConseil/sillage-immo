@@ -27,7 +27,7 @@ export default async function SellerPortalHomePage() {
     groups = groupClientPortalProjects(projects);
   } catch (loadError) {
     projectsLoadFailed = true;
-    // eslint-disable-next-line no-console
+     
     console.error("[espace-client] listClientPortalProjects failed", {
       clientProfileId: context.clientProfile.id,
       authUserId: context.authUserId,

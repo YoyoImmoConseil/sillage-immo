@@ -72,14 +72,6 @@ type Props = {
   };
 };
 
-const ENTITY_URL_RULES: Array<{ regex: RegExp; build: (id: string) => string }> =
-  [
-    {
-      regex: /^([a-f0-9-]{36})$/i,
-      build: (id) => `/admin/leads?q=${id}`,
-    },
-  ];
-
 const TOOL_LINK_BUILDERS: Record<string, (output: unknown) => string | null> = {
   "seller_leads.get_context": (output) => {
     const o = output as { sellerLeadId?: string } | null;
@@ -441,6 +433,7 @@ export function CopilotClient(props: Props) {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Pose ta question (ex: Quels conseillers ont besoin de support ?)"
+            aria-label="Question au copilot"
             disabled={loading}
             className="flex-1 rounded-lg border border-[rgba(20,20,70,0.2)] bg-white/80 px-3 py-2 text-sm focus:border-[#141446] focus:outline-none"
           />

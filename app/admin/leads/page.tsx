@@ -36,18 +36,21 @@ export default async function AdminLeadSearchPage({ searchParams }: LeadsSearchP
           name="search"
           defaultValue={filters.search ?? ""}
           placeholder="Nom, email, telephone, message"
+          aria-label="Rechercher un lead"
         />
         <input
           className="rounded border px-3 py-2 text-sm"
           name="city"
           defaultValue={filters.city ?? ""}
           placeholder="Ville vendeur"
+          aria-label="Filtrer par ville du vendeur"
         />
         <input
           className="rounded border px-3 py-2 text-sm"
           name="status"
           defaultValue={filters.status ?? ""}
           placeholder="Statut"
+          aria-label="Filtrer par statut"
         />
         <button className="sillage-btn rounded px-4 py-2 text-sm">Rechercher</button>
       </form>

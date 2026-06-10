@@ -55,6 +55,7 @@ export function SellerLeadStatusForm({ sellerLeadId, initialStatus }: StatusForm
       <div className="flex flex-wrap gap-3 items-center">
         <select
           name="status"
+          aria-label="Statut du lead vendeur"
           value={status}
           onChange={(event) => setStatus(event.target.value as StatusValue)}
           className="rounded border px-3 py-2 text-sm"

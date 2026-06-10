@@ -101,8 +101,9 @@ export default async function ClientsAdminPage({ searchParams }: ClientsAdminPag
             name="search"
             defaultValue={filters.search ?? ""}
             placeholder="Nom, email, téléphone"
+            aria-label="Rechercher un client"
           />
-          <select className="rounded border px-3 py-2 text-sm" name="status" defaultValue={filters.status ?? "all"}>
+          <select className="rounded border px-3 py-2 text-sm" name="status" defaultValue={filters.status ?? "all"} aria-label="Filtrer par statut de compte">
             <option value="all">Tous</option>
             <option value="account_active">Compte actif</option>
             <option value="invite_pending">Invitation en attente</option>

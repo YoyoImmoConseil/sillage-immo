@@ -313,6 +313,7 @@ export function AttachPropertyToProjectModal({ propertyId }: AttachPropertyToPro
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Email, nom ou téléphone"
+              aria-label="Rechercher un client existant"
               className="w-full rounded-xl border border-[rgba(20,20,70,0.16)] px-4 py-2 text-sm"
             />
             {searching ? (
@@ -362,6 +363,7 @@ export function AttachPropertyToProjectModal({ propertyId }: AttachPropertyToPro
                   value={newEmail}
                   onChange={(e) => setNewEmail(e.target.value)}
                   placeholder="Email *"
+                  aria-label="Email du nouveau client"
                   className="rounded-xl border border-[rgba(20,20,70,0.16)] px-3 py-2 text-sm sm:col-span-2"
                   required
                 />
@@ -370,6 +372,7 @@ export function AttachPropertyToProjectModal({ propertyId }: AttachPropertyToPro
                   value={newFirstName}
                   onChange={(e) => setNewFirstName(e.target.value)}
                   placeholder="Prénom"
+                  aria-label="Prénom du nouveau client"
                   className="rounded-xl border border-[rgba(20,20,70,0.16)] px-3 py-2 text-sm"
                 />
                 <input
@@ -377,6 +380,7 @@ export function AttachPropertyToProjectModal({ propertyId }: AttachPropertyToPro
                   value={newLastName}
                   onChange={(e) => setNewLastName(e.target.value)}
                   placeholder="Nom"
+                  aria-label="Nom du nouveau client"
                   className="rounded-xl border border-[rgba(20,20,70,0.16)] px-3 py-2 text-sm"
                 />
                 <input
@@ -384,6 +388,7 @@ export function AttachPropertyToProjectModal({ propertyId }: AttachPropertyToPro
                   value={newPhone}
                   onChange={(e) => setNewPhone(e.target.value)}
                   placeholder="Téléphone"
+                  aria-label="Téléphone du nouveau client"
                   className="rounded-xl border border-[rgba(20,20,70,0.16)] px-3 py-2 text-sm sm:col-span-2"
                 />
               </div>

@@ -173,6 +173,7 @@ export function MilestonesForm({
                 </label>
                 <input
                   type="date"
+                  aria-label={`Date — ${line.label}`}
                   value={dateValueByKey[line.key]}
                   disabled={!checked || isBusy}
                   onChange={(e) => onDateChange(line.key, e.target.value)}
@@ -302,6 +303,7 @@ function OffererPicker({
             <input
               type="text"
               placeholder="Rechercher par nom ou email…"
+              aria-label="Rechercher un acquéreur par nom ou email"
               value={query}
               disabled={busy}
               onFocus={() => setShowResults(true)}

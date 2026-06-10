@@ -466,6 +466,7 @@ function UploadDocumentModal({ propertyId, onClose, onUploaded }: UploadDocument
           value={label}
           onChange={(e) => setLabel(e.target.value)}
           placeholder="Libellé du document (facultatif)"
+          aria-label="Libellé du document"
           className="w-full rounded-xl border border-[rgba(20,20,70,0.16)] px-4 py-2 text-sm"
           maxLength={200}
         />
@@ -586,6 +587,7 @@ function AddLinkModal({ propertyId, onClose, onCreated }: AddLinkModalProps) {
           value={label}
           onChange={(e) => setLabel(e.target.value)}
           placeholder="Libellé du lien"
+          aria-label="Libellé du lien"
           className="w-full rounded-xl border border-[rgba(20,20,70,0.16)] px-4 py-2 text-sm"
           maxLength={200}
           required
@@ -595,6 +597,7 @@ function AddLinkModal({ propertyId, onClose, onCreated }: AddLinkModalProps) {
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           placeholder="https://…"
+          aria-label="URL du lien"
           className="w-full rounded-xl border border-[rgba(20,20,70,0.16)] px-4 py-2 text-sm"
           required
         />

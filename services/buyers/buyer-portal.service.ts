@@ -74,18 +74,6 @@ const toSearchProfileSnapshot = (row: BuyerSearchProfileRow): BuyerSearchProfile
   criteria: row.criteria ?? {},
 });
 
-const loadBuyerProjectRowByClientProjectId = async (
-  clientProjectId: string
-): Promise<BuyerProjectRow | null> => {
-  const { data, error } = await supabaseAdmin
-    .from("buyer_projects")
-    .select("*")
-    .eq("client_project_id", clientProjectId)
-    .maybeSingle();
-  if (error) throw error;
-  return (data as BuyerProjectRow | null) ?? null;
-};
-
 export const getClientBuyerSearchDetail = async (input: {
   clientProfileId: string;
   clientProjectId: string;
@@ -297,7 +285,7 @@ export const countUnreadMatchesByClientProjectIds = async (
     .in("client_project_id", clientProjectIds);
   if (profilesError) {
     if (isUndefinedColumnError(profilesError)) {
-      // eslint-disable-next-line no-console
+       
       console.warn(
         "[buyer-portal] countUnreadMatchesByClientProjectIds: column missing on buyer_search_profiles, degrading to zero unread counts. Apply migration 20260510_020_buyer_funnel_lot1.sql.",
         { code: profilesError.code, message: profilesError.message }
@@ -331,7 +319,7 @@ export const countUnreadMatchesByClientProjectIds = async (
       // read_at / notified_at / first_seen_at columns from migration 020.
       // Falling back to zero unread keeps the client hub usable; the badge
       // will light up automatically once the migration is applied.
-      // eslint-disable-next-line no-console
+       
       console.warn(
         "[buyer-portal] countUnreadMatchesByClientProjectIds: read_at column missing on buyer_property_matches, degrading to zero unread counts. Apply migration 20260510_020_buyer_funnel_lot1.sql to restore unread badges.",
         { code: matchesError.code, message: matchesError.message }
