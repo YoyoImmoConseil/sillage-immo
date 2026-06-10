@@ -289,6 +289,12 @@ export const updateClientProfile = async (
   if (error) throw error;
 };
 
+// Plafond de sécurité : le statut (compte actif / prospect) dépend des
+// invitations acceptées, donc le filtre ne peut pas être appliqué en SQL
+// sans vue dédiée. On charge la liste complète (bornée) puis on filtre et
+// pagine en mémoire — correct tant que le volume reste celui d'une agence.
+const LIST_CLIENTS_SCAN_CAP = 2000;
+
 export const listClients = async (params?: {
   search?: string;
   status?: "all" | "account_active" | "invite_pending" | "prospect";
@@ -310,10 +316,7 @@ export const listClients = async (params?: {
     );
   }
 
-  query = query.order("created_at", { ascending: false });
-  const limit = params?.limit ?? 50;
-  const offset = params?.offset ?? 0;
-  query = query.range(offset, offset + limit - 1);
+  query = query.order("created_at", { ascending: false }).limit(LIST_CLIENTS_SCAN_CAP);
 
   const { data: profiles, error } = await query;
   if (error) throw error;
@@ -371,7 +374,13 @@ export const listClients = async (params?: {
     return true;
   });
 
-  return { items: filteredItems, total: filteredItems.length };
+  // Pagination appliquée APRES le filtre statut : pages complètes et
+  // total exact (l'ancien code paginait en SQL avant de filtrer).
+  const limit = params?.limit ?? 50;
+  const offset = params?.offset ?? 0;
+  const pagedItems = filteredItems.slice(offset, offset + limit);
+
+  return { items: pagedItems, total: filteredItems.length };
 };
 
 export const searchClients = async (q: string, limit = 10) => {
