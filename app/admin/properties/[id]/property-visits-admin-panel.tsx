@@ -1,4 +1,11 @@
 import {
+  getVisitOutcomeLabel,
+  getVisitStatusLabel,
+  VISIT_OUTCOME_LABELS,
+  VISIT_STATUS_BADGE_CLASS,
+  type SweepBrightFeedbackOutcome,
+} from "@/lib/properties/property-visit-ui";
+import {
   listVisitsForProperty,
   type PropertyVisitAdminView,
 } from "@/services/properties/property-visit.service";
@@ -23,39 +30,10 @@ const formatDateTime = (iso: string | null): string => {
   }
 };
 
-const STATUS_LABEL: Record<PropertyVisitAdminView["status"], string> = {
-  scheduled: "Planifiée",
-  updated: "Modifiée",
-  cancelled: "Annulée",
-  completed: "Effectuée",
-};
-
-const STATUS_BADGE_CLASS: Record<PropertyVisitAdminView["status"], string> = {
-  scheduled: "bg-[#141446]/10 text-[#141446]",
-  updated: "bg-amber-100 text-amber-900",
-  cancelled: "bg-rose-100 text-rose-900",
-  completed: "bg-emerald-100 text-emerald-900",
-};
-
-type KnownOutcome =
-  | "no_interest"
-  | "wants_info"
-  | "wants_to_visit"
-  | "offer"
-  | "deal";
-
-const OUTCOME_LABEL_FR: Record<KnownOutcome, string> = {
-  no_interest: "Pas d'intérêt",
-  wants_info: "Demande d'informations",
-  wants_to_visit: "Souhaite revisiter",
-  offer: "A fait une offre",
-  deal: "Affaire conclue",
-};
-
 const formatOutcome = (outcome: string | null): string | null => {
   if (!outcome) return null;
-  return outcome in OUTCOME_LABEL_FR
-    ? OUTCOME_LABEL_FR[outcome as KnownOutcome]
+  return outcome in VISIT_OUTCOME_LABELS.fr
+    ? getVisitOutcomeLabel("fr", outcome as SweepBrightFeedbackOutcome)
     : outcome;
 };
 
@@ -101,9 +79,9 @@ const VisitCard = ({ visit }: { visit: PropertyVisitAdminView }) => {
           </p>
         </div>
         <span
-          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_BADGE_CLASS[visit.status]}`}
+          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${VISIT_STATUS_BADGE_CLASS[visit.status]}`}
         >
-          {STATUS_LABEL[visit.status]}
+          {getVisitStatusLabel("fr", visit.status)}
         </span>
       </div>
 

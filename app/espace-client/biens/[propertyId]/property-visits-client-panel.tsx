@@ -1,4 +1,11 @@
 import type { AppLocale } from "@/lib/i18n/config";
+import {
+  getVisitOutcomeLabel,
+  getVisitStatusLabel,
+  VISIT_OUTCOME_BADGE_CLASS,
+  VISIT_STATUS_BADGE_CLASS,
+  type SweepBrightFeedbackOutcome,
+} from "@/lib/properties/property-visit-ui";
 import type { PropertyVisitClientView } from "@/services/properties/property-visit.service";
 
 type PropertyVisitsClientPanelProps = {
@@ -7,28 +14,9 @@ type PropertyVisitsClientPanelProps = {
   locale: AppLocale;
 };
 
-type KnownOutcome =
-  | "no_interest"
-  | "wants_info"
-  | "wants_to_visit"
-  | "offer"
-  | "deal";
-
-const KNOWN_OUTCOMES: ReadonlySet<string> = new Set<KnownOutcome>([
-  "no_interest",
-  "wants_info",
-  "wants_to_visit",
-  "offer",
-  "deal",
-]);
-
-const OUTCOME_BADGE_CLASS: Record<KnownOutcome, string> = {
-  no_interest: "bg-rose-100 text-rose-900",
-  wants_info: "bg-amber-100 text-amber-900",
-  wants_to_visit: "bg-sky-100 text-sky-900",
-  offer: "bg-indigo-100 text-indigo-900",
-  deal: "bg-emerald-100 text-emerald-900",
-};
+const KNOWN_OUTCOMES: ReadonlySet<string> = new Set(
+  Object.keys(VISIT_OUTCOME_BADGE_CLASS)
+);
 
 const OUTCOME_FALLBACK_BADGE_CLASS = "bg-[#141446]/10 text-[#141446]";
 
@@ -46,16 +34,11 @@ const COPY: Record<
     columnAdvisor: string;
     columnVisitor: string;
     columnStatus: string;
-    statusScheduled: string;
-    statusUpdated: string;
-    statusCancelled: string;
-    statusCompleted: string;
     durationMinutes: (minutes: number) => string;
     visitorAriaLabel: string;
     privacyNote: string;
     feedbackHeader: string;
     feedbackAriaLabel: string;
-    outcomeLabels: Record<KnownOutcome, string>;
     outcomeFallback: string;
   }
 > = {
@@ -71,23 +54,12 @@ const COPY: Record<
     columnAdvisor: "Conseiller",
     columnVisitor: "Visiteur",
     columnStatus: "Statut",
-    statusScheduled: "Planifiée",
-    statusUpdated: "Modifiée",
-    statusCancelled: "Annulée",
-    statusCompleted: "Effectuée",
     durationMinutes: (minutes) => `${minutes} min`,
     visitorAriaLabel: "Initiales du visiteur",
     privacyNote:
       "Pour la confidentialité de l'acquéreur, seules ses initiales sont affichées.",
     feedbackHeader: "Retour du conseiller",
     feedbackAriaLabel: "Retour de visite",
-    outcomeLabels: {
-      no_interest: "Pas d'intérêt",
-      wants_info: "Demande d'informations",
-      wants_to_visit: "Souhaite revisiter",
-      offer: "A fait une offre",
-      deal: "Affaire conclue",
-    },
     outcomeFallback: "Retour saisi",
   },
   en: {
@@ -102,23 +74,12 @@ const COPY: Record<
     columnAdvisor: "Advisor",
     columnVisitor: "Visitor",
     columnStatus: "Status",
-    statusScheduled: "Scheduled",
-    statusUpdated: "Updated",
-    statusCancelled: "Cancelled",
-    statusCompleted: "Completed",
     durationMinutes: (minutes) => `${minutes} min`,
     visitorAriaLabel: "Visitor initials",
     privacyNote:
       "For the buyer's privacy, only their initials are displayed.",
     feedbackHeader: "Advisor feedback",
     feedbackAriaLabel: "Viewing feedback",
-    outcomeLabels: {
-      no_interest: "Not interested",
-      wants_info: "Wants more information",
-      wants_to_visit: "Wants to revisit",
-      offer: "Made an offer",
-      deal: "Deal closed",
-    },
     outcomeFallback: "Feedback recorded",
   },
   es: {
@@ -133,23 +94,12 @@ const COPY: Record<
     columnAdvisor: "Asesor",
     columnVisitor: "Visitante",
     columnStatus: "Estado",
-    statusScheduled: "Programada",
-    statusUpdated: "Modificada",
-    statusCancelled: "Cancelada",
-    statusCompleted: "Realizada",
     durationMinutes: (minutes) => `${minutes} min`,
     visitorAriaLabel: "Iniciales del visitante",
     privacyNote:
       "Por privacidad del comprador, solo se muestran sus iniciales.",
     feedbackHeader: "Comentario del asesor",
     feedbackAriaLabel: "Comentario de la visita",
-    outcomeLabels: {
-      no_interest: "Sin interés",
-      wants_info: "Quiere más información",
-      wants_to_visit: "Quiere visitar otra vez",
-      offer: "Hizo una oferta",
-      deal: "Cerrado",
-    },
     outcomeFallback: "Comentario registrado",
   },
   ru: {
@@ -164,23 +114,12 @@ const COPY: Record<
     columnAdvisor: "Консультант",
     columnVisitor: "Посетитель",
     columnStatus: "Статус",
-    statusScheduled: "Запланирован",
-    statusUpdated: "Изменен",
-    statusCancelled: "Отменен",
-    statusCompleted: "Состоялся",
     durationMinutes: (minutes) => `${minutes} мин`,
     visitorAriaLabel: "Инициалы посетителя",
     privacyNote:
       "Для защиты конфиденциальности покупателя отображаются только его инициалы.",
     feedbackHeader: "Комментарий консультанта",
     feedbackAriaLabel: "Отзыв о просмотре",
-    outcomeLabels: {
-      no_interest: "Без интереса",
-      wants_info: "Хочет больше информации",
-      wants_to_visit: "Хочет ещё раз посмотреть",
-      offer: "Сделал предложение",
-      deal: "Сделка",
-    },
     outcomeFallback: "Отзыв сохранён",
   },
 };
@@ -227,26 +166,6 @@ const formatTimeRange = (
   }
 };
 
-const STATUS_KEY_MAP: Record<
-  PropertyVisitClientView["status"],
-  | "statusScheduled"
-  | "statusUpdated"
-  | "statusCancelled"
-  | "statusCompleted"
-> = {
-  scheduled: "statusScheduled",
-  updated: "statusUpdated",
-  cancelled: "statusCancelled",
-  completed: "statusCompleted",
-};
-
-const STATUS_BADGE_CLASS: Record<PropertyVisitClientView["status"], string> = {
-  scheduled: "bg-[#141446]/10 text-[#141446]",
-  updated: "bg-amber-100 text-amber-900",
-  cancelled: "bg-rose-100 text-rose-900",
-  completed: "bg-emerald-100 text-emerald-900",
-};
-
 const hasFeedback = (visit: PropertyVisitClientView): boolean =>
   visit.status === "completed" &&
   ((visit.feedbackOutcome != null && visit.feedbackOutcome.trim() !== "") ||
@@ -254,13 +173,14 @@ const hasFeedback = (visit: PropertyVisitClientView): boolean =>
 
 const renderOutcomeBadge = (
   outcome: string,
-  copy: (typeof COPY)[AppLocale]
+  copy: (typeof COPY)[AppLocale],
+  locale: AppLocale
 ): { label: string; className: string } => {
   if (KNOWN_OUTCOMES.has(outcome)) {
-    const known = outcome as KnownOutcome;
+    const known = outcome as SweepBrightFeedbackOutcome;
     return {
-      label: copy.outcomeLabels[known],
-      className: OUTCOME_BADGE_CLASS[known],
+      label: getVisitOutcomeLabel(locale, known),
+      className: VISIT_OUTCOME_BADGE_CLASS[known],
     };
   }
   return {
@@ -278,7 +198,7 @@ const VisitRow = ({
   copy: (typeof COPY)[AppLocale];
   locale: AppLocale;
 }) => {
-  const statusLabel = copy[STATUS_KEY_MAP[visit.status]];
+  const statusLabel = getVisitStatusLabel(locale, visit.status);
   const feedbackVisible = hasFeedback(visit);
   return (
     <>
@@ -307,7 +227,7 @@ const VisitRow = ({
         </td>
         <td className="py-3 text-sm">
           <span
-            className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_BADGE_CLASS[visit.status]}`}
+            className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${VISIT_STATUS_BADGE_CLASS[visit.status]}`}
           >
             {statusLabel}
           </span>
@@ -325,7 +245,11 @@ const VisitRow = ({
             </p>
             {visit.feedbackOutcome ? (
               (() => {
-                const badge = renderOutcomeBadge(visit.feedbackOutcome, copy);
+                const badge = renderOutcomeBadge(
+                  visit.feedbackOutcome,
+                  copy,
+                  locale
+                );
                 return (
                   <p className="mt-1">
                     <span

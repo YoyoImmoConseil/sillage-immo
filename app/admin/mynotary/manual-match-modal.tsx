@@ -1,17 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Modal } from "@/app/components/modal";
 import type { SignedDocumentRow } from "@/services/admin/mynotary-list.service";
-import type {
-  MyNotaryMatchContext,
-  MyNotarySellerContact,
-} from "@/services/admin/mynotary-match.service";
+import type { MyNotaryMatchContext } from "@/services/admin/mynotary-match.service";
 import type { ReconcileCandidatePreview } from "@/services/reconciliation/reconcile.service";
 import type {
-  GoldenSource,
   GoldenOverrideField,
   PropertyGoldenRecord,
 } from "@/services/properties/golden-record.service";
+import { ManualMatchChooseStep } from "./manual-match-choose-step";
+import { ManualMatchDivergeStep } from "./manual-match-diverge-step";
 
 // ─────────────────────────────────────────────────────────────────────
 // Smart rattachement modal (2 steps):
@@ -19,74 +18,9 @@ import type {
 //      recherche libre + "créer un dossier depuis ce contrat" + repli UUID.
 //   2. Résoudre les divergences — champs du golden record qui divergent,
 //      arbitrage 1 clic + lien vers la fiche bien unifiée.
+// Shell : state + appels API ; le JSX des étapes vit dans
+// manual-match-choose-step.tsx et manual-match-diverge-step.tsx.
 // ─────────────────────────────────────────────────────────────────────
-
-const SOURCE_LABELS: Record<GoldenSource, string> = {
-  manual: "Manuel",
-  sweepbright: "SweepBright",
-  mynotary: "MyNotary",
-  estimator: "Estimateur",
-};
-
-const SOURCE_BADGE: Record<GoldenSource, string> = {
-  manual: "bg-violet-100 text-violet-900 border-violet-300",
-  sweepbright: "bg-sky-100 text-sky-900 border-sky-300",
-  mynotary: "bg-emerald-100 text-emerald-900 border-emerald-300",
-  estimator: "bg-amber-100 text-amber-900 border-amber-300",
-};
-
-const REASON_LABEL: Record<string, string> = {
-  address: "Adresse",
-  address_price_surface: "Adresse + prix + surface",
-  price_band: "Prix concordant",
-  surface_band: "Surface concordante",
-  identity_email: "E-mail identique",
-  identity_phone: "Téléphone identique",
-  name_fuzzy: "Nom proche",
-  recherche: "Recherche",
-};
-
-type FieldKind = "text" | "price" | "area" | "number";
-
-type FieldDef = {
-  field: GoldenOverrideField;
-  label: string;
-  kind: FieldKind;
-  get: (g: PropertyGoldenRecord) => {
-    value: unknown;
-    source: GoldenSource | null;
-    alternatives: Array<{ value: unknown; source: GoldenSource }>;
-    hasDivergence: boolean;
-  };
-};
-
-const FIELDS: FieldDef[] = [
-  { field: "address", label: "Adresse", kind: "text", get: (g) => g.address },
-  { field: "price", label: "Prix", kind: "price", get: (g) => g.price },
-  { field: "livingArea", label: "Surface", kind: "area", get: (g) => g.livingArea },
-  { field: "propertyType", label: "Type de bien", kind: "text", get: (g) => g.propertyType },
-  { field: "rooms", label: "Pièces", kind: "number", get: (g) => g.rooms },
-  { field: "floor", label: "Étage", kind: "number", get: (g) => g.floor },
-  { field: "seller.fullName", label: "Vendeur — nom", kind: "text", get: (g) => g.seller.fullName },
-  { field: "seller.email", label: "Vendeur — email", kind: "text", get: (g) => g.seller.email },
-  { field: "seller.phone", label: "Vendeur — téléphone", kind: "text", get: (g) => g.seller.phone },
-];
-
-const formatValue = (value: unknown, kind: FieldKind): string => {
-  if (value === null || value === undefined || value === "") return "—";
-  if (kind === "price" && typeof value === "number") return `${value.toLocaleString("fr-FR")} €`;
-  if (kind === "area" && typeof value === "number") return `${value} m²`;
-  return String(value);
-};
-
-const sellerLine = (c: MyNotarySellerContact): string => {
-  const name =
-    c.fullName?.trim() ||
-    `${c.firstName ?? ""} ${c.lastName ?? ""}`.trim() ||
-    "Vendeur";
-  const contact = [c.email, c.phone].filter(Boolean).join(" · ");
-  return contact ? `${name} (${contact})` : name;
-};
 
 export function ManualMatchModal({
   document,
@@ -284,290 +218,68 @@ export function ManualMatchModal({
     [linkedSellerProjectId, link.clientProjectId]
   );
 
-  const renderCandidate = (c: ReconcileCandidatePreview) => (
-    <div
-      key={`${c.clientProjectId}-${c.sellerProjectId ?? "x"}`}
-      className="flex items-start justify-between gap-3 rounded-lg border border-[rgba(20,20,70,0.16)] bg-white px-3 py-2"
-    >
-      <div className="min-w-0 space-y-1">
-        <div className="flex items-center gap-2">
-          <span className="truncate font-medium text-[#141446]">{c.label}</span>
-          {c.score > 0 ? (
-            <span className="shrink-0 rounded-full bg-[#141446]/8 px-2 py-0.5 text-[10px] font-semibold text-[#141446]/70">
-              {Math.round(c.score * 100)}%
-            </span>
-          ) : null}
-        </div>
-        {c.address ? (
-          <p className="truncate text-xs text-[#141446]/60">{c.address}</p>
-        ) : null}
-        <div className="flex flex-wrap gap-1">
-          {c.reasons.map((r) => (
-            <span
-              key={r}
-              className="rounded-full border border-[rgba(20,20,70,0.15)] bg-[#f4ece4] px-1.5 py-0.5 text-[10px] text-[#141446]/80"
-            >
-              {REASON_LABEL[r] ?? r}
-            </span>
-          ))}
-        </div>
-      </div>
-      <button
-        type="button"
-        disabled={busy || !c.sellerProjectId}
-        onClick={() => attach(c.sellerProjectId, c.primaryPropertyId)}
-        className="shrink-0 rounded-md bg-[#141446] px-3 py-1 text-xs font-medium text-white disabled:opacity-50"
-        title={c.sellerProjectId ? "Rattacher à ce dossier" : "Dossier sans projet vendeur matérialisé"}
-      >
-        Rattacher
-      </button>
-    </div>
-  );
-
-  const divergentFields = golden
-    ? FIELDS.map((def) => ({ def, f: def.get(golden) })).filter((x) => x.f.hasDivergence)
-    : [];
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-      onClick={onClose}
+    <Modal
+      onClose={onClose}
+      size="md"
+      title={step === "choose" ? "Rattacher le contrat" : "Vérifier les divergences"}
+      description={
+        <>
+          Contrat MyNotary <code>{document.mynotary_contract_id}</code> · {document.contract_kind}
+        </>
+      }
+      footer={
+        step === "choose" ? (
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-md border border-[#141446]/30 px-3 py-1 text-sm text-[#141446]"
+          >
+            Annuler
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={onMatched}
+            className="rounded-md bg-[#141446] px-4 py-1 text-sm font-medium text-white"
+          >
+            Terminer
+          </button>
+        )
+      }
     >
-      <div
-        className="flex max-h-[88vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-[rgba(20,20,70,0.16)] bg-white shadow-xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <header className="border-b border-[rgba(20,20,70,0.1)] px-5 py-4">
-          <h2 className="text-lg font-semibold text-[#141446]">
-            {step === "choose" ? "Rattacher le contrat" : "Vérifier les divergences"}
-          </h2>
-          <p className="text-xs text-[#141446]/60">
-            Contrat MyNotary <code>{document.mynotary_contract_id}</code> · {document.contract_kind}
-          </p>
-        </header>
-
-        <div className="flex-1 overflow-y-auto px-5 py-4">
-          {error ? (
-            <div className="mb-3 rounded-md border border-rose-300 bg-rose-50 px-3 py-2 text-xs text-rose-900">
-              {error}
-            </div>
-          ) : null}
-
-          {step === "choose" ? (
-            <div className="space-y-5 text-sm text-[#141446]">
-              {/* Recap contrat */}
-              {ctx ? (
-                <section className="rounded-lg border border-[rgba(20,20,70,0.12)] bg-[#f4ece4]/40 px-3 py-3">
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#141446]/60">
-                    Données du contrat
-                  </p>
-                  <div className="grid grid-cols-1 gap-1.5 text-xs sm:grid-cols-2">
-                    <div>
-                      <span className="text-[#141446]/50">Adresse : </span>
-                      {ctx.contract.address ?? "—"}
-                    </div>
-                    <div>
-                      <span className="text-[#141446]/50">Prix : </span>
-                      {ctx.contract.price != null ? `${ctx.contract.price.toLocaleString("fr-FR")} €` : "—"}
-                    </div>
-                    <div>
-                      <span className="text-[#141446]/50">Surface : </span>
-                      {ctx.contract.livingArea != null ? `${ctx.contract.livingArea} m²` : "—"}
-                    </div>
-                    <div className="sm:col-span-2">
-                      <span className="text-[#141446]/50">Vendeur(s) : </span>
-                      {ctx.contract.sellerContacts.length > 0
-                        ? ctx.contract.sellerContacts.map(sellerLine).join(", ")
-                        : "—"}
-                    </div>
-                  </div>
-                </section>
-              ) : loadingCtx ? (
-                <p className="text-xs text-[#141446]/60">Chargement du contexte…</p>
-              ) : null}
-
-              {/* Suggestions */}
-              <section className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-[#141446]/60">
-                  Suggestions
-                </p>
-                {ctx && ctx.candidates.length > 0 ? (
-                  <div className="space-y-2">{ctx.candidates.map(renderCandidate)}</div>
-                ) : (
-                  <p className="text-xs text-[#141446]/55">
-                    Aucune suggestion automatique. Cherchez un dossier ou créez-en un depuis le contrat.
-                  </p>
-                )}
-              </section>
-
-              {/* Recherche */}
-              <section className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-[#141446]/60">
-                  Rechercher un dossier
-                </p>
-                <input
-                  type="text"
-                  value={term}
-                  onChange={(e) => setTerm(e.target.value)}
-                  placeholder="Nom, e-mail, téléphone ou adresse…"
-                  aria-label="Rechercher un dossier"
-                  className="w-full rounded-md border border-[rgba(20,20,70,0.2)] px-3 py-2 text-sm"
-                />
-                {searching ? (
-                  <p className="text-xs text-[#141446]/50">Recherche…</p>
-                ) : null}
-                {searchResults.length > 0 ? (
-                  <div className="space-y-2">{searchResults.map(renderCandidate)}</div>
-                ) : term.trim().length >= 2 && !searching ? (
-                  <p className="text-xs text-[#141446]/50">Aucun dossier trouvé.</p>
-                ) : null}
-              </section>
-
-              {/* Créer un dossier */}
-              <section className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-[#141446]/60">
-                  Aucun dossier ne correspond ?
-                </p>
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={createFromContract}
-                  className="rounded-md border border-[#141446]/30 px-3 py-1.5 text-sm font-medium text-[#141446] disabled:opacity-60"
-                >
-                  Créer un dossier depuis ce contrat
-                </button>
-                <p className="text-[11px] text-[#141446]/50">
-                  Crée le dossier vendeur depuis le bien SweepBright correspondant + l&apos;identité MyNotary
-                  (nécessite un bien à cette adresse et un e-mail vendeur).
-                </p>
-              </section>
-
-              {/* Repli UUID avancé */}
-              <section>
-                <button
-                  type="button"
-                  onClick={() => setShowAdvanced((v) => !v)}
-                  className="text-xs underline text-[#141446]/60"
-                >
-                  {showAdvanced ? "Masquer" : "Avancé : coller les UUID"}
-                </button>
-                {showAdvanced ? (
-                  <div className="mt-2 space-y-2">
-                    <input
-                      type="text"
-                      value={manualSeller}
-                      onChange={(e) => setManualSeller(e.target.value.trim())}
-                      placeholder="seller_project UUID"
-                      aria-label="UUID du projet vendeur"
-                      className="w-full rounded-md border border-[rgba(20,20,70,0.2)] px-3 py-2 font-mono text-xs"
-                    />
-                    <input
-                      type="text"
-                      value={manualProperty}
-                      onChange={(e) => setManualProperty(e.target.value.trim())}
-                      placeholder="property UUID"
-                      aria-label="UUID du bien"
-                      className="w-full rounded-md border border-[rgba(20,20,70,0.2)] px-3 py-2 font-mono text-xs"
-                    />
-                    <button
-                      type="button"
-                      disabled={busy || (!manualSeller && !manualProperty)}
-                      onClick={() => attach(manualSeller || null, manualProperty || null)}
-                      className="rounded-md bg-[#141446] px-3 py-1 text-xs font-medium text-white disabled:opacity-60"
-                    >
-                      Rattacher (manuel)
-                    </button>
-                  </div>
-                ) : null}
-              </section>
-            </div>
-          ) : (
-            // ── Step 2 : divergences ──
-            <div className="space-y-4 text-sm text-[#141446]">
-              <div className="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs text-emerald-900">
-                Contrat rattaché. {divergentFields.length > 0
-                  ? "Quelques données divergent entre les sources — choisissez la bonne valeur."
-                  : "Aucune divergence détectée, tout concorde."}
-              </div>
-
-              {golden && divergentFields.length > 0 ? (
-                <dl className="divide-y divide-[rgba(20,20,70,0.08)]">
-                  {divergentFields.map(({ def, f }) => {
-                    const isBusy = busyField === def.field;
-                    return (
-                      <div key={def.field} className="grid grid-cols-[120px_1fr] gap-3 py-3">
-                        <dt className="text-xs uppercase tracking-wide text-[#141446]/60">{def.label}</dt>
-                        <dd className="space-y-2">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="font-medium">{formatValue(f.value, def.kind)}</span>
-                            {f.source ? (
-                              <span className={`rounded-full border px-2 py-0.5 text-[10px] uppercase ${SOURCE_BADGE[f.source]}`}>
-                                {SOURCE_LABELS[f.source]}
-                              </span>
-                            ) : null}
-                            <span className="rounded-full border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-[10px] uppercase text-emerald-800">
-                              retenue
-                            </span>
-                            {isBusy ? <span className="text-xs text-[#141446]/60">…</span> : null}
-                          </div>
-                          <div className="flex flex-wrap gap-2">
-                            {f.alternatives.map((alt, i) => (
-                              <button
-                                key={`${def.field}-${i}`}
-                                type="button"
-                                disabled={isBusy}
-                                onClick={() => persistOverride(def.field, alt.value)}
-                                className="flex items-center gap-1 rounded-md border border-[rgba(20,20,70,0.2)] bg-white px-2 py-1 text-xs hover:bg-[#f4ece4] disabled:opacity-60"
-                                title="Garder cette valeur"
-                              >
-                                <span className={`rounded-full border px-1.5 py-0.5 text-[9px] uppercase ${SOURCE_BADGE[alt.source]}`}>
-                                  {SOURCE_LABELS[alt.source]}
-                                </span>
-                                {formatValue(alt.value, def.kind)}
-                              </button>
-                            ))}
-                          </div>
-                        </dd>
-                      </div>
-                    );
-                  })}
-                </dl>
-              ) : null}
-
-              {link.clientProfileId && link.clientProjectId ? (
-                <a
-                  href={`/admin/clients/${link.clientProfileId}/projects/${link.clientProjectId}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-block text-xs underline text-[#141446]/70"
-                >
-                  Ouvrir la fiche bien unifiée →
-                </a>
-              ) : null}
-            </div>
-          )}
+      {error ? (
+        <div className="mb-3 rounded-md border border-rose-300 bg-rose-50 px-3 py-2 text-xs text-rose-900">
+          {error}
         </div>
+      ) : null}
 
-        <footer className="flex justify-end gap-2 border-t border-[rgba(20,20,70,0.1)] px-5 py-3">
-          {step === "choose" ? (
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-md border border-[#141446]/30 px-3 py-1 text-sm text-[#141446]"
-            >
-              Annuler
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={onMatched}
-              className="rounded-md bg-[#141446] px-4 py-1 text-sm font-medium text-white"
-            >
-              Terminer
-            </button>
-          )}
-        </footer>
-      </div>
-    </div>
+      {step === "choose" ? (
+        <ManualMatchChooseStep
+          ctx={ctx}
+          loadingCtx={loadingCtx}
+          busy={busy}
+          term={term}
+          onTermChange={setTerm}
+          searching={searching}
+          searchResults={searchResults}
+          showAdvanced={showAdvanced}
+          onToggleAdvanced={() => setShowAdvanced((v) => !v)}
+          manualSeller={manualSeller}
+          onManualSellerChange={setManualSeller}
+          manualProperty={manualProperty}
+          onManualPropertyChange={setManualProperty}
+          onAttach={attach}
+          onCreateFromContract={createFromContract}
+        />
+      ) : (
+        <ManualMatchDivergeStep
+          golden={golden}
+          busyField={busyField}
+          link={link}
+          onPersistOverride={persistOverride}
+        />
+      )}
+    </Modal>
   );
 }
