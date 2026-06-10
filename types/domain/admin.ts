@@ -22,6 +22,7 @@ export type AdminPermission =
   | "matching.view"
   | "matching.manage"
   | "operations.view"
+  | "operations.manage"
   | "clients.view"
   | "clients.create"
   | "clients.edit"
@@ -110,6 +111,7 @@ export const ADMIN_ROLE_PERMISSIONS: Record<AdminRole, AdminPermission[]> = {
     "matching.view",
     "matching.manage",
     "operations.view",
+    "operations.manage",
     "clients.view",
     "clients.create",
     "clients.edit",

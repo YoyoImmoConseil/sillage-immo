@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { isAdminRequest } from "@/lib/admin/auth";
+import { getAdminRequestContext, hasAdminPermission } from "@/lib/admin/auth";
+import type { AdminPermission } from "@/types/domain/admin";
+
+const isAuthorized = async (request: Request, permission: AdminPermission) => {
+  const context = await getAdminRequestContext(request);
+  return context !== null && hasAdminPermission(context, permission);
+};
 
 type ToolVersionInput = {
   toolName: string;
@@ -50,8 +56,8 @@ const isLifecycleStatus = (
 };
 
 export const GET = async (request: Request) => {
-  if (!(await isAdminRequest(request))) {
-    return jsonError(401, "Unauthorized.");
+  if (!(await isAuthorized(request, "operations.view"))) {
+    return jsonError(403, "Acces refuse.");
   }
 
   const { data, error } = await supabaseAdmin
@@ -67,8 +73,8 @@ export const GET = async (request: Request) => {
 };
 
 export const POST = async (request: Request) => {
-  if (!(await isAdminRequest(request))) {
-    return jsonError(401, "Unauthorized.");
+  if (!(await isAuthorized(request, "operations.manage"))) {
+    return jsonError(403, "Acces refuse.");
   }
 
   const body = await parseBody(request);
@@ -113,8 +119,8 @@ export const POST = async (request: Request) => {
 };
 
 export const PUT = async (request: Request) => {
-  if (!(await isAdminRequest(request))) {
-    return jsonError(401, "Unauthorized.");
+  if (!(await isAuthorized(request, "operations.manage"))) {
+    return jsonError(403, "Acces refuse.");
   }
 
   let body: ToolVersionUpdateInput | null = null;
@@ -198,8 +204,8 @@ export const PUT = async (request: Request) => {
 };
 
 export const DELETE = async (request: Request) => {
-  if (!(await isAdminRequest(request))) {
-    return jsonError(401, "Unauthorized.");
+  if (!(await isAuthorized(request, "operations.manage"))) {
+    return jsonError(403, "Acces refuse.");
   }
 
   let body: ToolVersionDeleteInput | null = null;

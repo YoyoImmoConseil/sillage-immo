@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withTimeout } from "@/lib/async/timeout";
 import { ADMIN_ACCESS_TOKEN_COOKIE } from "@/lib/admin/session";
+import { getAdminContextByUser } from "@/lib/admin/auth";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 type Body = {
@@ -31,8 +32,18 @@ export async function POST(request: NextRequest) {
 
   if (error || !user?.email) {
     return NextResponse.json(
-      { ok: false, message: error?.message ?? "Token admin invalide." },
+      { ok: false, message: "Token admin invalide." },
       { status: 400 }
+    );
+  }
+
+  // Defense in depth: only store the access token for users that map to
+  // an active admin profile — a valid Supabase JWT alone is not enough.
+  const adminContext = await getAdminContextByUser(user);
+  if (!adminContext) {
+    return NextResponse.json(
+      { ok: false, message: "Ce compte n'a pas acces a l'administration." },
+      { status: 403 }
     );
   }
 
