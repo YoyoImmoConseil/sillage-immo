@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
 import { createSignedUploadUrlsForEstimationMedia } from "@/services/properties/estimation-property-media.service";
+import {
+  checkPersistentRateLimit,
+  extractClientIp,
+  rateLimitResponseBody,
+} from "@/lib/rate-limit/persistent";
 import type {
   SellerPropertyMediaSignedUploadSuccessResponse,
   SellerApiErrorResponse,
@@ -33,6 +38,16 @@ const errorResponse = (status: number, message: string) => {
 };
 
 export async function POST(request: Request) {
+  const clientIp = extractClientIp(request.headers);
+  const [hourlyLimit, dailyLimit] = await Promise.all([
+    // ~3 sessions completes (20 images + 5 videos) par heure et par IP.
+    checkPersistentRateLimit({ key: `seller-media-url:ip:${clientIp}`, limit: 75, windowSeconds: 3600 }),
+    checkPersistentRateLimit({ key: `seller-media-url:ip-day:${clientIp}`, limit: 200, windowSeconds: 86400 }),
+  ]);
+  if (!hourlyLimit.ok || !dailyLimit.ok) {
+    return NextResponse.json(rateLimitResponseBody, { status: 429 });
+  }
+
   let body: Body | null = null;
   try {
     body = (await request.json()) as Body;

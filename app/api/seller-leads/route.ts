@@ -3,6 +3,11 @@ import {
   createSellerLead,
   type SellerLeadInput,
 } from "@/services/sellers/seller-lead.service";
+import {
+  checkPersistentRateLimit,
+  extractClientIp,
+  rateLimitResponseBody,
+} from "@/lib/rate-limit/persistent";
 import { createMerciVendeurAccessToken } from "@/lib/sellers/merci-vendeur-access";
 import type {
   SellerApiErrorResponse,
@@ -51,6 +56,16 @@ const validatePayload = (payload: unknown): payload is SellerLeadInput => {
 };
 
 export const POST = async (request: Request) => {
+  const clientIp = extractClientIp(request.headers);
+  const ipLimit = await checkPersistentRateLimit({
+    key: `seller-leads:ip:${clientIp}`,
+    limit: 5,
+    windowSeconds: 3600,
+  });
+  if (!ipLimit.ok) {
+    return NextResponse.json(rateLimitResponseBody, { status: 429 });
+  }
+
   let body: unknown;
   try {
     body = await request.json();

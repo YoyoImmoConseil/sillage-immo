@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
 import { createBuyerLeadFromWebsite } from "@/services/buyers/buyer-lead.service";
+import {
+  checkPersistentRateLimit,
+  extractClientIp,
+  rateLimitResponseBody,
+} from "@/lib/rate-limit/persistent";
 
 type BuyerLeadInput = {
   fullName?: string;
@@ -9,6 +14,16 @@ type BuyerLeadInput = {
 };
 
 export const POST = async (request: Request) => {
+  const clientIp = extractClientIp(request.headers);
+  const ipLimit = await checkPersistentRateLimit({
+    key: `buyer-leads:ip:${clientIp}`,
+    limit: 5,
+    windowSeconds: 3600,
+  });
+  if (!ipLimit.ok) {
+    return NextResponse.json(rateLimitResponseBody, { status: 429 });
+  }
+
   let body: BuyerLeadInput | null = null;
   try {
     body = (await request.json()) as BuyerLeadInput;

@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { isClientPortalDirectAccessEnabled } from "@/lib/client-space/direct-access";
 import { sendClientPortalMagicLink } from "@/services/clients/client-portal-magic-link.service";
+import {
+  checkPersistentRateLimit,
+  extractClientIp,
+  rateLimitResponseBody,
+} from "@/lib/rate-limit/persistent";
 
 type Body = {
   email?: string;
@@ -24,6 +29,15 @@ export async function POST(request: Request) {
       { ok: false, code: "invalid_email", message: "Veuillez renseigner une adresse email valide." },
       { status: 422 }
     );
+  }
+
+  const clientIp = extractClientIp(request.headers);
+  const [ipLimit, emailLimit] = await Promise.all([
+    checkPersistentRateLimit({ key: `magic-link:ip:${clientIp}`, limit: 10, windowSeconds: 3600 }),
+    checkPersistentRateLimit({ key: `magic-link:email:${email}`, limit: 3, windowSeconds: 900 }),
+  ]);
+  if (!ipLimit.ok || !emailLimit.ok) {
+    return NextResponse.json(rateLimitResponseBody, { status: 429 });
   }
 
   try {

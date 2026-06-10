@@ -3,6 +3,11 @@ import {
   registerUploadedEstimationMedia,
   uploadEstimationPropertyMedia,
 } from "@/services/properties/estimation-property-media.service";
+import {
+  checkPersistentRateLimit,
+  extractClientIp,
+  rateLimitResponseBody,
+} from "@/lib/rate-limit/persistent";
 import type { SellerPropertyMediaUploadSuccessResponse } from "@/types/api/seller";
 
 const isMediaKind = (value: unknown): value is "image" | "video" => {
@@ -28,6 +33,16 @@ type RegisterRequestBody = {
 };
 
 export async function POST(request: Request) {
+  const clientIp = extractClientIp(request.headers);
+  const ipLimit = await checkPersistentRateLimit({
+    key: `seller-media-upload:ip:${clientIp}`,
+    limit: 100,
+    windowSeconds: 3600,
+  });
+  if (!ipLimit.ok) {
+    return NextResponse.json(rateLimitResponseBody, { status: 429 });
+  }
+
   const contentType = request.headers.get("content-type") ?? "";
 
   if (contentType.includes("application/json")) {
