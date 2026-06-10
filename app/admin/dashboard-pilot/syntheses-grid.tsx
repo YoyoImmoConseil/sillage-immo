@@ -44,8 +44,8 @@ export function SynthesesGrid({
   if (syntheses.length === 0) {
     return (
       <Card className="bg-white/80">
-        <Title className="text-[#141446]">Synthèses IA</Title>
-        <Text className="mt-2 text-[#141446]/60">
+        <Title className="text-navy">Synthèses IA</Title>
+        <Text className="mt-2 text-navy/60">
           Aucune synthèse n&apos;a pu être générée. Vérifiez la clé OpenAI.
         </Text>
       </Card>
@@ -55,24 +55,24 @@ export function SynthesesGrid({
   return (
     <div className="space-y-3">
       {periodLabel ? (
-        <p className="text-xs text-[#141446]/60">
+        <p className="text-xs text-navy/60">
           Synthèses IA calculées sur la période :{" "}
-          <span className="font-semibold text-[#141446]">{periodLabel}</span>.
+          <span className="font-semibold text-navy">{periodLabel}</span>.
         </p>
       ) : null}
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         {syntheses.map((synthesis) => (
           <Card key={synthesis.section} className="bg-white/80">
             <div className="flex items-start justify-between gap-2">
-              <Title className="text-[#141446]">
+              <Title className="text-navy">
                 {SECTION_LABELS[synthesis.section]}
               </Title>
               <Badge color={SECTION_BADGE_COLORS[synthesis.section]}>IA</Badge>
             </div>
-            <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-[#141446]/85">
+            <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-navy/85">
               {synthesis.body}
             </p>
-            <p className="mt-3 text-xs text-[#141446]/55">
+            <p className="mt-3 text-xs text-navy/55">
               Généré le {formatGeneratedAt(synthesis.generatedAt)} •{" "}
               {synthesis.model}
               {synthesis.warning ? (

@@ -76,11 +76,11 @@ export default async function SellerLeadsAdminPage({ searchParams }: SellerLeads
           </select>
           <button className="sillage-btn rounded px-4 py-2 text-sm">Filtrer</button>
         </form>
-        <Link className="text-sm underline text-[#141446]" href="/admin/leads">
+        <Link className="text-sm underline text-navy" href="/admin/leads">
           Vue transverse leads
         </Link>
       </div>
-      <section className="bg-[#f4ece4]">
+      <section className="bg-sand">
         <div className="w-full">
           <section className="rounded-2xl border border-[rgba(20,20,70,0.22)] p-2">
             <div className="mb-3">

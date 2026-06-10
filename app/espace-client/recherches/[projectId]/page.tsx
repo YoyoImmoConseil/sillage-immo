@@ -308,24 +308,24 @@ export default async function SavedBuyerSearchPage(props: SavedBuyerSearchPagePr
 
   return (
     <section className="space-y-6">
-      <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-[#f4ece4] p-8">
-        <p className="text-xs uppercase tracking-[0.18em] text-[#141446]/60">
+      <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-sand p-8">
+        <p className="text-xs uppercase tracking-[0.18em] text-navy/60">
           {copy.kicker}
         </p>
         <div className="mt-3 flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-semibold text-[#141446]">
+          <h1 className="text-2xl font-semibold text-navy">
             {detail.clientProjectTitle ?? copy.kicker}
           </h1>
-          <span className="rounded-full border border-[rgba(20,20,70,0.18)] px-3 py-1 text-xs font-semibold text-[#141446]">
+          <span className="rounded-full border border-[rgba(20,20,70,0.18)] px-3 py-1 text-xs font-semibold text-navy">
             {statusLabel}
           </span>
           {detail.unreadCount > 0 ? (
-            <span className="rounded-full bg-[#141446] px-3 py-1 text-xs font-semibold text-[#f4ece4]">
+            <span className="rounded-full bg-navy px-3 py-1 text-xs font-semibold text-sand">
               {detail.unreadCount} {copy.newBadge.toLowerCase()}
             </span>
           ) : null}
         </div>
-        <p className="mt-2 text-sm text-[#141446]/70">
+        <p className="mt-2 text-sm text-navy/70">
           {copy.createdAt} {formatDate(detail.createdAt, locale)} ·{" "}
           {copy.updatedAt} {formatDate(detail.searchProfileUpdatedAt, locale)} ·{" "}
           {detail.buyerLead?.emailVerifiedAt ? copy.emailVerified : copy.emailPending}

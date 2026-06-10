@@ -118,7 +118,7 @@ export function PropertyCard({ listing, locale = "fr" }: PropertyCardProps) {
   });
 
   return (
-    <article className="overflow-hidden rounded-2xl border border-[rgba(20,20,70,0.18)] bg-[#f4ece4]">
+    <article className="overflow-hidden rounded-2xl border border-[rgba(20,20,70,0.18)] bg-sand">
       <Link
         href={localizePath(listing.canonicalPath, locale)}
         className="block"
@@ -138,7 +138,7 @@ export function PropertyCard({ listing, locale = "fr" }: PropertyCardProps) {
               className="object-cover"
             />
           ) : (
-            <div className="flex h-full items-center justify-center text-sm text-[#141446]/65">
+            <div className="flex h-full items-center justify-center text-sm text-navy/65">
               {copy.photoSoon}
             </div>
           )}
@@ -148,15 +148,15 @@ export function PropertyCard({ listing, locale = "fr" }: PropertyCardProps) {
             compact
           />
         </div>
-        <div className="space-y-3 p-5 text-[#141446]">
+        <div className="space-y-3 p-5 text-navy">
           <div className="space-y-1">
-            <p className="text-xs uppercase tracking-[0.14em] text-[#141446]/60">
+            <p className="text-xs uppercase tracking-[0.14em] text-navy/60">
               🏠 {formatPropertyTypeLabel(listing.propertyType, locale) ?? copy.asset} {listing.city ? `• ${listing.city}` : ""}
             </p>
             <h2 className="text-xl font-semibold leading-tight">
               {listing.title ?? copy.titleFallback}
             </h2>
-            <p className="text-sm text-[#141446]/72">
+            <p className="text-sm text-navy/72">
               {[listing.city, listing.postalCode].filter(Boolean).join(" ")}
             </p>
           </div>
@@ -169,9 +169,9 @@ export function PropertyCard({ listing, locale = "fr" }: PropertyCardProps) {
                 locale,
               })}
             </p>
-            {feeMention ? <p className="text-xs text-[#141446]/72">{feeMention}</p> : null}
+            {feeMention ? <p className="text-xs text-navy/72">{feeMention}</p> : null}
           </div>
-          <div className="grid gap-2 text-sm text-[#141446]/80 sm:grid-cols-2">
+          <div className="grid gap-2 text-sm text-navy/80 sm:grid-cols-2">
             <div className="rounded-xl bg-white/55 px-3 py-2">
               📐 {copy.carrez}:{" "}
               {typeof listing.loiCarrezArea === "number"

@@ -115,10 +115,10 @@ export function DashboardPeriodPicker({
     <div className="rounded-2xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-[#141446]/60">
+          <p className="text-xs font-semibold uppercase tracking-wide text-navy/60">
             Période analysée
           </p>
-          <p className="mt-1 text-sm font-semibold text-[#141446]">{activeLabel}</p>
+          <p className="mt-1 text-sm font-semibold text-navy">{activeLabel}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           {PRESETS.map((preset) => {
@@ -132,8 +132,8 @@ export function DashboardPeriodPicker({
                 className={
                   "rounded-full border px-3 py-1.5 text-xs font-medium transition " +
                   (isActive
-                    ? "border-[#141446] bg-[#141446] text-white"
-                    : "border-[rgba(20,20,70,0.2)] bg-white text-[#141446] hover:border-[rgba(20,20,70,0.5)]")
+                    ? "border-navy bg-navy text-white"
+                    : "border-[rgba(20,20,70,0.2)] bg-white text-navy hover:border-[rgba(20,20,70,0.5)]")
                 }
               >
                 {preset.label}
@@ -144,36 +144,36 @@ export function DashboardPeriodPicker({
       </div>
 
       <div className="mt-4 flex flex-wrap items-end gap-3 border-t border-[rgba(20,20,70,0.08)] pt-3">
-        <label className="flex flex-col text-xs text-[#141446]/70">
+        <label className="flex flex-col text-xs text-navy/70">
           <span className="mb-1 font-medium">Date de début</span>
           <input
             type="date"
             value={customSince}
             max={customUntil || undefined}
             onChange={(event) => setCustomSince(event.target.value)}
-            className="rounded-lg border border-[rgba(20,20,70,0.18)] bg-white px-2 py-1 text-sm text-[#141446]"
+            className="rounded-lg border border-[rgba(20,20,70,0.18)] bg-white px-2 py-1 text-sm text-navy"
           />
         </label>
-        <label className="flex flex-col text-xs text-[#141446]/70">
+        <label className="flex flex-col text-xs text-navy/70">
           <span className="mb-1 font-medium">Date de fin</span>
           <input
             type="date"
             value={customUntil}
             min={customSince || undefined}
             onChange={(event) => setCustomUntil(event.target.value)}
-            className="rounded-lg border border-[rgba(20,20,70,0.18)] bg-white px-2 py-1 text-sm text-[#141446]"
+            className="rounded-lg border border-[rgba(20,20,70,0.18)] bg-white px-2 py-1 text-sm text-navy"
           />
         </label>
         <button
           type="button"
           onClick={applyCustom}
           disabled={isPending || !customSince || !customUntil || customSince > customUntil}
-          className="rounded-full border border-[#141446] bg-white px-4 py-1.5 text-xs font-semibold text-[#141446] transition hover:bg-[#141446] hover:text-white disabled:opacity-50"
+          className="rounded-full border border-navy bg-white px-4 py-1.5 text-xs font-semibold text-navy transition hover:bg-navy hover:text-white disabled:opacity-50"
         >
           Appliquer la période
         </button>
         {isPending ? (
-          <span className="text-xs text-[#141446]/60">Mise à jour…</span>
+          <span className="text-xs text-navy/60">Mise à jour…</span>
         ) : null}
       </div>
     </div>

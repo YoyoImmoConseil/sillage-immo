@@ -71,31 +71,31 @@ export default function GlobalError({
   }[locale];
 
   return (
-    <main className="min-h-screen bg-[#f4ece4] px-6 py-16 md:px-10 xl:px-14 2xl:px-20">
+    <main className="min-h-screen bg-sand px-6 py-16 md:px-10 xl:px-14 2xl:px-20">
       <section className="mx-auto max-w-2xl space-y-6 rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/80 p-8 shadow-sm">
         <div className="space-y-2">
-          <h1 className="text-2xl font-semibold text-[#141446]">{copy.title}</h1>
-          <p className="text-sm text-[#141446]/80">{copy.body}</p>
+          <h1 className="text-2xl font-semibold text-navy">{copy.title}</h1>
+          <p className="text-sm text-navy/80">{copy.body}</p>
         </div>
-        <p className="rounded-xl bg-[#141446]/[0.04] px-4 py-3 text-xs text-[#141446]/70">
+        <p className="rounded-xl bg-navy/[0.04] px-4 py-3 text-xs text-navy/70">
           {copy.reference} :{" "}
-          <code className="font-mono text-[#141446]">{error.digest ?? copy.noReference}</code>
+          <code className="font-mono text-navy">{error.digest ?? copy.noReference}</code>
         </p>
         <div className="flex flex-wrap items-center gap-3">
           <button
             type="button"
             onClick={() => reset()}
-            className="inline-flex items-center justify-center rounded-full bg-[#141446] px-5 py-2.5 text-sm font-semibold text-[#f4ece4] transition hover:opacity-95"
+            className="inline-flex items-center justify-center rounded-full bg-navy px-5 py-2.5 text-sm font-semibold text-sand transition hover:opacity-95"
           >
             {copy.retry}
           </button>
           <Link
             href={localizePath("/", locale)}
-            className="inline-flex items-center justify-center rounded-full border border-[#141446] px-5 py-2.5 text-sm font-semibold text-[#141446] transition hover:bg-[#141446]/5"
+            className="inline-flex items-center justify-center rounded-full border border-navy px-5 py-2.5 text-sm font-semibold text-navy transition hover:bg-navy/5"
           >
             {copy.backHome}
           </Link>
-          <a href="mailto:contact@sillage-immo.com" className="text-sm text-[#141446] underline">
+          <a href="mailto:contact@sillage-immo.com" className="text-sm text-navy underline">
             {copy.contact}
           </a>
         </div>

@@ -60,13 +60,13 @@ export function BuyerLeadAdminPanel(props: Props) {
   return (
     <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-xl font-semibold text-[#141446]">
+        <h2 className="text-xl font-semibold text-navy">
           Observabilité CRM
         </h2>
         <button
           type="button"
           onClick={() => void triggerSync()}
-          className="rounded bg-[#141446] px-4 py-2 text-sm font-semibold text-[#f4ece4] disabled:opacity-60"
+          className="rounded bg-navy px-4 py-2 text-sm font-semibold text-sand disabled:opacity-60"
           disabled={isPending}
         >
           Re-synchroniser SweepBright
@@ -75,19 +75,19 @@ export function BuyerLeadAdminPanel(props: Props) {
 
       <dl className="mt-4 grid gap-3 md:grid-cols-2 text-sm">
         <div>
-          <dt className="font-medium text-[#141446]/70">Origine</dt>
+          <dt className="font-medium text-navy/70">Origine</dt>
           <dd>{props.origin ?? "—"}</dd>
         </div>
         <div>
-          <dt className="font-medium text-[#141446]/70">Email vérifié le</dt>
+          <dt className="font-medium text-navy/70">Email vérifié le</dt>
           <dd>{formatDate(props.emailVerifiedAt)}</dd>
         </div>
         <div>
-          <dt className="font-medium text-[#141446]/70">SweepBright contact ID</dt>
+          <dt className="font-medium text-navy/70">SweepBright contact ID</dt>
           <dd className="break-all">{props.sweepbrightContactId ?? "—"}</dd>
         </div>
         <div>
-          <dt className="font-medium text-[#141446]/70">Dernière synchro</dt>
+          <dt className="font-medium text-navy/70">Dernière synchro</dt>
           <dd>{formatDate(props.sweepbrightSyncedAt)}</dd>
         </div>
         {props.sweepbrightLastError ? (

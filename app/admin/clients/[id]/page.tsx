@@ -31,34 +31,34 @@ export default async function ClientDetailPage({ params }: ClientDetailPageProps
       profileName={context.profile?.fullName ?? context.profile?.email ?? "Mode admin"}
     >
       <div className="mb-4">
-        <Link href="/admin/clients" className="text-sm underline text-[#141446]">
+        <Link href="/admin/clients" className="text-sm underline text-navy">
           Retour aux clients
         </Link>
       </div>
 
       <div className="space-y-6">
         <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6">
-          <h2 className="text-xl font-semibold text-[#141446]">Identité</h2>
+          <h2 className="text-xl font-semibold text-navy">Identité</h2>
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             <div>
-              <p className="text-xs uppercase text-[#141446]/60">Nom</p>
-              <p className="text-[#141446]">{client.full_name ?? "-"}</p>
+              <p className="text-xs uppercase text-navy/60">Nom</p>
+              <p className="text-navy">{client.full_name ?? "-"}</p>
             </div>
             <div>
-              <p className="text-xs uppercase text-[#141446]/60">Email</p>
-              <p className="text-[#141446]">{client.email}</p>
+              <p className="text-xs uppercase text-navy/60">Email</p>
+              <p className="text-navy">{client.email}</p>
             </div>
             <div>
-              <p className="text-xs uppercase text-[#141446]/60">Téléphone</p>
-              <p className="text-[#141446]">{client.phone ?? "-"}</p>
+              <p className="text-xs uppercase text-navy/60">Téléphone</p>
+              <p className="text-navy">{client.phone ?? "-"}</p>
             </div>
             <div>
-              <p className="text-xs uppercase text-[#141446]/60">Statut compte</p>
-              <p className="text-[#141446]">{client.auth_user_id ? "Compte activé" : "Prospect"}</p>
+              <p className="text-xs uppercase text-navy/60">Statut compte</p>
+              <p className="text-navy">{client.auth_user_id ? "Compte activé" : "Prospect"}</p>
             </div>
             <div>
-              <p className="text-xs uppercase text-[#141446]/60">Dernière connexion</p>
-              <p className="text-[#141446]">{client.last_login_at ? formatDate(client.last_login_at) : "-"}</p>
+              <p className="text-xs uppercase text-navy/60">Dernière connexion</p>
+              <p className="text-navy">{client.last_login_at ? formatDate(client.last_login_at) : "-"}</p>
             </div>
           </div>
           {canEdit && (
@@ -78,7 +78,7 @@ export default async function ClientDetailPage({ params }: ClientDetailPageProps
 
         <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-[#141446]">Projets vendeur</h2>
+            <h2 className="text-xl font-semibold text-navy">Projets vendeur</h2>
             {canCreate && (
               <Link
                 href={`/admin/clients/${id}/projects/new`}
@@ -90,7 +90,7 @@ export default async function ClientDetailPage({ params }: ClientDetailPageProps
           </div>
           <div className="mt-4 space-y-3">
             {projects.length === 0 ? (
-              <p className="text-sm text-[#141446]/70">Aucun projet vendeur.</p>
+              <p className="text-sm text-navy/70">Aucun projet vendeur.</p>
             ) : (
               projects.map((p) => (
                 <Link
@@ -100,14 +100,14 @@ export default async function ClientDetailPage({ params }: ClientDetailPageProps
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="font-medium text-[#141446]">
+                      <p className="font-medium text-navy">
                         {p.title ?? `Projet ${p.id.slice(0, 8)}`}
                       </p>
-                      <p className="text-sm text-[#141446]/70">
+                      <p className="text-sm text-navy/70">
                         {p.sellerProject?.projectStatus ?? "-"} · {p.propertyCount} bien(s)
                       </p>
                     </div>
-                    <span className="text-sm text-[#141446]/60">Ouvrir →</span>
+                    <span className="text-sm text-navy/60">Ouvrir →</span>
                   </div>
                 </Link>
               ))

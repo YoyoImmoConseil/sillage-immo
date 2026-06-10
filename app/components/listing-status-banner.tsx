@@ -63,7 +63,7 @@ export function ListingStatusBanner({
   return (
     <div
       aria-label={label}
-      className={`pointer-events-none absolute left-0 top-0 z-10 flex items-center justify-center bg-[#141446] text-[#f4ece4] uppercase tracking-[0.18em] shadow-[0_4px_12px_rgba(20,20,70,0.25)] ${
+      className={`pointer-events-none absolute left-0 top-0 z-10 flex items-center justify-center bg-navy text-sand uppercase tracking-[0.18em] shadow-[0_4px_12px_rgba(20,20,70,0.25)] ${
         compact
           ? "px-3 py-1 text-[11px]"
           : "px-5 py-2 text-xs md:text-sm"

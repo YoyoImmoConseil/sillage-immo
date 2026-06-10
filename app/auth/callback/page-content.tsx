@@ -171,21 +171,21 @@ export function AuthCallbackPageContent() {
   }, [searchParams]);
 
   return (
-    <main className="min-h-screen bg-[#f4ece4] px-6 py-10 md:px-10 xl:px-14 2xl:px-20">
+    <main className="min-h-screen bg-sand px-6 py-10 md:px-10 xl:px-14 2xl:px-20">
       <section className="mx-auto max-w-xl space-y-4 rounded-3xl border border-[rgba(20,20,70,0.18)] bg-white/70 p-8">
-        <h1 className="text-2xl font-semibold text-[#141446]">Connexion Google</h1>
-        <p className="text-sm text-[#141446]/75">{step}</p>
+        <h1 className="text-2xl font-semibold text-navy">Connexion Google</h1>
+        <p className="text-sm text-navy/75">{step}</p>
         {error ? (
           <>
             <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
               {error}
             </p>
-            <Link href="/admin/login" className="inline-block text-sm underline text-[#141446]">
+            <Link href="/admin/login" className="inline-block text-sm underline text-navy">
               Retour à la connexion admin
             </Link>
           </>
         ) : (
-          <p className="text-xs text-[#141446]/60">URL attendue ensuite: {getSafeNextPath(searchParams.get("next"))}</p>
+          <p className="text-xs text-navy/60">URL attendue ensuite: {getSafeNextPath(searchParams.get("next"))}</p>
         )}
       </section>
     </main>

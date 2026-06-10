@@ -123,7 +123,7 @@ export function BuyerLeadForm({ buyerLeadId, initial }: BuyerLeadFormProps) {
 
   return (
     <section className="space-y-4 rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6">
-      <h2 className="text-xl font-semibold text-[#141446]">Fiche acquéreur</h2>
+      <h2 className="text-xl font-semibold text-navy">Fiche acquéreur</h2>
 
       <div className="grid gap-3 md:grid-cols-3">
         <label className="text-sm">

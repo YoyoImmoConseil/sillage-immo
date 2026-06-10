@@ -1,85 +1,23 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { AppLocale } from "@/lib/i18n/config";
 import type { BuyerSearchProfileSnapshot } from "@/types/domain/buyers";
 import type { BuyerSearchMatchListItem } from "@/services/buyers/buyer-portal.service";
 import type { ZonePolygon } from "@/app/components/buyer-search-zone-map";
-
-const BuyerSearchZoneMap = dynamic(
-  () =>
-    import("@/app/components/buyer-search-zone-map").then(
-      (mod) => mod.BuyerSearchZoneMap
-    ),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="h-[360px] w-full animate-pulse rounded-xl border border-[rgba(20,20,70,0.18)] bg-[#e9e1d8]" />
-    ),
-  }
-);
-
-const extractZonePolygon = (
-  criteria: Record<string, unknown>
-): ZonePolygon | null => {
-  const raw = criteria?.zonePolygon;
-  if (!Array.isArray(raw)) return null;
-  const polygon: ZonePolygon = [];
-  for (const point of raw) {
-    if (
-      Array.isArray(point) &&
-      point.length === 2 &&
-      typeof point[0] === "number" &&
-      typeof point[1] === "number"
-    ) {
-      polygon.push([point[0], point[1]]);
-    } else {
-      return null;
-    }
-  }
-  return polygon.length >= 3 ? polygon : null;
-};
-
-type CriteriaRow = { label: string; value: string };
-
-type DashboardCopy = {
-  sectionSummary: string;
-  sectionZone: string;
-  sectionZoneHint: string;
-  zoneNotSet: string;
-  sectionMatches: string;
-  sectionActions: string;
-  pause: string;
-  resume: string;
-  archive: string;
-  edit: string;
-  save: string;
-  cancel: string;
-  noMatches: string;
-  newBadge: string;
-  scoreLabel: string;
-  openListing: string;
-  confirmArchive: string;
-  labels: {
-    businessType: string;
-    sale: string;
-    rental: string;
-    cities: string;
-    propertyTypes: string;
-    budget: string;
-    rooms: string;
-    surface: string;
-    floor: string;
-    terrace: string;
-    elevator: string;
-    yes: string;
-    no: string;
-    any: string;
-  };
-};
+import {
+  extractZonePolygon,
+  parseNullable,
+  toInput,
+  type CriteriaRow,
+  type DashboardCopy,
+  type EditState,
+} from "./buyer-search-helpers";
+import { BuyerSearchSummarySection } from "./buyer-search-summary-section";
+import { BuyerSearchZoneSection } from "./buyer-search-zone-section";
+import { BuyerSearchMatchesSection } from "./buyer-search-matches-section";
+import { BuyerSearchActionsSection } from "./buyer-search-actions-section";
 
 type Props = {
   locale: AppLocale;
@@ -90,30 +28,6 @@ type Props = {
   searchProfile: BuyerSearchProfileSnapshot;
   matches: BuyerSearchMatchListItem[];
   copy: DashboardCopy;
-};
-
-type EditState = {
-  businessType: "sale" | "rental";
-  locationText: string;
-  propertyTypes: string;
-  budgetMin: string;
-  budgetMax: string;
-  roomsMin: string;
-  roomsMax: string;
-  livingAreaMin: string;
-  livingAreaMax: string;
-  floorMin: string;
-  floorMax: string;
-  requiresTerrace: "any" | "yes" | "no";
-  requiresElevator: "any" | "yes" | "no";
-};
-
-const toInput = (value: number | null) => (value === null ? "" : String(value));
-const parseNullable = (value: string): number | null => {
-  const trimmed = value.trim();
-  if (!trimmed) return null;
-  const parsed = Number.parseInt(trimmed, 10);
-  return Number.isFinite(parsed) ? parsed : null;
 };
 
 const mapTriState = (value: boolean | null): "any" | "yes" | "no" => {
@@ -271,365 +185,46 @@ export function BuyerSearchDashboard(props: Props) {
 
   return (
     <>
-      <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-[#f4ece4] p-8">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="text-xl font-semibold text-[#141446]">{props.copy.sectionSummary}</h2>
-          {!props.archived ? (
-            <button
-              type="button"
-              className="sillage-btn-secondary rounded px-3 py-1.5 text-sm"
-              onClick={() => setIsEditing((value) => !value)}
-              disabled={isPending}
-            >
-              {isEditing ? props.copy.cancel : props.copy.edit}
-            </button>
-          ) : null}
-        </div>
+      <BuyerSearchSummarySection
+        copy={props.copy}
+        archived={props.archived}
+        criteriaSummary={props.criteriaSummary}
+        isEditing={isEditing}
+        setIsEditing={setIsEditing}
+        isPending={isPending}
+        edit={edit}
+        setEdit={setEdit}
+        submitPatch={submitPatch}
+      />
 
-        {!isEditing ? (
-          <dl className="mt-4 grid gap-x-6 gap-y-3 md:grid-cols-2">
-            {props.criteriaSummary.map((row) => (
-              <div key={row.label} className="flex items-start justify-between gap-3 border-b border-[rgba(20,20,70,0.08)] py-2 text-sm">
-                <dt className="font-medium text-[#141446]/70">{row.label}</dt>
-                <dd className="text-right text-[#141446]">{row.value}</dd>
-              </div>
-            ))}
-          </dl>
-        ) : (
-          <form
-            className="mt-4 grid gap-4 md:grid-cols-2"
-            onSubmit={(event) => {
-              event.preventDefault();
-              void submitPatch();
-            }}
-          >
-            <label className="text-sm">
-              {props.copy.labels.businessType}
-              <select
-                className="mt-1 w-full rounded border bg-white/80 px-3 py-2"
-                value={edit.businessType}
-                onChange={(event) =>
-                  setEdit((current) => ({
-                    ...current,
-                    businessType: event.target.value === "rental" ? "rental" : "sale",
-                  }))
-                }
-              >
-                <option value="sale">{props.copy.labels.sale}</option>
-                <option value="rental">{props.copy.labels.rental}</option>
-              </select>
-            </label>
-            <label className="text-sm">
-              {props.copy.labels.cities}
-              <input
-                className="mt-1 w-full rounded border bg-white/80 px-3 py-2"
-                value={edit.locationText}
-                onChange={(event) =>
-                  setEdit((current) => ({ ...current, locationText: event.target.value }))
-                }
-              />
-            </label>
-            <label className="text-sm md:col-span-2">
-              {props.copy.labels.propertyTypes}
-              <input
-                className="mt-1 w-full rounded border bg-white/80 px-3 py-2"
-                value={edit.propertyTypes}
-                onChange={(event) =>
-                  setEdit((current) => ({ ...current, propertyTypes: event.target.value }))
-                }
-              />
-            </label>
-            <label className="text-sm">
-              {props.copy.labels.budget} min
-              <input
-                className="mt-1 w-full rounded border bg-white/80 px-3 py-2"
-                inputMode="numeric"
-                value={edit.budgetMin}
-                onChange={(event) =>
-                  setEdit((current) => ({ ...current, budgetMin: event.target.value }))
-                }
-              />
-            </label>
-            <label className="text-sm">
-              {props.copy.labels.budget} max
-              <input
-                className="mt-1 w-full rounded border bg-white/80 px-3 py-2"
-                inputMode="numeric"
-                value={edit.budgetMax}
-                onChange={(event) =>
-                  setEdit((current) => ({ ...current, budgetMax: event.target.value }))
-                }
-              />
-            </label>
-            <label className="text-sm">
-              {props.copy.labels.rooms} min
-              <input
-                className="mt-1 w-full rounded border bg-white/80 px-3 py-2"
-                inputMode="numeric"
-                value={edit.roomsMin}
-                onChange={(event) =>
-                  setEdit((current) => ({ ...current, roomsMin: event.target.value }))
-                }
-              />
-            </label>
-            <label className="text-sm">
-              {props.copy.labels.rooms} max
-              <input
-                className="mt-1 w-full rounded border bg-white/80 px-3 py-2"
-                inputMode="numeric"
-                value={edit.roomsMax}
-                onChange={(event) =>
-                  setEdit((current) => ({ ...current, roomsMax: event.target.value }))
-                }
-              />
-            </label>
-            <label className="text-sm">
-              {props.copy.labels.surface} min
-              <input
-                className="mt-1 w-full rounded border bg-white/80 px-3 py-2"
-                inputMode="numeric"
-                value={edit.livingAreaMin}
-                onChange={(event) =>
-                  setEdit((current) => ({ ...current, livingAreaMin: event.target.value }))
-                }
-              />
-            </label>
-            <label className="text-sm">
-              {props.copy.labels.surface} max
-              <input
-                className="mt-1 w-full rounded border bg-white/80 px-3 py-2"
-                inputMode="numeric"
-                value={edit.livingAreaMax}
-                onChange={(event) =>
-                  setEdit((current) => ({ ...current, livingAreaMax: event.target.value }))
-                }
-              />
-            </label>
-            <label className="text-sm">
-              {props.copy.labels.floor} min
-              <input
-                className="mt-1 w-full rounded border bg-white/80 px-3 py-2"
-                inputMode="numeric"
-                value={edit.floorMin}
-                onChange={(event) =>
-                  setEdit((current) => ({ ...current, floorMin: event.target.value }))
-                }
-              />
-            </label>
-            <label className="text-sm">
-              {props.copy.labels.floor} max
-              <input
-                className="mt-1 w-full rounded border bg-white/80 px-3 py-2"
-                inputMode="numeric"
-                value={edit.floorMax}
-                onChange={(event) =>
-                  setEdit((current) => ({ ...current, floorMax: event.target.value }))
-                }
-              />
-            </label>
-            <label className="text-sm">
-              {props.copy.labels.terrace}
-              <select
-                className="mt-1 w-full rounded border bg-white/80 px-3 py-2"
-                value={edit.requiresTerrace}
-                onChange={(event) =>
-                  setEdit((current) => ({
-                    ...current,
-                    requiresTerrace:
-                      event.target.value === "yes"
-                        ? "yes"
-                        : event.target.value === "no"
-                          ? "no"
-                          : "any",
-                  }))
-                }
-              >
-                <option value="any">{props.copy.labels.any}</option>
-                <option value="yes">{props.copy.labels.yes}</option>
-                <option value="no">{props.copy.labels.no}</option>
-              </select>
-            </label>
-            <label className="text-sm">
-              {props.copy.labels.elevator}
-              <select
-                className="mt-1 w-full rounded border bg-white/80 px-3 py-2"
-                value={edit.requiresElevator}
-                onChange={(event) =>
-                  setEdit((current) => ({
-                    ...current,
-                    requiresElevator:
-                      event.target.value === "yes"
-                        ? "yes"
-                        : event.target.value === "no"
-                          ? "no"
-                          : "any",
-                  }))
-                }
-              >
-                <option value="any">{props.copy.labels.any}</option>
-                <option value="yes">{props.copy.labels.yes}</option>
-                <option value="no">{props.copy.labels.no}</option>
-              </select>
-            </label>
-            <div className="md:col-span-2 flex flex-wrap gap-3">
-              <button
-                type="submit"
-                className="sillage-btn rounded px-5 py-2 text-sm"
-                disabled={isPending}
-              >
-                {props.copy.save}
-              </button>
-              <button
-                type="button"
-                className="sillage-btn-secondary rounded px-5 py-2 text-sm"
-                disabled={isPending}
-                onClick={() => setIsEditing(false)}
-              >
-                {props.copy.cancel}
-              </button>
-            </div>
-          </form>
-        )}
-      </section>
+      <BuyerSearchZoneSection
+        copy={props.copy}
+        locale={props.locale}
+        archived={props.archived}
+        zone={zone}
+        setZone={setZone}
+        isEditingZone={isEditingZone}
+        setIsEditingZone={setIsEditingZone}
+        isPending={isPending}
+        saveZone={saveZone}
+        cancelZoneEdit={cancelZoneEdit}
+      />
 
-      <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-[#f4ece4] p-8">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="text-xl font-semibold text-[#141446]">{props.copy.sectionZone}</h2>
-          {!props.archived ? (
-            <div className="flex gap-2">
-              {isEditingZone ? (
-                <>
-                  <button
-                    type="button"
-                    className="sillage-btn rounded px-3 py-1.5 text-sm"
-                    onClick={() => void saveZone()}
-                    disabled={isPending}
-                  >
-                    {props.copy.save}
-                  </button>
-                  <button
-                    type="button"
-                    className="sillage-btn-secondary rounded px-3 py-1.5 text-sm"
-                    onClick={cancelZoneEdit}
-                    disabled={isPending}
-                  >
-                    {props.copy.cancel}
-                  </button>
-                </>
-              ) : (
-                <button
-                  type="button"
-                  className="sillage-btn-secondary rounded px-3 py-1.5 text-sm"
-                  onClick={() => setIsEditingZone(true)}
-                  disabled={isPending}
-                >
-                  {props.copy.edit}
-                </button>
-              )}
-            </div>
-          ) : null}
-        </div>
-        <p className="mt-1 text-xs text-[#141446]/70">{props.copy.sectionZoneHint}</p>
-        {isEditingZone ? (
-          <div className="mt-4">
-            <BuyerSearchZoneMap
-              locale={props.locale}
-              value={zone}
-              onChange={(polygon) => setZone(polygon)}
-            />
-          </div>
-        ) : zone && zone.length >= 3 ? (
-          <div className="mt-4">
-            <BuyerSearchZoneMap
-              key={`readonly-${zone.length}-${zone[0]?.[0] ?? 0}`}
-              locale={props.locale}
-              value={zone}
-              onChange={() => {}}
-            />
-          </div>
-        ) : (
-          <p className="mt-4 text-sm text-[#141446]/70">{props.copy.zoneNotSet}</p>
-        )}
-      </section>
-
-      <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-[#f4ece4] p-8">
-        <h2 className="text-xl font-semibold text-[#141446]">{props.copy.sectionMatches}</h2>
-        {matchListItems.length === 0 ? (
-          <p className="mt-3 text-sm text-[#141446]/70">{props.copy.noMatches}</p>
-        ) : (
-          <ul className="mt-4 grid gap-4 md:grid-cols-2">
-            {matchListItems.map((match) => (
-              <li
-                key={match.id}
-                className="relative rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-5"
-              >
-                {match.isNew ? (
-                  <span className="absolute right-4 top-4 rounded-full bg-[#141446] px-3 py-1 text-xs font-semibold text-[#f4ece4]">
-                    {props.copy.newBadge}
-                  </span>
-                ) : null}
-                <p className="text-sm font-semibold text-[#141446]">
-                  {match.title ?? match.propertyType ?? match.propertyId}
-                </p>
-                <p className="mt-1 text-sm text-[#141446]/75">
-                  {[match.city, match.propertyType].filter(Boolean).join(" · ")}
-                </p>
-                {match.priceAmount !== null ? (
-                  <p className="mt-1 text-sm text-[#141446]/80">
-                    {match.priceAmount.toLocaleString(
-                      props.locale === "en"
-                        ? "en-US"
-                        : props.locale === "es"
-                          ? "es-ES"
-                          : props.locale === "ru"
-                            ? "ru-RU"
-                            : "fr-FR"
-                    )}{" "}
-                    €
-                  </p>
-                ) : null}
-                <p className="mt-2 text-xs text-[#141446]/60">
-                  {props.copy.scoreLabel} · {match.score}
-                </p>
-                <Link
-                  href={match.canonicalPath}
-                  className="mt-3 inline-block sillage-btn-secondary rounded px-3 py-1.5 text-sm"
-                >
-                  {props.copy.openListing}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      <BuyerSearchMatchesSection
+        copy={props.copy}
+        locale={props.locale}
+        matchListItems={matchListItems}
+      />
 
       {!props.archived ? (
-        <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-[#f4ece4] p-8">
-          <h2 className="text-xl font-semibold text-[#141446]">{props.copy.sectionActions}</h2>
-          <div className="mt-4 flex flex-wrap gap-3">
-            <button
-              type="button"
-              className="sillage-btn-secondary rounded px-4 py-2 text-sm"
-              onClick={() => void pauseOrResume()}
-              disabled={isPending}
-            >
-              {props.status === "paused" ? props.copy.resume : props.copy.pause}
-            </button>
-            <button
-              type="button"
-              className="sillage-btn-secondary rounded px-4 py-2 text-sm"
-              onClick={() => void archive()}
-              disabled={isPending}
-            >
-              {props.copy.archive}
-            </button>
-          </div>
-          {actionError ? (
-            <p className="mt-3 rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
-              {actionError}
-            </p>
-          ) : null}
-        </section>
+        <BuyerSearchActionsSection
+          copy={props.copy}
+          status={props.status}
+          isPending={isPending}
+          actionError={actionError}
+          pauseOrResume={pauseOrResume}
+          archive={archive}
+        />
       ) : null}
     </>
   );

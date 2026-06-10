@@ -48,7 +48,7 @@ export default async function SellerLeadDetailPage({ params }: SellerLeadDetailP
 
   if (error) {
     return (
-      <main className="min-h-screen bg-[#f4ece4] p-6 md:p-10 xl:p-14 2xl:p-20">
+      <main className="min-h-screen bg-sand p-6 md:p-10 xl:p-14 2xl:p-20">
         <div className="w-full rounded-2xl border border-[rgba(20,20,70,0.22)] p-6">
           <h1 className="text-2xl font-semibold">Lead vendeur</h1>
           <p className="mt-3 text-sm text-red-700">
@@ -90,20 +90,20 @@ export default async function SellerLeadDetailPage({ params }: SellerLeadDetailP
       profileName={context.profile?.fullName ?? context.profile?.email ?? "Mode admin"}
     >
       <div className="w-full space-y-6">
-        <section className="rounded-2xl bg-[#141446] p-6 text-[#f4ece4] space-y-2">
+        <section className="rounded-2xl bg-navy p-6 text-sand space-y-2">
           <div className="flex gap-2">
             <Link
-              className="inline-block rounded border border-[#f4ece4] px-3 py-1 text-sm"
+              className="inline-block rounded border border-sand px-3 py-1 text-sm"
               href="/admin/seller-leads"
             >
               Retour à la liste
             </Link>
-            <Link className="inline-block rounded border border-[#f4ece4] px-3 py-1 text-sm" href="/">
+            <Link className="inline-block rounded border border-sand px-3 py-1 text-sm" href="/">
               Accueil
             </Link>
           </div>
           <h1 className="text-2xl font-semibold">{lead.full_name}</h1>
-          <p className="text-sm text-[#f4ece4]/75">
+          <p className="text-sm text-sand/75">
             Créé le {formatDate(lead.created_at)} - {lead.email}
           </p>
         </section>

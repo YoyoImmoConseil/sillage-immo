@@ -290,7 +290,7 @@ export async function PublicListingDetailPage({
 
   return (
     <main className="min-h-screen">
-      <section className="bg-[#141446] text-[#f4ece4]">
+      <section className="bg-navy text-sand">
         <div className="w-full px-6 pb-8 pt-4 md:px-10 md:pb-8 md:pt-3 xl:px-14 2xl:px-20 space-y-3">
           <Link
             href={localizePath(listing.businessType === "sale" ? "/vente" : "/location", locale)}
@@ -300,10 +300,10 @@ export async function PublicListingDetailPage({
             ←
           </Link>
           <div className="space-y-2">
-            <h1 className="sillage-section-title text-[#f4ece4]">
+            <h1 className="sillage-section-title text-sand">
               {listing.title ?? copy.propertyFallback}
             </h1>
-            <p className="text-sm text-[#f4ece4]/80">
+            <p className="text-sm text-sand/80">
               {[listing.city, listing.postalCode].filter(Boolean).join(" • ")}
             </p>
             <p className="text-2xl font-semibold">
@@ -312,12 +312,12 @@ export async function PublicListingDetailPage({
                 currency: listing.priceCurrency,
               })}
             </p>
-            {feeMention ? <p className="text-sm text-[#f4ece4]/80">{feeMention}</p> : null}
+            {feeMention ? <p className="text-sm text-sand/80">{feeMention}</p> : null}
           </div>
         </div>
       </section>
 
-      <section className="bg-[#f4ece4] text-[#141446]">
+      <section className="bg-sand text-navy">
         <div className="w-full px-6 py-8 md:px-10 xl:px-14 2xl:px-20 grid gap-8 lg:grid-cols-[1.6fr_0.9fr]">
           <div className="space-y-6">
             <PropertyGallery
@@ -489,8 +489,8 @@ export async function PublicListingDetailPage({
           </div>
 
           <aside className="space-y-6">
-            <section className="rounded-2xl bg-[#141446] p-6 text-[#f4ece4] space-y-3">
-              <h2 className="sillage-section-title text-[#f4ece4]">{copy.contact}</h2>
+            <section className="rounded-2xl bg-navy p-6 text-sand space-y-3">
+              <h2 className="sillage-section-title text-sand">{copy.contact}</h2>
               {contactAvatarUrl ? (
                 <img
                   src={contactAvatarUrl}

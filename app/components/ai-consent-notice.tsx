@@ -100,7 +100,7 @@ export function AIConsentNotice({
       role="dialog"
       aria-live="polite"
       aria-label={t.title}
-      className="mt-3 rounded-lg border border-[rgba(20,20,70,0.18)] bg-[#f4ece4]/80 px-3 py-2 text-xs text-[#141446] backdrop-blur"
+      className="mt-3 rounded-lg border border-[rgba(20,20,70,0.18)] bg-sand/80 px-3 py-2 text-xs text-navy backdrop-blur"
     >
       <p className="font-semibold">{t.title}</p>
       <p className="mt-1 leading-relaxed opacity-85">{t.body}</p>
@@ -126,7 +126,7 @@ export function AIConsentNotice({
           </button>
           <button
             type="button"
-            className="rounded-md bg-[#141446] px-3 py-1 font-medium text-[#f4ece4] hover:bg-[#1c1c5a]"
+            className="rounded-md bg-navy px-3 py-1 font-medium text-sand hover:bg-[#1c1c5a]"
             data-track-cta="ai_notice_accept"
             onClick={() => {
               setOptOutCookie("0");

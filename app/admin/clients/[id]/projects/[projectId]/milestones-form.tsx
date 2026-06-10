@@ -132,10 +132,10 @@ export function MilestonesForm({
     <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6">
       <div className="flex items-baseline justify-between gap-4">
         <div>
-          <h2 className="text-xl font-semibold text-[#141446]">
+          <h2 className="text-xl font-semibold text-navy">
             Étapes du projet
           </h2>
-          <p className="text-sm text-[#141446]/60">
+          <p className="text-sm text-navy/60">
             Saisie manuelle pour rattraper l&apos;historique. Les dates renseignées
             ici remontent automatiquement dans le dashboard.
           </p>
@@ -161,13 +161,13 @@ export function MilestonesForm({
               className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-3"
             >
               <div className="flex flex-wrap items-center gap-3">
-                <label className="flex items-center gap-2 text-sm font-medium text-[#141446]">
+                <label className="flex items-center gap-2 text-sm font-medium text-navy">
                   <input
                     type="checkbox"
                     checked={checked}
                     disabled={isBusy}
                     onChange={(e) => onCheckboxChange(line.key, e.target.checked)}
-                    className="h-4 w-4 accent-[#141446]"
+                    className="h-4 w-4 accent-navy"
                   />
                   {line.label}
                 </label>
@@ -181,7 +181,7 @@ export function MilestonesForm({
                   className="rounded-md border border-[rgba(20,20,70,0.2)] bg-white px-2 py-1 text-sm disabled:bg-[#f7f5f0]"
                 />
                 {checked ? (
-                  <span className="text-xs text-[#141446]/60">
+                  <span className="text-xs text-navy/60">
                     {formatHumanDate(
                       line.key === "mandate"
                         ? milestones.mandateSignedAt
@@ -194,7 +194,7 @@ export function MilestonesForm({
                   </span>
                 ) : null}
                 {isBusy ? (
-                  <span className="text-xs text-[#141446]/60">Enregistrement…</span>
+                  <span className="text-xs text-navy/60">Enregistrement…</span>
                 ) : null}
               </div>
               {line.key === "offer" && checked ? (
@@ -274,7 +274,7 @@ function OffererPicker({
 
   return (
     <div className="space-y-2">
-      <p className="text-xs uppercase tracking-wide text-[#141446]/70">
+      <p className="text-xs uppercase tracking-wide text-navy/70">
         Offrant (lié à un acquéreur)
       </p>
       {selectedLead ? (
@@ -328,13 +328,13 @@ function OffererPicker({
                           offerBuyerName: null,
                         });
                       }}
-                      className="block w-full px-3 py-2 text-left text-sm hover:bg-[#f4ece4]"
+                      className="block w-full px-3 py-2 text-left text-sm hover:bg-sand"
                     >
-                      <span className="font-medium text-[#141446]">
+                      <span className="font-medium text-navy">
                         {row.fullName ?? row.email}
                       </span>
                       {row.fullName ? (
-                        <span className="ml-2 text-[#141446]/60">{row.email}</span>
+                        <span className="ml-2 text-navy/60">{row.email}</span>
                       ) : null}
                     </button>
                   </li>
@@ -342,7 +342,7 @@ function OffererPicker({
               </ul>
             ) : null}
             {showResults && searching ? (
-              <p className="absolute right-2 top-2 text-xs text-[#141446]/60">
+              <p className="absolute right-2 top-2 text-xs text-navy/60">
                 Recherche…
               </p>
             ) : null}
@@ -358,12 +358,12 @@ function OffererPicker({
                   offerBuyerName: query.trim(),
                 });
               }}
-              className="rounded-md border border-[#141446]/30 px-3 py-1 text-xs text-[#141446] disabled:opacity-60"
+              className="rounded-md border border-navy/30 px-3 py-1 text-xs text-navy disabled:opacity-60"
             >
               Enregistrer comme nom libre
             </button>
             {milestones.offerBuyerName ? (
-              <span className="text-xs text-[#141446]/70">
+              <span className="text-xs text-navy/70">
                 Nom actuel : <strong>{milestones.offerBuyerName}</strong>
               </span>
             ) : null}

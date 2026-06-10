@@ -98,7 +98,7 @@ export function AdminBootstrapForm() {
           required
         />
       </label>
-      <p className="text-sm text-[#141446]/70">
+      <p className="text-sm text-navy/70">
         Cette adresse email sera autorisée comme premier administrateur, puis connectée via Google.
       </p>
       <button className="sillage-btn rounded px-4 py-2 text-sm disabled:opacity-60" disabled={isPending}>

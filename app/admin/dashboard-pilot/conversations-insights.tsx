@@ -15,37 +15,37 @@ export function ConversationsInsights({
 
   return (
     <Card className="bg-white/80">
-      <Title className="text-[#141446]">
+      <Title className="text-navy">
         Voix du marché — conversations IA (30 j)
       </Title>
       <Flex className="mt-4" justifyContent="start">
         <div className="flex flex-wrap gap-6">
           <div>
-            <Text className="text-[#141446]/60">Total</Text>
-            <Metric className="text-[#141446]">{snapshot.totalLast30d}</Metric>
+            <Text className="text-navy/60">Total</Text>
+            <Metric className="text-navy">{snapshot.totalLast30d}</Metric>
           </div>
           <div>
-            <Text className="text-[#141446]/60">Anonymes (homepage)</Text>
-            <Metric className="text-[#141446]">
+            <Text className="text-navy/60">Anonymes (homepage)</Text>
+            <Metric className="text-navy">
               {snapshot.anonymousLast30d}
             </Metric>
           </div>
           <div>
-            <Text className="text-[#141446]/60">Vendeurs</Text>
-            <Metric className="text-[#141446]">{snapshot.sellerLast30d}</Metric>
+            <Text className="text-navy/60">Vendeurs</Text>
+            <Metric className="text-navy">{snapshot.sellerLast30d}</Metric>
           </div>
           <div>
-            <Text className="text-[#141446]/60">Acquéreurs</Text>
-            <Metric className="text-[#141446]">{snapshot.buyerLast30d}</Metric>
+            <Text className="text-navy/60">Acquéreurs</Text>
+            <Metric className="text-navy">{snapshot.buyerLast30d}</Metric>
           </div>
         </div>
       </Flex>
 
-      <Title className="mt-6 text-base text-[#141446]/80">
+      <Title className="mt-6 text-base text-navy/80">
         Mots-clés émergents
       </Title>
       {topicData.length === 0 ? (
-        <p className="mt-3 text-sm text-[#141446]/60">
+        <p className="mt-3 text-sm text-navy/60">
           Aucun mot-clé significatif sur la période. Le masquage PII supprime
           les emails/téléphones avant analyse.
         </p>
@@ -56,7 +56,7 @@ export function ConversationsInsights({
           valueFormatter={(value: number) => value.toLocaleString("fr-FR")}
         />
       )}
-      <p className="mt-3 text-xs text-[#141446]/60">
+      <p className="mt-3 text-xs text-navy/60">
         Source : ai_conversations + ai_messages (PII masquée, conservation 90 j).
       </p>
     </Card>

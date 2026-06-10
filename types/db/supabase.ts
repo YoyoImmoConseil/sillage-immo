@@ -11,7 +11,6 @@ export type Database = {
           message: string | null;
           source: string | null;
           status: string;
-          assigned_admin_profile_id: string | null;
           metadata: Record<string, unknown>;
         };
         Insert: {
@@ -23,7 +22,6 @@ export type Database = {
           message?: string | null;
           source?: string | null;
           status?: string;
-          assigned_admin_profile_id?: string | null;
           metadata?: Record<string, unknown>;
         };
         Update: {
@@ -35,18 +33,27 @@ export type Database = {
           message?: string | null;
           source?: string | null;
           status?: string;
-          assigned_admin_profile_id?: string | null;
           metadata?: Record<string, unknown>;
         };
-        Relationships: [
-          {
-            foreignKeyName: "seller_leads_assigned_admin_profile_id_fkey";
-            columns: ["assigned_admin_profile_id"];
-            isOneToOne: false;
-            referencedRelation: "admin_profiles";
-            referencedColumns: ["id"];
-          }
-        ];
+        Relationships: [];
+      };
+      rate_limit_counters: {
+        Row: {
+          key: string;
+          count: number;
+          window_expires_at: string;
+        };
+        Insert: {
+          key: string;
+          count?: number;
+          window_expires_at: string;
+        };
+        Update: {
+          key?: string;
+          count?: number;
+          window_expires_at?: string;
+        };
+        Relationships: [];
       };
       audit_log: {
         Row: {

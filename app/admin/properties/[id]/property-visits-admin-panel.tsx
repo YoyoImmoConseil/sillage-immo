@@ -1,4 +1,11 @@
 import {
+  getVisitOutcomeLabel,
+  getVisitStatusLabel,
+  VISIT_OUTCOME_LABELS,
+  VISIT_STATUS_BADGE_CLASS,
+  type SweepBrightFeedbackOutcome,
+} from "@/lib/properties/property-visit-ui";
+import {
   listVisitsForProperty,
   type PropertyVisitAdminView,
 } from "@/services/properties/property-visit.service";
@@ -23,39 +30,10 @@ const formatDateTime = (iso: string | null): string => {
   }
 };
 
-const STATUS_LABEL: Record<PropertyVisitAdminView["status"], string> = {
-  scheduled: "Planifiée",
-  updated: "Modifiée",
-  cancelled: "Annulée",
-  completed: "Effectuée",
-};
-
-const STATUS_BADGE_CLASS: Record<PropertyVisitAdminView["status"], string> = {
-  scheduled: "bg-[#141446]/10 text-[#141446]",
-  updated: "bg-amber-100 text-amber-900",
-  cancelled: "bg-rose-100 text-rose-900",
-  completed: "bg-emerald-100 text-emerald-900",
-};
-
-type KnownOutcome =
-  | "no_interest"
-  | "wants_info"
-  | "wants_to_visit"
-  | "offer"
-  | "deal";
-
-const OUTCOME_LABEL_FR: Record<KnownOutcome, string> = {
-  no_interest: "Pas d'intérêt",
-  wants_info: "Demande d'informations",
-  wants_to_visit: "Souhaite revisiter",
-  offer: "A fait une offre",
-  deal: "Affaire conclue",
-};
-
 const formatOutcome = (outcome: string | null): string | null => {
   if (!outcome) return null;
-  return outcome in OUTCOME_LABEL_FR
-    ? OUTCOME_LABEL_FR[outcome as KnownOutcome]
+  return outcome in VISIT_OUTCOME_LABELS.fr
+    ? getVisitOutcomeLabel("fr", outcome as SweepBrightFeedbackOutcome)
     : outcome;
 };
 
@@ -88,34 +66,34 @@ const VisitCard = ({ visit }: { visit: PropertyVisitAdminView }) => {
     <article className="rounded-2xl border border-[rgba(20,20,70,0.12)] p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-1">
-          <p className="text-sm font-semibold text-[#141446]">
+          <p className="text-sm font-semibold text-navy">
             {formatDateTime(visit.scheduledAt)}
             {visit.endedAt ? (
-              <span className="ml-1 text-[#141446]/70">
+              <span className="ml-1 text-navy/70">
                 → {formatDateTime(visit.endedAt)}
               </span>
             ) : null}
           </p>
-          <p className="text-xs text-[#141446]/60">
+          <p className="text-xs text-navy/60">
             Durée : {formatDuration(visit.durationMinutes)} · Reçu via Zapier ({visit.zapierEvent})
           </p>
         </div>
         <span
-          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_BADGE_CLASS[visit.status]}`}
+          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${VISIT_STATUS_BADGE_CLASS[visit.status]}`}
         >
-          {STATUS_LABEL[visit.status]}
+          {getVisitStatusLabel("fr", visit.status)}
         </span>
       </div>
 
       <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
         <div>
-          <dt className="text-xs uppercase tracking-wide text-[#141446]/60">
+          <dt className="text-xs uppercase tracking-wide text-navy/60">
             Conseiller en charge
           </dt>
-          <dd className="text-[#141446]">
+          <dd className="text-navy">
             {visit.negotiator.name ?? "—"}
             {visit.negotiator.email ? (
-              <span className="block text-xs text-[#141446]/60">
+              <span className="block text-xs text-navy/60">
                 {visit.negotiator.email}
                 {visit.negotiator.phone ? ` · ${visit.negotiator.phone}` : ""}
               </span>
@@ -123,12 +101,12 @@ const VisitCard = ({ visit }: { visit: PropertyVisitAdminView }) => {
           </dd>
         </div>
         <div>
-          <dt className="text-xs uppercase tracking-wide text-[#141446]/60">
+          <dt className="text-xs uppercase tracking-wide text-navy/60">
             Contact (acquéreur)
           </dt>
-          <dd className="text-[#141446]">
+          <dd className="text-navy">
             {renderContact(visit.contact)}
-            <span className="block text-xs text-[#141446]/50">
+            <span className="block text-xs text-navy/50">
               Initiales affichées au vendeur : {visit.contactInitials}
             </span>
           </dd>
@@ -136,45 +114,45 @@ const VisitCard = ({ visit }: { visit: PropertyVisitAdminView }) => {
       </dl>
 
       {hasFeedback ? (
-        <div className="mt-4 rounded-xl bg-[#141446]/5 p-3 text-sm">
-          <p className="text-xs uppercase tracking-wide text-[#141446]/60">
+        <div className="mt-4 rounded-xl bg-navy/5 p-3 text-sm">
+          <p className="text-xs uppercase tracking-wide text-navy/60">
             Retour de visite
           </p>
           {outcomeLabel !== null ? (
-            <p className="mt-1 text-[#141446]">
-              <span className="text-xs uppercase tracking-wide text-[#141446]/60">
+            <p className="mt-1 text-navy">
+              <span className="text-xs uppercase tracking-wide text-navy/60">
                 Sentiment SweepBright :
               </span>{" "}
               {outcomeLabel}
             </p>
           ) : null}
           {visit.feedback.rating !== null ? (
-            <p className="mt-1 text-[#141446]">
-              <span className="text-xs uppercase tracking-wide text-[#141446]/60">
+            <p className="mt-1 text-navy">
+              <span className="text-xs uppercase tracking-wide text-navy/60">
                 Note (legacy) :
               </span>{" "}
               {visit.feedback.rating} / 5
             </p>
           ) : null}
           {visit.feedback.offerAmount !== null ? (
-            <p className="mt-1 text-[#141446]">
-              <span className="text-xs uppercase tracking-wide text-[#141446]/60">
+            <p className="mt-1 text-navy">
+              <span className="text-xs uppercase tracking-wide text-navy/60">
                 Offre :
               </span>{" "}
               {visit.feedback.offerAmount.toLocaleString("fr-FR")} €
             </p>
           ) : null}
           {visit.feedback.commentPublic ? (
-            <p className="mt-2 text-[#141446]">
-              <span className="text-xs uppercase tracking-wide text-[#141446]/60">
+            <p className="mt-2 text-navy">
+              <span className="text-xs uppercase tracking-wide text-navy/60">
                 Commentaire pour propriétaire :
               </span>{" "}
               {visit.feedback.commentPublic}
             </p>
           ) : null}
           {visit.feedback.commentInternal ? (
-            <p className="mt-2 text-[#141446]">
-              <span className="text-xs uppercase tracking-wide text-[#141446]/60">
+            <p className="mt-2 text-navy">
+              <span className="text-xs uppercase tracking-wide text-navy/60">
                 Commentaire interne 🔒 :
               </span>{" "}
               {visit.feedback.commentInternal}
@@ -200,8 +178,8 @@ export async function PropertyVisitsAdminPanel({
   return (
     <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-xl font-semibold text-[#141446]">Visites</h2>
-        <p className="text-xs text-[#141446]/60">
+        <h2 className="text-xl font-semibold text-navy">Visites</h2>
+        <p className="text-xs text-navy/60">
           Source : Zapier → SweepBright (toutes les PII sont visibles ici, masquées dans l&apos;espace client).
         </p>
       </div>
@@ -212,7 +190,7 @@ export async function PropertyVisitsAdminPanel({
             Impossible de charger les visites : {loadError}
           </p>
         ) : visits.length === 0 ? (
-          <p className="text-sm text-[#141446]/70">
+          <p className="text-sm text-navy/70">
             Aucune visite reçue pour ce bien.
           </p>
         ) : (

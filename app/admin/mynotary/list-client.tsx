@@ -55,7 +55,7 @@ const MATCH_METHOD_TONE: Record<string, string> = {
   address_fuzzy: "bg-amber-100 text-amber-900 border-amber-300",
   name_fuzzy: "bg-amber-100 text-amber-900 border-amber-300",
   manual: "bg-blue-100 text-blue-900 border-blue-300",
-  none: "bg-[#141446]/5 text-[#141446]/60 border-[#141446]/15",
+  none: "bg-navy/5 text-navy/60 border-navy/15",
 };
 
 const formatDate = (iso: string) =>
@@ -178,8 +178,8 @@ export function MyNotaryListClient({
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3 rounded-2xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-4">
         <div className="space-y-1">
-          <p className="text-sm font-semibold text-[#141446]">Filtres</p>
-          <p className="text-xs text-[#141446]/60">
+          <p className="text-sm font-semibold text-navy">Filtres</p>
+          <p className="text-xs text-navy/60">
             {initialTotal} document{initialTotal > 1 ? "s" : ""} au total — affichés : {headerStats.visible} ({headerStats.matched} matchés / {headerStats.unmatched} à rattacher)
           </p>
         </div>
@@ -234,7 +234,7 @@ export function MyNotaryListClient({
               type="button"
               onClick={triggerSync}
               disabled={syncBusy}
-              className="rounded-md bg-[#141446] px-3 py-1 text-xs font-medium text-white disabled:opacity-60"
+              className="rounded-md bg-navy px-3 py-1 text-xs font-medium text-white disabled:opacity-60"
             >
               {syncBusy ? "Sync…" : "Synchroniser MyNotary"}
             </button>
@@ -250,8 +250,8 @@ export function MyNotaryListClient({
 
       <div className="overflow-hidden rounded-2xl border border-[rgba(20,20,70,0.16)] bg-white/70">
         <table className="min-w-full divide-y divide-[rgba(20,20,70,0.12)] text-sm">
-          <thead className="bg-[#141446]/5">
-            <tr className="text-left text-xs uppercase tracking-wide text-[#141446]/70">
+          <thead className="bg-navy/5">
+            <tr className="text-left text-xs uppercase tracking-wide text-navy/70">
               <th className="px-3 py-2">Type</th>
               <th className="px-3 py-2">Signé le</th>
               <th className="px-3 py-2">Signataires</th>
@@ -263,7 +263,7 @@ export function MyNotaryListClient({
           <tbody className="divide-y divide-[rgba(20,20,70,0.08)]">
             {initialRows.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-3 py-6 text-center text-[#141446]/60">
+                <td colSpan={6} className="px-3 py-6 text-center text-navy/60">
                   Aucun contrat trouvé pour ces filtres.
                 </td>
               </tr>
@@ -297,28 +297,28 @@ export function MyNotaryListClient({
               const { kindLabel, subLabel, registerLabel } = formatTypeBadges(row);
               const matching = formatMatching(row);
               return (
-                <tr key={row.id} className="text-[#141446]">
+                <tr key={row.id} className="text-navy">
                   <td className="px-3 py-2 font-medium align-top">
                     <div className="flex flex-col gap-0.5">
                       <span>{kindLabel}</span>
                       {subLabel ? (
-                        <span className="text-xs font-normal text-[#141446]/70">
+                        <span className="text-xs font-normal text-navy/70">
                           {subLabel}
                         </span>
                       ) : null}
                       {registerLabel ? (
-                        <span className="inline-flex w-fit items-center rounded-full bg-[#141446]/8 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-[#141446]/70">
+                        <span className="inline-flex w-fit items-center rounded-full bg-navy/8 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-navy/70">
                           {registerLabel}
                         </span>
                       ) : null}
                     </div>
                   </td>
-                  <td className="px-3 py-2 text-[#141446]/80 align-top">{formatDate(row.signed_at)}</td>
-                  <td className="px-3 py-2 text-[#141446]/80 align-top">
+                  <td className="px-3 py-2 text-navy/80 align-top">{formatDate(row.signed_at)}</td>
+                  <td className="px-3 py-2 text-navy/80 align-top">
                     <div className="flex flex-col gap-0.5">
                       <span>{signersLabel}</span>
                       {signersIsSeller ? (
-                        <span className="text-[10px] font-medium uppercase tracking-wide text-[#141446]/45">
+                        <span className="text-[10px] font-medium uppercase tracking-wide text-navy/45">
                           Vendeur (MyNotary)
                         </span>
                       ) : null}
@@ -351,14 +351,14 @@ export function MyNotaryListClient({
                             : "PDF signé (MyNotary)"}
                         </a>
                       ) : (
-                        <span className="text-[#141446]/40">—</span>
+                        <span className="text-navy/40">—</span>
                       )}
                       {row.signature_proof_path ? (
                         <a
                           href={`/api/admin/mynotary/${row.id}/download?kind=proof`}
                           target="_blank"
                           rel="noreferrer"
-                          className="text-xs underline text-[#141446]/70"
+                          className="text-xs underline text-navy/70"
                         >
                           Preuve de signature
                         </a>
@@ -370,7 +370,7 @@ export function MyNotaryListClient({
                       <button
                         type="button"
                         onClick={() => setActiveRow(row)}
-                        className="rounded-md border border-[#141446]/30 px-2 py-1 text-xs font-medium text-[#141446]"
+                        className="rounded-md border border-navy/30 px-2 py-1 text-xs font-medium text-navy"
                       >
                         Rattacher
                       </button>
@@ -383,7 +383,7 @@ export function MyNotaryListClient({
         </table>
       </div>
 
-      <div className="flex items-center justify-between text-sm text-[#141446]/70">
+      <div className="flex items-center justify-between text-sm text-navy/70">
         <span>
           Page {initialPage} / {totalPages}
         </span>
@@ -392,7 +392,7 @@ export function MyNotaryListClient({
             type="button"
             disabled={initialPage <= 1 || isPending}
             onClick={() => updateFilter("page", String(initialPage - 1))}
-            className="rounded-md border border-[#141446]/30 px-3 py-1 disabled:opacity-50"
+            className="rounded-md border border-navy/30 px-3 py-1 disabled:opacity-50"
           >
             Précédent
           </button>
@@ -400,7 +400,7 @@ export function MyNotaryListClient({
             type="button"
             disabled={initialPage >= totalPages || isPending}
             onClick={() => updateFilter("page", String(initialPage + 1))}
-            className="rounded-md border border-[#141446]/30 px-3 py-1 disabled:opacity-50"
+            className="rounded-md border border-navy/30 px-3 py-1 disabled:opacity-50"
           >
             Suivant
           </button>

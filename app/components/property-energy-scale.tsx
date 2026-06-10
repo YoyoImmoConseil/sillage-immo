@@ -17,7 +17,7 @@ const energyColor = (letter: string) => {
     case "G":
       return "bg-[#C62828]";
     default:
-      return "bg-[#141446]";
+      return "bg-navy";
   }
 };
 
@@ -49,7 +49,7 @@ export function PropertyEnergyScale({
 
   return (
     <div className="rounded-2xl border border-[rgba(20,20,70,0.16)] bg-white/72 p-4">
-      <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-[#141446]/55">{title}</p>
+      <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-navy/55">{title}</p>
       <div className="mt-2 flex items-center gap-3">
         {label ? (
           <span
@@ -59,11 +59,11 @@ export function PropertyEnergyScale({
           </span>
         ) : null}
         <div>
-          <p className="text-sm font-semibold text-[#141446]">
+          <p className="text-sm font-semibold text-navy">
             {typeof value === "number" ? `${Math.round(value)} ${unit}` : label ?? "-"}
           </p>
           {!compact ? (
-            <p className="text-xs text-[#141446]/65">{PROVIDER_CAPTIONS[locale]}</p>
+            <p className="text-xs text-navy/65">{PROVIDER_CAPTIONS[locale]}</p>
           ) : null}
         </div>
       </div>
@@ -72,7 +72,7 @@ export function PropertyEnergyScale({
           <div
             key={entry}
             className={`flex h-6 items-center justify-center rounded text-[10px] font-semibold text-white ${energyColor(entry)} ${
-              label?.toUpperCase() === entry ? "ring-2 ring-[#141446]" : ""
+              label?.toUpperCase() === entry ? "ring-2 ring-navy" : ""
             }`}
           >
             {entry}

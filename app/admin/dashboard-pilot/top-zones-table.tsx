@@ -16,9 +16,9 @@ import type { ZoneRow } from "@/services/admin/dashboard-aggregator.service";
 export function TopZonesTable({ rows }: { rows: ZoneRow[] }) {
   return (
     <Card className="bg-white/80">
-      <Title className="text-[#141446]">Top zones (90 j)</Title>
+      <Title className="text-navy">Top zones (90 j)</Title>
       {rows.length === 0 ? (
-        <p className="mt-4 text-sm text-[#141446]/60">
+        <p className="mt-4 text-sm text-navy/60">
           Aucune zone identifiée sur la période.
         </p>
       ) : (

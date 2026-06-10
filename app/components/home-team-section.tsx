@@ -12,13 +12,13 @@ export function HomeTeamSection({ locale = "fr" }: { locale?: AppLocale }) {
     <section id="equipe" aria-labelledby="equipe-title" className="sillage-section-light">
       <div className="w-full px-6 py-14 md:px-10 md:py-20 xl:px-14 2xl:px-20 space-y-10">
         <div className="max-w-3xl space-y-3">
-          <p className="text-xs uppercase tracking-[0.22em] text-[#141446]/65">
+          <p className="text-xs uppercase tracking-[0.22em] text-navy/65">
             {copy.eyebrow}
           </p>
           <h2 id="equipe-title" className="sillage-section-title">
             {copy.title}
           </h2>
-          <p className="sillage-editorial-text text-[#141446]/80">{copy.intro}</p>
+          <p className="sillage-editorial-text text-navy/80">{copy.intro}</p>
         </div>
 
         <Suspense fallback={<HomeTeamMembersSkeleton />}>
@@ -71,9 +71,9 @@ async function HomeTeamMembers({ locale }: { locale: AppLocale }) {
         return (
           <article
             key={member.id}
-            className="group flex flex-col overflow-hidden rounded-[28px] bg-white shadow-sm ring-1 ring-[#141446]/5"
+            className="group flex flex-col overflow-hidden rounded-[28px] bg-white shadow-sm ring-1 ring-navy/5"
           >
-            <div className="relative aspect-[3/4] bg-[#f4ece4]">
+            <div className="relative aspect-[3/4] bg-sand">
               {member.avatarUrl ? (
                 <Image
                   src={member.avatarUrl}
@@ -83,25 +83,25 @@ async function HomeTeamMembers({ locale }: { locale: AppLocale }) {
                   className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
                 />
               ) : (
-                <div className="flex h-full items-center justify-center px-6 text-center text-sm text-[#141446]/55">
+                <div className="flex h-full items-center justify-center px-6 text-center text-sm text-navy/55">
                   {copy.portraitComingSoon}
                 </div>
               )}
             </div>
-            <div className="flex flex-1 flex-col gap-4 p-6 text-[#141446]">
+            <div className="flex flex-1 flex-col gap-4 p-6 text-navy">
               <div>
-                <p className="text-xs uppercase tracking-[0.18em] text-[#141446]/55">
+                <p className="text-xs uppercase tracking-[0.18em] text-navy/55">
                   {getAdminRoleLabel(member.role, locale)}
                 </p>
                 <h3 className="mt-2 text-xl font-semibold">{member.fullName}</h3>
                 {member.title ? (
-                  <p className="mt-1 text-sm text-[#141446]/70">
+                  <p className="mt-1 text-sm text-navy/70">
                     {getAdminTeamTitleLabel(member.title, locale)}
                   </p>
                 ) : null}
               </div>
               {member.bio ? (
-                <p className="text-sm leading-relaxed text-[#141446]/80 line-clamp-4">
+                <p className="text-sm leading-relaxed text-navy/80 line-clamp-4">
                   {member.bio}
                 </p>
               ) : null}
@@ -111,7 +111,7 @@ async function HomeTeamMembers({ locale }: { locale: AppLocale }) {
                     href={member.bookingUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center rounded-full bg-[#141446] px-5 py-2.5 text-sm font-semibold text-[#f4ece4] transition hover:opacity-95"
+                    className="inline-flex items-center justify-center rounded-full bg-navy px-5 py-2.5 text-sm font-semibold text-sand transition hover:opacity-95"
                   >
                     {copy.bookLabel}
                   </a>
@@ -122,8 +122,8 @@ async function HomeTeamMembers({ locale }: { locale: AppLocale }) {
                     aria-label={`${copy.callLabel} ${member.fullName} ${phoneAria.replace(/.*au\s+|.*at\s+|.*al\s+|.*по номеру\s+/i, "")}`.trim()}
                     className={
                       hasBooking
-                        ? "inline-flex items-center justify-center rounded-full border border-[#141446] bg-transparent px-5 py-2.5 text-sm font-semibold text-[#141446] transition hover:bg-[#141446]/5"
-                        : "inline-flex items-center justify-center rounded-full bg-[#141446] px-5 py-2.5 text-sm font-semibold text-[#f4ece4] transition hover:opacity-95"
+                        ? "inline-flex items-center justify-center rounded-full border border-navy bg-transparent px-5 py-2.5 text-sm font-semibold text-navy transition hover:bg-navy/5"
+                        : "inline-flex items-center justify-center rounded-full bg-navy px-5 py-2.5 text-sm font-semibold text-sand transition hover:opacity-95"
                     }
                   >
                     {copy.callLabel}
@@ -132,7 +132,7 @@ async function HomeTeamMembers({ locale }: { locale: AppLocale }) {
                 ) : null}
                 <a
                   href={`mailto:${member.email}`}
-                  className="text-xs text-[#141446]/70 hover:underline"
+                  className="text-xs text-navy/70 hover:underline"
                 >
                   {member.email}
                 </a>

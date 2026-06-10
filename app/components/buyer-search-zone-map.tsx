@@ -287,7 +287,7 @@ export function BuyerSearchZoneMap({
         className="w-full overflow-hidden rounded-xl border border-[rgba(20,20,70,0.18)] bg-[#e9e1d8]"
         style={{ height }}
       />
-      <p className="text-xs text-[#141446]/75">{helper}</p>
+      <p className="text-xs text-navy/75">{helper}</p>
       <div className="flex flex-wrap gap-2">
         {!isDrawing ? (
           <button

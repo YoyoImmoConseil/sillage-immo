@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Modal } from "@/app/components/modal";
 
 type ClientSearchResult = {
   id: string;
@@ -267,243 +268,218 @@ export function AttachPropertyToProjectModal({ propertyId }: AttachPropertyToPro
   }
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label="Rattacher le bien à un projet vendeur"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-    >
-      <div className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
-        <div className="flex items-start justify-between border-b border-[rgba(20,20,70,0.12)] p-6">
-          <div>
-            <h2 className="text-xl font-semibold text-[#141446]">
-              Rattacher le bien à un projet vendeur
-            </h2>
-            <p className="mt-1 text-sm text-[#141446]/70">
-              Indivision : empilez un ou plusieurs propriétaires existants ou nouveaux. Le premier
-              de la liste devient le porteur principal du mandat, les suivants sont co-propriétaires.
-            </p>
-          </div>
+    <Modal
+      onClose={close}
+      size="lg"
+      closeOnOverlayClick={false}
+      ariaLabel="Rattacher le bien à un projet vendeur"
+      title="Rattacher le bien à un projet vendeur"
+      description="Indivision : empilez un ou plusieurs propriétaires existants ou nouveaux. Le premier de la liste devient le porteur principal du mandat, les suivants sont co-propriétaires."
+      footer={
+        <>
+          {submitError ? (
+            <p className="text-sm text-red-600 sm:flex-1">{submitError}</p>
+          ) : null}
           <button
             type="button"
             onClick={close}
-            className="rounded-full p-2 text-[#141446]/70 hover:bg-[rgba(20,20,70,0.06)]"
-            aria-label="Fermer"
+            disabled={submitting}
+            className="rounded border px-4 py-2 text-sm disabled:opacity-50"
           >
-            ✕
+            Annuler
+          </button>
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={submitting || stack.length === 0}
+            className="sillage-btn rounded px-4 py-2 text-sm disabled:opacity-50"
+          >
+            {submitting ? "Création…" : "Créer le projet vendeur"}
+          </button>
+        </>
+      }
+    >
+      <section className="space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="text-sm font-semibold text-navy">
+            Rechercher un client existant
+          </h3>
+          <button
+            type="button"
+            onClick={() => setShowNewForm((prev) => !prev)}
+            className="text-sm text-navy underline"
+          >
+            {showNewForm ? "Masquer le formulaire nouveau client" : "+ Créer un nouveau client"}
           </button>
         </div>
-
-        <div className="flex-1 overflow-y-auto p-6">
-          <section className="space-y-3">
-            <div className="flex items-center justify-between gap-3">
-              <h3 className="text-sm font-semibold text-[#141446]">
-                Rechercher un client existant
-              </h3>
-              <button
-                type="button"
-                onClick={() => setShowNewForm((prev) => !prev)}
-                className="text-sm text-[#141446] underline"
+        <input
+          type="text"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder="Email, nom ou téléphone"
+          aria-label="Rechercher un client existant"
+          className="w-full rounded-xl border border-[rgba(20,20,70,0.16)] px-4 py-2 text-sm"
+        />
+        {searching ? (
+          <p className="text-sm text-navy/60">Recherche en cours…</p>
+        ) : searchError ? (
+          <p className="text-sm text-red-600">{searchError}</p>
+        ) : searchTerm.trim() && searchResults.length === 0 ? (
+          <p className="text-sm text-navy/60">Aucun client correspondant.</p>
+        ) : null}
+        <ul className="space-y-2">
+          {searchResults.map((result) => {
+            const alreadyStacked = stackedExistingIds.has(result.id);
+            return (
+              <li
+                key={result.id}
+                className="flex items-center justify-between gap-3 rounded-2xl border border-[rgba(20,20,70,0.12)] px-4 py-3"
               >
-                {showNewForm ? "Masquer le formulaire nouveau client" : "+ Créer un nouveau client"}
-              </button>
-            </div>
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Email, nom ou téléphone"
-              aria-label="Rechercher un client existant"
-              className="w-full rounded-xl border border-[rgba(20,20,70,0.16)] px-4 py-2 text-sm"
-            />
-            {searching ? (
-              <p className="text-sm text-[#141446]/60">Recherche en cours…</p>
-            ) : searchError ? (
-              <p className="text-sm text-red-600">{searchError}</p>
-            ) : searchTerm.trim() && searchResults.length === 0 ? (
-              <p className="text-sm text-[#141446]/60">Aucun client correspondant.</p>
-            ) : null}
-            <ul className="space-y-2">
-              {searchResults.map((result) => {
-                const alreadyStacked = stackedExistingIds.has(result.id);
-                return (
-                  <li
-                    key={result.id}
-                    className="flex items-center justify-between gap-3 rounded-2xl border border-[rgba(20,20,70,0.12)] px-4 py-3"
-                  >
-                    <div>
-                      <p className="text-sm font-medium text-[#141446]">
-                        {formatDisplayName(result)}
-                      </p>
-                      <p className="text-xs text-[#141446]/70">
-                        {result.email}
-                        {result.phone ? ` · ${result.phone}` : ""}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      disabled={alreadyStacked}
-                      onClick={() => addExistingToStack(result)}
-                      className="rounded-full border border-[rgba(20,20,70,0.16)] px-3 py-1 text-sm text-[#141446] disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {alreadyStacked ? "Déjà ajouté" : "+ Ajouter"}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
-
-          {showNewForm ? (
-            <section className="mt-6 space-y-3 rounded-2xl border border-dashed border-[rgba(20,20,70,0.20)] p-4">
-              <h3 className="text-sm font-semibold text-[#141446]">Nouveau client</h3>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <input
-                  type="email"
-                  value={newEmail}
-                  onChange={(e) => setNewEmail(e.target.value)}
-                  placeholder="Email *"
-                  aria-label="Email du nouveau client"
-                  className="rounded-xl border border-[rgba(20,20,70,0.16)] px-3 py-2 text-sm sm:col-span-2"
-                  required
-                />
-                <input
-                  type="text"
-                  value={newFirstName}
-                  onChange={(e) => setNewFirstName(e.target.value)}
-                  placeholder="Prénom"
-                  aria-label="Prénom du nouveau client"
-                  className="rounded-xl border border-[rgba(20,20,70,0.16)] px-3 py-2 text-sm"
-                />
-                <input
-                  type="text"
-                  value={newLastName}
-                  onChange={(e) => setNewLastName(e.target.value)}
-                  placeholder="Nom"
-                  aria-label="Nom du nouveau client"
-                  className="rounded-xl border border-[rgba(20,20,70,0.16)] px-3 py-2 text-sm"
-                />
-                <input
-                  type="tel"
-                  value={newPhone}
-                  onChange={(e) => setNewPhone(e.target.value)}
-                  placeholder="Téléphone"
-                  aria-label="Téléphone du nouveau client"
-                  className="rounded-xl border border-[rgba(20,20,70,0.16)] px-3 py-2 text-sm sm:col-span-2"
-                />
-              </div>
-              <div className="flex justify-end">
+                <div>
+                  <p className="text-sm font-medium text-navy">
+                    {formatDisplayName(result)}
+                  </p>
+                  <p className="text-xs text-navy/70">
+                    {result.email}
+                    {result.phone ? ` · ${result.phone}` : ""}
+                  </p>
+                </div>
                 <button
                   type="button"
-                  onClick={addNewToStack}
-                  className="sillage-btn rounded px-4 py-2 text-sm"
+                  disabled={alreadyStacked}
+                  onClick={() => addExistingToStack(result)}
+                  className="rounded-full border border-[rgba(20,20,70,0.16)] px-3 py-1 text-sm text-navy disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  Ajouter ce nouveau propriétaire
+                  {alreadyStacked ? "Déjà ajouté" : "+ Ajouter"}
                 </button>
-              </div>
-            </section>
-          ) : null}
+              </li>
+            );
+          })}
+        </ul>
+      </section>
 
-          <section className="mt-6 space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-[#141446]">
-                Propriétaires sélectionnés ({stack.length})
-              </h3>
-              {stack.length > 1 ? (
-                <p className="text-xs text-[#141446]/60">
-                  Le premier est le porteur principal du mandat
-                </p>
-              ) : null}
-            </div>
-            {stack.length === 0 ? (
-              <p className="rounded-2xl border border-dashed border-[rgba(20,20,70,0.16)] p-4 text-sm text-[#141446]/60">
-                Aucun propriétaire ajouté pour le moment.
-              </p>
-            ) : (
-              <ol className="space-y-2">
-                {stack.map((owner, index) => (
-                  <li
-                    key={owner.uiKey}
-                    className="flex items-center justify-between gap-3 rounded-2xl border border-[rgba(20,20,70,0.12)] px-4 py-3"
-                  >
-                    <div className="flex items-start gap-3">
-                      <span className="rounded-full bg-[rgba(20,20,70,0.08)] px-2 py-1 text-xs font-semibold text-[#141446]">
-                        {index === 0 ? "Porteur" : `Co-propriétaire ${index}`}
-                      </span>
-                      <div>
-                        <p className="text-sm font-medium text-[#141446]">
-                          {owner.kind === "existing"
-                            ? owner.fullName ?? owner.email
-                            : [owner.firstName, owner.lastName].filter(Boolean).join(" ") || owner.email}
-                        </p>
-                        <p className="text-xs text-[#141446]/70">
-                          {owner.email}
-                          {owner.phone ? ` · ${owner.phone}` : ""}
-                          {owner.kind === "new" ? " · Nouveau" : ""}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => moveOwnerUp(owner.uiKey)}
-                        disabled={index === 0}
-                        className="rounded p-1 text-sm text-[#141446] hover:bg-[rgba(20,20,70,0.06)] disabled:opacity-30"
-                        aria-label="Monter"
-                      >
-                        ↑
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => moveOwnerDown(owner.uiKey)}
-                        disabled={index === stack.length - 1}
-                        className="rounded p-1 text-sm text-[#141446] hover:bg-[rgba(20,20,70,0.06)] disabled:opacity-30"
-                        aria-label="Descendre"
-                      >
-                        ↓
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => removeFromStack(owner.uiKey)}
-                        className="rounded p-1 text-sm text-red-600 hover:bg-red-50"
-                        aria-label="Retirer"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  </li>
-                ))}
-              </ol>
-            )}
-          </section>
-        </div>
-
-        <div className="flex flex-col gap-3 border-t border-[rgba(20,20,70,0.12)] p-6 sm:flex-row sm:items-center sm:justify-between">
-          {submitError ? (
-            <p className="text-sm text-red-600 sm:flex-1">{submitError}</p>
-          ) : (
-            <span className="sm:flex-1" />
-          )}
-          <div className="flex gap-3">
+      {showNewForm ? (
+        <section className="mt-6 space-y-3 rounded-2xl border border-dashed border-[rgba(20,20,70,0.20)] p-4">
+          <h3 className="text-sm font-semibold text-navy">Nouveau client</h3>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <input
+              type="email"
+              value={newEmail}
+              onChange={(e) => setNewEmail(e.target.value)}
+              placeholder="Email *"
+              aria-label="Email du nouveau client"
+              className="rounded-xl border border-[rgba(20,20,70,0.16)] px-3 py-2 text-sm sm:col-span-2"
+              required
+            />
+            <input
+              type="text"
+              value={newFirstName}
+              onChange={(e) => setNewFirstName(e.target.value)}
+              placeholder="Prénom"
+              aria-label="Prénom du nouveau client"
+              className="rounded-xl border border-[rgba(20,20,70,0.16)] px-3 py-2 text-sm"
+            />
+            <input
+              type="text"
+              value={newLastName}
+              onChange={(e) => setNewLastName(e.target.value)}
+              placeholder="Nom"
+              aria-label="Nom du nouveau client"
+              className="rounded-xl border border-[rgba(20,20,70,0.16)] px-3 py-2 text-sm"
+            />
+            <input
+              type="tel"
+              value={newPhone}
+              onChange={(e) => setNewPhone(e.target.value)}
+              placeholder="Téléphone"
+              aria-label="Téléphone du nouveau client"
+              className="rounded-xl border border-[rgba(20,20,70,0.16)] px-3 py-2 text-sm sm:col-span-2"
+            />
+          </div>
+          <div className="flex justify-end">
             <button
               type="button"
-              onClick={close}
-              disabled={submitting}
-              className="rounded border px-4 py-2 text-sm disabled:opacity-50"
+              onClick={addNewToStack}
+              className="sillage-btn rounded px-4 py-2 text-sm"
             >
-              Annuler
-            </button>
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={submitting || stack.length === 0}
-              className="sillage-btn rounded px-4 py-2 text-sm disabled:opacity-50"
-            >
-              {submitting ? "Création…" : "Créer le projet vendeur"}
+              Ajouter ce nouveau propriétaire
             </button>
           </div>
+        </section>
+      ) : null}
+
+      <section className="mt-6 space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-navy">
+            Propriétaires sélectionnés ({stack.length})
+          </h3>
+          {stack.length > 1 ? (
+            <p className="text-xs text-navy/60">
+              Le premier est le porteur principal du mandat
+            </p>
+          ) : null}
         </div>
-      </div>
-    </div>
+        {stack.length === 0 ? (
+          <p className="rounded-2xl border border-dashed border-[rgba(20,20,70,0.16)] p-4 text-sm text-navy/60">
+            Aucun propriétaire ajouté pour le moment.
+          </p>
+        ) : (
+          <ol className="space-y-2">
+            {stack.map((owner, index) => (
+              <li
+                key={owner.uiKey}
+                className="flex items-center justify-between gap-3 rounded-2xl border border-[rgba(20,20,70,0.12)] px-4 py-3"
+              >
+                <div className="flex items-start gap-3">
+                  <span className="rounded-full bg-[rgba(20,20,70,0.08)] px-2 py-1 text-xs font-semibold text-navy">
+                    {index === 0 ? "Porteur" : `Co-propriétaire ${index}`}
+                  </span>
+                  <div>
+                    <p className="text-sm font-medium text-navy">
+                      {owner.kind === "existing"
+                        ? owner.fullName ?? owner.email
+                        : [owner.firstName, owner.lastName].filter(Boolean).join(" ") || owner.email}
+                    </p>
+                    <p className="text-xs text-navy/70">
+                      {owner.email}
+                      {owner.phone ? ` · ${owner.phone}` : ""}
+                      {owner.kind === "new" ? " · Nouveau" : ""}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => moveOwnerUp(owner.uiKey)}
+                    disabled={index === 0}
+                    className="rounded p-1 text-sm text-navy hover:bg-[rgba(20,20,70,0.06)] disabled:opacity-30"
+                    aria-label="Monter"
+                  >
+                    ↑
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => moveOwnerDown(owner.uiKey)}
+                    disabled={index === stack.length - 1}
+                    className="rounded p-1 text-sm text-navy hover:bg-[rgba(20,20,70,0.06)] disabled:opacity-30"
+                    aria-label="Descendre"
+                  >
+                    ↓
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removeFromStack(owner.uiKey)}
+                    className="rounded p-1 text-sm text-red-600 hover:bg-red-50"
+                    aria-label="Retirer"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ol>
+        )}
+      </section>
+    </Modal>
   );
 }

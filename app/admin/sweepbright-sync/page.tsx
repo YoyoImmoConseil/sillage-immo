@@ -23,7 +23,7 @@ export default async function SweepBrightSyncAdminPage() {
       role={context.role}
       profileName={context.profile?.fullName ?? context.profile?.email ?? "Mode admin"}
     >
-      <section className="space-y-8 text-[#141446]">
+      <section className="space-y-8 text-navy">
         <div className="space-y-3">
           <div className="flex gap-3 text-sm">
             <Link href="/admin/seller-leads" className="underline">

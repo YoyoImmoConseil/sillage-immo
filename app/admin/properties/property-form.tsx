@@ -123,10 +123,10 @@ export function PropertyForm({ mode, propertyId, initial, source }: PropertyForm
     <section className="space-y-4 rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold text-[#141446]">
+          <h2 className="text-xl font-semibold text-navy">
             {mode === "create" ? "Nouveau bien manuel" : "Édition du bien"}
           </h2>
-          <p className="text-sm text-[#141446]/70">
+          <p className="text-sm text-navy/70">
             Source : {source}. {isReadOnly ? "Le contenu SweepBright reste en lecture seule." : "Édition locale autorisée."}
           </p>
         </div>
@@ -203,7 +203,7 @@ export function PropertyForm({ mode, propertyId, initial, source }: PropertyForm
         <textarea className="mt-1 w-full rounded border px-3 py-2" rows={5} value={form.description} onChange={(event) => patch("description", event.target.value)} disabled={isReadOnly} />
       </label>
 
-      <p className="rounded-md border border-[rgba(20,20,70,0.12)] bg-[rgba(20,20,70,0.04)] p-2 text-xs text-[#141446]/70">
+      <p className="rounded-md border border-[rgba(20,20,70,0.12)] bg-[rgba(20,20,70,0.04)] p-2 text-xs text-navy/70">
         {mode === "edit"
           ? "La publication du bien est pilotee par le statut SweepBright (panneau « Statut & publication » ci-dessus)."
           : "Le bien sera cree avec le statut « Disponible » et donc visible publiquement. Vous pourrez modifier le statut ensuite."}

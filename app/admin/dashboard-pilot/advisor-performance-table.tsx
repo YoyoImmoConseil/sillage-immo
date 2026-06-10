@@ -21,18 +21,18 @@ export function AdvisorPerformanceTable({
 }) {
   return (
     <Card className="bg-white/80">
-      <Title className="text-[#141446]">
+      <Title className="text-navy">
         Performance conseillers — manager &amp; admin uniquement
       </Title>
       {periodLabel ? (
-        <p className="mt-1 text-xs text-[#141446]/60">
+        <p className="mt-1 text-xs text-navy/60">
           Activité projets sur la période :{" "}
-          <span className="font-semibold text-[#141446]">{periodLabel}</span>.
+          <span className="font-semibold text-navy">{periodLabel}</span>.
           Les conseillers sans projet sur la période apparaissent à 0.
         </p>
       ) : null}
       {rows.length === 0 ? (
-        <p className="mt-4 text-sm text-[#141446]/60">
+        <p className="mt-4 text-sm text-navy/60">
           Aucun conseiller actif.
         </p>
       ) : (

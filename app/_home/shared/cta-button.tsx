@@ -23,16 +23,16 @@ type LinkProps = BaseProps & {
 };
 
 const BASE =
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full px-6 py-3 text-sm font-semibold tracking-tight transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#141446]";
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full px-6 py-3 text-sm font-semibold tracking-tight transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy";
 
 const VARIANT_CLASSES: Record<CtaVariant, string> = {
-  primary: "bg-[#141446] text-[#f4ece4] hover:opacity-95 hover:-translate-y-[1px] shadow-sm",
+  primary: "bg-navy text-sand hover:opacity-95 hover:-translate-y-[1px] shadow-sm",
   secondary:
-    "border border-[#141446] bg-[#141446]/5 text-[#141446] hover:bg-[#141446]/10",
+    "border border-navy bg-navy/5 text-navy hover:bg-navy/10",
   tertiary:
-    "border border-[#141446]/30 bg-transparent text-[#141446] hover:bg-[#141446]/5",
+    "border border-navy/30 bg-transparent text-navy hover:bg-navy/5",
   phone:
-    "border border-[#141446] bg-transparent text-[#141446] hover:bg-[#141446]/5",
+    "border border-navy bg-transparent text-navy hover:bg-navy/5",
 };
 
 function composeClassName(

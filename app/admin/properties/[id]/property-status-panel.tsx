@@ -86,8 +86,8 @@ export function PropertyStatusPanel({
     <section className="space-y-4 rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold text-[#141446]">Statut & publication</h2>
-          <p className="text-sm text-[#141446]/70">
+          <h2 className="text-xl font-semibold text-navy">Statut & publication</h2>
+          <p className="text-sm text-navy/70">
             Le statut pilote la visibilite publique. Seuls les statuts {" "}
             <span className="font-medium">Disponible</span>,{" "}
             <span className="font-medium">Sous compromis</span> et{" "}

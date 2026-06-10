@@ -121,7 +121,7 @@ export function SellerPropertyMediaUpload({
   };
 
   return (
-    <div className="sm:col-span-2 space-y-3 rounded-xl border border-[rgba(20,20,70,0.15)] bg-[#f4ece4] p-4">
+    <div className="sm:col-span-2 space-y-3 rounded-xl border border-[rgba(20,20,70,0.15)] bg-sand p-4">
       <div className="space-y-1">
         <p className="text-sm font-medium">{copy.title}</p>
         <p className="text-xs opacity-75">{copy.intro}</p>
@@ -132,7 +132,7 @@ export function SellerPropertyMediaUpload({
         <label className="rounded-lg border border-dashed border-[rgba(20,20,70,0.2)] px-4 py-3 text-sm cursor-pointer hover:border-[rgba(20,20,70,0.35)]">
           <span className="block font-medium">{copy.photos}</span>
           <span className="block text-xs opacity-70">{copy.photosHint}</span>
-          <span className="mt-2 inline-flex rounded bg-[#141446] px-3 py-2 text-xs text-[#f4ece4]">
+          <span className="mt-2 inline-flex rounded bg-navy px-3 py-2 text-xs text-sand">
             {copy.addPhotos}
           </span>
           <input
@@ -149,7 +149,7 @@ export function SellerPropertyMediaUpload({
         <label className="rounded-lg border border-dashed border-[rgba(20,20,70,0.2)] px-4 py-3 text-sm cursor-pointer hover:border-[rgba(20,20,70,0.35)]">
           <span className="block font-medium">{copy.videos}</span>
           <span className="block text-xs opacity-70">{copy.videosHint}</span>
-          <span className="mt-2 inline-flex rounded bg-[#141446] px-3 py-2 text-xs text-[#f4ece4]">
+          <span className="mt-2 inline-flex rounded bg-navy px-3 py-2 text-xs text-sand">
             {copy.addVideos}
           </span>
           <input
@@ -201,7 +201,7 @@ export function SellerPropertyMediaUpload({
                 <p className="text-xs opacity-70">{formatFileSize(item.sizeBytes, locale)}</p>
                 <button
                   type="button"
-                  className="text-xs text-[#141446] underline underline-offset-2"
+                  className="text-xs text-navy underline underline-offset-2"
                   onClick={() => onRemove(item.uploadId)}
                 >
                   {copy.remove}

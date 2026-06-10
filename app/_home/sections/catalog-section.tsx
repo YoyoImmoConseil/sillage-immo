@@ -16,38 +16,38 @@ export function CatalogSection({ locale }: Props) {
     >
       <div className="w-full px-6 py-16 md:px-10 md:py-24 xl:px-14 2xl:px-20 space-y-10">
         <div className="max-w-3xl space-y-4">
-          <p className="text-xs uppercase tracking-[0.22em] text-[#141446]/65">
+          <p className="text-xs uppercase tracking-[0.22em] text-navy/65">
             {copy.eyebrow}
           </p>
           <h2 id="catalog-title" className="sillage-section-title">
             {copy.title}
           </h2>
-          <p className="sillage-editorial-text text-[#141446]/80">{copy.subtitle}</p>
+          <p className="sillage-editorial-text text-navy/80">{copy.subtitle}</p>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">
           <Link
             href={localizePath("/vente", locale)}
-            className="group flex flex-col gap-4 rounded-[28px] bg-white p-8 ring-1 ring-[#141446]/5 transition hover:-translate-y-[2px] hover:ring-[#141446]/20"
+            className="group flex flex-col gap-4 rounded-[28px] bg-white p-8 ring-1 ring-navy/5 transition hover:-translate-y-[2px] hover:ring-navy/20"
           >
-            <h3 className="font-serif text-xl font-semibold text-[#141446]">
+            <h3 className="font-serif text-xl font-semibold text-navy">
               {copy.salesTitle}
             </h3>
-            <p className="text-sm leading-relaxed text-[#141446]/75">{copy.salesBody}</p>
-            <span className="mt-auto inline-flex items-center gap-2 text-sm font-semibold text-[#141446]">
+            <p className="text-sm leading-relaxed text-navy/75">{copy.salesBody}</p>
+            <span className="mt-auto inline-flex items-center gap-2 text-sm font-semibold text-navy">
               {copy.salesCta}
               <ArrowIcon className="h-4 w-4 transition group-hover:translate-x-1" />
             </span>
           </Link>
           <Link
             href={localizePath("/location", locale)}
-            className="group flex flex-col gap-4 rounded-[28px] bg-white p-8 ring-1 ring-[#141446]/5 transition hover:-translate-y-[2px] hover:ring-[#141446]/20"
+            className="group flex flex-col gap-4 rounded-[28px] bg-white p-8 ring-1 ring-navy/5 transition hover:-translate-y-[2px] hover:ring-navy/20"
           >
-            <h3 className="font-serif text-xl font-semibold text-[#141446]">
+            <h3 className="font-serif text-xl font-semibold text-navy">
               {copy.rentalsTitle}
             </h3>
-            <p className="text-sm leading-relaxed text-[#141446]/75">{copy.rentalsBody}</p>
-            <span className="mt-auto inline-flex items-center gap-2 text-sm font-semibold text-[#141446]">
+            <p className="text-sm leading-relaxed text-navy/75">{copy.rentalsBody}</p>
+            <span className="mt-auto inline-flex items-center gap-2 text-sm font-semibold text-navy">
               {copy.rentalsCta}
               <ArrowIcon className="h-4 w-4 transition group-hover:translate-x-1" />
             </span>
@@ -55,10 +55,10 @@ export function CatalogSection({ locale }: Props) {
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-[#141446]/70 max-w-xl">{copy.microcopy}</p>
+          <p className="text-sm text-navy/70 max-w-xl">{copy.microcopy}</p>
           <Link
             href={localizePath("/recherche/nouvelle", locale)}
-            className="inline-flex items-center justify-center rounded-full border border-[#141446] bg-transparent px-6 py-3 text-sm font-semibold text-[#141446] transition hover:bg-[#141446]/5"
+            className="inline-flex items-center justify-center rounded-full border border-navy bg-transparent px-6 py-3 text-sm font-semibold text-navy transition hover:bg-navy/5"
           >
             {copy.alertCta}
           </Link>

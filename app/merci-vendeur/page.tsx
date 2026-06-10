@@ -108,23 +108,23 @@ export default async function MerciVendeurPage({ searchParams }: MerciVendeurPag
 
   return (
     <main className="min-h-screen">
-      <section className="bg-[#141446] text-[#f4ece4]">
+      <section className="bg-navy text-sand">
         <div className="w-full px-6 py-12 md:px-10 xl:px-14 2xl:px-20">
           <h1 className="text-2xl font-semibold">{copy.title}</h1>
         </div>
       </section>
-      <section className="bg-[#f4ece4]">
+      <section className="bg-sand">
         <div className="w-full px-6 py-10 md:px-10 xl:px-14 2xl:px-20">
           <div className="rounded-2xl border border-[rgba(20,20,70,0.22)] p-6 space-y-5">
             {valuation ? (
               <div className="rounded-xl border border-[rgba(20,20,70,0.16)] bg-white/60 p-4 space-y-2">
                 <p className="text-sm opacity-70">{copy.property}</p>
-                <p className="font-medium text-[#141446]">
+                <p className="font-medium text-navy">
                   {[valuation.addressLabel, valuation.cityZipCode, valuation.cityName]
                     .filter(Boolean)
                     .join(" ")}
                 </p>
-                <p className="sillage-editorial-text text-[#141446]">
+                <p className="sillage-editorial-text text-navy">
                   {valuation.valuationPriceLow !== null || valuation.valuationPriceHigh !== null ? (
                     <>
                       {copy.range} :{" "}

@@ -24,13 +24,13 @@ export function KpiGrid({ kpis }: { kpis: DashboardKpi[] }) {
       {kpis.map((kpi) => (
         <Card key={kpi.label} className="bg-white/80">
           <Flex alignItems="start">
-            <Text className="text-[#141446]/75">{kpi.label}</Text>
+            <Text className="text-navy/75">{kpi.label}</Text>
             <BadgeDelta deltaType={TREND_TO_DELTA[kpi.trend]}>
               {formatDelta(kpi)}
             </BadgeDelta>
           </Flex>
-          <Metric className="mt-2 text-[#141446]">{kpi.value}</Metric>
-          <Text className="mt-1 text-xs text-[#141446]/60">
+          <Metric className="mt-2 text-navy">{kpi.value}</Metric>
+          <Text className="mt-1 text-xs text-navy/60">
             {kpi.previousValue} sur la période précédente
           </Text>
         </Card>

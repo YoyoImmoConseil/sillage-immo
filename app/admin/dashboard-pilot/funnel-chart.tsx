@@ -11,13 +11,13 @@ export function FunnelChart({ steps }: { steps: FunnelStep[] }) {
 
   return (
     <Card className="bg-white/80">
-      <Title className="text-[#141446]">Funnel d&apos;acquisition (30 j)</Title>
+      <Title className="text-navy">Funnel d&apos;acquisition (30 j)</Title>
       <BarList
         data={data}
         className="mt-4"
         valueFormatter={(value: number) => value.toLocaleString("fr-FR")}
       />
-      <p className="mt-3 text-xs text-[#141446]/60">
+      <p className="mt-3 text-xs text-navy/60">
         Du visiteur anonyme qui converse avec l&apos;IA au mandat signé.
       </p>
     </Card>

@@ -141,28 +141,28 @@ export default async function SellerPortalHomePage() {
   return (
     <section className="space-y-6">
       <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-8">
-        <h2 className="text-2xl font-semibold text-[#141446]">
+        <h2 className="text-2xl font-semibold text-navy">
           {copy.greeting} {context.clientProfile.firstName ?? context.clientProfile.fullName ?? "!"}
         </h2>
-        <p className="mt-2 text-sm text-[#141446]/75">{copy.intro}</p>
+        <p className="mt-2 text-sm text-navy/75">{copy.intro}</p>
         <div className="mt-6 grid gap-4 md:grid-cols-3">
           <div className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-4">
-            <p className="text-xs uppercase text-[#141446]/60">{copy.projects}</p>
-            <p className="mt-2 text-2xl font-semibold text-[#141446]">
+            <p className="text-xs uppercase text-navy/60">{copy.projects}</p>
+            <p className="mt-2 text-2xl font-semibold text-navy">
               {projectsLoadFailed ? "—" : projects.length}
             </p>
           </div>
           <div className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-4">
-            <p className="text-xs uppercase text-[#141446]/60">{copy.lastLogin}</p>
-            <p className="mt-2 text-sm text-[#141446]">
+            <p className="text-xs uppercase text-navy/60">{copy.lastLogin}</p>
+            <p className="mt-2 text-sm text-navy">
               {context.clientProfile.lastLoginAt
                 ? formatPortalDate(context.clientProfile.lastLoginAt)
                 : copy.firstLogin}
             </p>
           </div>
           <div className="rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-4">
-            <p className="text-xs uppercase text-[#141446]/60">{copy.nextStep}</p>
-            <p className="mt-2 text-sm text-[#141446]">
+            <p className="text-xs uppercase text-navy/60">{copy.nextStep}</p>
+            <p className="mt-2 text-sm text-navy">
               {projectsLoadFailed
                 ? "—"
                 : sellerProjects.some((project) => project.seller?.hasAppointmentLink)
@@ -176,7 +176,7 @@ export default async function SellerPortalHomePage() {
       </section>
 
       <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-8">
-        <h2 className="text-xl font-semibold text-[#141446]">{copy.yourProjects}</h2>
+        <h2 className="text-xl font-semibold text-navy">{copy.yourProjects}</h2>
         {projectsLoadFailed ? (
           <div className="mt-4 space-y-3">
             <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
@@ -184,22 +184,22 @@ export default async function SellerPortalHomePage() {
             </p>
             <Link
               href={localizePath("/espace-client", locale)}
-              className="inline-flex items-center justify-center rounded-full bg-[#141446] px-5 py-2.5 text-sm font-semibold text-[#f4ece4] transition hover:opacity-95"
+              className="inline-flex items-center justify-center rounded-full bg-navy px-5 py-2.5 text-sm font-semibold text-sand transition hover:opacity-95"
             >
               {copy.retry}
             </Link>
           </div>
         ) : projects.length === 0 ? (
-          <p className="mt-4 text-sm text-[#141446]/75">{copy.none}</p>
+          <p className="mt-4 text-sm text-navy/75">{copy.none}</p>
         ) : (
           <div className="mt-4 space-y-6">
             {groups.map((group) => (
               <section key={group.projectType} className="space-y-3">
                 <div className="flex items-center justify-between gap-3">
-                  <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-[#141446]/70">
+                  <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-navy/70">
                     {group.projectTypeLabel}
                   </h3>
-                  <span className="text-xs text-[#141446]/55">
+                  <span className="text-xs text-navy/55">
                     {group.projects.length} projet{group.projects.length > 1 ? "s" : ""}
                   </span>
                 </div>
@@ -211,42 +211,42 @@ export default async function SellerPortalHomePage() {
                       className="relative rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-5 transition hover:border-[rgba(20,20,70,0.28)]"
                     >
                       {project.buyer && project.buyer.unreadMatchCount > 0 ? (
-                        <span className="absolute right-4 top-4 inline-flex items-center gap-1 rounded-full bg-[#141446] px-3 py-1 text-xs font-semibold text-[#f4ece4]">
+                        <span className="absolute right-4 top-4 inline-flex items-center gap-1 rounded-full bg-navy px-3 py-1 text-xs font-semibold text-sand">
                           {project.buyer.unreadMatchCount}{" "}
                           {project.buyer.unreadMatchCount > 1
                             ? copy.newMatchesPlural
                             : copy.newMatchesSingular}
                         </span>
                       ) : null}
-                      <p className="text-xs uppercase tracking-[0.16em] text-[#141446]/55">
+                      <p className="text-xs uppercase tracking-[0.16em] text-navy/55">
                         {project.projectTypeLabel}
                       </p>
-                      <p className="mt-2 text-sm font-semibold text-[#141446]">
+                      <p className="mt-2 text-sm font-semibold text-navy">
                         {project.title ??
                           (project.projectType === "seller" ? copy.sellerProject : copy.clientProject)}
                       </p>
-                      <p className="mt-1 text-sm text-[#141446]/70">
+                      <p className="mt-1 text-sm text-navy/70">
                         {project.primaryDescriptor ?? copy.projectInQualification}
                       </p>
-                      <p className="mt-2 text-sm text-[#141446]/75">{project.statusLabel}</p>
+                      <p className="mt-2 text-sm text-navy/75">{project.statusLabel}</p>
                       {project.seller ? (
                         <>
-                          <p className="mt-1 text-sm text-[#141446]/70">
+                          <p className="mt-1 text-sm text-navy/70">
                             {copy.mandate} : {getClientPortalMandateLabel(project.seller.mandateStatus, locale)}
                           </p>
-                          <p className="mt-3 text-sm text-[#141446]/80">
+                          <p className="mt-3 text-sm text-navy/80">
                             Estimation : <strong>{formatPrice(project.seller.latestValuationPrice)}</strong>
                           </p>
                         </>
                       ) : null}
                       {project.secondaryDescriptor ? (
-                        <p className="mt-1 text-sm text-[#141446]/70">{project.secondaryDescriptor}</p>
+                        <p className="mt-1 text-sm text-navy/70">{project.secondaryDescriptor}</p>
                       ) : null}
                       {project.nextAction ? (
-                        <p className="mt-1 text-sm text-[#141446]/70">{project.nextAction}</p>
+                        <p className="mt-1 text-sm text-navy/70">{project.nextAction}</p>
                       ) : null}
                       {project.seller?.latestValuationSyncedAt ? (
-                        <p className="mt-1 text-xs text-[#141446]/60">
+                        <p className="mt-1 text-xs text-navy/60">
                           {copy.updated} {formatPortalDate(project.seller.latestValuationSyncedAt)}
                         </p>
                       ) : null}

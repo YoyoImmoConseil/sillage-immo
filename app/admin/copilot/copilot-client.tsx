@@ -270,19 +270,19 @@ export function CopilotClient(props: Props) {
         <button
           type="button"
           onClick={startNewConversation}
-          className="rounded-lg bg-[#141446] px-3 py-2 text-sm font-medium text-[#f4ece4] hover:bg-[#1c1c5a]"
+          className="rounded-lg bg-navy px-3 py-2 text-sm font-medium text-sand hover:bg-[#1c1c5a]"
         >
           + Nouvelle conversation
         </button>
         <div className="mt-4 flex-1 overflow-auto pr-1 text-sm">
           {conversationGroups.length === 0 ? (
-            <p className="text-xs text-[#141446]/55">
+            <p className="text-xs text-navy/55">
               Pas encore de conversation. Pose ta première question.
             </p>
           ) : (
             conversationGroups.map((group) => (
               <div key={group.day} className="mb-3">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-[#141446]/55">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-navy/55">
                   {group.day}
                 </p>
                 <ul className="mt-1 space-y-1">
@@ -309,9 +309,9 @@ export function CopilotClient(props: Props) {
           )}
         </div>
         <div className="mt-3 rounded-lg border border-[rgba(20,20,70,0.15)] bg-white/80 px-3 py-2 text-xs">
-          <p className="text-[#141446]/70">Usage du jour</p>
+          <p className="text-navy/70">Usage du jour</p>
           <p
-            className={`mt-1 font-semibold ${dailyUsage.overCap ? "text-amber-700" : "text-[#141446]"}`}
+            className={`mt-1 font-semibold ${dailyUsage.overCap ? "text-amber-700" : "text-navy"}`}
           >
             {formatEur(dailyUsage.costEurTotal)} / {formatEur(dailyUsage.capEur)}
           </p>
@@ -344,7 +344,7 @@ export function CopilotClient(props: Props) {
           className="mt-3 flex-1 space-y-3 overflow-auto pr-1"
         >
           {messages.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-[rgba(20,20,70,0.2)] p-4 text-sm text-[#141446]/70">
+            <div className="rounded-xl border border-dashed border-[rgba(20,20,70,0.2)] p-4 text-sm text-navy/70">
               Pose une question au copilot Sillage. Il appellera les outils
               MCP (leads, biens, conversations IA, …) pour te donner une
               réponse appuyée sur les données réelles de l&apos;agence.
@@ -355,14 +355,14 @@ export function CopilotClient(props: Props) {
                 key={`${msg.role}-${idx}`}
                 className={`rounded-xl px-4 py-3 text-sm ${
                   msg.role === "assistant"
-                    ? "bg-[rgba(20,20,70,0.05)] text-[#141446]"
-                    : "bg-[#141446] text-[#f4ece4]"
+                    ? "bg-[rgba(20,20,70,0.05)] text-navy"
+                    : "bg-navy text-sand"
                 }`}
               >
                 <p className="whitespace-pre-line">{msg.content}</p>
                 {msg.role === "assistant" && msg.toolCalls?.length ? (
                   <details className="mt-2 text-xs">
-                    <summary className="cursor-pointer text-[#141446]/70">
+                    <summary className="cursor-pointer text-navy/70">
                       {msg.toolCalls.length} appel(s) d&apos;outil
                     </summary>
                     <ul className="mt-2 space-y-2">
@@ -387,7 +387,7 @@ export function CopilotClient(props: Props) {
                               ) : (
                                 tc.toolName
                               )}
-                              <span className="ml-2 text-[#141446]/50">
+                              <span className="ml-2 text-navy/50">
                                 {tc.durationMs} ms{tc.toolVersion ? ` · v${tc.toolVersion}` : ""}
                               </span>
                             </p>
@@ -411,7 +411,7 @@ export function CopilotClient(props: Props) {
             ))
           )}
           {loading ? (
-            <div className="rounded-xl bg-[rgba(20,20,70,0.04)] px-4 py-3 text-sm text-[#141446]/70">
+            <div className="rounded-xl bg-[rgba(20,20,70,0.04)] px-4 py-3 text-sm text-navy/70">
               Le copilot réfléchit…
             </div>
           ) : null}
@@ -435,12 +435,12 @@ export function CopilotClient(props: Props) {
             placeholder="Pose ta question (ex: Quels conseillers ont besoin de support ?)"
             aria-label="Question au copilot"
             disabled={loading}
-            className="flex-1 rounded-lg border border-[rgba(20,20,70,0.2)] bg-white/80 px-3 py-2 text-sm focus:border-[#141446] focus:outline-none"
+            className="flex-1 rounded-lg border border-[rgba(20,20,70,0.2)] bg-white/80 px-3 py-2 text-sm focus:border-navy focus:outline-none"
           />
           <button
             type="submit"
             disabled={loading || input.trim().length < 2}
-            className="rounded-lg bg-[#141446] px-4 py-2 text-sm font-medium text-[#f4ece4] hover:bg-[#1c1c5a] disabled:opacity-50"
+            className="rounded-lg bg-navy px-4 py-2 text-sm font-medium text-sand hover:bg-[#1c1c5a] disabled:opacity-50"
           >
             Envoyer
           </button>

@@ -47,29 +47,29 @@ export default async function SellerPortalLayout({
   }[locale];
 
   return (
-    <main className="min-h-screen bg-[#f4ece4] px-6 py-10 md:px-10 xl:px-14 2xl:px-20">
+    <main className="min-h-screen bg-sand px-6 py-10 md:px-10 xl:px-14 2xl:px-20">
       <div className="mx-auto max-w-5xl space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="space-y-1">
-            <p className="text-xs uppercase tracking-[0.18em] text-[#141446]/60">{copy.eyebrow}</p>
-            <h1 className="text-3xl font-semibold text-[#141446]">{copy.title}</h1>
+            <p className="text-xs uppercase tracking-[0.18em] text-navy/60">{copy.eyebrow}</p>
+            <h1 className="text-3xl font-semibold text-navy">{copy.title}</h1>
             {context ? (
-              <p className="text-sm text-[#141446]/75">
+              <p className="text-sm text-navy/75">
                 {copy.connectedAs} {context.clientProfile.fullName ?? context.clientProfile.email}
               </p>
             ) : null}
           </div>
           <div className="flex flex-wrap items-center gap-4">
             {context ? (
-              <Link href={localizePath("/espace-client", locale)} className="text-sm underline text-[#141446]">
+              <Link href={localizePath("/espace-client", locale)} className="text-sm underline text-navy">
                 {copy.projects}
               </Link>
             ) : (
-              <Link href={localizePath("/espace-client/login", locale)} className="text-sm underline text-[#141446]">
+              <Link href={localizePath("/espace-client/login", locale)} className="text-sm underline text-navy">
                 {copy.login}
               </Link>
             )}
-            <Link href={localizePath("/", locale)} className="text-sm underline text-[#141446]">
+            <Link href={localizePath("/", locale)} className="text-sm underline text-navy">
               {copy.backToSite}
             </Link>
             {context ? <SellerSignOutButton /> : null}
