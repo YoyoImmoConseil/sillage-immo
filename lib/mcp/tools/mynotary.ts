@@ -57,32 +57,6 @@ const truncateIso = (iso: string, bucket: "day" | "week" | "month"): string => {
   return d.toISOString().slice(0, 7);
 };
 
-type StatsReader = {
-  from: (table: "mynotary_signed_documents") => {
-    select: (cols: string) => {
-      eq: (col: string, value: string) => StatsChain;
-      is: (col: string, value: unknown) => StatsChain;
-      gte: (col: string, value: string) => StatsChain;
-      lte: (col: string, value: string) => StatsChain;
-    };
-  };
-};
-
-type StatsChain = {
-  eq: (col: string, value: string) => StatsChain;
-  is: (col: string, value: unknown) => StatsChain;
-  gte: (col: string, value: string) => StatsChain;
-  lte: (col: string, value: string) => StatsChain;
-  limit: (n: number) => Promise<{
-    data: Array<{
-      contract_kind: string;
-      signed_at: string;
-      matched_seller_project_id: string | null;
-    }> | null;
-    error: { message: string } | null;
-  }>;
-};
-
 export const mynotaryTools: ToolDefinition<unknown, unknown>[] = [
   {
     name: "mynotary.list_signed_documents",
@@ -206,8 +180,7 @@ export const mynotaryTools: ToolDefinition<unknown, unknown>[] = [
     handler: async (input) => {
       const payload = input as StatsInput;
       const groupBy: StatsGroup = payload.groupBy ?? "day";
-      const reader = supabaseAdmin as unknown as StatsReader;
-      let query = reader
+      let query = supabaseAdmin
         .from("mynotary_signed_documents")
         .select("contract_kind, signed_at, matched_seller_project_id")
         .is("deleted_at", null)
@@ -239,20 +212,7 @@ export const mynotaryTools: ToolDefinition<unknown, unknown>[] = [
         );
         let advisorByProject = new Map<string, string>();
         if (projectIds.length > 0) {
-          const projectsReader = supabaseAdmin as unknown as {
-            from: (table: "seller_projects") => {
-              select: (cols: string) => {
-                in: (col: string, values: string[]) => Promise<{
-                  data: Array<{
-                    id: string;
-                    assigned_admin_profile_id: string | null;
-                  }> | null;
-                  error: { message: string } | null;
-                }>;
-              };
-            };
-          };
-          const { data: projData } = await projectsReader
+          const { data: projData } = await supabaseAdmin
             .from("seller_projects")
             .select("id, assigned_admin_profile_id")
             .in("id", projectIds);

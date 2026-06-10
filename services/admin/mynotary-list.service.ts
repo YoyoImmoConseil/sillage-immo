@@ -7,26 +7,6 @@ import type { MyNotaryContractKind } from "@/lib/mynotary/types";
 //   - the MCP tool mynotary.list_signed_documents (same shape so the
 //     copilot sees rows that map 1:1 to what the UI shows)
 
-type SignedDocumentReader = {
-  from: (table: "mynotary_signed_documents") => {
-    select: (cols: string, opts: { count: "exact" }) => MaybeChain;
-  };
-};
-
-type MaybeChain = {
-  eq: (col: string, value: string) => MaybeChain;
-  in: (col: string, values: readonly string[]) => MaybeChain;
-  is: (col: string, value: unknown) => MaybeChain;
-  gte: (col: string, value: string) => MaybeChain;
-  lte: (col: string, value: string) => MaybeChain;
-  order: (col: string, opts: { ascending: boolean }) => MaybeChain;
-  range: (from: number, to: number) => Promise<{
-    data: SignedDocumentRow[] | null;
-    error: { message: string } | null;
-    count: number | null;
-  }>;
-};
-
 export type SignedDocumentRow = {
   id: string;
   mynotary_contract_id: string;
@@ -93,8 +73,7 @@ export const listSignedDocuments = async (
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
-  const client = supabaseAdmin as unknown as SignedDocumentReader;
-  let query: MaybeChain = client
+  let query = supabaseAdmin
     .from("mynotary_signed_documents")
     .select(
       "id, mynotary_contract_id, mynotary_operation_id, contract_kind, contract_type_raw, signed_at, signers, seller_contacts, files, matched_seller_project_id, matched_property_id, match_confidence, match_method, mynotary_register_type, signed_document_path, signature_proof_path",
@@ -106,7 +85,7 @@ export const listSignedDocuments = async (
     query = query.eq("contract_kind", filters.kind);
   } else if (!filters.kind || filters.kind === "all") {
     // Default scope: hide location/gestion contracts.
-    query = query.in("contract_kind", SALE_CONTRACT_KINDS);
+    query = query.in("contract_kind", [...SALE_CONTRACT_KINDS]);
   }
   if (filters.matched === "matched") {
     query = query.is("matched_seller_project_id", null);
@@ -142,8 +121,7 @@ export const getSignedDocumentByKey = async (
   key: { id?: string; mynotaryContractId?: string }
 ): Promise<SignedDocumentRow | null> => {
   if (!key.id && !key.mynotaryContractId) return null;
-  const client = supabaseAdmin as unknown as SignedDocumentReader;
-  let query: MaybeChain = client
+  let query = supabaseAdmin
     .from("mynotary_signed_documents")
     .select(
       "id, mynotary_contract_id, mynotary_operation_id, contract_kind, contract_type_raw, signed_at, signers, seller_contacts, files, matched_seller_project_id, matched_property_id, match_confidence, match_method, mynotary_register_type, signed_document_path, signature_proof_path",
@@ -154,5 +132,6 @@ export const getSignedDocumentByKey = async (
   if (key.mynotaryContractId)
     query = query.eq("mynotary_contract_id", key.mynotaryContractId);
   const { data } = await query.range(0, 0);
-  return data && data.length > 0 ? data[0] : null;
+  // jsonb columns (signers / files / seller_contacts) are narrowed here.
+  return data && data.length > 0 ? (data[0] as SignedDocumentRow) : null;
 };

@@ -39,24 +39,6 @@ type RawSuggestion = {
 
 const SUGGESTIONS_TABLE = "reconciliation_suggestions";
 
-type SuggestionsReader = {
-  from: (table: typeof SUGGESTIONS_TABLE) => {
-    select: (cols: string) => {
-      eq: (
-        col: string,
-        value: string
-      ) => {
-        order: (
-          col: string,
-          opts: { ascending: boolean }
-        ) => {
-          limit: (n: number) => Promise<{ data: RawSuggestion[] | null; error: { message: string } | null }>;
-        };
-      };
-    };
-  };
-};
-
 // Best-effort human label for the source record.
 const labelForSource = async (
   kind: ReconciliationSourceKind,
@@ -80,26 +62,17 @@ const labelForSource = async (
     return [row?.full_name, row?.property_address].filter(Boolean).join(" · ") || `Lead ${sourceRef.slice(0, 8)}`;
   }
   // mynotary_document
-  const reader = supabaseAdmin as unknown as {
-    from: (table: "mynotary_signed_documents") => {
-      select: (cols: string) => {
-        eq: (col: string, value: string) => {
-          maybeSingle: () => Promise<{
-            data: {
-              contract_kind: string | null;
-              raw_payload: { parsed?: { inline_address?: string | null } } | null;
-            } | null;
-          }>;
-        };
-      };
-    };
-  };
-  const { data } = await reader
+  const { data } = await supabaseAdmin
     .from("mynotary_signed_documents")
     .select("contract_kind, raw_payload")
     .eq("id", sourceRef)
     .maybeSingle();
-  const addr = data?.raw_payload?.parsed?.inline_address ?? null;
+  // raw_payload is jsonb — narrow the parsed shape we wrote at ingestion.
+  const rawPayload = data?.raw_payload as
+    | { parsed?: { inline_address?: string | null } }
+    | null
+    | undefined;
+  const addr = rawPayload?.parsed?.inline_address ?? null;
   return [data?.contract_kind, addr].filter(Boolean).join(" · ") || `Doc ${sourceRef.slice(0, 8)}`;
 };
 
@@ -130,8 +103,7 @@ const labelForTarget = async (
 export const listReconciliationSuggestions = async (
   limit = 50
 ): Promise<ReconciliationSuggestionRow[]> => {
-  const reader = supabaseAdmin as unknown as SuggestionsReader;
-  const { data, error } = await reader
+  const { data, error } = await supabaseAdmin
     .from(SUGGESTIONS_TABLE)
     .select(
       "id, created_at, source_kind, source_ref, target_client_project_id, score, reasons, fields_preview"
@@ -142,7 +114,8 @@ export const listReconciliationSuggestions = async (
   if (error || !data) return [];
 
   const rows: ReconciliationSuggestionRow[] = [];
-  for (const raw of data) {
+  // source_kind is stored as text in the DB — narrow to the union here.
+  for (const raw of data as RawSuggestion[]) {
     const [sourceLabel, target] = await Promise.all([
       labelForSource(raw.source_kind, raw.source_ref),
       labelForTarget(raw.target_client_project_id),
@@ -167,27 +140,13 @@ export const listReconciliationSuggestions = async (
   return rows;
 };
 
-type SuggestionWriter = {
-  from: (table: typeof SUGGESTIONS_TABLE) => {
-    update: (row: Record<string, unknown>) => {
-      eq: (col: string, value: string) => Promise<{ error: { message: string } | null }>;
-    };
-    select: (cols: string) => {
-      eq: (col: string, value: string) => {
-        maybeSingle: () => Promise<{ data: RawSuggestion | null; error: { message: string } | null }>;
-      };
-    };
-  };
-};
-
 const getSuggestion = async (id: string): Promise<RawSuggestion | null> => {
-  const reader = supabaseAdmin as unknown as SuggestionWriter;
-  const { data } = await reader
+  const { data } = await supabaseAdmin
     .from(SUGGESTIONS_TABLE)
     .select("id, created_at, source_kind, source_ref, target_client_project_id, score, reasons, fields_preview")
     .eq("id", id)
     .maybeSingle();
-  return data ?? null;
+  return (data as RawSuggestion | null) ?? null;
 };
 
 const markSuggestion = async (
@@ -195,8 +154,7 @@ const markSuggestion = async (
   status: "accepted" | "rejected",
   adminProfileId?: string | null
 ) => {
-  const writer = supabaseAdmin as unknown as SuggestionWriter;
-  await writer
+  await supabaseAdmin
     .from(SUGGESTIONS_TABLE)
     .update({
       status,
@@ -228,14 +186,7 @@ export const acceptReconciliationSuggestion = async (
       if (!sellerProject) {
         return { ok: false, clientProjectId: null, message: "Projet vendeur cible introuvable." };
       }
-      const writer = supabaseAdmin as unknown as {
-        from: (table: "mynotary_signed_documents") => {
-          update: (row: Record<string, unknown>) => {
-            eq: (col: string, value: string) => Promise<{ error: { message: string } | null }>;
-          };
-        };
-      };
-      await writer
+      await supabaseAdmin
         .from("mynotary_signed_documents")
         .update({
           matched_seller_project_id: sellerProject.id,

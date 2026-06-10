@@ -11,34 +11,6 @@ type Body = {
   propertyId?: string | null;
 };
 
-type SignedDocsWriter = {
-  from: (table: "mynotary_signed_documents") => {
-    update: (row: Record<string, unknown>) => {
-      eq: (col: string, value: string) => {
-        select: (cols: string) => {
-          single: () => Promise<{
-            data: {
-              id: string;
-              contract_kind: string;
-              signed_at: string;
-              mynotary_operation_id: string;
-            } | null;
-            error: { message: string } | null;
-          }>;
-        };
-      };
-    };
-  };
-};
-
-type SellerProjectsWriter = {
-  from: (table: "seller_projects") => {
-    update: (row: Record<string, unknown>) => {
-      eq: (col: string, value: string) => Promise<{ error: { message: string } | null }>;
-    };
-  };
-};
-
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -94,8 +66,7 @@ export const POST = async (request: Request) => {
     );
   }
 
-  const docsWriter = supabaseAdmin as unknown as SignedDocsWriter;
-  const { data: updated, error } = await docsWriter
+  const { data: updated, error } = await supabaseAdmin
     .from("mynotary_signed_documents")
     .update({
       matched_seller_project_id: sellerProjectId,
@@ -119,8 +90,7 @@ export const POST = async (request: Request) => {
     updated.contract_kind === "mandate" &&
     sellerProjectId
   ) {
-    const projectsWriter = supabaseAdmin as unknown as SellerProjectsWriter;
-    await projectsWriter
+    await supabaseAdmin
       .from("seller_projects")
       .update({
         mandate_status: "signed",

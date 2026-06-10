@@ -262,40 +262,7 @@ const loadSourceBundle = async (
 
   // Matched MyNotary document (most recent).
   if (sellerProjectId) {
-    const reader = supabaseAdmin as unknown as {
-      from: (table: "mynotary_signed_documents") => {
-        select: (cols: string) => {
-          eq: (
-            col: string,
-            value: string
-          ) => {
-            is: (
-              col: string,
-              value: unknown
-            ) => {
-              order: (
-                col: string,
-                opts: { ascending: boolean }
-              ) => {
-                limit: (n: number) => Promise<{
-                  data: Array<{
-                    seller_contacts: Array<{
-                      fullName: string | null;
-                      email: string | null;
-                      phone: string | null;
-                    }> | null;
-                    property_price: number | null;
-                    living_area: number | null;
-                    raw_payload: { parsed?: { inline_address?: string | null } } | null;
-                  }> | null;
-                }>;
-              };
-            };
-          };
-        };
-      };
-    };
-    const { data: docs } = await reader
+    const { data: docs } = await supabaseAdmin
       .from("mynotary_signed_documents")
       .select("seller_contacts, property_price, living_area, raw_payload")
       .eq("matched_seller_project_id", sellerProjectId)
@@ -304,9 +271,18 @@ const loadSourceBundle = async (
       .limit(1);
     const doc = docs && docs.length > 0 ? docs[0] : null;
     if (doc) {
-      const contact = (doc.seller_contacts ?? [])[0] ?? null;
+      // jsonb columns — narrow the shapes written at ingestion.
+      const contacts = (doc.seller_contacts ?? []) as Array<{
+        fullName: string | null;
+        email: string | null;
+        phone: string | null;
+      }>;
+      const rawPayload = doc.raw_payload as
+        | { parsed?: { inline_address?: string | null } }
+        | null;
+      const contact = contacts[0] ?? null;
       bundle.mynotary = {
-        address: doc.raw_payload?.parsed?.inline_address ?? null,
+        address: rawPayload?.parsed?.inline_address ?? null,
         price: doc.property_price ?? null,
         livingArea: doc.living_area ?? null,
         seller: {
@@ -487,14 +463,7 @@ export const setGoldenOverride = async (input: {
   }
   metadata.golden_overrides = overrides;
 
-  const writer = supabaseAdmin as unknown as {
-    from: (table: "seller_projects") => {
-      update: (row: Record<string, unknown>) => {
-        eq: (col: string, value: string) => Promise<{ error: { message: string } | null }>;
-      };
-    };
-  };
-  const { error } = await writer
+  const { error } = await supabaseAdmin
     .from("seller_projects")
     .update({ metadata, updated_at: new Date().toISOString() })
     .eq("id", input.sellerProjectId);

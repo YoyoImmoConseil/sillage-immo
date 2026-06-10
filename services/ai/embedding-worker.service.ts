@@ -344,30 +344,6 @@ const buildAiConversationSourceText = async (
   return lines.join("\n");
 };
 
-type MyNotaryDocReader = {
-  from: (table: "mynotary_signed_documents") => {
-    select: (cols: string) => {
-      eq: (col: string, value: string) => {
-        maybeSingle: () => Promise<{
-          data: {
-            contract_kind: string;
-            contract_type_raw: string | null;
-            signed_at: string;
-            signers: Array<{
-              firstName?: string;
-              lastName?: string;
-              email?: string;
-              role?: string;
-            }>;
-            raw_payload: Record<string, unknown>;
-          } | null;
-          error: { message: string } | null;
-        }>;
-      };
-    };
-  };
-};
-
 const normalizeAddress = (raw: string | null | undefined): string => {
   if (!raw) return "";
   return raw
@@ -413,8 +389,7 @@ const KIND_LABEL: Record<string, string> = {
 const buildMyNotaryDocumentSourceText = async (
   documentId: string
 ): Promise<string> => {
-  const reader = supabaseAdmin as unknown as MyNotaryDocReader;
-  const { data, error } = await reader
+  const { data, error } = await supabaseAdmin
     .from("mynotary_signed_documents")
     .select(
       "contract_kind, contract_type_raw, signed_at, signers, raw_payload"
@@ -425,8 +400,15 @@ const buildMyNotaryDocumentSourceText = async (
   if (!data) return "";
 
   const kindLabel = KIND_LABEL[data.contract_kind] ?? data.contract_kind;
+  // signers is jsonb — narrow to the shape written at ingestion.
+  const signers = (data.signers ?? []) as Array<{
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    role?: string;
+  }>;
   const signersText =
-    (data.signers ?? [])
+    signers
       .map((s) => {
         const name = `${s.firstName ?? ""} ${s.lastName ?? ""}`.trim();
         const role = s.role ? ` (${s.role})` : "";

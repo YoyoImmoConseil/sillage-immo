@@ -627,33 +627,6 @@ type SellerProjectDetailRow = {
   deed_signed_at?: string | null;
 };
 
-// Columns added by migrations 034 + 037. The generated Supabase types
-// are stale until regenerated, so we centralize the cast type here.
-type SellerProjectMilestonesWriter = {
-  from: (table: "seller_projects") => {
-    update: (row: Record<string, unknown>) => {
-      eq: (col: string, value: string) => {
-        select: (cols: string) => {
-          single: () => Promise<{
-            data: {
-              id: string;
-              client_project_id: string;
-              mandate_status: string;
-              mandate_signed_at: string | null;
-              offer_received_at: string | null;
-              offer_buyer_lead_id: string | null;
-              offer_buyer_name: string | null;
-              preliminary_sale_signed_at: string | null;
-              deed_signed_at: string | null;
-            } | null;
-            error: { message: string } | null;
-          }>;
-        };
-      };
-    };
-  };
-};
-
 export const getSellerProjectDetail = async (
   clientProjectId: string,
   sellerProjectId?: string
@@ -671,7 +644,7 @@ export const getSellerProjectDetail = async (
       .eq("client_project_id", clientProjectId)
       .maybeSingle();
     if (error || !data) return null;
-    sp = data as unknown as SellerProjectDetailRow;
+    sp = data;
   } else {
     const { data, error } = await supabaseAdmin
       .from("seller_projects")
@@ -679,7 +652,7 @@ export const getSellerProjectDetail = async (
       .eq("client_project_id", clientProjectId)
       .maybeSingle();
     if (error || !data) return null;
-    sp = data as unknown as SellerProjectDetailRow;
+    sp = data;
   }
 
   let sellerLead = null;
@@ -1162,8 +1135,7 @@ export const updateSellerProjectMilestones = async (
     update.deed_signed_at = normalizeMilestoneDate(input.deedSignedAt);
   }
 
-  const writer = supabaseAdmin as unknown as SellerProjectMilestonesWriter;
-  const { data, error } = await writer
+  const { data, error } = await supabaseAdmin
     .from("seller_projects")
     .update(update)
     .eq("id", sellerProjectId)

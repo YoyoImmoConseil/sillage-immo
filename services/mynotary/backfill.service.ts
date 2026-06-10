@@ -38,23 +38,6 @@ const APP_SETTINGS_KEY = "mynotary.last_synced_at";
 const MAX_PAGES = 50;
 const PAGE_SIZE = 100;
 
-type AppSettingsClient = {
-  from: (table: "app_settings") => {
-    select: (cols: string) => {
-      eq: (col: string, value: string) => {
-        single: () => Promise<{
-          data: { value: { iso?: string } | null } | null;
-          error: { message: string } | null;
-        }>;
-      };
-    };
-    upsert: (
-      row: Record<string, unknown>,
-      opts: { onConflict: string }
-    ) => Promise<{ error: { message: string } | null }>;
-  };
-};
-
 export type BackfillRunInput = {
   trigger: "cron" | "manual" | "script";
   // Optional override: bypass last_synced_at and force a date.
@@ -77,19 +60,17 @@ export type BackfillRunResult = {
 };
 
 const readLastSyncedAt = async (): Promise<string | null> => {
-  const client = supabaseAdmin as unknown as AppSettingsClient;
-  const { data } = await client
+  const { data } = await supabaseAdmin
     .from("app_settings")
     .select("value")
     .eq("key", APP_SETTINGS_KEY)
     .single();
-  if (!data?.value || typeof data.value.iso !== "string") return null;
-  return data.value.iso;
+  const iso = data?.value?.iso;
+  return typeof iso === "string" ? iso : null;
 };
 
 const writeLastSyncedAt = async (iso: string): Promise<void> => {
-  const client = supabaseAdmin as unknown as AppSettingsClient;
-  await client.from("app_settings").upsert(
+  await supabaseAdmin.from("app_settings").upsert(
     {
       key: APP_SETTINGS_KEY,
       value: { iso },

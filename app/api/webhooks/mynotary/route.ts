@@ -15,22 +15,6 @@ import {
 import { getContract } from "@/lib/mynotary/client";
 import { enrichFromOperation } from "@/services/mynotary/operation-enrichment.service";
 
-type EventsWriter = {
-  from: (table: "mynotary_events") => {
-    insert: (row: Record<string, unknown>) => {
-      select: (cols: string) => {
-        single: () => Promise<{
-          data: { id: string } | null;
-          error: ({ message: string; code?: string }) | null;
-        }>;
-      };
-    };
-    update: (row: Record<string, unknown>) => {
-      eq: (col: string, value: string) => Promise<{ error: { message: string } | null }>;
-    };
-  };
-};
-
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
@@ -96,8 +80,7 @@ const markProcessed = async (
   eventDbId: string,
   error?: string | null
 ) => {
-  const writer = supabaseAdmin as unknown as EventsWriter;
-  await writer
+  await supabaseAdmin
     .from("mynotary_events")
     .update({
       processed_at: new Date().toISOString(),
@@ -125,8 +108,7 @@ export const POST = async (request: Request) => {
   // Idempotent insert via UNIQUE(event_id). If MyNotary replays the
   // same event, we get a 23505 conflict and return 200 OK without
   // re-processing.
-  const writer = supabaseAdmin as unknown as EventsWriter;
-  const { data: eventRow, error: insertError } = await writer
+  const { data: eventRow, error: insertError } = await supabaseAdmin
     .from("mynotary_events")
     .insert({
       event_id: eventId,

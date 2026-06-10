@@ -12,46 +12,6 @@ import { matchSignedDocument } from "./auto-match.service";
 import { archiveSignedDocument } from "./archive-signed-document.service";
 import type { OperationEnrichment } from "./operation-enrichment.service";
 
-// Cast types for the new tables that are not in the generated Supabase
-// schema yet.
-type SignedDocsWriter = {
-  from: (table: "mynotary_signed_documents") => {
-    upsert: (
-      row: Record<string, unknown>,
-      opts: { onConflict: string }
-    ) => {
-      select: (cols: string) => {
-        single: () => Promise<{
-          data: { id: string; matched_seller_project_id: string | null } | null;
-          error: { message: string } | null;
-        }>;
-      };
-    };
-    update: (row: Record<string, unknown>) => {
-      eq: (col: string, value: string) => Promise<{ error: { message: string } | null }>;
-      is: (
-        col: string,
-        value: unknown
-      ) => {
-        select: (cols: string) => {
-          eq: (col: string, value: string) => Promise<{
-            data: Array<{ id: string }> | null;
-            error: { message: string } | null;
-          }>;
-        };
-      };
-    };
-  };
-};
-
-type SellerProjectsWriter = {
-  from: (table: "seller_projects") => {
-    update: (row: Record<string, unknown>) => {
-      eq: (col: string, value: string) => Promise<{ error: { message: string } | null }>;
-    };
-  };
-};
-
 // Processes a MyNotary `signature_completed` payload (also reused by
 // the backfill cron). The service is split into 3 deterministic steps
 // so it can be unit-tested without a live MyNotary endpoint:
@@ -191,8 +151,7 @@ export const processSignatureCompleted = async (
   const signers = sanitizeSigners(payload.signers);
   const files = sanitizeFiles(payload.files);
 
-  const docsWriter = supabaseAdmin as unknown as SignedDocsWriter;
-  const { data: upsertRow, error: upsertError } = await docsWriter
+  const { data: upsertRow, error: upsertError } = await supabaseAdmin
     .from("mynotary_signed_documents")
     .upsert(
       {
@@ -298,7 +257,7 @@ export const processSignatureCompleted = async (
     // matching is best-effort; failures are non-blocking.
   }
 
-  await docsWriter
+  await supabaseAdmin
     .from("mynotary_signed_documents")
     .update({
       matched_seller_project_id: matchOutcome.sellerProjectId,
@@ -329,7 +288,7 @@ export const processSignatureCompleted = async (
         archiveUpdate.signature_proof_path = archive.signatureProofPath;
       }
       if (Object.keys(archiveUpdate).length > 0) {
-        await docsWriter
+        await supabaseAdmin
           .from("mynotary_signed_documents")
           .update(archiveUpdate)
           .eq("id", documentId);
@@ -359,22 +318,7 @@ export const processSignatureCompleted = async (
       ) {
         // Re-read the freshly written match so downstream logic
         // (mandate promotion) sees the reconciled seller_project.
-        const docsReader = supabaseAdmin as unknown as {
-          from: (table: "mynotary_signed_documents") => {
-            select: (cols: string) => {
-              eq: (col: string, value: string) => {
-                maybeSingle: () => Promise<{
-                  data: {
-                    matched_seller_project_id: string | null;
-                    match_confidence: number | null;
-                    match_method: string | null;
-                  } | null;
-                }>;
-              };
-            };
-          };
-        };
-        const { data: reread } = await docsReader
+        const { data: reread } = await supabaseAdmin
           .from("mynotary_signed_documents")
           .select("matched_seller_project_id, match_confidence, match_method")
           .eq("id", documentId)
@@ -399,8 +343,7 @@ export const processSignatureCompleted = async (
     matchOutcome.sellerProjectId &&
     matchOutcome.confidence >= 0.7
   ) {
-    const projectsWriter = supabaseAdmin as unknown as SellerProjectsWriter;
-    const { error: updateError } = await projectsWriter
+    const { error: updateError } = await supabaseAdmin
       .from("seller_projects")
       .update({
         mandate_status: "signed",
@@ -466,16 +409,15 @@ export const softDeleteByContractOrOperation = async (input: {
   if (!input.mynotaryContractId && !input.mynotaryOperationId) {
     return { softDeleted: 0 };
   }
-  const docsWriter = supabaseAdmin as unknown as SignedDocsWriter;
   const filterCol = input.mynotaryContractId
-    ? "mynotary_contract_id"
-    : "mynotary_operation_id";
+    ? ("mynotary_contract_id" as const)
+    : ("mynotary_operation_id" as const);
   const filterValue = (input.mynotaryContractId ?? input.mynotaryOperationId)!;
-  const { data } = await docsWriter
+  const { data } = await supabaseAdmin
     .from("mynotary_signed_documents")
     .update({ deleted_at: new Date().toISOString() })
     .is("deleted_at", null)
-    .select("id")
-    .eq(filterCol, filterValue);
+    .eq(filterCol, filterValue)
+    .select("id");
   return { softDeleted: Array.isArray(data) ? data.length : 0 };
 };

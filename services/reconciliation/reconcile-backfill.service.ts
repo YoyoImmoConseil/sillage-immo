@@ -26,27 +26,7 @@ const backfillMyNotary = async (
   reEnrich: boolean
 ): Promise<ReconcileBackfillResult["mynotary"]> => {
   const stats = { scanned: 0, enriched: 0, autoLinked: 0, suggested: 0, errors: 0 };
-  const reader = supabaseAdmin as unknown as {
-    from: (table: "mynotary_signed_documents") => {
-      select: (cols: string) => {
-        is: (
-          col: string,
-          value: unknown
-        ) => Promise<{
-          data: Array<{
-            id: string;
-            mynotary_operation_id: string;
-            contract_kind: string;
-            seller_contacts: unknown[] | null;
-            property_price: number | null;
-            matched_seller_project_id: string | null;
-          }> | null;
-          error: { message: string } | null;
-        }>;
-      };
-    };
-  };
-  const { data, error } = await reader
+  const { data, error } = await supabaseAdmin
     .from("mynotary_signed_documents")
     .select(
       "id, mynotary_operation_id, contract_kind, seller_contacts, property_price, matched_seller_project_id"
@@ -61,14 +41,7 @@ const backfillMyNotary = async (
         reEnrich || !doc.seller_contacts || doc.seller_contacts.length === 0;
       if (needsEnrichment && doc.mynotary_operation_id) {
         const enrichment = await enrichFromOperation(doc.mynotary_operation_id);
-        const writer = supabaseAdmin as unknown as {
-          from: (table: "mynotary_signed_documents") => {
-            update: (row: Record<string, unknown>) => {
-              eq: (col: string, value: string) => Promise<{ error: unknown }>;
-            };
-          };
-        };
-        await writer
+        await supabaseAdmin
           .from("mynotary_signed_documents")
           .update({
             seller_contacts: enrichment.sellerContacts,
