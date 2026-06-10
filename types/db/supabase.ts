@@ -1872,6 +1872,7 @@ export type Database = {
           status: string;
           started_at: string;
           ended_at: string | null;
+          deleted_at: string | null;
           metadata: Record<string, unknown>;
         };
         Insert: {
@@ -1889,6 +1890,7 @@ export type Database = {
           status?: string;
           started_at?: string;
           ended_at?: string | null;
+          deleted_at?: string | null;
           metadata?: Record<string, unknown>;
         };
         Update: {
@@ -1906,6 +1908,7 @@ export type Database = {
           status?: string;
           started_at?: string;
           ended_at?: string | null;
+          deleted_at?: string | null;
           metadata?: Record<string, unknown>;
         };
         Relationships: [];
