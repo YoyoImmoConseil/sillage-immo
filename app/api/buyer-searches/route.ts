@@ -164,6 +164,10 @@ export const POST = async (request: Request) => {
         );
       }
     } catch (error) {
+      console.error(
+        "[buyer-searches] verification email failed:",
+        error instanceof Error ? error.message : error
+      );
       return NextResponse.json(
         {
           ok: true,
@@ -173,8 +177,6 @@ export const POST = async (request: Request) => {
           data: {
             clientProjectId: signup.clientProjectId,
             buyerSearchProfileId: signup.buyerSearchProfileId,
-            emailFailureDetail:
-              error instanceof Error ? error.message : "unknown_error",
           },
         },
         { status: 201 }
@@ -193,12 +195,15 @@ export const POST = async (request: Request) => {
       { status: 201 }
     );
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Erreur inconnue.";
+    console.error(
+      "[buyer-searches] signup failed:",
+      error instanceof Error ? error.message : error
+    );
     return NextResponse.json(
       {
         ok: false,
         code: "signup_failed",
-        message: `Impossible d'enregistrer la recherche : ${message}`,
+        message: "Impossible d'enregistrer la recherche. Merci de reessayer.",
       },
       { status: 500 }
     );

@@ -254,9 +254,12 @@ export const POST = async (request: Request) => {
       toolVersion: "1.0.0",
     });
   } catch (error) {
-    const messageText = error instanceof Error ? error.message : "OpenAI error";
+    console.error(
+      "[home-assistant] OpenAI call failed:",
+      error instanceof Error ? error.message : error
+    );
     return NextResponse.json(
-      { ok: false, message: messageText },
+      { ok: false, message: "L'assistant est momentanement indisponible." },
       { status: 502 }
     );
   }
