@@ -15,8 +15,14 @@ type ClientProjectRow = Database["public"]["Tables"]["client_projects"]["Row"];
 
 const ALERT_SCORE_THRESHOLD = 60;
 
-const getAlertSecret = () =>
-  process.env.BUYER_ALERT_HMAC_SECRET ?? process.env.ADMIN_API_KEY ?? "sillage-default-alert-secret";
+const getAlertSecret = () => {
+  const secret = process.env.BUYER_ALERT_HMAC_SECRET?.trim();
+  if (secret) return secret;
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("Missing server env var: BUYER_ALERT_HMAC_SECRET");
+  }
+  return "dev-only-buyer-alert-secret";
+};
 
 const getPublicBaseUrl = () => (process.env.PUBLIC_SITE_URL ?? "").replace(/\/$/, "");
 

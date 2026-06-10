@@ -1,6 +1,5 @@
 import "server-only";
 import { createHmac, timingSafeEqual } from "crypto";
-import { serverEnv } from "@/lib/env/server";
 
 const MERCI_VENDEUR_TOKEN_VERSION = 1;
 const MERCI_VENDEUR_TOKEN_TTL_SECONDS = 60 * 60 * 24;
@@ -20,7 +19,12 @@ const fromBase64Url = (value: string) => {
 };
 
 const getMerciVendeurSecret = () => {
-  return process.env.MERCI_VENDEUR_ACCESS_SECRET?.trim() || serverEnv.ADMIN_API_KEY;
+  const secret = process.env.MERCI_VENDEUR_ACCESS_SECRET?.trim();
+  if (secret) return secret;
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("Missing server env var: MERCI_VENDEUR_ACCESS_SECRET");
+  }
+  return "dev-only-merci-vendeur-secret";
 };
 
 const signPayload = (payload: string) => {
