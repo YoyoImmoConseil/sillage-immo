@@ -14,6 +14,11 @@ import {
   OPT_OUT_COOKIE_NAME,
   parseAnonymousSessionCookie,
 } from "@/lib/ai/anonymous-session";
+import {
+  checkPersistentRateLimit,
+  extractClientIp,
+  rateLimitResponseBody,
+} from "@/lib/rate-limit/persistent";
 
 type InputBody = {
   message?: string;
@@ -154,6 +159,15 @@ export const POST = async (request: Request) => {
   const message = body?.message?.trim() ?? "";
   if (message.length < 2) {
     return NextResponse.json({ ok: false, message: "Message trop court." }, { status: 422 });
+  }
+
+  const clientIp = extractClientIp(request.headers);
+  const [burstLimit, hourlyLimit] = await Promise.all([
+    checkPersistentRateLimit({ key: `home-assistant:ip-burst:${clientIp}`, limit: 8, windowSeconds: 60 }),
+    checkPersistentRateLimit({ key: `home-assistant:ip:${clientIp}`, limit: 60, windowSeconds: 3600 }),
+  ]);
+  if (!burstLimit.ok || !hourlyLimit.ok) {
+    return NextResponse.json(rateLimitResponseBody, { status: 429 });
   }
   const history = Array.isArray(body?.history)
     ? body.history

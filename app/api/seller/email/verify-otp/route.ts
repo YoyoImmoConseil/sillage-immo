@@ -4,6 +4,11 @@ import {
   checkIdempotency,
   persistIdempotencyResponse,
 } from "@/lib/idempotency/request-idempotency";
+import {
+  checkPersistentRateLimit,
+  extractClientIp,
+  rateLimitResponseBody,
+} from "@/lib/rate-limit/persistent";
 import type { SellerApiErrorResponse, SellerVerifyOtpSuccessResponse } from "@/types/api/seller";
 
 export const POST = async (request: Request) => {
@@ -43,6 +48,16 @@ export const POST = async (request: Request) => {
       { ok: false, message: "Email et code sont requis." },
       { status: 422 }
     );
+  }
+
+  const clientIp = extractClientIp(request.headers);
+  const ipLimit = await checkPersistentRateLimit({
+    key: `seller-otp-verify:ip:${clientIp}`,
+    limit: 20,
+    windowSeconds: 600,
+  });
+  if (!ipLimit.ok) {
+    return NextResponse.json(rateLimitResponseBody, { status: 429 });
   }
 
   try {
