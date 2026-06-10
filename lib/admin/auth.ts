@@ -1,4 +1,5 @@
 import "server-only";
+import { timingSafeEqual } from "crypto";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
@@ -12,7 +13,11 @@ import type { AdminPermission, AdminProfileSnapshot, AdminRole } from "@/types/d
 import { ADMIN_ROLE_PERMISSIONS } from "@/types/domain/admin";
 
 const hasExpectedValue = (value: string | null, expected: string) => {
-  return Boolean(value && expected && value === expected);
+  if (!value || !expected) return false;
+  const valueBuffer = Buffer.from(value, "utf8");
+  const expectedBuffer = Buffer.from(expected, "utf8");
+  if (valueBuffer.length !== expectedBuffer.length) return false;
+  return timingSafeEqual(valueBuffer, expectedBuffer);
 };
 
 const parseBearer = (authHeader: string | null) => {

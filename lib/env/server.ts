@@ -23,9 +23,8 @@ export const serverEnv = {
   SWEEPBRIGHT_ZAPIER_WEBHOOK_SECRET: process.env.SWEEPBRIGHT_ZAPIER_WEBHOOK_SECRET ?? "",
   PUBLIC_SITE_URL: process.env.PUBLIC_SITE_URL ?? "",
   // 32+ random chars used by lib/ai/anonymous-session to sign the
-  // sillage_ai_session cookie. Optional in dev (a fallback is used) but
-  // strongly recommended in production — see anonymous-session.ts for
-  // the warning emitted when missing.
+  // sillage_ai_session cookie. Optional in dev (a fallback is used);
+  // REQUIRED in production — anonymous-session.ts throws when missing.
   SILLAGE_AI_SESSION_SECRET: process.env.SILLAGE_AI_SESSION_SECRET ?? "",
   // MyNotary public-API integration (phase 1: inbound only).
   // API_KEY: application token (x-api-key header on every call).

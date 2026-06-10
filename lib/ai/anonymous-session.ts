@@ -7,10 +7,9 @@
 //               server can reject tampered cookies cheaply at edge
 //               runtime without a DB lookup.
 //
-// The cookie is httpOnly, SameSite=Lax, 90 days. We keep the secret
-// optional to avoid breaking local dev: if absent, we sign with a
-// deterministic fallback (clearly marked "dev-only") and warn once on
-// boot. Production deployments MUST set SILLAGE_AI_SESSION_SECRET.
+// The cookie is httpOnly, SameSite=Lax, 90 days. The secret is optional
+// in local dev only (a deterministic dev-only fallback is used); in
+// production a missing or too-short SILLAGE_AI_SESSION_SECRET throws.
 //
 // Read from anywhere (server actions, route handlers, middleware) via
 // `getAnonymousSessionId(request)` or `parseAnonymousSessionCookie`.
@@ -21,18 +20,13 @@ const SECRET_ENV_KEY = "SILLAGE_AI_SESSION_SECRET";
 const DEV_FALLBACK_SECRET =
   "dev-only-anonymous-session-secret-do-not-use-in-prod";
 
-let warnedAboutDevSecret = false;
-
 const resolveSecret = () => {
   const fromEnv = process.env[SECRET_ENV_KEY];
   if (fromEnv && fromEnv.length >= 16) return fromEnv;
-  if (!warnedAboutDevSecret) {
-    warnedAboutDevSecret = true;
-    if (process.env.NODE_ENV === "production") {
-      console.warn(
-        `[anonymous-session] ${SECRET_ENV_KEY} is missing or too short in production — anonymous cookies will use the dev fallback. Set it to a 32+ character random string.`
-      );
-    }
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      `[anonymous-session] ${SECRET_ENV_KEY} is missing or too short in production. Set it to a 32+ character random string.`
+    );
   }
   return DEV_FALLBACK_SECRET;
 };

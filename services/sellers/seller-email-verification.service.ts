@@ -1,4 +1,4 @@
-import { randomInt } from "crypto";
+import { randomInt, timingSafeEqual } from "crypto";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { hashValue } from "@/lib/audit/hash";
 import { sendOtpEmail } from "@/lib/email/smtp";
@@ -11,6 +11,13 @@ type SellerEmailVerificationRow = Database["public"]["Tables"]["seller_email_ver
 const generateOtp = () => String(randomInt(100000, 999999));
 
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
+
+const hashesMatch = (expectedHash: string, providedHash: string) => {
+  const expectedBuffer = Buffer.from(expectedHash, "utf8");
+  const providedBuffer = Buffer.from(providedHash, "utf8");
+  if (expectedBuffer.length !== providedBuffer.length) return false;
+  return timingSafeEqual(expectedBuffer, providedBuffer);
+};
 
 export const startSellerEmailVerification = async (
   email: string
@@ -77,7 +84,7 @@ export const verifySellerEmailOtp = async (email: string, code: string) => {
     throw new Error("Nombre maximal de tentatives atteint. Demandez un nouveau code.");
   }
 
-  if (verificationRow.code_hash !== codeHash) {
+  if (!hashesMatch(verificationRow.code_hash, codeHash)) {
     await supabaseAdmin
       .from("seller_email_verifications")
       .update({ attempts: verificationRow.attempts + 1 })
