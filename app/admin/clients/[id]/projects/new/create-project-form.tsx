@@ -45,6 +45,7 @@ export function CreateProjectForm({ clientId, clientEmail }: CreateProjectFormPr
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder={`Projet vendeur - ${clientEmail}`}
+          aria-label="Titre du projet"
         />
       </div>
       <div>
@@ -54,6 +55,7 @@ export function CreateProjectForm({ clientId, clientEmail }: CreateProjectFormPr
           value={propertyId}
           onChange={(e) => setPropertyId(e.target.value)}
           placeholder="ID du bien (UUID)"
+          aria-label="Identifiant du bien à rattacher"
         />
       </div>
       <button

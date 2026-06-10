@@ -410,6 +410,7 @@ export function ManualMatchModal({
                   value={term}
                   onChange={(e) => setTerm(e.target.value)}
                   placeholder="Nom, e-mail, téléphone ou adresse…"
+                  aria-label="Rechercher un dossier"
                   className="w-full rounded-md border border-[rgba(20,20,70,0.2)] px-3 py-2 text-sm"
                 />
                 {searching ? (
@@ -457,6 +458,7 @@ export function ManualMatchModal({
                       value={manualSeller}
                       onChange={(e) => setManualSeller(e.target.value.trim())}
                       placeholder="seller_project UUID"
+                      aria-label="UUID du projet vendeur"
                       className="w-full rounded-md border border-[rgba(20,20,70,0.2)] px-3 py-2 font-mono text-xs"
                     />
                     <input
@@ -464,6 +466,7 @@ export function ManualMatchModal({
                       value={manualProperty}
                       onChange={(e) => setManualProperty(e.target.value.trim())}
                       placeholder="property UUID"
+                      aria-label="UUID du bien"
                       className="w-full rounded-md border border-[rgba(20,20,70,0.2)] px-3 py-2 font-mono text-xs"
                     />
                     <button

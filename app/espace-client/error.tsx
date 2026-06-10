@@ -24,7 +24,7 @@ export default function ClientSpaceError({
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      // eslint-disable-next-line no-console
+       
       console.error("[espace-client] render error", {
         digest: error.digest,
         message: error.message,

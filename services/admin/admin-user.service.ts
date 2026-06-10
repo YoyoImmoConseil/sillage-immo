@@ -106,6 +106,40 @@ const auditAdminAction = async (
   });
 };
 
+export type ActiveAdvisor = {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  full_name: string | null;
+  email: string;
+  phone: string | null;
+  bookingUrl: string | null;
+};
+
+export const listActiveAdvisors = async (): Promise<ActiveAdvisor[]> => {
+  const { data, error } = await supabaseAdmin
+    .from("admin_profiles")
+    .select("id, first_name, last_name, full_name, email, metadata")
+    .eq("is_active", true)
+    .order("last_name");
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return (data ?? []).map((advisor) => {
+    const metadata = parseAdminProfileMetadata(advisor.metadata);
+    return {
+      id: advisor.id,
+      first_name: advisor.first_name,
+      last_name: advisor.last_name,
+      full_name: advisor.full_name,
+      email: advisor.email,
+      phone: metadata.phone,
+      bookingUrl: metadata.bookingUrl,
+    };
+  });
+};
+
 export const getAdminUserCount = async () => {
   const { count, error } = await supabaseAdmin
     .from("admin_profiles")

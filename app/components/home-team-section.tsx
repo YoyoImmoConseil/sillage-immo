@@ -1,4 +1,4 @@
-/* eslint-disable @next/next/no-img-element */
+import Image from "next/image";
 import { Suspense } from "react";
 import { listPublicTeamMembers } from "@/services/home/team.service";
 import type { AppLocale } from "@/lib/i18n/config";
@@ -73,12 +73,14 @@ async function HomeTeamMembers({ locale }: { locale: AppLocale }) {
             key={member.id}
             className="group flex flex-col overflow-hidden rounded-[28px] bg-white shadow-sm ring-1 ring-[#141446]/5"
           >
-            <div className="aspect-[3/4] bg-[#f4ece4]">
+            <div className="relative aspect-[3/4] bg-[#f4ece4]">
               {member.avatarUrl ? (
-                <img
+                <Image
                   src={member.avatarUrl}
                   alt={member.fullName}
-                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+                  fill
+                  sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                  className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
                 />
               ) : (
                 <div className="flex h-full items-center justify-center px-6 text-center text-sm text-[#141446]/55">

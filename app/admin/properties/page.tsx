@@ -37,13 +37,13 @@ export default async function AdminPropertiesPage({ searchParams }: AdminPropert
     >
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <form className="grid flex-1 gap-3 rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-5 md:grid-cols-4">
-          <input className="rounded border px-3 py-2 text-sm" name="search" defaultValue={filters.search ?? ""} placeholder="Titre, ville, type" />
-          <select className="rounded border px-3 py-2 text-sm" name="source" defaultValue={filters.source ?? ""}>
+          <input className="rounded border px-3 py-2 text-sm" name="search" defaultValue={filters.search ?? ""} placeholder="Titre, ville, type" aria-label="Rechercher un bien" />
+          <select className="rounded border px-3 py-2 text-sm" name="source" defaultValue={filters.source ?? ""} aria-label="Filtrer par source">
             <option value="">Toutes les sources</option>
             <option value="manual">Manuel</option>
             <option value="sweepbright">SweepBright</option>
           </select>
-          <select className="rounded border px-3 py-2 text-sm" name="businessType" defaultValue={filters.businessType ?? ""}>
+          <select className="rounded border px-3 py-2 text-sm" name="businessType" defaultValue={filters.businessType ?? ""} aria-label="Filtrer par type de transaction">
             <option value="">Vente et location</option>
             <option value="sale">Vente</option>
             <option value="rental">Location</option>

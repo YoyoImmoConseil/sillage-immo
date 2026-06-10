@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -130,18 +131,21 @@ export function UsersManager(props: {
             <input
               className="rounded border px-3 py-2 text-sm"
               placeholder="Prénom"
+              aria-label="Prénom du nouvel utilisateur"
               value={firstName}
               onChange={(event) => setFirstName(event.target.value)}
             />
             <input
               className="rounded border px-3 py-2 text-sm"
               placeholder="Nom"
+              aria-label="Nom du nouvel utilisateur"
               value={lastName}
               onChange={(event) => setLastName(event.target.value)}
             />
             <input
               className="rounded border px-3 py-2 text-sm"
               placeholder="email@sillage-immo.fr"
+              aria-label="Email du nouvel utilisateur"
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
@@ -151,6 +155,7 @@ export function UsersManager(props: {
               className="rounded border px-3 py-2 text-sm"
               value={role}
               onChange={(event) => setRole(event.target.value as AdminRole)}
+              aria-label="Rôle du nouvel utilisateur"
             >
               {ROLES.map((item) => (
                 <option key={item} value={item}>
@@ -182,9 +187,15 @@ export function UsersManager(props: {
               <tr key={user.id} className="border-b border-[rgba(20,20,70,0.1)] last:border-0 align-top">
                 <td className="p-3">
                   <div className="flex items-center gap-3">
-                    <div className="h-12 w-9 overflow-hidden rounded-xl bg-[#f4ece4]">
+                    <div className="relative h-12 w-9 overflow-hidden rounded-xl bg-[#f4ece4]">
                       {user.avatarUrl ? (
-                        <img src={user.avatarUrl} alt={user.fullName ?? user.email} className="h-full w-full object-cover" />
+                        <Image
+                          src={user.avatarUrl}
+                          alt={user.fullName ?? user.email}
+                          fill
+                          sizes="36px"
+                          className="object-cover"
+                        />
                       ) : null}
                     </div>
                     <div>
@@ -205,6 +216,7 @@ export function UsersManager(props: {
                       return (
                     <select
                       className="rounded border px-3 py-2 text-sm"
+                      aria-label={`Rôle de ${user.fullName ?? user.email}`}
                       value={user.role}
                       onChange={(event) =>
                         updateUser(user.id, { role: event.target.value as AdminRole })

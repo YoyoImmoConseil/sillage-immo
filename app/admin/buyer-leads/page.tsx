@@ -26,8 +26,8 @@ export default async function BuyerLeadsAdminPage({ searchParams }: BuyerLeadsPa
       profileName={context.profile?.fullName ?? context.profile?.email ?? "Mode admin"}
     >
       <form className="mb-6 grid gap-3 rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-5 md:grid-cols-4">
-        <input className="rounded border px-3 py-2 text-sm" name="search" defaultValue={filters.search ?? ""} placeholder="Nom, email, telephone, notes" />
-        <select className="rounded border px-3 py-2 text-sm" name="status" defaultValue={filters.status ?? ""}>
+        <input className="rounded border px-3 py-2 text-sm" name="search" defaultValue={filters.search ?? ""} placeholder="Nom, email, telephone, notes" aria-label="Rechercher un lead acquéreur" />
+        <select className="rounded border px-3 py-2 text-sm" name="status" defaultValue={filters.status ?? ""} aria-label="Filtrer par statut">
           <option value="">Tous les statuts</option>
           <option value="new">new</option>
           <option value="qualified">qualified</option>
@@ -36,7 +36,7 @@ export default async function BuyerLeadsAdminPage({ searchParams }: BuyerLeadsPa
           <option value="won">won</option>
           <option value="lost">lost</option>
         </select>
-        <select className="rounded border px-3 py-2 text-sm" name="businessType" defaultValue={filters.businessType ?? ""}>
+        <select className="rounded border px-3 py-2 text-sm" name="businessType" defaultValue={filters.businessType ?? ""} aria-label="Filtrer par type de recherche">
           <option value="">Achat et location</option>
           <option value="sale">Achat</option>
           <option value="rental">Location</option>

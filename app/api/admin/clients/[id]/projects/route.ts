@@ -3,7 +3,6 @@ import { getAdminRequestContext, hasAdminPermission } from "@/lib/admin/auth";
 import {
   getClientProjectsByClientId,
   createClientProject,
-  emitClientProjectEvent,
 } from "@/services/clients/client-project.service";
 import {
   createSellerProjectFromProperty,

@@ -121,7 +121,10 @@ export const track = (event: AnalyticsEventName, payload?: AnalyticsPayload) => 
  *
  * Don't call this from product code — use `track()` instead.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
+// La signature variadique est volontaire (typage des appels gtag("consent", ...)) ;
+// le corps utilise `arguments` natif, requis par GTM (voir commentaire ci-dessus).
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function gtag(..._args: unknown[]): void {
   const dl = ensureDataLayer();
   if (!dl) return;

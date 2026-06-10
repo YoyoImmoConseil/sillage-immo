@@ -49,12 +49,14 @@ export function ClientDetailForm({ clientId, initial }: ClientDetailFormProps) {
         value={firstName}
         onChange={(e) => setFirstName(e.target.value)}
         placeholder="Prenom"
+        aria-label="Prénom du client"
       />
       <input
         className="rounded border px-3 py-2 text-sm"
         value={lastName}
         onChange={(e) => setLastName(e.target.value)}
         placeholder="Nom"
+        aria-label="Nom du client"
       />
       <input
         className="rounded border px-3 py-2 text-sm"
@@ -62,12 +64,14 @@ export function ClientDetailForm({ clientId, initial }: ClientDetailFormProps) {
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder="Email"
+        aria-label="Email du client"
       />
       <input
         className="rounded border px-3 py-2 text-sm"
         value={phone}
         onChange={(e) => setPhone(e.target.value)}
         placeholder="Telephone"
+        aria-label="Téléphone du client"
       />
       <button
         type="submit"

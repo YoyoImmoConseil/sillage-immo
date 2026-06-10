@@ -1,12 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-
-type AssignAdvisorFormProps = {
-  clientId: string;
-  projectId: string;
-};
 
 type AdminProfile = {
   id: string;
@@ -18,23 +13,21 @@ type AdminProfile = {
   bookingUrl?: string | null;
 };
 
+type AssignAdvisorFormProps = {
+  clientId: string;
+  projectId: string;
+  // Liste chargée côté serveur par la page (évite un fetch client au montage).
+  advisors: AdminProfile[];
+};
+
 export function AssignAdvisorForm({
   clientId,
   projectId,
+  advisors,
 }: AssignAdvisorFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [admins, setAdmins] = useState<AdminProfile[]>([]);
   const [adminId, setAdminId] = useState("");
-
-  useEffect(() => {
-    fetch("/api/admin/advisors")
-      .then((r) => r.json())
-      .then((data: { ok?: boolean; advisors?: AdminProfile[] }) => {
-        if (data.ok && data.advisors) setAdmins(data.advisors);
-      })
-      .catch(() => {});
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,13 +47,17 @@ export function AssignAdvisorForm({
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-wrap items-center gap-2">
+      <label className="sr-only" htmlFor="assign-advisor-select">
+        Conseiller à affecter
+      </label>
       <select
+        id="assign-advisor-select"
         className="rounded border px-3 py-2 text-sm"
         value={adminId}
         onChange={(e) => setAdminId(e.target.value)}
       >
         <option value="">Selectionner un conseiller</option>
-        {admins.map((a) => (
+        {advisors.map((a) => (
           <option key={a.id} value={a.id}>
             {a.full_name || [a.first_name, a.last_name].filter(Boolean).join(" ") || a.email}
           </option>

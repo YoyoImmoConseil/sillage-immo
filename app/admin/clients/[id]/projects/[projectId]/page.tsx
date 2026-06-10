@@ -11,6 +11,7 @@ import {
   getSellerProjectByClientProjectId,
 } from "@/services/clients/seller-project.service";
 import { getProjectEvents } from "@/services/clients/client-project-invitation.service";
+import { listActiveAdvisors } from "@/services/admin/admin-user.service";
 import { SELLER_PROJECT_STATUS_LABELS } from "@/types/domain/client";
 import { formatPropertyTypeLabel } from "@/lib/properties/property-type-label";
 import { computePropertyGoldenRecord } from "@/services/properties/golden-record.service";
@@ -64,6 +65,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
 
   const sellerProjectRow = await getSellerProjectByClientProjectId(projectId);
   const goldenRecord = await computePropertyGoldenRecord(projectId);
+  const advisors = canAssignAdvisor ? await listActiveAdvisors() : [];
 
   return (
     <AdminShell
@@ -236,6 +238,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
               <AssignAdvisorForm
                 clientId={clientId}
                 projectId={projectId}
+                advisors={advisors}
               />
             </div>
           )}

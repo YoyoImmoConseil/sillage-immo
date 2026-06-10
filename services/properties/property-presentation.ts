@@ -71,14 +71,6 @@ const getNestedNumber = (root: Record<string, unknown> | null, path: string[]) =
   return asNumber(current);
 };
 
-const getNestedString = (root: Record<string, unknown> | null, path: string[]) => {
-  let current: unknown = root;
-  for (const key of path) {
-    current = asRecord(current)?.[key];
-  }
-  return asString(current);
-};
-
 const countAmenitiesMatch = (root: Record<string, unknown> | null, tokens: string[]) => {
   const amenities = Array.isArray(root?.amenities)
     ? root?.amenities.filter((value): value is string => typeof value === "string")

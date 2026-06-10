@@ -46,6 +46,7 @@ export function CreateClientForm() {
           onChange={(e) => setEmail(e.target.value)}
           required
           placeholder="email@exemple.fr"
+          aria-label="Email du client"
         />
       </div>
       <div>
@@ -55,6 +56,7 @@ export function CreateClientForm() {
           value={firstName}
           onChange={(e) => setFirstName(e.target.value)}
           placeholder="Prenom"
+          aria-label="Prénom du client"
         />
       </div>
       <div>
@@ -64,6 +66,7 @@ export function CreateClientForm() {
           value={lastName}
           onChange={(e) => setLastName(e.target.value)}
           placeholder="Nom"
+          aria-label="Nom du client"
         />
       </div>
       <div>
@@ -73,6 +76,7 @@ export function CreateClientForm() {
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
           placeholder="06 12 34 56 78"
+          aria-label="Téléphone du client"
         />
       </div>
       <button

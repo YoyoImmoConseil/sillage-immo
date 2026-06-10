@@ -14,8 +14,6 @@ type SellerProjectActionsProps = {
 export function SellerProjectActions({
   clientId,
   projectId,
-  sellerProjectId,
-  hasLead,
   hasProperties,
 }: SellerProjectActionsProps) {
   const router = useRouter();
@@ -69,6 +67,7 @@ export function SellerProjectActions({
           value={propertyId}
           onChange={(e) => setPropertyId(e.target.value)}
           placeholder="ID du bien a rattacher"
+          aria-label="ID du bien a rattacher"
         />
         <button type="submit" disabled={loading} className="sillage-btn rounded px-4 py-2 text-sm">
           Rattacher un bien
@@ -81,6 +80,7 @@ export function SellerProjectActions({
             value={propertyToDetach}
             onChange={(e) => setPropertyToDetach(e.target.value)}
             placeholder="ID du rattachement (project_properties.id) a retirer"
+            aria-label="ID du rattachement a retirer"
           />
           <button type="submit" disabled={loading} className="rounded border border-red-300 px-4 py-2 text-sm text-red-700">
             Retirer le bien
