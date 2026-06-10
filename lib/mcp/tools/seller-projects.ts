@@ -224,41 +224,6 @@ export const sellerProjectsTools: ToolDefinition<unknown, unknown>[] = [
         deed_signed: null,
       };
 
-      type DocsReader = {
-        from: (table: "mynotary_signed_documents") => {
-          select: (cols: string) => {
-            eq: (col: string, value: string) => {
-              is: (col: string, value: unknown) => {
-                gte: (col: string, value: string) => {
-                  lte: (col: string, value: string) => Promise<{
-                    data: Array<{
-                      matched_seller_project_id: string | null;
-                    }> | null;
-                    error: { message: string } | null;
-                  }>;
-                };
-              };
-            };
-          };
-        };
-      };
-      type ProjectsReader = {
-        from: (table: "seller_projects") => {
-          select: (cols: string) => {
-            not: (col: string, op: string, value: unknown) => {
-              gte: (col: string, value: string) => {
-                lte: (col: string, value: string) => Promise<{
-                  data: Array<{ id: string }> | null;
-                  error: { message: string } | null;
-                }>;
-              };
-            };
-          };
-        };
-      };
-
-      const docsReader = supabaseAdmin as unknown as DocsReader;
-      const projReader = supabaseAdmin as unknown as ProjectsReader;
       const results: Record<
         string,
         {
@@ -276,7 +241,7 @@ export const sellerProjectsTools: ToolDefinition<unknown, unknown>[] = [
         const matched = new Set<string>();
         let unmatchedMyNotaryCount = 0;
         if (kind !== null) {
-          const { data: docs } = await docsReader
+          const { data: docs } = await supabaseAdmin
             .from("mynotary_signed_documents")
             .select("matched_seller_project_id")
             .eq("contract_kind", kind)
@@ -292,7 +257,7 @@ export const sellerProjectsTools: ToolDefinition<unknown, unknown>[] = [
           }
         }
 
-        const { data: projects } = await projReader
+        const { data: projects } = await supabaseAdmin
           .from("seller_projects")
           .select("id")
           .not(column, "is", null)

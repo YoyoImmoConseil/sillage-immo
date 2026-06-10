@@ -14,21 +14,6 @@ type PersistentCheckInput = {
   windowSeconds: number;
 };
 
-type RateLimitHitRow = {
-  allowed: boolean;
-  remaining: number;
-  reset_at: string;
-};
-
-// La RPC rate_limit_hit (migration 20260610_024) n'est pas encore dans les
-// types generes ; cast local en attendant la regeneration de types/db/supabase.ts.
-type RateLimitRpcClient = {
-  rpc: (
-    fn: "rate_limit_hit",
-    args: { p_key: string; p_limit: number; p_window_seconds: number }
-  ) => PromiseLike<{ data: RateLimitHitRow[] | null; error: { message: string } | null }>;
-};
-
 /**
  * Rate limit a fenetre fixe, partage entre toutes les instances serverless
  * (compteur en base via la RPC atomique rate_limit_hit).
@@ -42,8 +27,7 @@ export const checkPersistentRateLimit = async ({
   windowSeconds,
 }: PersistentCheckInput): Promise<RateLimitResult> => {
   try {
-    const client = supabaseAdmin as unknown as RateLimitRpcClient;
-    const { data, error } = await client.rpc("rate_limit_hit", {
+    const { data, error } = await supabaseAdmin.rpc("rate_limit_hit", {
       p_key: key,
       p_limit: limit,
       p_window_seconds: windowSeconds,

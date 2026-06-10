@@ -139,26 +139,6 @@ const loadSellerProjectsByClientProject = async (
   return map;
 };
 
-type AddressRpc = {
-  rpc: (
-    name: "mynotary_match_seller_project_by_address",
-    args: { p_query: string; p_min_similarity: number; p_limit: number }
-  ) => Promise<{
-    data: Array<{ seller_project_id: string; similarity: number }> | null;
-    error: { message: string } | null;
-  }>;
-};
-
-type NamesRpc = {
-  rpc: (
-    name: "mynotary_match_seller_project_by_names",
-    args: { p_names: string[]; p_min_similarity: number; p_limit: number }
-  ) => Promise<{
-    data: Array<{ seller_project_id: string; similarity: number }> | null;
-    error: { message: string } | null;
-  }>;
-};
-
 const upsertCandidate = (
   candidates: Map<string, Candidate>,
   sellerProject: SellerProjectLite | null,
@@ -342,22 +322,7 @@ const upsertSuggestion = async (input: {
   // The uniqueness guard is a *partial* index (… where status = 'pending'),
   // which PostgREST upsert/onConflict cannot target. Do an explicit
   // select-then-update/insert keyed on the live (pending) row instead.
-  // `reconciliation_suggestions` is not in the generated Database types,
-  // so cast a minimal builder shape (same pattern as applyAutoLink).
-  type Result = { error: { message: string } | null };
-  type Filterable = {
-    select: (cols: string) => Filterable;
-    eq: (col: string, val: string) => Filterable;
-    maybeSingle: () => Promise<{ data: { id: string } | null; error: { message: string } | null }>;
-  };
-  const db = supabaseAdmin as unknown as {
-    from: (table: "reconciliation_suggestions") => Filterable & {
-      update: (row: Record<string, unknown>) => { eq: (col: string, val: string) => Promise<Result> };
-      insert: (row: Record<string, unknown>) => Promise<Result>;
-    };
-  };
-
-  const { data: existing, error: selectError } = await db
+  const { data: existing, error: selectError } = await supabaseAdmin
     .from("reconciliation_suggestions")
     .select("id")
     .eq("source_kind", input.kind)
@@ -371,7 +336,7 @@ const upsertSuggestion = async (input: {
   }
 
   if (existing?.id) {
-    const { error: updateError } = await db
+    const { error: updateError } = await supabaseAdmin
       .from("reconciliation_suggestions")
       .update({
         score: input.score,
@@ -385,7 +350,7 @@ const upsertSuggestion = async (input: {
     return;
   }
 
-  const { error: insertError } = await db
+  const { error: insertError } = await supabaseAdmin
     .from("reconciliation_suggestions")
     .insert({
       source_kind: input.kind,
@@ -407,14 +372,7 @@ const applyAutoLink = async (
   candidate: Candidate
 ): Promise<void> => {
   if (facts.kind === "mynotary_document") {
-    const writer = supabaseAdmin as unknown as {
-      from: (table: "mynotary_signed_documents") => {
-        update: (row: Record<string, unknown>) => {
-          eq: (col: string, value: string) => Promise<{ error: unknown }>;
-        };
-      };
-    };
-    await writer
+    await supabaseAdmin
       .from("mynotary_signed_documents")
       .update({
         matched_seller_project_id: candidate.sellerProjectId,
@@ -450,8 +408,7 @@ const buildScoredCandidates = async (
 
   // 1. Address candidates (seller_leads.property_address RPC).
   if (normalizedAddress) {
-    const addressRpc = supabaseAdmin as unknown as AddressRpc;
-    const { data: addrRows } = await addressRpc.rpc(
+    const { data: addrRows } = await supabaseAdmin.rpc(
       "mynotary_match_seller_project_by_address",
       { p_query: normalizedAddress, p_min_similarity: 0.5, p_limit: 5 }
     );
@@ -473,7 +430,6 @@ const buildScoredCandidates = async (
   //     the property, not on a seller_lead, so the lead-based RPC above
   //     would never surface them.
   if (normalizedAddress) {
-    const propRpc = supabaseAdmin as unknown as PropertyMatchRpc;
     // Low threshold on purpose: the RPC compares the *raw* formatted_address
     // against the normalized query, so formatting differences (e.g.
     // "… Alpes-Maritimes" vs "… France 06000") drag the trigram score down
@@ -481,7 +437,7 @@ const buildScoredCandidates = async (
     // (0.3 × 0.7 ≈ 0.21, below the suggestion threshold), so a candidate only
     // survives here if the price + surface bands also confirm it — gated by
     // the address_price_surface rule below.
-    const { data: propRows } = await propRpc.rpc("mynotary_match_address", {
+    const { data: propRows } = await supabaseAdmin.rpc("mynotary_match_address", {
       p_query: normalizedAddress,
       p_min_similarity: 0.3,
       p_limit: 8,
@@ -549,8 +505,7 @@ const buildScoredCandidates = async (
     )
   );
   if (names.length > 0) {
-    const namesRpc = supabaseAdmin as unknown as NamesRpc;
-    const { data: nameRows } = await namesRpc.rpc(
+    const { data: nameRows } = await supabaseAdmin.rpc(
       "mynotary_match_seller_project_by_names",
       { p_names: names, p_min_similarity: 0.55, p_limit: 5 }
     );
@@ -693,16 +648,6 @@ type SignedDocFactsRow = {
   raw_payload: { parsed?: { inline_address?: string | null } } | null;
 };
 
-type PropertyMatchRpc = {
-  rpc: (
-    name: "mynotary_match_address",
-    args: { p_query: string; p_min_similarity: number; p_limit: number }
-  ) => Promise<{
-    data: Array<{ property_id: string; similarity: number }> | null;
-    error: { message: string } | null;
-  }>;
-};
-
 // Case 1 (SweepBright + MyNotary, no estimator): a mandate is signed in
 // MyNotary, the property exists in SweepBright but no Sillage dossier
 // exists yet. We create the dossier from the SweepBright property +
@@ -720,8 +665,7 @@ const tryAutoCreateProjectFromMyNotary = async (
   const normalizedAddress = normalizeAddress(facts.address);
   if (!normalizedAddress) return null;
 
-  const rpc = supabaseAdmin as unknown as PropertyMatchRpc;
-  const { data: propRows } = await rpc.rpc("mynotary_match_address", {
+  const { data: propRows } = await supabaseAdmin.rpc("mynotary_match_address", {
     p_query: normalizedAddress,
     p_min_similarity: 0.6,
     p_limit: 1,
@@ -744,14 +688,7 @@ const tryAutoCreateProjectFromMyNotary = async (
     propertyId,
   });
 
-  const writer = supabaseAdmin as unknown as {
-    from: (table: "mynotary_signed_documents") => {
-      update: (row: Record<string, unknown>) => {
-        eq: (col: string, value: string) => Promise<{ error: unknown }>;
-      };
-    };
-  };
-  await writer
+  await supabaseAdmin
     .from("mynotary_signed_documents")
     .update({
       matched_seller_project_id: created.sellerProjectId,

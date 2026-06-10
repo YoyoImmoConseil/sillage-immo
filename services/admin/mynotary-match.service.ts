@@ -59,25 +59,16 @@ type DocRow = {
 export const getMyNotaryMatchContext = async (
   documentId: string
 ): Promise<MyNotaryMatchContext | null> => {
-  const reader = supabaseAdmin as unknown as {
-    from: (table: "mynotary_signed_documents") => {
-      select: (cols: string) => {
-        eq: (
-          col: string,
-          value: string
-        ) => {
-          maybeSingle: () => Promise<{ data: DocRow | null }>;
-        };
-      };
-    };
-  };
-  const { data: doc } = await reader
+  const { data } = await supabaseAdmin
     .from("mynotary_signed_documents")
     .select(
       "id, mynotary_contract_id, contract_kind, signed_at, seller_contacts, property_price, living_area, matched_seller_project_id, matched_property_id, raw_payload"
     )
     .eq("id", documentId)
     .maybeSingle();
+  // jsonb columns (seller_contacts / raw_payload) — narrow to the shapes
+  // written at ingestion.
+  const doc = data as DocRow | null;
   if (!doc) return null;
 
   const candidates = await previewMyNotaryCandidates(documentId, 5);

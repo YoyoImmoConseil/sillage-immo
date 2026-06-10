@@ -325,17 +325,14 @@ const bumpDailyUsage = async (
   type BumpRow = {
     cost_micros_total: number | string | null;
   };
-  const { data, error } = await supabaseAdmin.rpc(
-    "bump_ai_copilot_usage" as never,
-    {
-      p_admin_profile_id: adminProfileId,
-      p_tokens_in: usage.tokensIn,
-      p_tokens_out: usage.tokensOut,
-      p_cost_micros: usage.costMicros,
-      p_iterations: usage.iterations,
-      p_conversations: usage.conversations,
-    } as never
-  );
+  const { data, error } = await supabaseAdmin.rpc("bump_ai_copilot_usage", {
+    p_admin_profile_id: adminProfileId,
+    p_tokens_in: usage.tokensIn,
+    p_tokens_out: usage.tokensOut,
+    p_cost_micros: usage.costMicros,
+    p_iterations: usage.iterations,
+    p_conversations: usage.conversations,
+  });
   if (error) {
     console.error("[copilot] bump_ai_copilot_usage failed:", error.message);
     return { costMicrosTotal: 0 };
@@ -578,22 +575,12 @@ export const runCopilotTurn = async (
 };
 
 export const getCopilotUsageToday = async (adminProfileId: string) => {
-  const { data } = await supabaseAdmin
-    .from("ai_copilot_usage_daily" as never)
+  const { data: row } = await supabaseAdmin
+    .from("ai_copilot_usage_daily")
     .select("tokens_in_total, tokens_out_total, cost_micros_total, iterations_total, conversations_total")
     .eq("admin_profile_id", adminProfileId)
     .eq("day", new Date().toISOString().slice(0, 10))
     .maybeSingle();
-  const row =
-    (data as
-      | {
-          tokens_in_total: number | string | null;
-          tokens_out_total: number | string | null;
-          cost_micros_total: number | string | null;
-          iterations_total: number | null;
-          conversations_total: number | null;
-        }
-      | null) ?? null;
   const costMicros = Number(row?.cost_micros_total ?? 0);
   return {
     tokensIn: Number(row?.tokens_in_total ?? 0),

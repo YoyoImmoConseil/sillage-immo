@@ -148,48 +148,6 @@ const extractTopicKeywords = (text: string, max = 3): string[] => {
     .slice(0, max);
 };
 
-// Reader types for the union queries below. We use narrow `as unknown
-// as ...` casts per call-site so the dashboard does not require a
-// fresh Supabase types regen every time we touch the milestone columns.
-
-type MyNotaryUnionReader = {
-  from: (table: "mynotary_signed_documents") => {
-    select: (cols: string) => {
-      eq: (col: string, value: string) => {
-        is: (col: string, value: unknown) => {
-          gte: (col: string, value: string) => {
-            lt: (col: string, value: string) => Promise<{
-              data: Array<{ matched_seller_project_id: string | null }> | null;
-              error: { message: string } | null;
-            }>;
-          } & Promise<{
-            data: Array<{ matched_seller_project_id: string | null }> | null;
-            error: { message: string } | null;
-          }>;
-        };
-      };
-    };
-  };
-};
-
-type SellerProjectsMilestoneReader = {
-  from: (table: "seller_projects") => {
-    select: (cols: string) => {
-      not: (col: string, op: string, value: unknown) => {
-        gte: (col: string, value: string) => {
-          lt: (col: string, value: string) => Promise<{
-            data: Array<{ id: string }> | null;
-            error: { message: string } | null;
-          }>;
-        } & Promise<{
-          data: Array<{ id: string }> | null;
-          error: { message: string } | null;
-        }>;
-      };
-    };
-  };
-};
-
 // Count the union of:
 //   1. MyNotary docs in window for `kind`, deleted_at IS NULL
 //   2. seller_projects.<milestoneColumn> in window
@@ -227,8 +185,7 @@ const countSignedUnion = async (
   let unmatchedMyNotaryCount = 0;
   const matchedProjectIds = new Set<string>();
   if (kind !== null) {
-    const reader = supabaseAdmin as unknown as MyNotaryUnionReader;
-    const { data: docs, error } = await reader
+    const { data: docs, error } = await supabaseAdmin
       .from("mynotary_signed_documents")
       .select("matched_seller_project_id")
       .eq("contract_kind", kind)
@@ -249,8 +206,7 @@ const countSignedUnion = async (
   // 2. seller_projects with the milestone set in window. The PostgREST
   //    `.not("col", "is", null)` filter gives us a stable way to ask
   //    "this milestone has been set".
-  const projectsReader = supabaseAdmin as unknown as SellerProjectsMilestoneReader;
-  const { data: projects } = await projectsReader
+  const { data: projects } = await supabaseAdmin
     .from("seller_projects")
     .select("id")
     .not(milestoneColumn, "is", null)

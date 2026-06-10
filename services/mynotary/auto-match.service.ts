@@ -42,107 +42,6 @@ import type {
 //      Nothing found — the document lands in /admin/mynotary
 //      "À rattacher" for a manager to fix manually.
 
-type SellerLeadsReader = {
-  from: (table: "seller_leads") => {
-    select: (cols: string) => {
-      in: (
-        col: string,
-        values: string[]
-      ) => Promise<{
-        data: Array<{ id: string; email: string | null; property_address: string | null }> | null;
-        error: { message: string } | null;
-      }>;
-      ilike: (
-        col: string,
-        value: string
-      ) => {
-        limit: (n: number) => Promise<{
-          data: Array<{ id: string; property_address: string | null }> | null;
-          error: { message: string } | null;
-        }>;
-      };
-    };
-  };
-};
-
-type SellerProjectsReader = {
-  from: (table: "seller_projects") => {
-    select: (cols: string) => {
-      in: (
-        col: string,
-        values: string[]
-      ) => {
-        order: (
-          col: string,
-          opts: { ascending: boolean }
-        ) => {
-          limit: (n: number) => Promise<{
-            data: Array<{ id: string; seller_lead_id: string | null }> | null;
-            error: { message: string } | null;
-          }>;
-        };
-      };
-    };
-  };
-};
-
-type PropertiesReader = {
-  from: (table: "properties") => {
-    select: (cols: string) => {
-      ilike: (
-        col: string,
-        value: string
-      ) => {
-        limit: (n: number) => Promise<{
-          data: Array<{ id: string; formatted_address: string | null }> | null;
-          error: { message: string } | null;
-        }>;
-      };
-    };
-  };
-};
-
-type MatchAddressRpc = {
-  rpc: (
-    name: "mynotary_match_address",
-    args: { p_query: string; p_min_similarity: number; p_limit: number }
-  ) => Promise<{
-    data: Array<{ property_id: string; similarity: number }> | null;
-    error: { message: string } | null;
-  }>;
-};
-
-type MatchSellerProjectAddressRpc = {
-  rpc: (
-    name: "mynotary_match_seller_project_by_address",
-    args: { p_query: string; p_min_similarity: number; p_limit: number }
-  ) => Promise<{
-    data: Array<{
-      seller_project_id: string;
-      seller_lead_id: string;
-      property_address: string | null;
-      similarity: number;
-    }> | null;
-    error: { message: string } | null;
-  }>;
-};
-
-type MatchSellerProjectNamesRpc = {
-  rpc: (
-    name: "mynotary_match_seller_project_by_names",
-    args: { p_names: string[]; p_min_similarity: number; p_limit: number }
-  ) => Promise<{
-    data: Array<{
-      seller_project_id: string;
-      seller_lead_id: string;
-      full_name: string | null;
-      matched_query: string | null;
-      similarity: number;
-    }> | null;
-    error: { message: string } | null;
-  }>;
-};
-
 type MatchOutcome = {
   sellerProjectId: string | null;
   propertyId: string | null;
@@ -251,8 +150,7 @@ const findByEmail = async (
   leadAddress: string | null;
 } | null> => {
   if (emails.length === 0) return null;
-  const leadsClient = supabaseAdmin as unknown as SellerLeadsReader;
-  const { data: leads } = await leadsClient
+  const { data: leads } = await supabaseAdmin
     .from("seller_leads")
     .select("id, email, property_address")
     .in("email", emails);
@@ -262,8 +160,7 @@ const findByEmail = async (
   const leadIds = leadList.map((l) => l.id);
   const leadAddress = leadList.find((l) => l.property_address)?.property_address ?? null;
 
-  const projectsClient = supabaseAdmin as unknown as SellerProjectsReader;
-  const { data: projects } = await projectsClient
+  const { data: projects } = await supabaseAdmin
     .from("seller_projects")
     .select("id, seller_lead_id")
     .in("seller_lead_id", leadIds)
@@ -281,9 +178,8 @@ const findPropertyByExactAddress = async (
   normalizedAddress: string
 ): Promise<string | null> => {
   if (!normalizedAddress) return null;
-  const propertiesClient = supabaseAdmin as unknown as PropertiesReader;
   const tokens = normalizedAddress.split(" ").slice(0, 4).join(" ");
-  const { data } = await propertiesClient
+  const { data } = await supabaseAdmin
     .from("properties")
     .select("id, formatted_address")
     .ilike("formatted_address", `%${tokens}%`)
@@ -301,8 +197,7 @@ const findPropertyByFuzzyAddress = async (
   normalizedAddress: string
 ): Promise<string | null> => {
   if (!normalizedAddress) return null;
-  const rpcClient = supabaseAdmin as unknown as MatchAddressRpc;
-  const { data, error } = await rpcClient.rpc("mynotary_match_address", {
+  const { data, error } = await supabaseAdmin.rpc("mynotary_match_address", {
     p_query: normalizedAddress,
     p_min_similarity: 0.6,
     p_limit: 1,
@@ -322,8 +217,7 @@ const findSellerProjectByNames = async (
   similarity: number;
 } | null> => {
   if (!names || names.length === 0) return null;
-  const rpcClient = supabaseAdmin as unknown as MatchSellerProjectNamesRpc;
-  const { data, error } = await rpcClient.rpc(
+  const { data, error } = await supabaseAdmin.rpc(
     "mynotary_match_seller_project_by_names",
     {
       p_names: names,
@@ -358,8 +252,7 @@ const findSellerProjectByLeadAddress = async (
   similarity: number;
 } | null> => {
   if (!normalizedAddress) return null;
-  const rpcClient = supabaseAdmin as unknown as MatchSellerProjectAddressRpc;
-  const { data, error } = await rpcClient.rpc(
+  const { data, error } = await supabaseAdmin.rpc(
     "mynotary_match_seller_project_by_address",
     {
       p_query: normalizedAddress,

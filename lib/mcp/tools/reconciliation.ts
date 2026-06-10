@@ -10,31 +10,6 @@ import { computePropertyGoldenRecord } from "@/services/properties/golden-record
 
 type GetInput = { clientProjectId: string };
 
-type PendingReader = {
-  from: (table: "reconciliation_suggestions") => {
-    select: (cols: string) => {
-      eq: (
-        col: string,
-        value: string
-      ) => {
-        eq: (
-          col: string,
-          value: string
-        ) => Promise<{
-          data: Array<{
-            id: string;
-            source_kind: string;
-            source_ref: string;
-            score: number;
-            reasons: unknown;
-          }> | null;
-          error: { message: string } | null;
-        }>;
-      };
-    };
-  };
-};
-
 export const reconciliationTools: ToolDefinition<unknown, unknown>[] = [
   {
     name: "reconciliation.get_unified_property",
@@ -56,8 +31,7 @@ export const reconciliationTools: ToolDefinition<unknown, unknown>[] = [
         return { found: false };
       }
 
-      const reader = supabaseAdmin as unknown as PendingReader;
-      const { data: suggestions } = await reader
+      const { data: suggestions } = await supabaseAdmin
         .from("reconciliation_suggestions")
         .select("id, source_kind, source_ref, score, reasons")
         .eq("target_client_project_id", clientProjectId)

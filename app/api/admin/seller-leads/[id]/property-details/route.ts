@@ -23,16 +23,6 @@ type PropertyDetailsInput = {
   notes?: string;
 };
 
-type SellerLeadsUpdater = {
-  from: (
-    table: "seller_leads"
-  ) => {
-    update: (values: { metadata: Record<string, unknown> }) => {
-      eq: (column: "id", value: string) => Promise<{ error: { message: string } | null }>;
-    };
-  };
-};
-
 export const PATCH = async (request: Request, { params }: RouteParams) => {
   const context = await getAdminRequestContext(request);
   if (!context || !hasAdminPermission(context, "leads.sellers.manage")) {
@@ -82,8 +72,7 @@ export const PATCH = async (request: Request, { params }: RouteParams) => {
       notes: body?.notes,
     }),
   });
-  const admin = supabaseAdmin as unknown as SellerLeadsUpdater;
-  const { error: updateError } = await admin
+  const { error: updateError } = await supabaseAdmin
     .from("seller_leads")
     .update({ metadata: nextMetadata })
     .eq("id", id);

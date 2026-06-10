@@ -1279,6 +1279,13 @@ export type Database = {
           mandate_status: string;
           latest_valuation_id: string | null;
           metadata: Record<string, unknown>;
+          mandate_signed_at: string | null;
+          mynotary_operation_id: string | null;
+          offer_received_at: string | null;
+          offer_buyer_lead_id: string | null;
+          offer_buyer_name: string | null;
+          preliminary_sale_signed_at: string | null;
+          deed_signed_at: string | null;
         };
         Insert: {
           id?: string;
@@ -1292,6 +1299,13 @@ export type Database = {
           mandate_status?: string;
           latest_valuation_id?: string | null;
           metadata?: Record<string, unknown>;
+          mandate_signed_at?: string | null;
+          mynotary_operation_id?: string | null;
+          offer_received_at?: string | null;
+          offer_buyer_lead_id?: string | null;
+          offer_buyer_name?: string | null;
+          preliminary_sale_signed_at?: string | null;
+          deed_signed_at?: string | null;
         };
         Update: {
           id?: string;
@@ -1305,6 +1319,13 @@ export type Database = {
           mandate_status?: string;
           latest_valuation_id?: string | null;
           metadata?: Record<string, unknown>;
+          mandate_signed_at?: string | null;
+          mynotary_operation_id?: string | null;
+          offer_received_at?: string | null;
+          offer_buyer_lead_id?: string | null;
+          offer_buyer_name?: string | null;
+          preliminary_sale_signed_at?: string | null;
+          deed_signed_at?: string | null;
         };
         Relationships: [
           {
@@ -1980,9 +2001,326 @@ export type Database = {
         };
         Relationships: [];
       };
+      ai_copilot_usage_daily: {
+        Row: {
+          id: string;
+          admin_profile_id: string;
+          day: string;
+          tokens_in_total: number;
+          tokens_out_total: number;
+          cost_micros_total: number;
+          iterations_total: number;
+          conversations_total: number;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          admin_profile_id: string;
+          day: string;
+          tokens_in_total?: number;
+          tokens_out_total?: number;
+          cost_micros_total?: number;
+          iterations_total?: number;
+          conversations_total?: number;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          admin_profile_id?: string;
+          day?: string;
+          tokens_in_total?: number;
+          tokens_out_total?: number;
+          cost_micros_total?: number;
+          iterations_total?: number;
+          conversations_total?: number;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "ai_copilot_usage_daily_admin_profile_id_fkey";
+            columns: ["admin_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "admin_profiles";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      app_settings: {
+        Row: {
+          key: string;
+          value: Record<string, unknown>;
+          updated_at: string;
+        };
+        Insert: {
+          key: string;
+          value?: Record<string, unknown>;
+          updated_at?: string;
+        };
+        Update: {
+          key?: string;
+          value?: Record<string, unknown>;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      mynotary_events: {
+        Row: {
+          id: string;
+          received_at: string;
+          processed_at: string | null;
+          error: string | null;
+          event_id: string;
+          event_type: string;
+          signature: string | null;
+          raw_payload: Record<string, unknown>;
+        };
+        Insert: {
+          id?: string;
+          received_at?: string;
+          processed_at?: string | null;
+          error?: string | null;
+          event_id: string;
+          event_type: string;
+          signature?: string | null;
+          raw_payload?: Record<string, unknown>;
+        };
+        Update: {
+          id?: string;
+          received_at?: string;
+          processed_at?: string | null;
+          error?: string | null;
+          event_id?: string;
+          event_type?: string;
+          signature?: string | null;
+          raw_payload?: Record<string, unknown>;
+        };
+        Relationships: [];
+      };
+      mynotary_signed_documents: {
+        Row: {
+          id: string;
+          created_at: string;
+          updated_at: string;
+          deleted_at: string | null;
+          mynotary_operation_id: string;
+          mynotary_contract_id: string;
+          contract_kind: string;
+          contract_type_raw: string | null;
+          signed_at: string;
+          signers: unknown[];
+          files: unknown[];
+          raw_payload: Record<string, unknown>;
+          matched_seller_project_id: string | null;
+          matched_property_id: string | null;
+          match_confidence: number | null;
+          match_method: string | null;
+          match_attempted_at: string | null;
+          signed_document_path: string | null;
+          signature_proof_path: string | null;
+          mynotary_register_type: string | null;
+          seller_contacts: unknown[];
+          property_price: number | null;
+          living_area: number | null;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          deleted_at?: string | null;
+          mynotary_operation_id: string;
+          mynotary_contract_id: string;
+          contract_kind: string;
+          contract_type_raw?: string | null;
+          signed_at: string;
+          signers?: unknown[];
+          files?: unknown[];
+          raw_payload?: Record<string, unknown>;
+          matched_seller_project_id?: string | null;
+          matched_property_id?: string | null;
+          match_confidence?: number | null;
+          match_method?: string | null;
+          match_attempted_at?: string | null;
+          signed_document_path?: string | null;
+          signature_proof_path?: string | null;
+          mynotary_register_type?: string | null;
+          seller_contacts?: unknown[];
+          property_price?: number | null;
+          living_area?: number | null;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          deleted_at?: string | null;
+          mynotary_operation_id?: string;
+          mynotary_contract_id?: string;
+          contract_kind?: string;
+          contract_type_raw?: string | null;
+          signed_at?: string;
+          signers?: unknown[];
+          files?: unknown[];
+          raw_payload?: Record<string, unknown>;
+          matched_seller_project_id?: string | null;
+          matched_property_id?: string | null;
+          match_confidence?: number | null;
+          match_method?: string | null;
+          match_attempted_at?: string | null;
+          signed_document_path?: string | null;
+          signature_proof_path?: string | null;
+          mynotary_register_type?: string | null;
+          seller_contacts?: unknown[];
+          property_price?: number | null;
+          living_area?: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "mynotary_signed_documents_matched_seller_project_id_fkey";
+            columns: ["matched_seller_project_id"];
+            isOneToOne: false;
+            referencedRelation: "seller_projects";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "mynotary_signed_documents_matched_property_id_fkey";
+            columns: ["matched_property_id"];
+            isOneToOne: false;
+            referencedRelation: "properties";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      reconciliation_suggestions: {
+        Row: {
+          id: string;
+          created_at: string;
+          updated_at: string;
+          source_kind: string;
+          source_ref: string;
+          target_client_project_id: string | null;
+          score: number;
+          reasons: unknown[];
+          fields_preview: Record<string, unknown>;
+          status: string;
+          resolved_at: string | null;
+          resolved_by_admin_profile_id: string | null;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          source_kind: string;
+          source_ref: string;
+          target_client_project_id?: string | null;
+          score?: number;
+          reasons?: unknown[];
+          fields_preview?: Record<string, unknown>;
+          status?: string;
+          resolved_at?: string | null;
+          resolved_by_admin_profile_id?: string | null;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          source_kind?: string;
+          source_ref?: string;
+          target_client_project_id?: string | null;
+          score?: number;
+          reasons?: unknown[];
+          fields_preview?: Record<string, unknown>;
+          status?: string;
+          resolved_at?: string | null;
+          resolved_by_admin_profile_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "reconciliation_suggestions_target_client_project_id_fkey";
+            columns: ["target_client_project_id"];
+            isOneToOne: false;
+            referencedRelation: "client_projects";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "reconciliation_suggestions_resolved_by_admin_profile_id_fkey";
+            columns: ["resolved_by_admin_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "admin_profiles";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      mynotary_match_address: {
+        Args: {
+          p_query: string;
+          p_min_similarity?: number;
+          p_limit?: number;
+        };
+        Returns: Array<{
+          property_id: string;
+          similarity: number;
+        }>;
+      };
+      mynotary_match_seller_project_by_address: {
+        Args: {
+          p_query: string;
+          p_min_similarity?: number;
+          p_limit?: number;
+        };
+        Returns: Array<{
+          seller_project_id: string;
+          seller_lead_id: string;
+          property_address: string;
+          similarity: number;
+        }>;
+      };
+      mynotary_match_seller_project_by_names: {
+        Args: {
+          p_names: string[];
+          p_min_similarity?: number;
+          p_limit?: number;
+        };
+        Returns: Array<{
+          seller_project_id: string;
+          seller_lead_id: string;
+          full_name: string;
+          matched_query: string;
+          similarity: number;
+        }>;
+      };
+      bump_ai_copilot_usage: {
+        Args: {
+          p_admin_profile_id: string;
+          p_tokens_in: number;
+          p_tokens_out: number;
+          p_cost_micros: number;
+          p_iterations?: number;
+          p_conversations?: number;
+        };
+        Returns: Array<{
+          day: string;
+          tokens_in_total: number;
+          tokens_out_total: number;
+          cost_micros_total: number;
+          iterations_total: number;
+          conversations_total: number;
+        }>;
+      };
+      rate_limit_hit: {
+        Args: {
+          p_key: string;
+          p_limit: number;
+          p_window_seconds: number;
+        };
+        Returns: Array<{
+          allowed: boolean;
+          remaining: number;
+          reset_at: string;
+        }>;
+      };
+    };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };
