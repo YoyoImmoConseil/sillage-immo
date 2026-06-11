@@ -2,11 +2,7 @@ import "server-only";
 import { createHmac, timingSafeEqual } from "crypto";
 import { hashValue } from "@/lib/audit/hash";
 import { serverEnv } from "@/lib/env/server";
-import { supabaseAdmin } from "@/lib/supabase/admin";
 import type { SweepBrightWebhookPayload } from "@/types/api/sweepbright";
-import type { Database } from "@/types/db/supabase";
-
-type WebhookDeliveryRow = Database["public"]["Tables"]["crm_webhook_deliveries"]["Row"];
 
 const isSweepBrightWebhookPayload = (value: unknown): value is SweepBrightWebhookPayload => {
   if (!value || typeof value !== "object") return false;
@@ -80,49 +76,5 @@ export const buildSweepBrightWebhookEventKey = (input: {
   );
 };
 
-export const registerSweepBrightWebhookDelivery = async (input: {
-  payload: SweepBrightWebhookPayload;
-  rawBody: string;
-  signature: string | null;
-}) => {
-  const eventKey = buildSweepBrightWebhookEventKey({
-    rawBody: input.rawBody,
-    payload: input.payload,
-  });
-
-  const { data: existing, error: readError } = await supabaseAdmin
-    .from("crm_webhook_deliveries")
-    .select("*")
-    .eq("provider", "sweepbright")
-    .eq("event_key", eventKey)
-    .maybeSingle();
-
-  if (readError) {
-    throw new Error(readError.message);
-  }
-
-  if (existing) {
-    return { duplicate: true as const, delivery: existing as WebhookDeliveryRow };
-  }
-
-  const { data, error } = await supabaseAdmin
-    .from("crm_webhook_deliveries")
-    .insert({
-      provider: "sweepbright",
-      event_name: input.payload.event,
-      event_key: eventKey,
-      estate_id: input.payload.estate_id,
-      company_id: input.payload.company_id,
-      payload: input.payload as unknown as Record<string, unknown>,
-      signature: input.signature,
-      status: "received",
-    })
-    .select("*")
-    .single();
-
-  if (error || !data) {
-    throw new Error(error?.message ?? "Unable to register SweepBright webhook delivery.");
-  }
-
-  return { duplicate: false as const, delivery: data as WebhookDeliveryRow };
-};
+// L'enregistrement de la livraison (déduplication incluse) passe désormais
+// par le rail d'ingestion commun : lib/ingestion/delivery-queue.ts.
