@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { checkRateLimit, extractClientIp } from "@/lib/rate-limit/in-memory";
-import { isClientPortalDirectAccessEnabled } from "@/lib/client-space/direct-access";
+import { getAdminRequestContext, hasAdminPermission } from "@/lib/admin/auth";
 import {
   buyerSearchCriteriaSchema,
   toBuyerSignupCriteria,
@@ -9,42 +8,32 @@ import {
 import { sendClientPortalMagicLink } from "@/services/clients/client-portal-magic-link.service";
 import { createBuyerSearchSignup } from "@/services/buyers/buyer-signup.service";
 
+export const dynamic = "force-dynamic";
+
+const ADMIN_ORIGIN = "admin_manual_creation";
+
+// Création manuelle d'un acquéreur depuis le back-office. Réutilise le rail
+// public (createBuyerSearchSignup) : lead + profil client + projet + espace
+// Sillage + invitation, puis envoi du magic link d'activation.
+//
+// Différence avec le flux public : le consentement RGPD est recueilli hors
+// ligne par l'utilisateur admin (champ `rgpdConsentCollected`), pas via la
+// case cochée par le client lui-même.
 const payloadSchema = z.object({
   firstName: z.string().trim().min(1).max(120),
   lastName: z.string().trim().min(1).max(120),
   email: z.string().trim().email().max(240),
   phone: z.string().trim().max(60).optional().nullable(),
-  rgpdAccepted: z.literal(true),
-  sourceUrl: z.string().trim().max(2048).optional().nullable(),
-  initialFilters: z.record(z.string(), z.unknown()).optional(),
+  rgpdConsentCollected: z.literal(true),
   criteria: buyerSearchCriteriaSchema,
 });
 
-const RATE_LIMIT = 6;
-const RATE_WINDOW_MS = 10 * 60 * 1000;
-
 export const POST = async (request: Request) => {
-  const requestUrl = new URL(request.url);
-  const ip = extractClientIp(request.headers);
-
-  const rate = checkRateLimit({
-    key: `buyer-searches:${ip}`,
-    limit: RATE_LIMIT,
-    windowMs: RATE_WINDOW_MS,
-  });
-  if (!rate.ok) {
+  const context = await getAdminRequestContext(request);
+  if (!context || !hasAdminPermission(context, "leads.buyers.manage")) {
     return NextResponse.json(
-      {
-        ok: false,
-        code: "rate_limited",
-        message: "Trop de tentatives. Merci de reessayer dans quelques minutes.",
-      },
-      {
-        status: 429,
-        headers: {
-          "Retry-After": String(Math.max(1, Math.ceil((rate.resetAt - Date.now()) / 1000))),
-        },
-      }
+      { ok: false, code: "forbidden", message: "Acces refuse." },
+      { status: 403 }
     );
   }
 
@@ -75,6 +64,7 @@ export const POST = async (request: Request) => {
   }
 
   const input = parsed.data;
+  const requestUrl = new URL(request.url);
 
   try {
     const signup = await createBuyerSearchSignup({
@@ -83,82 +73,68 @@ export const POST = async (request: Request) => {
       email: input.email,
       phone: input.phone ?? null,
       rgpdAcceptedAt: new Date().toISOString(),
-      sourceUrl: input.sourceUrl ?? null,
-      initialFilters: input.initialFilters,
+      sourceUrl: null,
+      initialFilters: {
+        createdByAdminProfileId: context.profile?.id ?? null,
+        rgpdConsentSource: "admin_manual",
+      },
       criteria: toBuyerSignupCriteria(input.criteria),
+      origin: ADMIN_ORIGIN,
+      createdByAdminId: context.profile?.id ?? null,
     });
 
     const email = input.email.trim().toLowerCase();
     const nextPath = `/espace-client/recherches/${signup.clientProjectId}`;
 
+    let emailSent = true;
+    let emailFailureCode: string | undefined;
     try {
       const sent = await sendClientPortalMagicLink({
         email,
         nextPath,
         inviteToken: signup.invitationToken,
         origin: requestUrl.origin,
-        baseUrlOverride: isClientPortalDirectAccessEnabled(requestUrl.host)
-          ? requestUrl.origin
-          : undefined,
       });
-
       if (!sent.ok) {
-        return NextResponse.json(
-          {
-            ok: true,
-            code: "signup_created_email_failed",
-            message:
-              "Recherche enregistree mais l'envoi de l'email de verification a echoue. Vous pouvez redemander un lien depuis /espace-client/login.",
-            data: {
-              clientProjectId: signup.clientProjectId,
-              buyerSearchProfileId: signup.buyerSearchProfileId,
-              emailFailureCode: sent.code,
-            },
-          },
-          { status: 201 }
-        );
+        emailSent = false;
+        emailFailureCode = sent.code;
       }
     } catch (error) {
+      emailSent = false;
       console.error(
-        "[buyer-searches] verification email failed:",
+        "[admin/buyer-leads] invitation email failed:",
         error instanceof Error ? error.message : error
-      );
-      return NextResponse.json(
-        {
-          ok: true,
-          code: "signup_created_email_failed",
-          message:
-            "Recherche enregistree mais l'envoi de l'email de verification a echoue. Vous pouvez redemander un lien depuis /espace-client/login.",
-          data: {
-            clientProjectId: signup.clientProjectId,
-            buyerSearchProfileId: signup.buyerSearchProfileId,
-          },
-        },
-        { status: 201 }
       );
     }
 
     return NextResponse.json(
       {
         ok: true,
+        code: emailSent ? "created" : "created_email_failed",
+        message: emailSent
+          ? "Acquereur cree et invitation envoyee."
+          : "Acquereur cree mais l'envoi de l'invitation a echoue. Vous pouvez renvoyer un lien depuis la fiche.",
         data: {
+          buyerLeadId: signup.buyerLeadId,
           clientProjectId: signup.clientProjectId,
           buyerSearchProfileId: signup.buyerSearchProfileId,
           email,
+          emailSent,
+          emailFailureCode,
         },
       },
       { status: 201 }
     );
   } catch (error) {
     console.error(
-      "[buyer-searches] signup failed:",
+      "[admin/buyer-leads] manual creation failed:",
       error instanceof Error ? error.message : error
     );
     return NextResponse.json(
       {
         ok: false,
-        code: "signup_failed",
-        message: "Impossible d'enregistrer la recherche. Merci de reessayer.",
+        code: "creation_failed",
+        message: "Impossible de creer l'acquereur. Merci de reessayer.",
       },
       { status: 500 }
     );
