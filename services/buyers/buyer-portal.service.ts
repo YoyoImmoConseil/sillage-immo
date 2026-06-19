@@ -74,20 +74,41 @@ const toSearchProfileSnapshot = (row: BuyerSearchProfileRow): BuyerSearchProfile
   criteria: row.criteria ?? {},
 });
 
+// Buyer project access mirrors the seller indivision rule: a client may
+// reach a buyer project either as the historical primary
+// (client_projects.client_profile_id) OR via an active membership row in
+// client_project_clients (role primary | co_owner, removed_at IS NULL).
+// This keeps a co-acquéreur's view consistent with the dashboard list,
+// which already resolves access through client_project_clients.
+const hasActiveProjectMembership = async (input: {
+  clientProfileId: string;
+  clientProjectId: string;
+}): Promise<boolean> => {
+  const { data, error } = await supabaseAdmin
+    .from("client_project_clients")
+    .select("id")
+    .eq("client_project_id", input.clientProjectId)
+    .eq("client_profile_id", input.clientProfileId)
+    .is("removed_at", null)
+    .maybeSingle();
+  if (error) throw error;
+  return Boolean(data);
+};
+
 export const getClientBuyerSearchDetail = async (input: {
   clientProfileId: string;
   clientProjectId: string;
 }): Promise<ClientBuyerSearchDetail | null> => {
-  // client_projects + buyer_projects can be resolved in parallel: both
-  // filter on the same client_project_id and do not depend on each other.
-  const [projectResult, buyerProjectResult] = await Promise.all([
+  // client_projects + buyer_projects + membership can be resolved in
+  // parallel: all filter on the same client_project_id and do not depend
+  // on each other.
+  const [projectResult, buyerProjectResult, membershipResult] = await Promise.all([
     supabaseAdmin
       .from("client_projects")
       .select(
         "id, client_profile_id, project_type, title, status, created_at"
       )
       .eq("id", input.clientProjectId)
-      .eq("client_profile_id", input.clientProfileId)
       .eq("project_type", "buyer")
       .maybeSingle(),
     supabaseAdmin
@@ -95,15 +116,28 @@ export const getClientBuyerSearchDetail = async (input: {
       .select("*")
       .eq("client_project_id", input.clientProjectId)
       .maybeSingle(),
+    supabaseAdmin
+      .from("client_project_clients")
+      .select("id")
+      .eq("client_project_id", input.clientProjectId)
+      .eq("client_profile_id", input.clientProfileId)
+      .is("removed_at", null)
+      .maybeSingle(),
   ]);
   if (projectResult.error) throw projectResult.error;
   if (buyerProjectResult.error) throw buyerProjectResult.error;
+  if (membershipResult.error) throw membershipResult.error;
 
   const project = projectResult.data as Pick<
     ClientProjectRow,
     "id" | "client_profile_id" | "project_type" | "title" | "status" | "created_at"
   > | null;
   if (!project) return null;
+
+  const hasAccess =
+    project.client_profile_id === input.clientProfileId || Boolean(membershipResult.data);
+  if (!hasAccess) return null;
+
   const buyerProject = (buyerProjectResult.data as BuyerProjectRow | null) ?? null;
 
   let searchProfileRow: BuyerSearchProfileRow | null = null;
@@ -372,7 +406,16 @@ const fetchSearchProfileForOwner = async (input: {
     .eq("id", input.clientProjectId)
     .maybeSingle();
   if (projectError) throw projectError;
-  if (!project || project.client_profile_id !== input.clientProfileId || project.project_type !== "buyer") {
+  if (!project || project.project_type !== "buyer") {
+    return null;
+  }
+  const hasAccess =
+    project.client_profile_id === input.clientProfileId ||
+    (await hasActiveProjectMembership({
+      clientProfileId: input.clientProfileId,
+      clientProjectId: input.clientProjectId,
+    }));
+  if (!hasAccess) {
     return null;
   }
 
@@ -478,11 +521,13 @@ export const archiveBuyerSearch = async (input: {
     .eq("id", profile.id);
   if (profileError) throw profileError;
 
+  // Access already authorized by fetchSearchProfileForOwner above (primary
+  // or active member), so the project update targets by id only — a
+  // co-acquéreur is allowed to archive a shared search.
   const { error: projectError } = await supabaseAdmin
     .from("client_projects")
     .update({ status: "archived", updated_at: nowIso })
-    .eq("id", input.clientProjectId)
-    .eq("client_profile_id", input.clientProfileId);
+    .eq("id", input.clientProjectId);
   if (projectError) throw projectError;
 
   return true;
