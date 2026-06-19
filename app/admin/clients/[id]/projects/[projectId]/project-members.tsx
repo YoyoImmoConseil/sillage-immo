@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { PersonAutocomplete, type PersonSuggestion } from "@/app/components/person-autocomplete";
 
 type ProjectMember = {
   clientProfileId: string;
@@ -194,15 +195,19 @@ export function ProjectMembersManager({
         >
           <div className="md:col-span-2">
             <label className="text-xs uppercase text-navy/60" htmlFor="member-email">
-              Email *
+              Email * (recherche une personne existante)
             </label>
-            <input
+            <PersonAutocomplete
               id="member-email"
-              type="email"
               required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 w-full rounded border px-3 py-2 text-sm"
+              email={email}
+              onEmailChange={setEmail}
+              onSelect={(person: PersonSuggestion) => {
+                setEmail(person.email);
+                setFirstName(person.firstName ?? "");
+                setLastName(person.lastName ?? "");
+                setPhone(person.phone ?? "");
+              }}
               placeholder="personne@exemple.fr"
             />
           </div>

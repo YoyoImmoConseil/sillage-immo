@@ -79,6 +79,55 @@ export const findClientByPhone = async (phone: string): Promise<ClientProfileLoo
   return data as ClientProfileLookup | null;
 };
 
+export type ClientProfileSearchResult = {
+  id: string;
+  email: string;
+  phone: string | null;
+  fullName: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  accountActivated: boolean;
+};
+
+// PostgREST .or() uses commas/parentheses as separators, so any of those in
+// the raw term would break the filter. We strip them before interpolation.
+const sanitizeSearchTerm = (value: string) => value.replace(/[,()%]/g, " ").trim();
+
+export const searchClientProfiles = async (
+  query: string,
+  limit = 8
+): Promise<ClientProfileSearchResult[]> => {
+  const term = sanitizeSearchTerm(query);
+  if (term.length < 2) return [];
+
+  const { data, error } = await supabaseAdmin
+    .from("client_profiles")
+    .select("id, email, phone, full_name, first_name, last_name, auth_user_id")
+    .eq("is_active", true)
+    .or(`email.ilike.%${term}%,full_name.ilike.%${term}%,phone.ilike.%${term}%`)
+    .order("full_name", { ascending: true })
+    .limit(limit);
+  if (error) throw error;
+
+  return ((data ?? []) as Array<{
+    id: string;
+    email: string;
+    phone: string | null;
+    full_name: string | null;
+    first_name: string | null;
+    last_name: string | null;
+    auth_user_id: string | null;
+  }>).map((row) => ({
+    id: row.id,
+    email: row.email,
+    phone: row.phone,
+    fullName: row.full_name,
+    firstName: row.first_name,
+    lastName: row.last_name,
+    accountActivated: Boolean(row.auth_user_id),
+  }));
+};
+
 export const createClientProfile = async (input: CreateClientProfileInput) => {
   const email = normalizeEmail(input.email);
   if (!email) throw new Error("Email client invalide.");
