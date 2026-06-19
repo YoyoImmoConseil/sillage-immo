@@ -88,9 +88,13 @@ const proposeTitleFromText = async (text: string): Promise<string | null> => {
         role: "system",
         content:
           "Tu nommes des documents immobiliers à partir d'un extrait de leur texte. " +
-          "Propose un nom de fichier court (3 à 8 mots), clair et professionnel, en français, " +
+          "Propose un nom de fichier court (3 à 9 mots), clair et professionnel, en français, " +
           "sans extension de fichier, qui décrit fidèlement le document (ex. « Diagnostic de performance énergétique », " +
           "« Compromis de vente », « Plan du bien », « Justificatif de financement »). " +
+          "Lorsqu'une date figurant dans le document caractérise celui-ci (par exemple un procès-verbal " +
+          "d'assemblée générale, un appel de fonds, un bilan ou un exercice comptable, un diagnostic daté), " +
+          "intègre au minimum l'année dans le nom (ex. « Procès-verbal d'assemblée générale 2024 », " +
+          "« Appel de fonds 2025 », « Bilan des charges 2023 »). " +
           "N'invente jamais d'information : base-toi uniquement sur le texte fourni. " +
           'Réponds strictement en JSON valide : {"title": string}. ' +
           "Si le texte est insuffisant ou illisible pour identifier le document avec certitude, " +
@@ -102,7 +106,7 @@ const proposeTitleFromText = async (text: string): Promise<string | null> => {
       },
     ],
     toolName: "documents.ai_rename",
-    toolVersion: "1.0.0",
+    toolVersion: "1.1.0",
   });
 
   try {
