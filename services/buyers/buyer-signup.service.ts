@@ -45,6 +45,14 @@ export type BuyerSignupInput = {
   sourceUrl?: string | null;
   initialFilters?: Record<string, unknown>;
   criteria: BuyerSignupCriteriaInput;
+  /**
+   * Origine de la création. Par défaut le signup public
+   * (`website_buyer_signup`). La création manuelle en back-office passe
+   * `admin_manual_creation`.
+   */
+  origin?: string;
+  /** Id du profil admin créateur (création manuelle), pour l'audit. */
+  createdByAdminId?: string | null;
 };
 
 export type BuyerSignupResult = {
@@ -150,7 +158,8 @@ export const createBuyerSearchSignup = async (
   const firstName = input.firstName.trim();
   const lastName = input.lastName.trim();
   const fullName = [firstName, lastName].filter(Boolean).join(" ").trim() || email;
-  const origin = "website_buyer_signup";
+  const origin = input.origin?.trim() || "website_buyer_signup";
+  const createdByAdminId = input.createdByAdminId ?? null;
 
   const contactIdentity = await ensureContactIdentity({
     email,
@@ -291,6 +300,7 @@ export const createBuyerSearchSignup = async (
       clientProfileId,
       email,
       providerHint: "email",
+      createdByAdminId: createdByAdminId ?? undefined,
     });
 
     try {
@@ -302,7 +312,8 @@ export const createBuyerSearchSignup = async (
 
     // Audit
     await supabaseAdmin.from("audit_log").insert({
-      actor_type: "anonymous",
+      actor_type: createdByAdminId ? "admin" : "anonymous",
+      actor_id: createdByAdminId,
       action: "buyer_signup_created",
       entity_type: "buyer_lead",
       entity_id: buyerLead.id,

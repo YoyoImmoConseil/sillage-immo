@@ -1,7 +1,11 @@
 import Link from "next/link";
 import { AdminShell } from "@/app/components/admin-shell";
-import { requireAdminPagePermission } from "@/lib/admin/auth";
+import { hasAdminPermission, requireAdminPagePermission } from "@/lib/admin/auth";
+import { getRequestLocale } from "@/lib/i18n/request";
+import { mergeWithCanonicalPropertyTypes } from "@/lib/properties/canonical-types";
 import { listBuyerLeadsForAdmin } from "@/services/buyers/buyer-lead.service";
+import { listPropertyTypesForBusinessType } from "@/services/properties/property-listing.service";
+import { CreateBuyerLead } from "./create-buyer-lead";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +21,15 @@ export default async function BuyerLeadsAdminPage({ searchParams }: BuyerLeadsPa
   const context = await requireAdminPagePermission("leads.buyers.view");
   const filters = (await searchParams) ?? {};
   const leads = await listBuyerLeadsForAdmin(filters);
+  const canCreate = hasAdminPermission(context, "leads.buyers.manage");
+
+  const [locale, dbSaleTypes, dbRentalTypes] = canCreate
+    ? await Promise.all([
+        getRequestLocale(),
+        listPropertyTypesForBusinessType("sale").catch(() => [] as string[]),
+        listPropertyTypesForBusinessType("rental").catch(() => [] as string[]),
+      ])
+    : ["fr" as const, [] as string[], [] as string[]];
 
   return (
     <AdminShell
@@ -25,6 +38,17 @@ export default async function BuyerLeadsAdminPage({ searchParams }: BuyerLeadsPa
       role={context.role}
       profileName={context.profile?.fullName ?? context.profile?.email ?? "Mode admin"}
     >
+      {canCreate ? (
+        <div className="mb-6 flex justify-end">
+          <CreateBuyerLead
+            locale={locale}
+            initialBusinessType="sale"
+            saleTypes={mergeWithCanonicalPropertyTypes("sale", dbSaleTypes)}
+            rentalTypes={mergeWithCanonicalPropertyTypes("rental", dbRentalTypes)}
+          />
+        </div>
+      ) : null}
+
       <form className="mb-6 grid gap-3 rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-5 md:grid-cols-4">
         <input className="rounded border px-3 py-2 text-sm" name="search" defaultValue={filters.search ?? ""} placeholder="Nom, email, telephone, notes" aria-label="Rechercher un lead acquéreur" />
         <select className="rounded border px-3 py-2 text-sm" name="status" defaultValue={filters.status ?? ""} aria-label="Filtrer par statut">
