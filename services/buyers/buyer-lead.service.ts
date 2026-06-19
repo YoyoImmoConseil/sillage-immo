@@ -24,6 +24,7 @@ export type BuyerLeadDetail = {
 
 export type BuyerLeadAdminProject = {
   clientProjectId: string;
+  clientProfileId: string;
   title: string | null;
   status: string;
   createdAt: string;
@@ -305,6 +306,7 @@ export const listBuyerLeadAdminProjects = async (
     const profile = profilesByProject.get(projectRow.id);
     result.push({
       clientProjectId: projectRow.id,
+      clientProfileId: projectRow.client_profile_id,
       title: projectRow.title,
       status: projectRow.status,
       createdAt: projectRow.created_at,
