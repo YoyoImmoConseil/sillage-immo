@@ -31,6 +31,10 @@ import {
 } from "@/services/documents/document-ai-rename.service";
 
 const APPLY = process.argv.includes("--apply");
+// Re-run the analysis on documents the AI already auto-renamed (status=done,
+// autoLabel=true). Use it to propagate a prompt change (e.g. keep the year).
+// Documents with a human/custom label (autoLabel != true) are never touched.
+const REPROCESS_DONE = process.argv.includes("--reprocess-done");
 
 // A label that still ends with a short file extension (".pdf", ".jpg"…) is a
 // default upload label; clean AI/human titles carry no extension.
@@ -54,11 +58,14 @@ type Row = {
   metadata: Record<string, unknown> | null;
 };
 
-const aiStatus = (metadata: Record<string, unknown> | null): string =>
-  (((metadata?.ai ?? {}) as { status?: string }).status ?? "");
+const readAi = (
+  metadata: Record<string, unknown> | null
+): Record<string, unknown> & { status?: string; autoLabel?: boolean } =>
+  (metadata?.ai ?? {}) as Record<string, unknown> & { status?: string; autoLabel?: boolean };
 
 const main = async () => {
-  console.log(`Document AI rename backfill — ${APPLY ? "APPLY" : "DRY-RUN"}`);
+  const mode = REPROCESS_DONE ? "REPROCESS-DONE" : "BACKFILL";
+  console.log(`Document AI rename ${mode} — ${APPLY ? "APPLY" : "DRY-RUN"}`);
   const summary = {
     eligible: 0,
     renamed: 0,
@@ -78,14 +85,26 @@ const main = async () => {
 
     const rows = (data ?? []) as Row[];
     for (const row of rows) {
-      const status = aiStatus(row.metadata);
-      if (status === "done" || status === "processing") {
-        summary.ignoredAlreadyDone += 1;
-        continue;
-      }
-      if (!FILENAME_LIKE.test(row.label)) {
-        summary.ignoredCustomLabel += 1;
-        continue;
+      const ai = readAi(row.metadata);
+      const status = ai.status ?? "";
+
+      if (REPROCESS_DONE) {
+        // Only re-run documents the AI itself renamed; never touch custom
+        // labels, in-flight, or skipped (no-text) documents.
+        if (ai.autoLabel !== true || status !== "done") {
+          if (status === "done" || status === "processing") summary.ignoredAlreadyDone += 1;
+          else summary.ignoredCustomLabel += 1;
+          continue;
+        }
+      } else {
+        if (status === "done" || status === "processing") {
+          summary.ignoredAlreadyDone += 1;
+          continue;
+        }
+        if (!FILENAME_LIKE.test(row.label)) {
+          summary.ignoredCustomLabel += 1;
+          continue;
+        }
       }
 
       summary.eligible += 1;
@@ -94,7 +113,6 @@ const main = async () => {
         continue;
       }
 
-      const ai = (row.metadata?.ai ?? {}) as Record<string, unknown>;
       const { error: seedError } = await supabaseAdmin
         .from(target.table)
         .update({
@@ -118,7 +136,7 @@ const main = async () => {
           .eq("id", row.id)
           .maybeSingle();
         const afterRow = after as { label: string; metadata: Record<string, unknown> | null } | null;
-        if (afterRow && aiStatus(afterRow.metadata) === "done") {
+        if (afterRow && readAi(afterRow.metadata).status === "done") {
           summary.renamed += 1;
           console.log(`  renamed ${row.id}: "${row.label}" → "${afterRow.label}"`);
         } else {

@@ -208,7 +208,9 @@ export const analyzeAndRenameDocument = async (input: {
       row.metadata,
       {
         status: "done",
-        originalLabel: row.label,
+        // Keep the very first original label across re-processings so we never
+        // lose the human/source filename behind a later AI title.
+        originalLabel: ai.originalLabel ?? row.label,
         model: AI_MODEL,
         renamedAt: new Date().toISOString(),
       },
