@@ -6,6 +6,9 @@ import { isClientPortalDirectAccessEnabled } from "@/lib/client-space/direct-acc
 import { serverEnv } from "@/lib/env/server";
 import { getClientById } from "@/services/clients/client-profile.service";
 import { getClientProjectById } from "@/services/clients/client-project.service";
+import { getBuyerProjectDetailForAdmin } from "@/services/buyers/buyer-lead.service";
+import { listMatchesForBuyerLead } from "@/services/buyers/buyer-matching.service";
+import { BuyerProjectView } from "./buyer-project-view";
 import {
   getSellerProjectDetail,
   getSellerProjectByClientProjectId,
@@ -49,6 +52,50 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
 
   const clientProject = await getClientProjectById(projectId);
   if (!clientProject || clientProject.client_profile_id !== clientId) notFound();
+
+  if (clientProject.project_type === "buyer") {
+    const buyerDetail = await getBuyerProjectDetailForAdmin(projectId);
+    if (!buyerDetail) notFound();
+    const matches = await listMatchesForBuyerLead(buyerDetail.buyerLeadId);
+    return (
+      <AdminShell
+        title={client.full_name ?? client.email}
+        description="Projet acquéreur · recherche et rapprochements."
+        role={context.role}
+        profileName={context.profile?.fullName ?? context.profile?.email ?? "Mode admin"}
+      >
+        <div className="mb-4 flex flex-wrap gap-4">
+          <Link href={`/admin/clients/${clientId}`} className="text-sm underline text-navy">
+            Retour au client
+          </Link>
+          <Link
+            href={`/admin/buyer-leads/${buyerDetail.buyerLeadId}`}
+            className="text-sm underline text-navy"
+          >
+            Voir le lead acquéreur
+          </Link>
+        </div>
+        <BuyerProjectView
+          buyerLeadId={buyerDetail.buyerLeadId}
+          project={{
+            title: clientProject.title,
+            status: clientProject.status,
+            createdAt: clientProject.created_at,
+          }}
+          client={{
+            fullName: client.full_name,
+            email: client.email,
+            phone: client.phone,
+            authUserId: client.auth_user_id,
+            lastLoginAt: client.last_login_at,
+          }}
+          lead={buyerDetail.lead}
+          searchProfile={buyerDetail.searchProfile}
+          matches={matches}
+        />
+      </AdminShell>
+    );
+  }
 
   const detail = await getSellerProjectDetail(projectId);
   if (!detail) notFound();

@@ -32,6 +32,12 @@ export type BuyerLeadAdminProject = {
   searchProfile: BuyerSearchProfileSnapshot | null;
 };
 
+export type BuyerProjectAdminDetail = {
+  buyerLeadId: string;
+  lead: BuyerLeadSnapshot;
+  searchProfile: BuyerSearchProfileSnapshot | null;
+};
+
 const normalizeStringArray = (value: string) => {
   return Array.from(
     new Set(
@@ -259,6 +265,56 @@ export const getBuyerLeadDetailForAdmin = async (buyerLeadId: string): Promise<B
   return {
     lead: mapBuyerLead(leadData as BuyerLeadRow),
     searchProfile: searchProfileData ? mapSearchProfile(searchProfileData as BuyerSearchProfileRow) : null,
+  };
+};
+
+export const getBuyerProjectDetailForAdmin = async (
+  clientProjectId: string
+): Promise<BuyerProjectAdminDetail | null> => {
+  const { data: buyerProject, error: buyerProjectError } = await supabaseAdmin
+    .from("buyer_projects")
+    .select("buyer_lead_id, active_search_profile_id")
+    .eq("client_project_id", clientProjectId)
+    .maybeSingle();
+  if (buyerProjectError) throw new Error(buyerProjectError.message);
+  if (!buyerProject?.buyer_lead_id) return null;
+
+  const buyerLeadId = buyerProject.buyer_lead_id;
+
+  const { data: leadData, error: leadError } = await supabaseAdmin
+    .from("buyer_leads")
+    .select("*")
+    .eq("id", buyerLeadId)
+    .maybeSingle();
+  if (leadError) throw new Error(leadError.message);
+  if (!leadData) return null;
+
+  let searchProfileRow: BuyerSearchProfileRow | null = null;
+  if (buyerProject.active_search_profile_id) {
+    const { data, error } = await supabaseAdmin
+      .from("buyer_search_profiles")
+      .select("*")
+      .eq("id", buyerProject.active_search_profile_id)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    searchProfileRow = (data as BuyerSearchProfileRow | null) ?? null;
+  }
+  if (!searchProfileRow) {
+    const { data, error } = await supabaseAdmin
+      .from("buyer_search_profiles")
+      .select("*")
+      .eq("client_project_id", clientProjectId)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    searchProfileRow = (data as BuyerSearchProfileRow | null) ?? null;
+  }
+
+  return {
+    buyerLeadId,
+    lead: mapBuyerLead(leadData as BuyerLeadRow),
+    searchProfile: searchProfileRow ? mapSearchProfile(searchProfileRow) : null,
   };
 };
 

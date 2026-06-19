@@ -86,10 +86,10 @@ export default async function BuyerLeadDetailPage({ params }: BuyerLeadDetailPag
                       ) : null}
                     </div>
                     <Link
-                      href={`/admin/clients/${project.clientProfileId}`}
+                      href={`/admin/clients/${project.clientProfileId}/projects/${project.clientProjectId}`}
                       className="text-sm underline"
                     >
-                      Voir la fiche client
+                      Voir le projet client
                     </Link>
                   </div>
                 </article>

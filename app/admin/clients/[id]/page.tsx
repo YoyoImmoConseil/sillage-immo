@@ -19,7 +19,10 @@ export default async function ClientDetailPage({ params }: ClientDetailPageProps
   const client = await getClientById(id);
   if (!client) notFound();
 
-  const projects = await getClientProjectsByClientId(id);
+  const [projects, buyerProjects] = await Promise.all([
+    getClientProjectsByClientId(id),
+    getClientProjectsByClientId(id, { projectTypes: ["buyer"] }),
+  ]);
   const canEdit = hasAdminPermission(context, "clients.edit");
   const canCreate = hasAdminPermission(context, "clients.create");
 
@@ -106,6 +109,33 @@ export default async function ClientDetailPage({ params }: ClientDetailPageProps
                       <p className="text-sm text-navy/70">
                         {p.sellerProject?.projectStatus ?? "-"} · {p.propertyCount} bien(s)
                       </p>
+                    </div>
+                    <span className="text-sm text-navy/60">Ouvrir →</span>
+                  </div>
+                </Link>
+              ))
+            )}
+          </div>
+        </section>
+
+        <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6">
+          <h2 className="text-xl font-semibold text-navy">Projets acquéreur</h2>
+          <div className="mt-4 space-y-3">
+            {buyerProjects.length === 0 ? (
+              <p className="text-sm text-navy/70">Aucun projet acquéreur.</p>
+            ) : (
+              buyerProjects.map((p) => (
+                <Link
+                  key={p.id}
+                  href={`/admin/clients/${id}/projects/${p.id}`}
+                  className="block rounded-xl border border-[rgba(20,20,70,0.12)] p-4 transition hover:border-[rgba(20,20,70,0.25)]"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-navy">
+                        {p.title ?? `Recherche ${p.id.slice(0, 8)}`}
+                      </p>
+                      <p className="text-sm text-navy/70">Statut : {p.status}</p>
                     </div>
                     <span className="text-sm text-navy/60">Ouvrir →</span>
                   </div>
