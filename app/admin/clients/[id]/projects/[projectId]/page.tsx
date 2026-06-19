@@ -5,10 +5,14 @@ import { requireAdminPagePermission, hasAdminPermission } from "@/lib/admin/auth
 import { isClientPortalDirectAccessEnabled } from "@/lib/client-space/direct-access";
 import { serverEnv } from "@/lib/env/server";
 import { getClientById } from "@/services/clients/client-profile.service";
-import { getClientProjectById } from "@/services/clients/client-project.service";
+import {
+  getClientProjectById,
+  listProjectMembersForAdmin,
+} from "@/services/clients/client-project.service";
 import { getBuyerProjectDetailForAdmin } from "@/services/buyers/buyer-lead.service";
 import { listMatchesForBuyerLead } from "@/services/buyers/buyer-matching.service";
 import { BuyerProjectView } from "./buyer-project-view";
+import { ProjectMembersManager } from "./project-members";
 import {
   getSellerProjectDetail,
   getSellerProjectByClientProjectId,
@@ -56,7 +60,12 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
   if (clientProject.project_type === "buyer") {
     const buyerDetail = await getBuyerProjectDetailForAdmin(projectId);
     if (!buyerDetail) notFound();
-    const matches = await listMatchesForBuyerLead(buyerDetail.buyerLeadId);
+    const [matches, buyerMembers] = await Promise.all([
+      listMatchesForBuyerLead(buyerDetail.buyerLeadId),
+      listProjectMembersForAdmin(projectId),
+    ]);
+    const canEditBuyer = hasAdminPermission(context, "clients.edit");
+    const canInviteBuyer = hasAdminPermission(context, "clients.invite");
     return (
       <AdminShell
         title={client.full_name ?? client.email}
@@ -75,24 +84,33 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
             Voir le lead acquéreur
           </Link>
         </div>
-        <BuyerProjectView
-          buyerLeadId={buyerDetail.buyerLeadId}
-          project={{
-            title: clientProject.title,
-            status: clientProject.status,
-            createdAt: clientProject.created_at,
-          }}
-          client={{
-            fullName: client.full_name,
-            email: client.email,
-            phone: client.phone,
-            authUserId: client.auth_user_id,
-            lastLoginAt: client.last_login_at,
-          }}
-          lead={buyerDetail.lead}
-          searchProfile={buyerDetail.searchProfile}
-          matches={matches}
-        />
+        <div className="space-y-6">
+          <ProjectMembersManager
+            clientId={clientId}
+            projectId={projectId}
+            members={buyerMembers}
+            canEdit={canEditBuyer}
+            canInvite={canInviteBuyer}
+          />
+          <BuyerProjectView
+            buyerLeadId={buyerDetail.buyerLeadId}
+            project={{
+              title: clientProject.title,
+              status: clientProject.status,
+              createdAt: clientProject.created_at,
+            }}
+            client={{
+              fullName: client.full_name,
+              email: client.email,
+              phone: client.phone,
+              authUserId: client.auth_user_id,
+              lastLoginAt: client.last_login_at,
+            }}
+            lead={buyerDetail.lead}
+            searchProfile={buyerDetail.searchProfile}
+            matches={matches}
+          />
+        </div>
       </AdminShell>
     );
   }
@@ -113,6 +131,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
   const sellerProjectRow = await getSellerProjectByClientProjectId(projectId);
   const goldenRecord = await computePropertyGoldenRecord(projectId);
   const advisors = canAssignAdvisor ? await listActiveAdvisors() : [];
+  const sellerMembers = await listProjectMembersForAdmin(projectId);
 
   return (
     <AdminShell
@@ -136,6 +155,13 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
       </div>
 
       <div className="space-y-6">
+        <ProjectMembersManager
+          clientId={clientId}
+          projectId={projectId}
+          members={sellerMembers}
+          canEdit={canEdit}
+          canInvite={canInvite}
+        />
         <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6">
           <h2 className="text-xl font-semibold text-navy">Rattachements</h2>
           <div className="mt-4 space-y-4">

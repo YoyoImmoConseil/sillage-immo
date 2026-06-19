@@ -339,6 +339,60 @@ export const listClientsForProject = async (
   return ordered;
 };
 
+export type ProjectMemberAdmin = {
+  clientProfileId: string;
+  role: ClientProjectClientRole;
+  isLegacyPrimary: boolean;
+  fullName: string | null;
+  email: string;
+  phone: string | null;
+  accountActivated: boolean;
+  lastLoginAt: string | null;
+};
+
+/**
+ * Admin-facing list of the persons attached to a project, enriched with
+ * their identity and portal account status. Legacy primary first.
+ */
+export const listProjectMembersForAdmin = async (
+  clientProjectId: string
+): Promise<ProjectMemberAdmin[]> => {
+  const members = await listClientsForProject(clientProjectId);
+  if (members.length === 0) return [];
+
+  const profileIds = members.map((m) => m.clientProfileId);
+  const { data: profiles, error } = await supabaseAdmin
+    .from("client_profiles")
+    .select("id, email, phone, full_name, auth_user_id, last_login_at")
+    .in("id", profileIds);
+  if (error) throw error;
+
+  const profileById = new Map(
+    ((profiles ?? []) as Array<{
+      id: string;
+      email: string;
+      phone: string | null;
+      full_name: string | null;
+      auth_user_id: string | null;
+      last_login_at: string | null;
+    }>).map((row) => [row.id, row])
+  );
+
+  return members.map((member) => {
+    const profile = profileById.get(member.clientProfileId);
+    return {
+      clientProfileId: member.clientProfileId,
+      role: member.role,
+      isLegacyPrimary: member.isLegacyPrimary,
+      fullName: profile?.full_name ?? null,
+      email: profile?.email ?? "",
+      phone: profile?.phone ?? null,
+      accountActivated: Boolean(profile?.auth_user_id),
+      lastLoginAt: profile?.last_login_at ?? null,
+    };
+  });
+};
+
 /**
  * True iff the given client_profile is attached to a client_project linked
  * to this property (via project_properties), either as legacy primary or

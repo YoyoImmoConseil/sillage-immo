@@ -3,7 +3,10 @@ import { getAdminRequestContext, hasAdminPermission } from "@/lib/admin/auth";
 import { createInvitation } from "@/services/clients/client-project-invitation.service";
 import { sendClientPortalMagicLink } from "@/services/clients/client-portal-magic-link.service";
 import { getClientById } from "@/services/clients/client-profile.service";
-import { getClientProjectById } from "@/services/clients/client-project.service";
+import {
+  getClientProjectById,
+  listClientsForProject,
+} from "@/services/clients/client-project.service";
 
 type RouteParams = { params: Promise<{ id: string; projectId: string }> };
 
@@ -24,11 +27,30 @@ export async function POST(request: Request, { params }: RouteParams) {
     return NextResponse.json({ ok: false, message: "Projet introuvable." }, { status: 404 });
   }
 
-  let body: { email?: string; providerHint?: "google" | "apple" | "microsoft" | "email" } = {};
+  let body: {
+    email?: string;
+    clientProfileId?: string;
+    providerHint?: "google" | "apple" | "microsoft" | "email";
+  } = {};
   try {
-    body = (await request.json()) as { email?: string; providerHint?: "google" | "apple" | "microsoft" | "email" };
+    body = (await request.json()) as typeof body;
   } catch {
     return NextResponse.json({ ok: false, message: "Corps JSON invalide." }, { status: 400 });
+  }
+
+  // The invitation targets a specific person (client_profile). By default it
+  // is the project's historical primary, but it can also target any active
+  // member (co-titulaire) so that this person activates THEIR own espace
+  // Sillage on their own auth account.
+  const targetProfileId = body.clientProfileId?.trim() || clientId;
+  if (targetProfileId !== clientId) {
+    const members = await listClientsForProject(projectId);
+    if (!members.some((member) => member.clientProfileId === targetProfileId)) {
+      return NextResponse.json(
+        { ok: false, message: "Personne non rattachée au projet." },
+        { status: 404 }
+      );
+    }
   }
 
   const email = body.email?.trim() ?? client.email;
@@ -43,7 +65,7 @@ export async function POST(request: Request, { params }: RouteParams) {
   try {
     invitation = await createInvitation({
       clientProjectId: projectId,
-      clientProfileId: clientId,
+      clientProfileId: targetProfileId,
       email,
       createdByAdminId: context.profile?.id,
       providerHint: body.providerHint,
