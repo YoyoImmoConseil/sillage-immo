@@ -13,6 +13,7 @@ import { getBuyerProjectDetailForAdmin } from "@/services/buyers/buyer-lead.serv
 import { listMatchesForBuyerLead } from "@/services/buyers/buyer-matching.service";
 import { BuyerProjectView } from "./buyer-project-view";
 import { ProjectMembersManager } from "./project-members";
+import { PresentedPropertiesAdmin } from "./presented-properties-admin";
 import {
   getSellerProjectDetail,
   getSellerProjectByClientProjectId,
@@ -109,6 +110,11 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
             lead={buyerDetail.lead}
             searchProfile={buyerDetail.searchProfile}
             matches={matches}
+          />
+          <PresentedPropertiesAdmin
+            clientId={clientId}
+            projectId={projectId}
+            canEdit={canEditBuyer}
           />
         </div>
       </AdminShell>

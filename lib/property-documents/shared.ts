@@ -65,6 +65,33 @@ export function propertyDocumentApiPaths(
   };
 }
 
+/**
+ * API paths for documents attached to a buyer "presented property" group.
+ * Admin endpoints are nested under the client project; the espace-client
+ * endpoints are addressed by the presented property id only (access is
+ * resolved server-side via project membership).
+ */
+export function presentedDocumentApiPaths(
+  args:
+    | { scope: "admin"; clientId: string; projectId: string; presentedId: string }
+    | { scope: "client"; presentedId: string }
+): PropertyDocumentApiPaths {
+  const base =
+    args.scope === "admin"
+      ? `/api/admin/clients/${args.clientId}/projects/${args.projectId}/presented-properties/${args.presentedId}/documents`
+      : `/api/espace-client/presented-properties/${args.presentedId}/documents`;
+  return {
+    list: base,
+    uploadUrl: `${base}/upload-url`,
+    create: base,
+    signedUrl: (documentId) => `${base}/${documentId}/signed-url`,
+    remove: (documentId) => `${base}/${documentId}`,
+    ...(args.scope === "admin"
+      ? { visibility: (documentId: string) => `${base}/${documentId}/visibility` }
+      : {}),
+  };
+}
+
 export function formatFileSize(bytes: number | null) {
   if (typeof bytes !== "number" || Number.isNaN(bytes)) return null;
   if (bytes < 1024) return `${bytes} o`;

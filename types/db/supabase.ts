@@ -1856,6 +1856,136 @@ export type Database = {
           }
         ];
       };
+      buyer_presented_properties: {
+        Row: {
+          id: string;
+          created_at: string;
+          updated_at: string;
+          client_project_id: string;
+          property_id: string | null;
+          label: string;
+          address: string | null;
+          city: string | null;
+          price_amount: number | null;
+          rooms: number | null;
+          living_area_m2: number | null;
+          external_url: string | null;
+          notes: string | null;
+          created_by_admin_profile_id: string | null;
+          archived_at: string | null;
+          metadata: Record<string, unknown>;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          client_project_id: string;
+          property_id?: string | null;
+          label: string;
+          address?: string | null;
+          city?: string | null;
+          price_amount?: number | null;
+          rooms?: number | null;
+          living_area_m2?: number | null;
+          external_url?: string | null;
+          notes?: string | null;
+          created_by_admin_profile_id?: string | null;
+          archived_at?: string | null;
+          metadata?: Record<string, unknown>;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          client_project_id?: string;
+          property_id?: string | null;
+          label?: string;
+          address?: string | null;
+          city?: string | null;
+          price_amount?: number | null;
+          rooms?: number | null;
+          living_area_m2?: number | null;
+          external_url?: string | null;
+          notes?: string | null;
+          created_by_admin_profile_id?: string | null;
+          archived_at?: string | null;
+          metadata?: Record<string, unknown>;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "buyer_presented_properties_client_project_id_fkey";
+            columns: ["client_project_id"];
+            isOneToOne: false;
+            referencedRelation: "client_projects";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      buyer_presented_property_documents: {
+        Row: {
+          id: string;
+          created_at: string;
+          updated_at: string;
+          presented_property_id: string;
+          kind: "file" | "link";
+          visibility: "admin_only" | "admin_and_client";
+          label: string;
+          external_url: string | null;
+          storage_bucket: string | null;
+          storage_path: string | null;
+          mime_type: string | null;
+          size_bytes: number | null;
+          uploaded_by_admin_profile_id: string | null;
+          uploaded_by_client_profile_id: string | null;
+          deleted_at: string | null;
+          metadata: Record<string, unknown>;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          presented_property_id: string;
+          kind: "file" | "link";
+          visibility?: "admin_only" | "admin_and_client";
+          label: string;
+          external_url?: string | null;
+          storage_bucket?: string | null;
+          storage_path?: string | null;
+          mime_type?: string | null;
+          size_bytes?: number | null;
+          uploaded_by_admin_profile_id?: string | null;
+          uploaded_by_client_profile_id?: string | null;
+          deleted_at?: string | null;
+          metadata?: Record<string, unknown>;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          presented_property_id?: string;
+          kind?: "file" | "link";
+          visibility?: "admin_only" | "admin_and_client";
+          label?: string;
+          external_url?: string | null;
+          storage_bucket?: string | null;
+          storage_path?: string | null;
+          mime_type?: string | null;
+          size_bytes?: number | null;
+          uploaded_by_admin_profile_id?: string | null;
+          uploaded_by_client_profile_id?: string | null;
+          deleted_at?: string | null;
+          metadata?: Record<string, unknown>;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "buyer_presented_property_documents_presented_property_id_fkey";
+            columns: ["presented_property_id"];
+            isOneToOne: false;
+            referencedRelation: "buyer_presented_properties";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       ai_conversations: {
         Row: {
           id: string;

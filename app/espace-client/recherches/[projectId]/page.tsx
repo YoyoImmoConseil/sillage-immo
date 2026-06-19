@@ -6,7 +6,9 @@ import { localizePath } from "@/lib/i18n/routing";
 import { formatPropertyTypeLabel } from "@/lib/i18n/domain";
 import { requireClientSpacePageContext } from "@/lib/client-space/auth";
 import { getClientBuyerSearchDetail } from "@/services/buyers/buyer-portal.service";
+import { listPresentedPropertiesForClient } from "@/services/buyers/buyer-presented-property.service";
 import { BuyerSearchDashboard } from "../_components/buyer-search-dashboard";
+import { PresentedPropertiesClient } from "../_components/presented-properties-client";
 
 type SavedBuyerSearchPageProps = {
   params: Promise<{ projectId: string }>;
@@ -24,6 +26,11 @@ export default async function SavedBuyerSearchPage(props: SavedBuyerSearchPagePr
   if (!detail) {
     notFound();
   }
+
+  const presentedProperties = await listPresentedPropertiesForClient(
+    projectId,
+    context.clientProfile.id
+  );
 
   const copy = {
     fr: {
@@ -373,6 +380,21 @@ export default async function SavedBuyerSearchPage(props: SavedBuyerSearchPagePr
           confirmArchive: copy.confirmArchive,
           labels: copy.labels,
         }}
+      />
+
+      <PresentedPropertiesClient
+        groups={presentedProperties.map((group) => ({
+          id: group.id,
+          label: group.label,
+          address: group.address,
+          city: group.city,
+          priceAmount: group.priceAmount,
+          rooms: group.rooms,
+          livingAreaM2: group.livingAreaM2,
+          externalUrl: group.externalUrl,
+        }))}
+        clientProfileId={context.clientProfile.id}
+        locale={locale}
       />
     </section>
   );
