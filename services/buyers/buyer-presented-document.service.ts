@@ -2,6 +2,10 @@ import "server-only";
 
 import { randomUUID } from "crypto";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import {
+  buildAiRenameSeed,
+  scheduleDocumentAiRename,
+} from "@/services/documents/document-ai-rename.service";
 
 export const PRESENTED_DOCUMENTS_BUCKET = "property-documents";
 export const PRESENTED_DOCUMENT_PDF_MIME = "application/pdf";
@@ -148,7 +152,10 @@ const insertDocument = async (payload: {
   sizeBytes?: number | null;
   uploadedByAdminProfileId?: string | null;
   uploadedByClientProfileId?: string | null;
+  /** True when no custom label was provided: eligible for AI auto-rename. */
+  aiAutoLabel?: boolean;
 }): Promise<PresentedPropertyDocument> => {
+  const seed = payload.kind === "file" ? buildAiRenameSeed(payload.aiAutoLabel === true) : null;
   const { data, error } = await supabaseAdmin
     .from("buyer_presented_property_documents")
     .insert({
@@ -163,13 +170,18 @@ const insertDocument = async (payload: {
       size_bytes: payload.sizeBytes ?? null,
       uploaded_by_admin_profile_id: payload.uploadedByAdminProfileId ?? null,
       uploaded_by_client_profile_id: payload.uploadedByClientProfileId ?? null,
+      ...(seed ? { metadata: seed } : {}),
     })
     .select(DOC_COLUMNS)
     .single();
   if (error || !data) {
     throw error ?? new Error("Impossible de créer le document.");
   }
-  return mapDocumentRow(data as PresentedDocumentRow);
+  const document = mapDocumentRow(data as PresentedDocumentRow);
+  if (seed) {
+    await scheduleDocumentAiRename({ scope: "presented_document", documentId: document.id });
+  }
+  return document;
 };
 
 const tryRemoveStorageObject = async (bucket: string, path: string) => {
@@ -281,6 +293,7 @@ export const registerUploadedAdminPresentedDocument = async (input: {
       mimeType: mimeType ?? PRESENTED_DOCUMENT_PDF_MIME,
       sizeBytes,
       uploadedByAdminProfileId: input.adminProfileId,
+      aiAutoLabel: !input.label?.trim(),
     });
   } catch (error) {
     await tryRemoveStorageObject(PRESENTED_DOCUMENTS_BUCKET, input.storagePath);
@@ -319,6 +332,7 @@ export const registerUploadedClientPresentedDocument = async (input: {
       mimeType: mimeType ?? PRESENTED_DOCUMENT_PDF_MIME,
       sizeBytes,
       uploadedByClientProfileId: input.clientProfileId,
+      aiAutoLabel: !input.label?.trim(),
     });
   } catch (error) {
     await tryRemoveStorageObject(PRESENTED_DOCUMENTS_BUCKET, input.storagePath);
@@ -359,6 +373,7 @@ export const uploadAdminPresentedDocument = async (input: {
       mimeType: PRESENTED_DOCUMENT_PDF_MIME,
       sizeBytes: input.file.size,
       uploadedByAdminProfileId: input.adminProfileId,
+      aiAutoLabel: !input.label?.trim(),
     });
   } catch (error) {
     await tryRemoveStorageObject(PRESENTED_DOCUMENTS_BUCKET, storagePath);
@@ -398,6 +413,7 @@ export const uploadClientPresentedDocument = async (input: {
       mimeType: PRESENTED_DOCUMENT_PDF_MIME,
       sizeBytes: input.file.size,
       uploadedByClientProfileId: input.clientProfileId,
+      aiAutoLabel: !input.label?.trim(),
     });
   } catch (error) {
     await tryRemoveStorageObject(PRESENTED_DOCUMENTS_BUCKET, storagePath);
@@ -412,10 +428,11 @@ export const listPresentedDocumentsForAdmin = async (
     .from("buyer_presented_property_documents")
     .select(DOC_COLUMNS)
     .eq("presented_property_id", presentedPropertyId)
-    .is("deleted_at", null)
-    .order("created_at", { ascending: false });
+    .is("deleted_at", null);
   if (error) throw error;
-  return (data ?? []).map((row) => mapDocumentRow(row as PresentedDocumentRow));
+  return (data ?? [])
+    .map((row) => mapDocumentRow(row as PresentedDocumentRow))
+    .sort((a, b) => a.label.localeCompare(b.label, "fr", { sensitivity: "base", numeric: true }));
 };
 
 export const listPresentedDocumentsForClient = async (
@@ -429,10 +446,11 @@ export const listPresentedDocumentsForClient = async (
     .is("deleted_at", null)
     .or(
       `visibility.eq.admin_and_client,uploaded_by_client_profile_id.eq.${clientProfileId}`
-    )
-    .order("created_at", { ascending: false });
+    );
   if (error) throw error;
-  return (data ?? []).map((row) => mapDocumentRow(row as PresentedDocumentRow));
+  return (data ?? [])
+    .map((row) => mapDocumentRow(row as PresentedDocumentRow))
+    .sort((a, b) => a.label.localeCompare(b.label, "fr", { sensitivity: "base", numeric: true }));
 };
 
 export type DocumentAccessor =

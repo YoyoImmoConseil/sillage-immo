@@ -20,7 +20,8 @@ export type DomainEventName =
   | "mynotary.mandate_signed"
   | "mynotary.offer_signed"
   | "mynotary.preliminary_sale_signed"
-  | "mynotary.document_soft_deleted";
+  | "mynotary.document_soft_deleted"
+  | "document.uploaded";
 
 export type DomainAggregateType =
   | "seller_lead"
@@ -29,7 +30,8 @@ export type DomainAggregateType =
   | "seller_project"
   | "ai_conversation"
   | "gdpr_request"
-  | "mynotary_document";
+  | "mynotary_document"
+  | "document";
 
 type EmitDomainEventInput = {
   aggregateType: DomainAggregateType;

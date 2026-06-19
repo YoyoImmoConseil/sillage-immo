@@ -6,6 +6,10 @@ import {
   notifyAssignedAdvisorOfClientUploadedDocument,
   notifyOwnersOfNewPropertyDocument,
 } from "./property-document-notification.service";
+import {
+  buildAiRenameSeed,
+  scheduleDocumentAiRename,
+} from "@/services/documents/document-ai-rename.service";
 
 export const PROPERTY_DOCUMENTS_BUCKET = "property-documents";
 export const PROPERTY_DOCUMENT_PDF_MIME = "application/pdf";
@@ -154,8 +158,11 @@ const insertDocument = async (
     sizeBytes?: number | null;
     uploadedByAdminProfileId?: string | null;
     uploadedByClientProfileId?: string | null;
+    /** True when no custom label was provided: eligible for AI auto-rename. */
+    aiAutoLabel?: boolean;
   }
 ): Promise<PropertyDocument> => {
+  const seed = payload.kind === "file" ? buildAiRenameSeed(payload.aiAutoLabel === true) : null;
   const { data, error } = await supabaseAdmin
     .from("property_documents")
     .insert({
@@ -170,6 +177,7 @@ const insertDocument = async (
       size_bytes: payload.sizeBytes ?? null,
       uploaded_by_admin_profile_id: payload.uploadedByAdminProfileId ?? null,
       uploaded_by_client_profile_id: payload.uploadedByClientProfileId ?? null,
+      ...(seed ? { metadata: seed } : {}),
     })
     .select(
       "id, property_id, kind, visibility, label, external_url, storage_bucket, storage_path, mime_type, size_bytes, uploaded_by_admin_profile_id, uploaded_by_client_profile_id, created_at, updated_at, deleted_at"
@@ -178,7 +186,11 @@ const insertDocument = async (
   if (error || !data) {
     throw error ?? new Error("Impossible de créer le document.");
   }
-  return mapDocumentRow(data as PropertyDocumentRow);
+  const document = mapDocumentRow(data as PropertyDocumentRow);
+  if (seed) {
+    await scheduleDocumentAiRename({ scope: "property_document", documentId: document.id });
+  }
+  return document;
 };
 
 const tryRemoveStorageObject = async (bucket: string, path: string) => {
@@ -223,6 +235,7 @@ export const uploadAdminPropertyDocument = async (input: {
       mimeType: PROPERTY_DOCUMENT_PDF_MIME,
       sizeBytes: input.file.size,
       uploadedByAdminProfileId: input.adminProfileId,
+      aiAutoLabel: !input.label?.trim(),
     });
   } catch (error) {
     await tryRemoveStorageObject(PROPERTY_DOCUMENTS_BUCKET, storagePath);
@@ -358,6 +371,7 @@ export const registerUploadedAdminPropertyDocument = async (input: {
       mimeType: mimeType ?? PROPERTY_DOCUMENT_PDF_MIME,
       sizeBytes,
       uploadedByAdminProfileId: input.adminProfileId,
+      aiAutoLabel: !input.label?.trim(),
     });
   } catch (error) {
     await tryRemoveStorageObject(PROPERTY_DOCUMENTS_BUCKET, input.storagePath);
@@ -407,6 +421,7 @@ export const registerUploadedClientPropertyDocument = async (input: {
       mimeType: mimeType ?? PROPERTY_DOCUMENT_PDF_MIME,
       sizeBytes,
       uploadedByClientProfileId: input.clientProfileId,
+      aiAutoLabel: !input.label?.trim(),
     });
   } catch (error) {
     await tryRemoveStorageObject(PROPERTY_DOCUMENTS_BUCKET, input.storagePath);
@@ -452,6 +467,7 @@ export const uploadClientPropertyDocument = async (input: {
       mimeType: PROPERTY_DOCUMENT_PDF_MIME,
       sizeBytes: input.file.size,
       uploadedByClientProfileId: input.clientProfileId,
+      aiAutoLabel: !input.label?.trim(),
     });
   } catch (error) {
     await tryRemoveStorageObject(PROPERTY_DOCUMENTS_BUCKET, storagePath);
@@ -473,10 +489,11 @@ export const listPropertyDocumentsForAdmin = async (
       "id, property_id, kind, visibility, label, external_url, storage_bucket, storage_path, mime_type, size_bytes, uploaded_by_admin_profile_id, uploaded_by_client_profile_id, created_at, updated_at, deleted_at"
     )
     .eq("property_id", propertyId)
-    .is("deleted_at", null)
-    .order("created_at", { ascending: false });
+    .is("deleted_at", null);
   if (error) throw error;
-  return (data ?? []).map((row) => mapDocumentRow(row as PropertyDocumentRow));
+  return (data ?? [])
+    .map((row) => mapDocumentRow(row as PropertyDocumentRow))
+    .sort((a, b) => a.label.localeCompare(b.label, "fr", { sensitivity: "base", numeric: true }));
 };
 
 export const listPropertyDocumentsForClient = async (
@@ -495,10 +512,11 @@ export const listPropertyDocumentsForClient = async (
     .is("deleted_at", null)
     .or(
       `visibility.eq.admin_and_client,uploaded_by_client_profile_id.eq.${clientProfileId}`
-    )
-    .order("created_at", { ascending: false });
+    );
   if (error) throw error;
-  return (data ?? []).map((row) => mapDocumentRow(row as PropertyDocumentRow));
+  return (data ?? [])
+    .map((row) => mapDocumentRow(row as PropertyDocumentRow))
+    .sort((a, b) => a.label.localeCompare(b.label, "fr", { sensitivity: "base", numeric: true }));
 };
 
 export type DocumentAccessor =

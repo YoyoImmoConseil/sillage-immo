@@ -1,6 +1,10 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { embedFromDomainEvent } from "@/services/ai/embedding-worker.service";
+import {
+  analyzeAndRenameDocument,
+  type DocumentAiScope,
+} from "@/services/documents/document-ai-rename.service";
 
 type DomainEventRow = {
   id: string;
@@ -69,6 +73,18 @@ const handleDomainEvent = async (event: DomainEventRow) => {
     case "mynotary.document_soft_deleted":
       await logProcessedEvent(event, "processed");
       return;
+    case "document.uploaded": {
+      const scope = event.payload?.scope;
+      const documentId =
+        typeof event.payload?.documentId === "string"
+          ? (event.payload.documentId as string)
+          : event.aggregate_id;
+      if (scope === "property_document" || scope === "presented_document") {
+        await analyzeAndRenameDocument({ scope: scope as DocumentAiScope, documentId });
+      }
+      await logProcessedEvent(event, "processed");
+      return;
+    }
     default:
       throw new Error(`Unsupported domain event: ${event.event_name}`);
   }
