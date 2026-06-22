@@ -80,6 +80,9 @@ beforeEach(() => {
   fetchMock.mockReset();
   vi.stubGlobal("fetch", fetchMock);
   process.env.OPENAI_API_KEY = "sk-test";
+  // Pin the iteration cap so the truncation test stays deterministic
+  // regardless of the orchestrator default (read at module import time).
+  process.env.ADMIN_COPILOT_MAX_ITERATIONS = "5";
 });
 
 afterEach(() => {

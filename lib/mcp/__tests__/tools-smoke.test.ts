@@ -81,6 +81,13 @@ vi.mock("@/services/admin/mynotary-list.service", () => ({
   listSignedDocuments: vi.fn(),
   getSignedDocumentByKey: vi.fn(),
 }));
+vi.mock("@/services/transactions/transaction.service", () => ({
+  listTransactions: vi.fn(),
+  getTransactionById: vi.fn(),
+}));
+vi.mock("@/services/buyers/buyer-presented-property.service", () => ({
+  listPresentedPropertiesForProject: vi.fn(),
+}));
 
 const findSchema = (
   tools: ToolDefinition<unknown, unknown>[],
@@ -429,6 +436,40 @@ describe("MCP tools registry — input schema smoke tests", () => {
         expect(tool.mutates ?? false).toBe(false);
       }
     }
+  });
+
+  it("analytics.query requires a query string + rejects unknown keys", async () => {
+    const { tools } = await import("@/lib/mcp/tools");
+    const schema = findSchema(tools, "analytics.query");
+    expect(
+      validateWithSchema(schema, {
+        query: "select advisor_name, ca_realized from analytics_advisor_performance",
+      })
+    ).toBe(true);
+    expect(validateWithSchema(schema, {})).toBe(false);
+    expect(validateWithSchema(schema, { query: "short", bogus: 1 })).toBe(false);
+  });
+
+  it("transactions.search enforces status + businessType enums", async () => {
+    const { tools } = await import("@/lib/mcp/tools");
+    const schema = findSchema(tools, "transactions.search");
+    expect(validateWithSchema(schema, { status: "compromis" })).toBe(true);
+    expect(validateWithSchema(schema, { businessType: "sale" })).toBe(true);
+    expect(validateWithSchema(schema, {})).toBe(true);
+    expect(validateWithSchema(schema, { status: "unknown" })).toBe(false);
+    expect(validateWithSchema(schema, { businessType: "lease" })).toBe(false);
+  });
+
+  it("market.observations_search whitelists filters", async () => {
+    const { tools } = await import("@/lib/mcp/tools");
+    const schema = findSchema(tools, "market.observations_search");
+    expect(
+      validateWithSchema(schema, { city: "Nice", sinceMonths: 6, limit: 20 })
+    ).toBe(true);
+    expect(validateWithSchema(schema, {})).toBe(true);
+    expect(validateWithSchema(schema, { businessType: "lease" })).toBe(false);
+    expect(validateWithSchema(schema, { sinceMonths: 100 })).toBe(false);
+    expect(validateWithSchema(schema, { unknownKey: 1 })).toBe(false);
   });
 
   it("contacts.find_or_merge accepts an email + rejects unknown keys", async () => {

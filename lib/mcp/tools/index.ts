@@ -19,6 +19,7 @@ import { conversationsTools } from "./conversations";
 import { mynotaryTools } from "./mynotary";
 import { reconciliationTools } from "./reconciliation";
 import { auditTools } from "./audit";
+import { analyticsTools } from "./analytics";
 
 // Aggregated MCP tool registry. Re-exported from "../tools" via the
 // barrel `lib/mcp/tools.ts` so legacy imports (`import { tools } from
@@ -44,6 +45,7 @@ export const tools: ToolDefinition<unknown, unknown>[] = [
   ...mynotaryTools,
   ...reconciliationTools,
   ...auditTools,
+  ...analyticsTools,
 ];
 
 export { leadsTools } from "./leads";
@@ -66,3 +68,4 @@ export { conversationsTools } from "./conversations";
 export { mynotaryTools } from "./mynotary";
 export { reconciliationTools } from "./reconciliation";
 export { auditTools } from "./audit";
+export { analyticsTools } from "./analytics";

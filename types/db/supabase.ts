@@ -2798,6 +2798,12 @@ export type Database = {
           reset_at: string;
         }>;
       };
+      analytics_run_select: {
+        Args: {
+          query: string;
+        };
+        Returns: Record<string, unknown>[];
+      };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;

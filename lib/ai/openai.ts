@@ -14,6 +14,8 @@ const DEFAULT_EMBEDDING_MODEL = "text-embedding-3-small";
 // - The Admin Copilot tier lives in its own orchestrator (premium).
 export const UTILITY_CHAT_MODEL = "gpt-4o-mini";
 export const CLIENT_CHAT_MODEL = "gpt-4.1-mini";
+// Strategic "sparring partner" tier for the internal Admin Copilot.
+export const ADMIN_COPILOT_MODEL = "gpt-5.4";
 
 // Prices in micros per 1000 tokens (1 cent = 1000 micros). Updated 2026-05.
 // Cost numbers are accounting-quality estimates; the LLM provider remains
@@ -23,6 +25,7 @@ export const MODEL_PRICING: Record<string, { input: number; output: number }> = 
   "gpt-4o-mini": { input: 150, output: 600 },
   "gpt-4o": { input: 2500, output: 10000 },
   "gpt-4.1-mini": { input: 400, output: 1600 },
+  "gpt-5.4": { input: 1250, output: 10000 },
   "text-embedding-3-small": { input: 20, output: 0 },
   "text-embedding-3-large": { input: 130, output: 0 },
 };

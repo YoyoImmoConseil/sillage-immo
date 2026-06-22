@@ -82,9 +82,20 @@ export type CopilotMessageResult = {
   truncated: boolean;
 };
 
-const MAX_ITERATIONS = 5;
-const MODEL = "gpt-4o-mini";
-const COPILOT_DAILY_CAP_EUR_DEFAULT = 5;
+const MAX_ITERATIONS = (() => {
+  const raw = Number(process.env.ADMIN_COPILOT_MAX_ITERATIONS);
+  return Number.isFinite(raw) && raw >= 1 && raw <= 10 ? Math.floor(raw) : 6;
+})();
+
+// Strategic sparring-partner model. Defaults to GPT-5.4 but stays
+// env-overridable so we can fall back instantly (e.g. to gpt-4o-mini) if the
+// premium model is unavailable on the account or the API contract changes.
+const MODEL = process.env.ADMIN_COPILOT_MODEL?.trim() || "gpt-5.4";
+
+const COPILOT_DAILY_CAP_EUR_DEFAULT = (() => {
+  const raw = Number(process.env.ADMIN_COPILOT_DAILY_CAP_EUR);
+  return Number.isFinite(raw) && raw > 0 ? raw : 8;
+})();
 
 const SYSTEM_PROMPT = `Tu es le copilot interne de Sillage Immo (agence immobilière haut de gamme à Nice).
 Tu aides le manager / administrateur connecté à exploiter les données de l'agence (leads, projets, mandats, biens, conversations IA client, performance conseillers, marché local) en t'appuyant sur les outils MCP disponibles.
@@ -102,8 +113,15 @@ Garde-fous Sillage stricts :
 
 Process tools :
 - Quand une question demande des données, APPELLE les tools MCP plutôt que d'inventer.
-- Pas plus de 5 appels d'outils par tour. Au-delà, synthétise avec ce que tu as.
+- Pas plus de ${MAX_ITERATIONS} tours d'outils. Au-delà, synthétise avec ce que tu as.
 - Si un outil renvoie une erreur, dis-le et propose une autre approche.
+
+Analyse chiffrée (sparring stratégique) :
+- Pour toute question analytique transverse (CA, tendances marché, performance conseillers, comparaisons de périodes), utilise l'outil "analytics.query" : tu y écris une requête SQL en LECTURE SEULE sur les vues analytics_* (sans PII client).
+- Vues : analytics_transactions, analytics_revenue_realized_monthly, analytics_revenue_pipeline, analytics_advisor_performance, analytics_market_trends. Les schémas sont décrits dans la description de l'outil.
+- Règle CA : le CA réalisé (HT) = somme des honoraires des transactions dont l'acte est signé (deed_signed_at) ; le CA prévisionnel = pipeline pondéré (mandat 0,3 / offre 0,5 / compromis 0,9).
+- Une seule requête SELECT/WITH à la fois, pas de DDL/DML, max 1000 lignes. N'interroge JAMAIS de tables brutes : seulement les vues analytics_*. Si tu as besoin de croiser, fais-le dans le SELECT (joins entre vues autorisés).
+- Pour des lectures ciblées, préfère transactions.search / transactions.get / market.observations_search / buyer_presented.list_for_project.
 
 Contexte agence injecté :
 - Connaissance Sillage Immo (parcours, valeur ajoutée, zones premium côté Côte d'Azur) — version ${SILLAGE_AGENCY_KNOWLEDGE_VERSION}.`;
@@ -123,8 +141,10 @@ const ROLE_TOOL_BLACKLIST: Record<CopilotRole, Set<string>> = {
 
 const COPILOT_ALLOWED_BASE = new Set<string>([
   "ai.semantic_search",
+  "analytics.query",
   "audit.search",
   "buyer_leads.get_context",
+  "buyer_presented.list_for_project",
   "buyer_matching.list_for_lead",
   "buyer_matching.list_for_property",
   "buyer_searches.upsert",
@@ -153,6 +173,9 @@ const COPILOT_ALLOWED_BASE = new Set<string>([
   "mynotary.stats_signed_by_period",
   "seller_projects.advance_status",
   "seller_projects.assign_advisor",
+  "transactions.search",
+  "transactions.get",
+  "market.observations_search",
   "valuations.get_latest_for_project",
   "valuations.list_for_project",
 ]);
@@ -219,7 +242,9 @@ const callOpenAi = async (input: {
     },
     body: JSON.stringify({
       model: MODEL,
-      temperature: 0.2,
+      // GPT-5 family on Chat Completions only accepts the default temperature;
+      // older models (gpt-4o-mini fallback) benefit from a low temperature.
+      ...(MODEL.startsWith("gpt-5") ? {} : { temperature: 0.2 }),
       messages: input.messages,
       tools: input.tools,
       tool_choice: input.toolChoice ?? "auto",
@@ -505,8 +530,7 @@ export const runCopilotTurn = async (
     // Fall back to a graceful message if we hit the iteration cap
     // without a non-tool-call completion.
     truncated = true;
-    finalAnswer =
-      "Je n'ai pas pu boucler en 5 appels d'outils. Pouvez-vous reformuler la question ou la limiter à un seul aspect ?";
+    finalAnswer = `Je n'ai pas pu boucler en ${MAX_ITERATIONS} tours d'outils. Pouvez-vous reformuler la question ou la limiter à un seul aspect ?`;
   }
 
   try {
