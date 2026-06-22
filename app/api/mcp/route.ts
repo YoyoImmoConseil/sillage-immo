@@ -14,6 +14,10 @@ import {
   checkMcpIdempotency,
   persistMcpIdempotencyResponse,
 } from "@/lib/idempotency/mcp-idempotency";
+import {
+  resolveMcpApiKey,
+  type McpKeyContext,
+} from "@/services/mcp/mcp-api-key.service";
 import type {
   ToolActorType,
   ToolCallError,
@@ -75,6 +79,28 @@ const errorStatus = (code: ToolCallError["error"]["code"]) => {
 // Per-key write scopes arrive in Phase 5 (named MCP keys).
 const isWriteAuthorized = (): boolean => {
   return process.env.MCP_WRITE_ENABLED === "true";
+};
+
+// Named MCP key presented either via x-mcp-key or an Authorization bearer
+// token shaped like our key prefix (sk_mcp_…). Internal/admin auth keeps
+// using x-admin-key / cron secrets and is unaffected.
+const getPresentedMcpKey = (request: Request): string | null => {
+  const direct = request.headers.get("x-mcp-key")?.trim();
+  if (direct) return direct;
+  const auth = request.headers.get("authorization");
+  if (auth) {
+    const [scheme, token] = auth.split(" ");
+    if (scheme?.toLowerCase() === "bearer" && token?.trim().startsWith("sk_mcp_")) {
+      return token.trim();
+    }
+  }
+  return null;
+};
+
+const isIpAllowed = (clientIp: string | null, allowlist: string[] | null): boolean => {
+  if (!allowlist || allowlist.length === 0) return true;
+  if (!clientIp) return false;
+  return allowlist.includes(clientIp);
 };
 
 const jsonError = (
@@ -145,7 +171,16 @@ export const GET = async (request: Request) => {
 };
 
 export const POST = async (request: Request) => {
-  if (!(await isInternalRequest(request))) {
+  // Two valid authentication paths:
+  //   1. Internal/admin (x-admin-key, cron secret, admin session).
+  //   2. A named, scoped MCP key (Porte 4) for external consumers.
+  const presentedKey = getPresentedMcpKey(request);
+  const keyContext: McpKeyContext | null = presentedKey
+    ? await resolveMcpApiKey(presentedKey)
+    : null;
+  const internalAuthorized = await isInternalRequest(request);
+
+  if (!internalAuthorized && !keyContext) {
     return NextResponse.json(
       { ok: false, message: "Unauthorized." },
       { status: 401 }
@@ -161,9 +196,42 @@ export const POST = async (request: Request) => {
   const userAgent = getUserAgent(request);
   const idempotencyKey = request.headers.get("idempotency-key")?.trim() ?? "";
 
+  // Per-key identity + rate limit override when authenticated via a named key.
+  if (keyContext && !internalAuthorized) {
+    resolved.actor = "system";
+    resolved.actorId = `mcpkey:${keyContext.id}`;
+    resolved.actorRole = null;
+    resolved.rateLimitKey = `mcp:key:${keyContext.id}`;
+  }
+
+  // Optional per-key IP allowlist.
+  if (keyContext && !internalAuthorized && !isIpAllowed(clientIp, keyContext.ipAllowlist)) {
+    await logMcpCall({
+      requestId,
+      tool: "unknown",
+      toolVersion: undefined,
+      actor: resolved.actor,
+      actorId: resolved.actorId,
+      actorRole: resolved.actorRole ?? null,
+      status: "error",
+      input: null,
+      errorCode: "forbidden",
+      durationMs: Date.now() - startedAt,
+      outputSize: null,
+      clientIp,
+      userAgent,
+    });
+    return jsonError("unknown", requestId, "forbidden", "IP not allowed for this key.");
+  }
+
+  const perKeyLimit =
+    keyContext && !internalAuthorized && keyContext.rateLimitPerMinute
+      ? keyContext.rateLimitPerMinute
+      : getRateLimitPerMinute();
+
   const rateLimit = checkRateLimit({
     key: resolved.rateLimitKey,
-    limit: getRateLimitPerMinute(),
+    limit: perKeyLimit,
     windowMs: RATE_LIMIT_WINDOW_MS,
   });
   if (!rateLimit.ok) {
@@ -251,7 +319,10 @@ export const POST = async (request: Request) => {
     return jsonError(body.tool, requestId, "tool_not_found", "Tool not found.");
   }
 
-  if (tool.mutates && !isWriteAuthorized()) {
+  const externalKey = keyContext && !internalAuthorized ? keyContext : null;
+
+  // Per-key tool allowlist (external keys only).
+  if (externalKey && !externalKey.toolAllowlist.includes(tool.name)) {
     await logMcpCall({
       requestId,
       tool: tool.name,
@@ -271,7 +342,62 @@ export const POST = async (request: Request) => {
       tool.name,
       requestId,
       "forbidden",
-      "This tool mutates state and is disabled on the MCP HTTP surface (read-only). Set MCP_WRITE_ENABLED=true to allow writes."
+      "This tool is not in the allowlist for this key."
+    );
+  }
+
+  // PII scope: external keys only see PII-bearing tools when explicitly
+  // granted. By default external projections are PII-free.
+  if (externalKey && tool.readsPii && !externalKey.canReadPii) {
+    await logMcpCall({
+      requestId,
+      tool: tool.name,
+      toolVersion: tool.version,
+      actor: resolved.actor,
+      actorId: resolved.actorId,
+      actorRole: resolved.actorRole ?? null,
+      status: "error",
+      input: body.input ?? null,
+      errorCode: "forbidden",
+      durationMs: Date.now() - startedAt,
+      outputSize: null,
+      clientIp,
+      userAgent,
+    });
+    return jsonError(
+      tool.name,
+      requestId,
+      "forbidden",
+      "This tool returns personal data and this key lacks the PII scope."
+    );
+  }
+
+  // Write scope: an external key uses its own can_write flag; internal/admin
+  // callers stay governed by MCP_WRITE_ENABLED.
+  const writeAllowed = externalKey ? externalKey.canWrite : isWriteAuthorized();
+  if (tool.mutates && !writeAllowed) {
+    await logMcpCall({
+      requestId,
+      tool: tool.name,
+      toolVersion: tool.version,
+      actor: resolved.actor,
+      actorId: resolved.actorId,
+      actorRole: resolved.actorRole ?? null,
+      status: "error",
+      input: body.input ?? null,
+      errorCode: "forbidden",
+      durationMs: Date.now() - startedAt,
+      outputSize: null,
+      clientIp,
+      userAgent,
+    });
+    return jsonError(
+      tool.name,
+      requestId,
+      "forbidden",
+      externalKey
+        ? "This tool mutates state and this key lacks the write scope."
+        : "This tool mutates state and is disabled on the MCP HTTP surface (read-only). Set MCP_WRITE_ENABLED=true to allow writes."
     );
   }
 

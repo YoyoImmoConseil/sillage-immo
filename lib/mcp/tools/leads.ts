@@ -39,6 +39,7 @@ export const leadsTools: ToolDefinition<unknown, unknown>[] = [
   },
   {
     name: "leads.score",
+    readsPii: true,
     description: "Calcule un score de priorité pour un lead.",
     version: "1.0.0",
     inputSchema: {

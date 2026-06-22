@@ -70,6 +70,7 @@ export const buyerLeadsTools: ToolDefinition<unknown, unknown>[] = [
   },
   {
     name: "buyer_leads.get_context",
+    readsPii: true,
     description:
       "Retourne un contexte buyer consolide (lead + search profile + nombre de matches).",
     version: "1.0.0",

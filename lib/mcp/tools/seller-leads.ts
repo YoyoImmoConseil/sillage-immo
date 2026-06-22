@@ -130,6 +130,7 @@ export const sellerLeadsTools: ToolDefinition<unknown, unknown>[] = [
   },
   {
     name: "seller_leads.get_context",
+    readsPii: true,
     description: "Retourne un contexte vendeur consolide (lead, scoring, insight IA).",
     version: "1.0.0",
     inputSchema: {

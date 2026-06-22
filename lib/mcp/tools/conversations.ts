@@ -122,6 +122,7 @@ const cosineDistance = (a: number[], b: number[]) => {
 export const conversationsTools: ToolDefinition<unknown, unknown>[] = [
   {
     name: "conversations.search",
+    readsPii: true,
     description:
       "Recherche sémantique pgvector dans ai_conversations (filtrable par channel, entity_type, période).",
     version: "1.0.0",

@@ -7,6 +7,7 @@ import {
 export const contactsTools: ToolDefinition<unknown, unknown>[] = [
   {
     name: "contacts.find_or_merge",
+    readsPii: true,
     mutates: true,
     description:
       "Retourne (ou cree) un contact_identity unifie a partir d'un email + phone + nom.",

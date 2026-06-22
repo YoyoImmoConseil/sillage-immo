@@ -60,6 +60,7 @@ const truncateIso = (iso: string, bucket: "day" | "week" | "month"): string => {
 export const mynotaryTools: ToolDefinition<unknown, unknown>[] = [
   {
     name: "mynotary.list_signed_documents",
+    readsPii: true,
     description:
       "Liste paginée des contrats MyNotary signés (mandats / offres / compromis) avec filtres period / kind / matched.",
     version: "1.0.0",
@@ -103,6 +104,7 @@ export const mynotaryTools: ToolDefinition<unknown, unknown>[] = [
   },
   {
     name: "mynotary.get_signed_document",
+    readsPii: true,
     description:
       "Détail d'un contrat MyNotary signé (par id Sillage ou par mynotary_contract_id).",
     version: "1.0.0",

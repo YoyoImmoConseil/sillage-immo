@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 export const auditTools: ToolDefinition<unknown, unknown>[] = [
   {
     name: "audit.search",
+    readsPii: true,
     description:
       "Recherche read-only dans audit_log par tool, status, plage de dates.",
     version: "1.0.0",

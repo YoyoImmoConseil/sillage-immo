@@ -1148,6 +1148,60 @@ export type Database = {
         };
         Relationships: [];
       };
+      mcp_api_keys: {
+        Row: {
+          id: string;
+          created_at: string;
+          updated_at: string;
+          name: string;
+          key_prefix: string;
+          key_hash: string;
+          scopes: Record<string, unknown>;
+          can_write: boolean;
+          can_read_pii: boolean;
+          ip_allowlist: string[] | null;
+          rate_limit_per_minute: number | null;
+          last_used_at: string | null;
+          revoked_at: string | null;
+          created_by_admin_profile_id: string | null;
+          metadata: Record<string, unknown>;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          name: string;
+          key_prefix: string;
+          key_hash: string;
+          scopes?: Record<string, unknown>;
+          can_write?: boolean;
+          can_read_pii?: boolean;
+          ip_allowlist?: string[] | null;
+          rate_limit_per_minute?: number | null;
+          last_used_at?: string | null;
+          revoked_at?: string | null;
+          created_by_admin_profile_id?: string | null;
+          metadata?: Record<string, unknown>;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          name?: string;
+          key_prefix?: string;
+          key_hash?: string;
+          scopes?: Record<string, unknown>;
+          can_write?: boolean;
+          can_read_pii?: boolean;
+          ip_allowlist?: string[] | null;
+          rate_limit_per_minute?: number | null;
+          last_used_at?: string | null;
+          revoked_at?: string | null;
+          created_by_admin_profile_id?: string | null;
+          metadata?: Record<string, unknown>;
+        };
+        Relationships: [];
+      };
       admin_role_assignments: {
         Row: {
           id: string;

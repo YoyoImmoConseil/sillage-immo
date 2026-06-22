@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 export const clientProjectsTools: ToolDefinition<unknown, unknown>[] = [
   {
     name: "client_projects.list",
+    readsPii: true,
     description:
       "Liste les client_projects filtres par type et status (admin: tout, sans RLS).",
     version: "1.0.0",
@@ -45,6 +46,7 @@ export const clientProjectsTools: ToolDefinition<unknown, unknown>[] = [
   },
   {
     name: "client_projects.get",
+    readsPii: true,
     description:
       "Retourne un client_project + son seller_project / buyer_project + properties liees + co-owners.",
     version: "1.0.0",
@@ -113,6 +115,7 @@ export const clientProjectsTools: ToolDefinition<unknown, unknown>[] = [
   },
   {
     name: "client_projects.timeline",
+    readsPii: true,
     description:
       "Lit la timeline (client_project_events) d'un projet. audience=client filtre visible_to_client.",
     version: "1.0.0",
