@@ -383,6 +383,37 @@ describe("MCP tools registry — input schema smoke tests", () => {
     ).toBe(false);
   });
 
+  it("tags exactly the mutating tools with mutates:true", async () => {
+    const { tools } = await import("@/lib/mcp/tools");
+    const expectedMutating = new Set([
+      "leads.create",
+      "seller_leads.create_or_reuse",
+      "seller_leads.score",
+      "seller_leads.generate_ai_insight",
+      "seller_leads.enrich",
+      "property_listings.publish",
+      "property_listings.unpublish",
+      "buyer_leads.create_or_enrich",
+      "buyer_searches.upsert",
+      "buyer_matching.recompute_for_lead",
+      "buyer_matching.recompute_for_property",
+      "seller_projects.advance_status",
+      "seller_projects.assign_advisor",
+      "contacts.find_or_merge",
+      "ai.embed_entity",
+    ]);
+    const actualMutating = new Set(
+      tools.filter((tool) => tool.mutates === true).map((tool) => tool.name)
+    );
+    expect(actualMutating).toEqual(expectedMutating);
+    // Read-only tools must never be flagged as mutating.
+    for (const tool of tools) {
+      if (!expectedMutating.has(tool.name)) {
+        expect(tool.mutates ?? false).toBe(false);
+      }
+    }
+  });
+
   it("contacts.find_or_merge accepts an email + rejects unknown keys", async () => {
     const { tools } = await import("@/lib/mcp/tools");
     const schema = findSchema(tools, "contacts.find_or_merge");

@@ -29,11 +29,14 @@ type RemoteTool = {
   description: string;
   version?: string;
   inputSchema: Record<string, unknown>;
+  mutates?: boolean;
+  readsPii?: boolean;
 };
 
 // Anything that mutates state should be blocked when the bridge runs
-// in read-only mode (no admin key). The list is conservative: when in
-// doubt, deny.
+// in read-only mode (no admin key). The registry now tags each tool with
+// `mutates` (exposed through the manifest); this hardcoded set is kept as
+// a defensive fallback for older servers that don't yet expose the flag.
 const MUTATING_TOOLS = new Set<string>([
   "leads.create",
   "seller_leads.create_or_reuse",
@@ -51,6 +54,13 @@ const MUTATING_TOOLS = new Set<string>([
   "contacts.find_or_merge",
   "ai.embed_entity",
 ]);
+
+// Prefer the server-declared `mutates` flag; fall back to the static set
+// above when the manifest predates the flag.
+const toolMutates = (tool: RemoteTool): boolean =>
+  typeof tool.mutates === "boolean"
+    ? tool.mutates
+    : MUTATING_TOOLS.has(tool.name);
 
 const baseUrl = (
   process.env.MCP_SERVER_BASE_URL ?? "http://localhost:3000"
@@ -137,8 +147,14 @@ const main = async () => {
     }\n`
   );
 
+  const mutatingByName = new Map<string, boolean>(
+    manifestTools.map((tool) => [tool.name, toolMutates(tool)])
+  );
+  const isMutating = (name: string): boolean =>
+    mutatingByName.get(name) ?? MUTATING_TOOLS.has(name);
+
   const visibleTools = manifestTools.filter(
-    (tool) => !readOnlyMode || !MUTATING_TOOLS.has(tool.name)
+    (tool) => !readOnlyMode || !toolMutates(tool)
   );
 
   const server = new Server(
@@ -163,7 +179,7 @@ const main = async () => {
 
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { name, arguments: args } = request.params;
-    if (readOnlyMode && MUTATING_TOOLS.has(name)) {
+    if (readOnlyMode && isMutating(name)) {
       throw new Error(
         `Tool ${name} is disabled in read-only mode. Set MCP_SERVER_ADMIN_KEY to enable mutations.`
       );

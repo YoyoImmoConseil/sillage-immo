@@ -4,6 +4,7 @@ import { createLead, scoreLead, type LeadInput } from "@/services/leads/lead.ser
 export const leadsTools: ToolDefinition<unknown, unknown>[] = [
   {
     name: "leads.create",
+    mutates: true,
     description: "Enregistre un lead entrant et retourne un statut.",
     version: "1.0.0",
     inputSchema: {

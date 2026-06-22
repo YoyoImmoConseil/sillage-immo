@@ -22,6 +22,8 @@ export const listTools = () => {
       description: tool.description,
       version: tool.version,
       inputSchema: tool.inputSchema,
+      mutates: tool.mutates ?? false,
+      readsPii: tool.readsPii ?? false,
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
 };

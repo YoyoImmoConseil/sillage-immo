@@ -14,6 +14,7 @@ const buyerLeadCreateProperties = {
 export const buyerLeadsTools: ToolDefinition<unknown, unknown>[] = [
   {
     name: "buyer_leads.create_or_enrich",
+    mutates: true,
     description:
       "Cree (ou enrichit) un buyer_lead + son search profile + recalc matches. Retourne le contexte enrichi.",
     version: "1.0.0",

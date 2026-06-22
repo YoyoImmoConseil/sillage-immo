@@ -9,6 +9,7 @@ import {
 export const buyerMatchingTools: ToolDefinition<unknown, unknown>[] = [
   {
     name: "buyer_matching.recompute_for_lead",
+    mutates: true,
     description:
       "Recalcule tous les matches pour un buyer_lead. Retourne le delta de nouveaux matches.",
     version: "1.0.0",
@@ -28,6 +29,7 @@ export const buyerMatchingTools: ToolDefinition<unknown, unknown>[] = [
   },
   {
     name: "buyer_matching.recompute_for_property",
+    mutates: true,
     description:
       "Recalcule tous les matches pour une propriete (utile apres publication / changement de prix).",
     version: "1.0.0",

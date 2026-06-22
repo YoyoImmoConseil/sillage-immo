@@ -5,6 +5,7 @@ import { emitDomainEvent } from "@/lib/events/domain-events";
 export const propertyListingsTools: ToolDefinition<unknown, unknown>[] = [
   {
     name: "property_listings.publish",
+    mutates: true,
     description:
       "Publie un listing (is_published=true, publication_status=active) et emet un evenement de domaine.",
     version: "1.0.0",
@@ -57,6 +58,7 @@ export const propertyListingsTools: ToolDefinition<unknown, unknown>[] = [
   },
   {
     name: "property_listings.unpublish",
+    mutates: true,
     description:
       "Depublie un listing (is_published=false, publication_status=draft) et emet un evenement de domaine.",
     version: "1.0.0",

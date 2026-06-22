@@ -70,6 +70,7 @@ const sellerLeadInputProperties = {
 export const sellerLeadsTools: ToolDefinition<unknown, unknown>[] = [
   {
     name: "seller_leads.create_or_reuse",
+    mutates: true,
     description:
       "Cree un lead vendeur ou reutilise un lead recent selon les regles anti-doublon.",
     version: "1.0.0",
@@ -93,6 +94,7 @@ export const sellerLeadsTools: ToolDefinition<unknown, unknown>[] = [
   },
   {
     name: "seller_leads.score",
+    mutates: true,
     description: "Calcule le scoring vendeur et met a jour le lead.",
     version: "1.0.0",
     inputSchema: {
@@ -110,6 +112,7 @@ export const sellerLeadsTools: ToolDefinition<unknown, unknown>[] = [
   },
   {
     name: "seller_leads.generate_ai_insight",
+    mutates: true,
     description: "Genere une analyse IA actionnable pour un lead vendeur.",
     version: "1.0.0",
     inputSchema: {
@@ -144,6 +147,7 @@ export const sellerLeadsTools: ToolDefinition<unknown, unknown>[] = [
   },
   {
     name: "seller_leads.enrich",
+    mutates: true,
     description:
       "Orchestre create_or_reuse, score et analyse IA, puis retourne une vue consolidee.",
     version: "1.0.0",

@@ -20,6 +20,7 @@ const SELLER_PROJECT_STATUSES = [
 export const sellerProjectsTools: ToolDefinition<unknown, unknown>[] = [
   {
     name: "seller_projects.advance_status",
+    mutates: true,
     description:
       "Change le project_status d'un seller_project (transition controlee + event timeline).",
     version: "1.0.0",
@@ -113,6 +114,7 @@ export const sellerProjectsTools: ToolDefinition<unknown, unknown>[] = [
   },
   {
     name: "seller_projects.assign_advisor",
+    mutates: true,
     description:
       "Assigne un admin_profile a un seller_project (historise dans seller_project_advisor_history).",
     version: "1.0.0",

@@ -156,6 +156,7 @@ export const aiTools: ToolDefinition<unknown, unknown>[] = [
   },
   {
     name: "ai.embed_entity",
+    mutates: true,
     description:
       "Force l'embedding d'une entite (idempotent via source_text_hash). Retourne le statut.",
     version: "1.0.0",

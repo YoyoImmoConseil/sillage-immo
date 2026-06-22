@@ -20,6 +20,7 @@ const arrayOfStrings = (input: unknown): string[] => {
 export const buyerSearchesTools: ToolDefinition<unknown, unknown>[] = [
   {
     name: "buyer_searches.upsert",
+    mutates: true,
     description:
       "Cree ou met a jour le buyer_search_profile actif d'un buyer_lead. Idempotent par buyer_lead_id.",
     version: "1.0.0",

@@ -94,6 +94,14 @@ export type ToolDefinition<Input, Output> = {
   description: string;
   version?: string;
   inputSchema: JsonSchema;
+  // Whether the tool mutates persisted state. Defaults to false (read-only).
+  // The HTTP MCP route (app/api/mcp/route.ts) refuses mutating tools unless
+  // the caller is explicitly authorized to write — the server is the source
+  // of truth, never the client bridge.
+  mutates?: boolean;
+  // Whether the tool can return personal data (email, phone, full name…).
+  // Used by the route to deny PII tools to callers without a PII scope.
+  readsPii?: boolean;
   handler: (input: Input, context: ToolContext) => Promise<Output>;
 };
 
@@ -120,6 +128,7 @@ export type ToolCallError = {
       | "tool_not_found"
       | "tool_version_unregistered"
       | "rate_limited"
+      | "forbidden"
       | "failed";
     message: string;
   };
@@ -130,6 +139,8 @@ export type ToolListItem = {
   description: string;
   version?: string;
   inputSchema: JsonSchema;
+  mutates?: boolean;
+  readsPii?: boolean;
 };
 
 export type ToolListResponse = {

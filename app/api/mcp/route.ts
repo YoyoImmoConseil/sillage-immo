@@ -58,9 +58,23 @@ const errorStatus = (code: ToolCallError["error"]["code"]) => {
       return 409;
     case "rate_limited":
       return 429;
+    case "forbidden":
+      return 403;
     default:
       return 500;
   }
+};
+
+// Server-side write authorization for the HTTP MCP surface.
+//
+// Mutating tools are tagged `mutates: true` in the registry. The HTTP
+// route is the externally-reachable surface (the stdio bridge proxies
+// through it); internal callers use `invokeMcpToolInternal` directly and
+// are unaffected. We keep the external door read-only by default and only
+// allow mutations when explicitly opted-in via `MCP_WRITE_ENABLED=true`.
+// Per-key write scopes arrive in Phase 5 (named MCP keys).
+const isWriteAuthorized = (): boolean => {
+  return process.env.MCP_WRITE_ENABLED === "true";
 };
 
 const jsonError = (
@@ -235,6 +249,30 @@ export const POST = async (request: Request) => {
       userAgent,
     });
     return jsonError(body.tool, requestId, "tool_not_found", "Tool not found.");
+  }
+
+  if (tool.mutates && !isWriteAuthorized()) {
+    await logMcpCall({
+      requestId,
+      tool: tool.name,
+      toolVersion: tool.version,
+      actor: resolved.actor,
+      actorId: resolved.actorId,
+      actorRole: resolved.actorRole ?? null,
+      status: "error",
+      input: body.input ?? null,
+      errorCode: "forbidden",
+      durationMs: Date.now() - startedAt,
+      outputSize: null,
+      clientIp,
+      userAgent,
+    });
+    return jsonError(
+      tool.name,
+      requestId,
+      "forbidden",
+      "This tool mutates state and is disabled on the MCP HTTP surface (read-only). Set MCP_WRITE_ENABLED=true to allow writes."
+    );
   }
 
   if (!validateWithSchema(tool.inputSchema, body.input)) {
