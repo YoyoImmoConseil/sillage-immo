@@ -144,6 +144,46 @@ const computePriceAmount = (estate: SweepBrightEstateData) => {
   return typeof estate.price?.amount === "number" ? estate.price.amount : null;
 };
 
+// Best-effort honoraires (agency fees) extraction from the SweepBright estate.
+// SweepBright payloads are inconsistent across accounts; we probe a few
+// plausible shapes and return null when nothing credible is found. When
+// present, the value is stashed in `properties.metadata.honoraires` so the
+// transaction service can pre-fill it later. The mandate source of truth
+// otherwise remains the manual entry in the transaction.
+const extractSweepBrightHonoraires = (
+  estate: SweepBrightEstateData
+): { amount: number; currency: string } | null => {
+  const record = estate as Record<string, unknown>;
+  const candidates: unknown[] = [
+    record.commission,
+    record.commission_amount,
+    record.agency_fee,
+    record.agency_fees,
+    record.fees,
+    record.price_fees,
+    record.negotiation_fees,
+  ];
+
+  for (const candidate of candidates) {
+    const direct = asNumber(candidate);
+    if (typeof direct === "number" && direct > 0) {
+      return { amount: Math.round(direct), currency: "EUR" };
+    }
+    const nested = asRecord(candidate);
+    if (nested) {
+      const amount = asNumber(nested.amount ?? nested.value);
+      if (typeof amount === "number" && amount > 0) {
+        const currency =
+          typeof nested.currency === "string" && nested.currency.trim()
+            ? nested.currency.trim()
+            : "EUR";
+        return { amount: Math.round(amount), currency };
+      }
+    }
+  }
+  return null;
+};
+
 const computeRoomCount = (estate: SweepBrightEstateData) => {
   const bedrooms = typeof estate.bedrooms === "number" ? estate.bedrooms : 0;
   const livingRooms = typeof estate.living_rooms === "number" ? estate.living_rooms : 0;
@@ -227,6 +267,7 @@ const mapEstateToPropertyInsert = (estate: SweepBrightEstateData) => {
     raw_payload: estate as unknown as Record<string, unknown>,
     metadata: {
       office: estate.office ?? null,
+      honoraires: extractSweepBrightHonoraires(estate),
     } as Record<string, unknown>,
     updated_at: new Date().toISOString(),
     last_synced_at: new Date().toISOString(),

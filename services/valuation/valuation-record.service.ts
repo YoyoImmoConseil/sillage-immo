@@ -1,6 +1,31 @@
 import "server-only";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { recordMarketObservation } from "@/services/market/market-observation.service";
+
+const readString = (
+  source: Record<string, unknown> | undefined,
+  ...keys: string[]
+): string | null => {
+  if (!source) return null;
+  for (const key of keys) {
+    const value = source[key];
+    if (typeof value === "string" && value.trim().length > 0) return value.trim();
+  }
+  return null;
+};
+
+const readNumber = (
+  source: Record<string, unknown> | undefined,
+  ...keys: string[]
+): number | null => {
+  if (!source) return null;
+  for (const key of keys) {
+    const value = source[key];
+    if (typeof value === "number" && Number.isFinite(value)) return value;
+  }
+  return null;
+};
 
 export type CreateValuationRecordInput = {
   clientProjectId?: string | null;
@@ -63,6 +88,29 @@ export const createValuationRecord = async (input: CreateValuationRecordInput) =
       })
       .eq("id", input.sellerProjectId);
     if (updateError) throw updateError;
+  }
+
+  // Best-effort market observation: every Loupe estimate that carries a price
+  // contributes a price/m² data point for the Copilot's market analytics. A
+  // failure here must never break the valuation write.
+  if (input.provider === "loupe" || input.source?.startsWith("loupe")) {
+    const payload = input.rawPayload;
+    const livingArea = readNumber(payload, "livingSpaceArea", "living_space_area");
+    await recordMarketObservation({
+      source: "loupe",
+      valuationId: data.id,
+      propertyId: input.propertyId ?? null,
+      city: readString(payload, "cityName", "city_name"),
+      postalCode: readString(payload, "cityZipCode", "city_zip_code"),
+      propertyType: readString(payload, "type"),
+      estimatedPrice:
+        typeof input.estimatedPrice === "number" ? input.estimatedPrice : null,
+      valuationLow: input.valuationLow ?? null,
+      valuationHigh: input.valuationHigh ?? null,
+      livingAreaM2: livingArea,
+      currency: input.currency ?? "EUR",
+      metadata: { valuation_source: input.source },
+    });
   }
 
   return { id: data.id };

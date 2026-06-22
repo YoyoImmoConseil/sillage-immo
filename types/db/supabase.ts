@@ -1,6 +1,344 @@
 export type Database = {
   public: {
     Tables: {
+      transactions: {
+        Row: {
+          id: string;
+          created_at: string;
+          updated_at: string;
+          reference: string | null;
+          business_type: string;
+          status: string;
+          property_id: string | null;
+          seller_project_id: string | null;
+          buyer_project_id: string | null;
+          client_project_id: string | null;
+          assigned_admin_profile_id: string | null;
+          currency: string;
+          mandate_price_amount: number | null;
+          agreed_price_amount: number | null;
+          deed_price_amount: number | null;
+          honoraires_amount: number | null;
+          honoraires_source: string | null;
+          mandate_signed_at: string | null;
+          offer_received_at: string | null;
+          preliminary_sale_signed_at: string | null;
+          deed_signed_at: string | null;
+          cancelled_at: string | null;
+          source: string;
+          notes: string | null;
+          metadata: Record<string, unknown>;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          reference?: string | null;
+          business_type?: string;
+          status?: string;
+          property_id?: string | null;
+          seller_project_id?: string | null;
+          buyer_project_id?: string | null;
+          client_project_id?: string | null;
+          assigned_admin_profile_id?: string | null;
+          currency?: string;
+          mandate_price_amount?: number | null;
+          agreed_price_amount?: number | null;
+          deed_price_amount?: number | null;
+          honoraires_amount?: number | null;
+          honoraires_source?: string | null;
+          mandate_signed_at?: string | null;
+          offer_received_at?: string | null;
+          preliminary_sale_signed_at?: string | null;
+          deed_signed_at?: string | null;
+          cancelled_at?: string | null;
+          source?: string;
+          notes?: string | null;
+          metadata?: Record<string, unknown>;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          reference?: string | null;
+          business_type?: string;
+          status?: string;
+          property_id?: string | null;
+          seller_project_id?: string | null;
+          buyer_project_id?: string | null;
+          client_project_id?: string | null;
+          assigned_admin_profile_id?: string | null;
+          currency?: string;
+          mandate_price_amount?: number | null;
+          agreed_price_amount?: number | null;
+          deed_price_amount?: number | null;
+          honoraires_amount?: number | null;
+          honoraires_source?: string | null;
+          mandate_signed_at?: string | null;
+          offer_received_at?: string | null;
+          preliminary_sale_signed_at?: string | null;
+          deed_signed_at?: string | null;
+          cancelled_at?: string | null;
+          source?: string;
+          notes?: string | null;
+          metadata?: Record<string, unknown>;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "transactions_property_id_fkey";
+            columns: ["property_id"];
+            isOneToOne: false;
+            referencedRelation: "properties";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "transactions_seller_project_id_fkey";
+            columns: ["seller_project_id"];
+            isOneToOne: false;
+            referencedRelation: "seller_projects";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "transactions_buyer_project_id_fkey";
+            columns: ["buyer_project_id"];
+            isOneToOne: false;
+            referencedRelation: "buyer_projects";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "transactions_assigned_admin_profile_id_fkey";
+            columns: ["assigned_admin_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "admin_profiles";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      transaction_sellers: {
+        Row: {
+          id: string;
+          created_at: string;
+          transaction_id: string;
+          contact_identity_id: string | null;
+          seller_lead_id: string | null;
+          client_profile_id: string | null;
+          external_name: string | null;
+          external_email: string | null;
+          share_percent: number | null;
+          metadata: Record<string, unknown>;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          transaction_id: string;
+          contact_identity_id?: string | null;
+          seller_lead_id?: string | null;
+          client_profile_id?: string | null;
+          external_name?: string | null;
+          external_email?: string | null;
+          share_percent?: number | null;
+          metadata?: Record<string, unknown>;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          transaction_id?: string;
+          contact_identity_id?: string | null;
+          seller_lead_id?: string | null;
+          client_profile_id?: string | null;
+          external_name?: string | null;
+          external_email?: string | null;
+          share_percent?: number | null;
+          metadata?: Record<string, unknown>;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "transaction_sellers_transaction_id_fkey";
+            columns: ["transaction_id"];
+            isOneToOne: false;
+            referencedRelation: "transactions";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      transaction_buyers: {
+        Row: {
+          id: string;
+          created_at: string;
+          transaction_id: string;
+          contact_identity_id: string | null;
+          buyer_lead_id: string | null;
+          client_profile_id: string | null;
+          external_name: string | null;
+          external_email: string | null;
+          is_external: boolean;
+          share_percent: number | null;
+          metadata: Record<string, unknown>;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          transaction_id: string;
+          contact_identity_id?: string | null;
+          buyer_lead_id?: string | null;
+          client_profile_id?: string | null;
+          external_name?: string | null;
+          external_email?: string | null;
+          is_external?: boolean;
+          share_percent?: number | null;
+          metadata?: Record<string, unknown>;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          transaction_id?: string;
+          contact_identity_id?: string | null;
+          buyer_lead_id?: string | null;
+          client_profile_id?: string | null;
+          external_name?: string | null;
+          external_email?: string | null;
+          is_external?: boolean;
+          share_percent?: number | null;
+          metadata?: Record<string, unknown>;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "transaction_buyers_transaction_id_fkey";
+            columns: ["transaction_id"];
+            isOneToOne: false;
+            referencedRelation: "transactions";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      honoraires_history: {
+        Row: {
+          id: string;
+          created_at: string;
+          transaction_id: string;
+          amount: number;
+          currency: string;
+          source: string;
+          reason: string | null;
+          recorded_by_admin_profile_id: string | null;
+          metadata: Record<string, unknown>;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          transaction_id: string;
+          amount: number;
+          currency?: string;
+          source?: string;
+          reason?: string | null;
+          recorded_by_admin_profile_id?: string | null;
+          metadata?: Record<string, unknown>;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          transaction_id?: string;
+          amount?: number;
+          currency?: string;
+          source?: string;
+          reason?: string | null;
+          recorded_by_admin_profile_id?: string | null;
+          metadata?: Record<string, unknown>;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "honoraires_history_transaction_id_fkey";
+            columns: ["transaction_id"];
+            isOneToOne: false;
+            referencedRelation: "transactions";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      market_observations: {
+        Row: {
+          id: string;
+          created_at: string;
+          observed_at: string;
+          source: string;
+          valuation_id: string | null;
+          property_id: string | null;
+          city: string | null;
+          postal_code: string | null;
+          zone_slug: string | null;
+          neighborhood: string | null;
+          property_type: string | null;
+          business_type: string;
+          price_per_m2: number | null;
+          price_per_m2_low: number | null;
+          price_per_m2_high: number | null;
+          estimated_price: number | null;
+          living_area_m2: number | null;
+          currency: string;
+          raw_payload: Record<string, unknown>;
+          metadata: Record<string, unknown>;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          observed_at?: string;
+          source?: string;
+          valuation_id?: string | null;
+          property_id?: string | null;
+          city?: string | null;
+          postal_code?: string | null;
+          zone_slug?: string | null;
+          neighborhood?: string | null;
+          property_type?: string | null;
+          business_type?: string;
+          price_per_m2?: number | null;
+          price_per_m2_low?: number | null;
+          price_per_m2_high?: number | null;
+          estimated_price?: number | null;
+          living_area_m2?: number | null;
+          currency?: string;
+          raw_payload?: Record<string, unknown>;
+          metadata?: Record<string, unknown>;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          observed_at?: string;
+          source?: string;
+          valuation_id?: string | null;
+          property_id?: string | null;
+          city?: string | null;
+          postal_code?: string | null;
+          zone_slug?: string | null;
+          neighborhood?: string | null;
+          property_type?: string | null;
+          business_type?: string;
+          price_per_m2?: number | null;
+          price_per_m2_low?: number | null;
+          price_per_m2_high?: number | null;
+          estimated_price?: number | null;
+          living_area_m2?: number | null;
+          currency?: string;
+          raw_payload?: Record<string, unknown>;
+          metadata?: Record<string, unknown>;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "market_observations_valuation_id_fkey";
+            columns: ["valuation_id"];
+            isOneToOne: false;
+            referencedRelation: "valuations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "market_observations_property_id_fkey";
+            columns: ["property_id"];
+            isOneToOne: false;
+            referencedRelation: "properties";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       leads: {
         Row: {
           id: string;
