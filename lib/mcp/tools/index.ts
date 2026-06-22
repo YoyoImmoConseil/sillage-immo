@@ -3,6 +3,7 @@ import { leadsTools } from "./leads";
 import { sellerLeadsTools } from "./seller-leads";
 import { homeAssistantTools } from "./home-assistant";
 import { propertiesTools } from "./properties";
+import { publicListingsTools } from "./public-listings";
 import { propertyListingsTools } from "./property-listings";
 import { propertyVisitsTools } from "./property-visits";
 import { propertyDocumentsTools } from "./property-documents";
@@ -27,6 +28,7 @@ export const tools: ToolDefinition<unknown, unknown>[] = [
   ...sellerLeadsTools,
   ...homeAssistantTools,
   ...propertiesTools,
+  ...publicListingsTools,
   ...propertyListingsTools,
   ...propertyVisitsTools,
   ...propertyDocumentsTools,
@@ -48,6 +50,7 @@ export { leadsTools } from "./leads";
 export { sellerLeadsTools } from "./seller-leads";
 export { homeAssistantTools } from "./home-assistant";
 export { propertiesTools } from "./properties";
+export { publicListingsTools } from "./public-listings";
 export { propertyListingsTools } from "./property-listings";
 export { propertyVisitsTools } from "./property-visits";
 export { propertyDocumentsTools } from "./property-documents";

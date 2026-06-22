@@ -123,6 +123,23 @@ describe("MCP tools registry — input schema smoke tests", () => {
     expect(validateWithSchema(schema, { limit: 1000 })).toBe(false);
   });
 
+  it("public_listings.search whitelists criteria + caps limit at 5", async () => {
+    const { tools } = await import("@/lib/mcp/tools");
+    const schema = findSchema(tools, "public_listings.search");
+    expect(
+      validateWithSchema(schema, {
+        businessType: "sale",
+        city: "Nice",
+        priceMax: 800000,
+        limit: 3,
+      })
+    ).toBe(true);
+    expect(validateWithSchema(schema, {})).toBe(true);
+    expect(validateWithSchema(schema, { businessType: "lease" })).toBe(false);
+    expect(validateWithSchema(schema, { limit: 50 })).toBe(false);
+    expect(validateWithSchema(schema, { unknownKey: 1 })).toBe(false);
+  });
+
   it("properties.get accepts oneOf {propertyId} or {slug}", async () => {
     const { tools } = await import("@/lib/mcp/tools");
     const schema = findSchema(tools, "properties.get");

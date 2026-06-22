@@ -7,11 +7,25 @@ import type { AppLocale } from "@/lib/i18n/config";
 import { localizePath } from "@/lib/i18n/routing";
 import { AIConsentNotice } from "./ai-consent-notice";
 
+type AssistantListing = {
+  title: string | null;
+  city: string | null;
+  postalCode: string | null;
+  propertyType: string | null;
+  businessType: string | null;
+  rooms: number | null;
+  livingArea: number | null;
+  priceLabel: string;
+  url: string | null;
+  coverImageUrl: string | null;
+};
+
 type AiData = {
   reply: string;
   intent: "seller" | "buyer" | "market" | "unclear";
   ctaLabel: string;
   ctaHref: string;
+  listings?: AssistantListing[];
 };
 
 type ChatMessage = {
@@ -19,6 +33,7 @@ type ChatMessage = {
   text: string;
   ctaLabel?: string;
   ctaHref?: string;
+  listings?: AssistantListing[];
 };
 
 const localizeAssistantHref = (href: string, locale: AppLocale) => {
@@ -168,6 +183,7 @@ export function HomeCommercialAssistant({ locale = "fr" }: { locale?: AppLocale 
           text: data.data?.reply ?? "",
           ctaLabel: data.data?.ctaLabel,
           ctaHref: data.data?.ctaHref,
+          listings: data.data?.listings,
         },
       ]);
     } catch {
@@ -222,6 +238,56 @@ export function HomeCommercialAssistant({ locale = "fr" }: { locale?: AppLocale 
               <span className="mr-1">{item.role === "assistant" ? copy.aiPrefix : copy.userPrefix}</span>
               {item.text}
             </p>
+            {item.role === "assistant" && item.listings && item.listings.length > 0 ? (
+              <div className="mt-2 space-y-2">
+                {item.listings.map((listing, listingIndex) => {
+                  const href = listing.url
+                    ? localizeAssistantHref(listing.url, locale)
+                    : null;
+                  const details = [
+                    listing.propertyType,
+                    listing.rooms ? `${listing.rooms} pièces` : null,
+                    listing.livingArea ? `${listing.livingArea} m²` : null,
+                    listing.city,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ");
+                  const card = (
+                    <div className="flex gap-3 rounded-lg bg-white/70 p-2">
+                      {listing.coverImageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={listing.coverImageUrl}
+                          alt={listing.title ?? "Bien Sillage Immo"}
+                          className="h-16 w-20 flex-none rounded object-cover"
+                          loading="lazy"
+                        />
+                      ) : null}
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium">
+                          {listing.title ?? "Bien Sillage Immo"}
+                        </p>
+                        {details ? (
+                          <p className="truncate text-xs opacity-70">{details}</p>
+                        ) : null}
+                        <p className="text-xs font-semibold">{listing.priceLabel}</p>
+                      </div>
+                    </div>
+                  );
+                  return href ? (
+                    <Link
+                      key={`listing-${index}-${listingIndex}`}
+                      href={href}
+                      className="block transition hover:opacity-80"
+                    >
+                      {card}
+                    </Link>
+                  ) : (
+                    <div key={`listing-${index}-${listingIndex}`}>{card}</div>
+                  );
+                })}
+              </div>
+            ) : null}
             {item.role === "assistant" && item.ctaLabel && item.ctaHref ? (
               <div className="mt-2">
                 <Link href={localizeAssistantHref(item.ctaHref, locale)} className="sillage-btn inline-block rounded px-3 py-1 text-xs">

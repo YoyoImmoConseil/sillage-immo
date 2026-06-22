@@ -3,11 +3,13 @@ import { cookies } from "next/headers";
 import {
   SILLAGE_AGENCY_KNOWLEDGE,
   SILLAGE_AGENCY_KNOWLEDGE_VERSION,
+  SILLAGE_BRAND_SOCLE,
+  SILLAGE_BRAND_SOCLE_VERSION,
 } from "@/lib/ai/knowledge/sillage-agency-knowledge";
 import { invokeMcpToolInternal } from "@/lib/mcp/invoke-internal";
 import { inferZoneFromText } from "@/lib/scoring/zone-catalog";
 import { getRuntimeZoneCatalog } from "@/lib/scoring/zone-repository";
-import { callOpenAiChat } from "@/lib/ai/openai";
+import { callOpenAiChat, CLIENT_CHAT_MODEL } from "@/lib/ai/openai";
 import { logConversationTurn } from "@/lib/ai/conversation-logger";
 import {
   ANONYMOUS_SESSION_COOKIE_NAME,
@@ -26,11 +28,39 @@ type InputBody = {
   locale?: "fr" | "en" | "es" | "ru";
 };
 
+type ListingSearchCriteria = {
+  businessType?: "sale" | "rental";
+  city?: string;
+  propertyType?: string;
+  priceMin?: number;
+  priceMax?: number;
+  roomsMin?: number;
+  roomsMax?: number;
+  surfaceMin?: number;
+  hasTerrace?: boolean;
+  hasElevator?: boolean;
+};
+
+type AssistantListing = {
+  title: string | null;
+  city: string | null;
+  postalCode: string | null;
+  propertyType: string | null;
+  businessType: string | null;
+  rooms: number | null;
+  livingArea: number | null;
+  priceLabel: string;
+  url: string | null;
+  coverImageUrl: string | null;
+};
+
 type AssistantPayload = {
   reply: string;
   intent: "seller" | "buyer" | "market" | "unclear";
   ctaLabel: string;
   ctaHref: string;
+  listingSearch: ListingSearchCriteria | null;
+  listings?: AssistantListing[];
 };
 
 const normalize = (value: string) => {
@@ -71,19 +101,41 @@ const hasLocationHint = (value: string, knownCities: string[]) => {
   return hasAddressToken || hasKnownCity;
 };
 
-const PREMIUM_STREET_HINTS = [
-  "victor hugo",
-  "rivoli",
-  "promenade des anglais",
-  "rue paradis",
-  "cap de nice",
-  "mont boron",
-  "franck pilatte",
-  "carre d or",
-  "carre dor",
-  "cimiez",
-  "musiciens",
-];
+const toNonNegativeNumber = (value: unknown): number | undefined => {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0
+    ? value
+    : undefined;
+};
+
+const sanitizeListingSearch = (raw: unknown): ListingSearchCriteria | null => {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  const out: ListingSearchCriteria = {};
+
+  if (r.businessType === "sale" || r.businessType === "rental") {
+    out.businessType = r.businessType;
+  }
+  if (typeof r.city === "string" && r.city.trim().length > 0) {
+    out.city = r.city.trim().slice(0, 80);
+  }
+  if (typeof r.propertyType === "string" && r.propertyType.trim().length > 0) {
+    out.propertyType = r.propertyType.trim().slice(0, 40);
+  }
+  const priceMin = toNonNegativeNumber(r.priceMin);
+  if (priceMin !== undefined) out.priceMin = priceMin;
+  const priceMax = toNonNegativeNumber(r.priceMax);
+  if (priceMax !== undefined) out.priceMax = priceMax;
+  const roomsMin = toNonNegativeNumber(r.roomsMin);
+  if (roomsMin !== undefined) out.roomsMin = roomsMin;
+  const roomsMax = toNonNegativeNumber(r.roomsMax);
+  if (roomsMax !== undefined) out.roomsMax = roomsMax;
+  const surfaceMin = toNonNegativeNumber(r.surfaceMin);
+  if (surfaceMin !== undefined) out.surfaceMin = surfaceMin;
+  if (typeof r.hasTerrace === "boolean") out.hasTerrace = r.hasTerrace;
+  if (typeof r.hasElevator === "boolean") out.hasElevator = r.hasElevator;
+
+  return Object.keys(out).length > 0 ? out : null;
+};
 
 const parseAssistantPayload = (raw: string): AssistantPayload => {
   const parsed = JSON.parse(raw) as Record<string, unknown>;
@@ -98,16 +150,16 @@ const parseAssistantPayload = (raw: string): AssistantPayload => {
   const reply =
     typeof parsed.reply === "string" && parsed.reply.trim().length > 0
       ? parsed.reply.trim()
-      : "Je peux vous orienter vers l'estimation vendeur ou vers un accompagnement acquereur sur-mesure.";
+      : "Je peux vous orienter vers l'estimation de votre bien ou vers une recherche acquéreur sur-mesure.";
 
   const ctaLabel =
     typeof parsed.ctaLabel === "string" && parsed.ctaLabel.trim().length > 0
       ? parsed.ctaLabel.trim()
       : intent === "seller"
-        ? "Demarrer mon estimation"
+        ? "Démarrer mon estimation"
         : intent === "market"
-          ? "Rencontrez un de nos experts"
-        : "Deposer ma recherche acquereur";
+          ? "Rencontrer un de nos experts"
+          : "Déposer ma recherche acquéreur";
 
   const ctaHref =
     typeof parsed.ctaHref === "string" && parsed.ctaHref.trim().length > 0
@@ -116,32 +168,65 @@ const parseAssistantPayload = (raw: string): AssistantPayload => {
         ? "/estimation"
         : intent === "market"
           ? "/#contact-expert"
-        : "/#acquereur-form";
+          : "/#acquereur-form";
 
-  return { reply, intent, ctaLabel, ctaHref };
+  return {
+    reply,
+    intent,
+    ctaLabel,
+    ctaHref,
+    listingSearch: sanitizeListingSearch(parsed.listingSearch),
+  };
 };
 
-const enforceZoneOpeningTone = (
-  reply: string,
-  input: { sellerIntent: boolean; locationProvided: boolean; zoneSignal: string }
-) => {
-  if (!input.sellerIntent || !input.locationProvided) return reply;
-
-  const trimmed = reply.trim();
-  const withoutLeadingSalute = trimmed.replace(
-    /^(merci pour cette pr[ée]cision\s*!\s*|tr[eè]s bel endroit\s*!\s*)/i,
-    ""
-  );
-
-  if (input.zoneSignal === "premium") {
-    return `Tres bel endroit ! ${withoutLeadingSalute}`.trim();
+const searchPublicListings = async (
+  criteria: ListingSearchCriteria,
+  locale: string
+): Promise<AssistantListing[]> => {
+  try {
+    const result = (await invokeMcpToolInternal("public_listings.search", {
+      ...criteria,
+      locale,
+      limit: 3,
+    })) as { items?: AssistantListing[] } | null;
+    return Array.isArray(result?.items) ? result.items.slice(0, 3) : [];
+  } catch {
+    return [];
   }
+};
 
-  if (input.zoneSignal === "neutral" || input.zoneSignal === "unknown") {
-    return `Merci pour cette precision ! ${withoutLeadingSalute}`.trim();
-  }
+const buildSystemPrompt = (input: {
+  languageInstruction: string;
+  isSellerProfile: boolean;
+}) => {
+  const knowledgeNote = input.isSellerProfile
+    ? "Une base de connaissance vendeur Sillage Immo t'est fournie (agencyKnowledge) : appuie-toi dessus pour valoriser l'accompagnement vendeur, sans la réciter."
+    : "Un socle de marque général t'est fourni (agencyKnowledge) : tiens-t'en au positionnement et à la voix, et atteins l'objectif sans script.";
 
-  return reply;
+  return `Tu es l'assistant de Sillage Immo, boutique immobilière haut de gamme à Nice et sur la Côte d'Azur, présent sur la page d'accueil.
+
+Voix : expert, discret et raffiné. Vouvoiement systématique. Chaleureux mais sobre, jamais commercial agressif, jamais de superlatifs creux. Tu vises la justesse plutôt que l'emphase.
+
+Ton objectif : comprendre le projet du visiteur (vendre, acheter, louer, ou simplement se renseigner), lui apporter une réponse réellement utile, et l'orienter vers le bon parcours sans aucune pression.
+
+${knowledgeNote}
+
+Règles par profil :
+- Vendeur : si la localisation du bien n'est pas connue, commence par une question de localisation, brève et sobre, avant d'aller plus loin. Si elle est déjà connue, ne la repose pas. Oriente vers /estimation.
+- Acquéreur ou locataire : dès qu'au moins un critère concret est donné (type de bien, ville/quartier, budget, nombre de pièces), tu peux proposer de montrer quelques biens publiés en renseignant l'objet "listingSearch" avec les critères que tu déduis. Si rien n'est assez précis, pose une question de qualification courte. Oriente sinon vers /#acquereur-form.
+- Marché / renseignement : donne une lecture locale mesurée et concrète, puis propose un échange avec un expert (/#contact-expert).
+- Projet mixte (ex : vendre puis acheter) : reconnais les deux besoins et propose l'étape la plus utile en premier.
+
+Recherche de biens (listingSearch) :
+- Mets "listingSearch" à un objet de critères publics UNIQUEMENT si le visiteur cherche à acheter ou louer et a donné au moins un critère exploitable. Sinon, mets "listingSearch": null.
+- Critères autorisés : businessType ("sale" pour vente, "rental" pour location), city, propertyType, priceMin, priceMax, roomsMin, roomsMax, surfaceMin, hasTerrace, hasElevator.
+- N'invente JAMAIS un bien, un prix, une adresse ou un lien : les biens réels te seront fournis par le système, tu ne fais que déclencher la recherche.
+
+Longueur : tant que tu qualifies le besoin, reste bref (2-4 phrases). Quand tu entres dans le concret (analyse, présentation de biens, conseil), tu peux aller jusqu'à 3-6 phrases. Ne promets jamais un prix ni un délai certain ; pas de conseil juridique ou fiscal ferme.
+
+${input.languageInstruction} Si la locale n'est pas le français, localise uniquement le libellé du CTA ; le chemin du CTA reste identique.
+
+Retourne STRICTEMENT un JSON avec : reply (string), intent ("seller"|"buyer"|"market"|"unclear"), ctaLabel (string), ctaHref (string), listingSearch (objet de critères ou null).`;
 };
 
 export const POST = async (request: Request) => {
@@ -204,30 +289,29 @@ export const POST = async (request: Request) => {
   const runtimeCatalog = await getRuntimeZoneCatalog();
   const knownCities = Array.from(new Set(runtimeCatalog.catalog.map((item) => normalize(item.city))));
   const inferredZone = inferZoneFromText(conversationUserText, runtimeCatalog.catalog);
-  const hasPremiumHint = PREMIUM_STREET_HINTS.some((hint) =>
-    normalize(conversationUserText).includes(hint)
-  );
   const locationProvided = Boolean(inferredZone) || hasLocationHint(conversationUserText, knownCities);
-  const zoneSignal =
-    hasPremiumHint || (inferredZone && inferredZone.score >= 10)
-      ? "premium"
-      : inferredZone
-        ? "neutral"
-        : locationProvided
-          ? "unknown"
-          : "missing";
-  const sellerIntentSignal = hasSellerIntent(conversationUserText);
 
-  const systemPrompt = `Tu es un assistant commercial Sillage Immo sur la page d'accueil. Ton role est d'etre professionnel ET chaleureux: tu parles a une personne en face de toi, pas a un robot. Tu dois qualifier l'intention utilisateur (seller, buyer, market, unclear) puis orienter vers le bon parcours, sans etre monocentre sur un seul sujet. Sillage Immo accompagne les clients sur l'ensemble des demarches immobilieres: transaction vente, acquisition, location et gestion locative. seller: orienter vers /estimation en expliquant la valeur d'une estimation, sans pression commerciale. buyer: orienter vers /#acquereur-form en expliquant l'interet de laisser une recherche detaillee. market: fournir une reponse utile sur le marche local et proposer un echange expert via /#contact-expert. Qualification vendeur prioritaire: quand un utilisateur indique vouloir vendre, verifier si la localisation du bien est deja connue (dans son message courant ou l'historique). Si elle n'est pas connue, commencer par une reaction chaleureuse puis poser explicitement une question de localisation (ex: "Tres beau projet ! Puis-je vous demander ou se trouve votre bien ?"). Si la localisation est deja fournie, ne pas reposer la question et poursuivre normalement. Adaptation au niveau de zone: si le contexte indique une zone premium pour un projet vendeur, tu peux ouvrir avec une formule valorisante de type "Tres bel endroit !" puis rester sobre. Si la zone n'est pas premium ou inconnue, utiliser un ton neutre de type "Merci pour cette precision !". Intentions mixtes: si l'utilisateur combine plusieurs besoins (ex: vendre puis acheter), reconnaitre explicitement les deux besoins, expliquer qu'un accompagnement global est possible, puis proposer l'etape la plus utile immediatement. Gestion des objections: si l'utilisateur hesite a passer par une agence, adopter un ton ouvert, empathique et non insistant, dire que ce questionnement est normal, rappeler que l'estimation en ligne n'oblige a rien, et preciser que les conseillers Sillage Immo restent disponibles quelle que soit sa decision. Style: conversation naturelle, humaine, concrete, chaleureuse et rassurante. Reste concis (3-6 phrases), evite les formulations trop administratives ou trop generiques, et ne fais pas de promesse irrealiste. ${languageInstruction} If locale is not French, localize the CTA label and CTA href still pointing to the same path but translated label only. Retourne strictement un JSON avec: reply, intent, ctaLabel, ctaHref.`;
+  // Conditional brand knowledge: the seller "book" is only injected when the
+  // conversation carries a seller signal (keyword over the whole exchange,
+  // incl. previous turns). Other profiles get the general brand socle. No
+  // extra LLM call — we reuse the existing keyword signal (cost-aware).
+  const isSellerProfile = hasSellerIntent(conversationUserText);
+  const agencyKnowledge = isSellerProfile
+    ? SILLAGE_AGENCY_KNOWLEDGE
+    : SILLAGE_BRAND_SOCLE;
+  const knowledgeVersion = isSellerProfile
+    ? SILLAGE_AGENCY_KNOWLEDGE_VERSION
+    : SILLAGE_BRAND_SOCLE_VERSION;
 
-  const userPayload = JSON.stringify({
-    knowledgeVersion: SILLAGE_AGENCY_KNOWLEDGE_VERSION,
-    agencyKnowledge: SILLAGE_AGENCY_KNOWLEDGE,
+  const systemPrompt = buildSystemPrompt({ languageInstruction, isSellerProfile });
+
+  const basePayload = {
+    knowledgeVersion,
+    agencyKnowledge,
     mcpContext,
     conversationSignals: {
-      sellerIntent: sellerIntentSignal,
+      sellerIntent: isSellerProfile,
       locationProvided,
-      zoneSignal,
       inferredZone: inferredZone
         ? {
             city: inferredZone.city,
@@ -238,20 +322,20 @@ export const POST = async (request: Request) => {
     },
     history,
     userMessage: message,
-  });
+  };
 
   let chatResult;
   try {
     chatResult = await callOpenAiChat({
-      model: "gpt-4o-mini",
-      temperature: 0.2,
+      model: CLIENT_CHAT_MODEL,
+      temperature: 0.3,
       responseFormat: { type: "json_object" },
       messages: [
         { role: "system", content: systemPrompt },
-        { role: "user", content: userPayload },
+        { role: "user", content: JSON.stringify(basePayload) },
       ],
       toolName: "home_assistant.ask",
-      toolVersion: "1.0.0",
+      toolVersion: "2.0.0",
     });
   } catch (error) {
     console.error(
@@ -259,7 +343,7 @@ export const POST = async (request: Request) => {
       error instanceof Error ? error.message : error
     );
     return NextResponse.json(
-      { ok: false, message: "L'assistant est momentanement indisponible." },
+      { ok: false, message: "L'assistant est momentanément indisponible." },
       { status: 502 }
     );
   }
@@ -270,11 +354,55 @@ export const POST = async (request: Request) => {
   }
 
   const data = parseAssistantPayload(content);
-  data.reply = enforceZoneOpeningTone(data.reply, {
-    sellerIntent: sellerIntentSignal,
-    locationProvided,
-    zoneSignal,
-  });
+  let totalCostMicros = chatResult.costMicros;
+  let lastModel = chatResult.model;
+
+  // Mini tool-calling loop, capped at exactly ONE tool call per turn: if the
+  // model requested a listing search, we run the (read-only, published-only)
+  // tool server-side and let the model phrase the result with the REAL
+  // listings injected. The model never emits listing facts itself.
+  if (data.listingSearch) {
+    const listings = await searchPublicListings(data.listingSearch, locale);
+
+    try {
+      const followUp = await callOpenAiChat({
+        model: CLIENT_CHAT_MODEL,
+        temperature: 0.3,
+        responseFormat: { type: "json_object" },
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: JSON.stringify(basePayload) },
+          {
+            role: "user",
+            content: JSON.stringify({
+              instruction:
+                "Voici les biens PUBLIÉS trouvés pour la recherche demandée (source de vérité). Rédige une réponse qui les présente avec justesse et sobriété. Ne mentionne aucun prix, aucune adresse et aucun lien autres que ceux fournis. S'il n'y a aucun bien, ne prétends pas le contraire : propose de préciser la recherche ou de laisser une recherche acquéreur. Ne relance PAS de recherche : listingSearch doit être null.",
+              listingResults: listings,
+              previousIntent: data.intent,
+            }),
+          },
+        ],
+        toolName: "home_assistant.ask",
+        toolVersion: "2.0.0",
+      });
+      totalCostMicros += followUp.costMicros;
+      lastModel = followUp.model;
+      if (typeof followUp.content === "string" && followUp.content.trim().length > 0) {
+        const second = parseAssistantPayload(followUp.content);
+        data.reply = second.reply;
+        data.ctaLabel = second.ctaLabel;
+        data.ctaHref = second.ctaHref;
+      }
+    } catch (error) {
+      console.error(
+        "[home-assistant] follow-up call failed:",
+        error instanceof Error ? error.message : error
+      );
+    }
+
+    data.listings = listings;
+    data.listingSearch = null;
+  }
 
   // Persist this turn into ai_conversations / ai_messages keyed by the
   // anonymous session cookie (set by proxy.ts). Best-effort: a logger
@@ -291,26 +419,26 @@ export const POST = async (request: Request) => {
           channel: "home_assistant",
           anonymousSessionId: session.id,
           locale,
-          model: chatResult.model,
+          model: lastModel,
           userMessage: message,
           assistantMessage: data.reply,
           usage: {
             tokensIn: chatResult.usage.promptTokens,
             tokensOut: chatResult.usage.completionTokens,
-            costMicros: chatResult.costMicros,
+            costMicros: totalCostMicros,
           },
           finishReason: chatResult.finishReason,
           toolName: "home_assistant.ask",
-          toolVersion: "1.0.0",
+          toolVersion: "2.0.0",
           metadata: {
-            knowledge_version: SILLAGE_AGENCY_KNOWLEDGE_VERSION,
+            knowledge_version: knowledgeVersion,
             intent: data.intent,
-            zone_signal: zoneSignal,
             inferred_zone: inferredZone
               ? { slug: inferredZone.slug, city: inferredZone.city }
               : null,
-            seller_intent: sellerIntentSignal,
+            seller_intent: isSellerProfile,
             location_provided: locationProvided,
+            listings_returned: data.listings?.length ?? 0,
           },
         });
       }

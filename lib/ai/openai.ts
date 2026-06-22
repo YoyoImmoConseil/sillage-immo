@@ -7,6 +7,14 @@ const OPENAI_EMBEDDINGS_URL = "https://api.openai.com/v1/embeddings";
 const DEFAULT_CHAT_MODEL = "gpt-4o-mini";
 const DEFAULT_EMBEDDING_MODEL = "text-embedding-3-small";
 
+// Model tiers (centralized so every "door" picks a coherent model).
+// - UTILITY: cheapest, for deterministic utilities (renaming, classification).
+// - CLIENT_CHAT: client-facing conversations (Home Assistant, Seller Chat) —
+//   more capable than 4o-mini for nuance/voice, still cost-reasonable.
+// - The Admin Copilot tier lives in its own orchestrator (premium).
+export const UTILITY_CHAT_MODEL = "gpt-4o-mini";
+export const CLIENT_CHAT_MODEL = "gpt-4.1-mini";
+
 // Prices in micros per 1000 tokens (1 cent = 1000 micros). Updated 2026-05.
 // Cost numbers are accounting-quality estimates; the LLM provider remains
 // the source of truth for billing — we just record a rough internal cost
