@@ -5,6 +5,7 @@ import {
   analyzeAndRenameDocument,
   type DocumentAiScope,
 } from "@/services/documents/document-ai-rename.service";
+import { sendSellerEscalationEmail } from "@/lib/email/seller-escalation";
 
 type DomainEventRow = {
   id: string;
@@ -46,6 +47,64 @@ const logProcessedEvent = async (event: DomainEventRow, status: "processed" | "f
   });
 };
 
+const handleSellerEscalation = async (event: DomainEventRow) => {
+  const sellerLeadId = event.aggregate_id;
+  const payload = event.payload ?? {};
+  const assignedAdminProfileId =
+    typeof payload.assignedAdminProfileId === "string"
+      ? payload.assignedAdminProfileId
+      : null;
+  const lastUserMessage =
+    typeof payload.lastUserMessage === "string" ? payload.lastUserMessage : null;
+
+  const { data: lead } = await supabaseAdmin
+    .from("seller_leads")
+    .select("full_name, city, property_type, assigned_admin_profile_id")
+    .eq("id", sellerLeadId)
+    .maybeSingle();
+
+  const advisorId = assignedAdminProfileId ?? lead?.assigned_admin_profile_id ?? null;
+
+  let advisorEmail: string | null = null;
+  let advisorName: string | null = null;
+  if (advisorId) {
+    const { data: advisor } = await supabaseAdmin
+      .from("admin_profiles")
+      .select("email, full_name, is_active")
+      .eq("id", advisorId)
+      .maybeSingle();
+    if (advisor && advisor.is_active !== false) {
+      advisorEmail = advisor.email ?? null;
+      advisorName = advisor.full_name ?? null;
+    }
+  }
+
+  const to = advisorEmail ?? process.env.SELLER_ESCALATION_INBOX?.trim() ?? null;
+  if (!to) {
+    // Nothing we can send to; treat as processed (logged) so we don't retry forever.
+    return;
+  }
+
+  const sellerFirstName = lead?.full_name
+    ? lead.full_name.trim().split(/\s+/)[0] || null
+    : null;
+
+  const baseUrl = (process.env.PUBLIC_SITE_URL ?? "").replace(/\/$/, "");
+  const adminDeepLink = baseUrl
+    ? `${baseUrl}/admin/seller-leads/${sellerLeadId}`
+    : null;
+
+  await sendSellerEscalationEmail({
+    to,
+    advisorName,
+    sellerFirstName,
+    sellerCity: lead?.city ?? null,
+    propertyType: lead?.property_type ?? null,
+    lastUserMessage,
+    adminDeepLink,
+  });
+};
+
 const handleDomainEvent = async (event: DomainEventRow) => {
   switch (event.event_name) {
     case "seller_lead.created":
@@ -53,6 +112,12 @@ const handleDomainEvent = async (event: DomainEventRow) => {
     case "seller_lead.scored":
     case "seller_lead.ai_insight_generated":
     case "seller_lead.chat_message_logged":
+      await logProcessedEvent(event, "processed");
+      return;
+    case "seller_lead.escalation_requested":
+      await handleSellerEscalation(event);
+      await logProcessedEvent(event, "processed");
+      return;
     case "buyer_lead.created":
     case "buyer_lead.search_profile_updated":
     case "property_listing.published":

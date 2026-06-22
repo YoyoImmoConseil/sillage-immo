@@ -2,8 +2,8 @@ import "server-only";
 import type { AppLocale } from "@/lib/i18n/config";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { emitDomainEvent } from "@/lib/events/domain-events";
-import { invokeMcpToolInternal } from "@/lib/mcp/invoke-internal";
-import { callOpenAiChat } from "@/lib/ai/openai";
+import { gatherSellerChatContext } from "./seller-chat-context.service";
+import { callOpenAiChat, CLIENT_CHAT_MODEL } from "@/lib/ai/openai";
 import {
   SILLAGE_AGENCY_KNOWLEDGE,
   SILLAGE_AGENCY_KNOWLEDGE_VERSION,
@@ -31,9 +31,15 @@ Style de reponse:
 - 4 a 7 phrases maximum.
 - Privilegier des reponses orientees benefices vendeur (delai, securite, clarte, confort).
 
+Contexte fourni (source de verite, ne rien inventer au-dela):
+- clientView: prenom + bien (ville, type, echeance) du vendeur. Tutoiement interdit, vouvoiement systematique.
+- projectStatus: si le projet est suivi (converted=true), tu disposes du statut de commercialisation (mandat, offre, compromis, acte) et de la liste des documents deja partages (labels). Tu peux confirmer l'avancement et rappeler quels documents sont disponibles dans l'espace client, SANS inventer de document ni de date absente.
+- Si converted=false, ne laisse pas entendre qu'un suivi detaille existe deja: oriente vers la mise en relation avec le conseiller.
+
 Garde-fous:
 - Ne pas donner de conseil juridique ferme.
 - Ne jamais garantir un prix de vente ou un delai certain.
+- Ne jamais communiquer de donnee interne (score, segment, action commerciale, analyse IA): tu ne les vois pas et ils ne te concernent pas.
 - Si question sensible (litige, succession, divorce, urgence, contentieux), recommander un rappel humain prioritaire.
 - Si une offre commerciale depend d'une periode ("en ce moment"), la presenter prudemment: "selon conditions en vigueur".`;
 
@@ -100,12 +106,16 @@ export const askSellerChat = async (
   const { raw: metadata, sellerChat, sellerChatMessages } = getSellerMetadataSections(lead.metadata);
   const previousMessages = sellerChatMessages.slice(-8);
 
-  let mcpContext: unknown = null;
+  // Bounded, customer-safe context only: client view (no internal scoring /
+  // AI insight / superfluous PII) + commercialization status + shared
+  // document labels when the lead is a tracked project.
+  let chatContext: Awaited<ReturnType<typeof gatherSellerChatContext>> | null = null;
   try {
-    mcpContext = await invokeMcpToolInternal("seller_leads.get_context", { sellerLeadId });
+    chatContext = await gatherSellerChatContext(sellerLeadId);
   } catch {
-    mcpContext = null;
+    chatContext = null;
   }
+  const hasBoundedContext = Boolean(chatContext);
 
   const conversationIdFromMeta =
     typeof sellerChat?.internal?.conversation_id === "string"
@@ -113,7 +123,7 @@ export const askSellerChat = async (
       : null;
 
   const chatResult = await callOpenAiChat({
-    model: "gpt-4o-mini",
+    model: CLIENT_CHAT_MODEL,
     temperature: 0.3,
     messages: [
       {
@@ -134,19 +144,24 @@ export const askSellerChat = async (
         content: JSON.stringify({
           agencyKnowledgeVersion: SILLAGE_AGENCY_KNOWLEDGE_VERSION,
           agencyKnowledge: SILLAGE_AGENCY_KNOWLEDGE,
-          leadContext: {
-            fullName: lead.full_name,
-            city: lead.city,
-            propertyType: lead.property_type,
+          clientView: chatContext?.clientView ?? {
+            identity: { firstName: null },
+            property: {
+              city: lead.city,
+              propertyType: lead.property_type,
+              timeline: null,
+              status: null,
+            },
+            conversationId: conversationIdFromMeta,
           },
-          mcpContext,
+          projectStatus: chatContext?.projectStatus ?? null,
           history: previousMessages,
           question: cleanedMessage,
         }),
       },
     ],
     toolName: "seller_chat.ask",
-    toolVersion: "1.0.0",
+    toolVersion: "2.0.0",
   });
 
   const answerRaw = chatResult.content.trim();
@@ -178,7 +193,7 @@ export const askSellerChat = async (
   const confidence = confidenceFromSignals({
     userMessage: cleanedMessage,
     answer,
-    hasMcpContext: Boolean(mcpContext),
+    hasMcpContext: hasBoundedContext,
     escalateToHuman,
     historySize: previousMessages.length,
   });
@@ -206,7 +221,7 @@ export const askSellerChat = async (
       },
       finishReason: chatResult.finishReason,
       toolName: "seller_chat.ask",
-      toolVersion: "1.0.0",
+      toolVersion: "2.0.0",
       metadata: {
         knowledge_version: SILLAGE_AGENCY_KNOWLEDGE_VERSION,
         confidence_level: confidence.level,
@@ -225,7 +240,7 @@ export const askSellerChat = async (
       ...(finalMetadata.seller_chat?.internal ?? {}),
       confidence_score: confidence.score,
       confidence_level: confidence.level,
-      mcp_context_used: Boolean(mcpContext),
+      mcp_context_used: hasBoundedContext,
       updated_at: now,
       ...(loggedConversationId
         ? { conversation_id: loggedConversationId }
@@ -244,12 +259,33 @@ export const askSellerChat = async (
         knowledgeVersion: SILLAGE_AGENCY_KNOWLEDGE_VERSION,
         confidenceScore: confidence.score,
         confidenceLevel: confidence.level,
-        mcpContextUsed: Boolean(mcpContext),
+        mcpContextUsed: hasBoundedContext,
         conversationId: loggedConversationId,
       },
     });
   } catch {
     // non-blocking
+  }
+
+  // Real escalation: when the exchange warrants a human callback, emit a
+  // dedicated domain event. The outbox processor turns it into an email to
+  // the assigned advisor (best-effort, never blocks the chat reply).
+  if (escalateToHuman) {
+    try {
+      await emitDomainEvent({
+        aggregateType: "seller_lead",
+        aggregateId: sellerLeadId,
+        eventName: "seller_lead.escalation_requested",
+        payload: {
+          assignedAdminProfileId: chatContext?.assignedAdminProfileId ?? null,
+          conversationId: loggedConversationId,
+          lastUserMessage: cleanedMessage.slice(0, 600),
+          confidenceLevel: confidence.level,
+        },
+      });
+    } catch {
+      // non-blocking
+    }
   }
 
   const { error: updateInternalError } = await supabaseAdmin

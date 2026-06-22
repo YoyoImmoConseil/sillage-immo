@@ -10,6 +10,7 @@ import type { SellerPortalProjectDetail } from "@/services/clients/seller-portal
 import type { AppLocale } from "@/lib/i18n/config";
 import { getSellerEventCopy } from "./seller-event-copy";
 import { sellerProjectCopy } from "./seller-project-copy";
+import { SellerProjectChat } from "./seller-project-chat";
 
 export function SellerProjectDetailView({
   detail,
@@ -230,6 +231,8 @@ export function SellerProjectDetailView({
           </section>
         </div>
       </section>
+
+      <SellerProjectChat projectId={detail.project.id} locale={locale} />
     </div>
   );
 }

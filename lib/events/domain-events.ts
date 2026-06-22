@@ -7,6 +7,7 @@ export type DomainEventName =
   | "seller_lead.scored"
   | "seller_lead.ai_insight_generated"
   | "seller_lead.chat_message_logged"
+  | "seller_lead.escalation_requested"
   | "buyer_lead.created"
   | "buyer_lead.search_profile_updated"
   | "property_listing.published"

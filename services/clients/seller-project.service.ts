@@ -10,6 +10,7 @@ import {
   emitClientProjectEvent,
 } from "./client-project.service";
 import { createClientProfile, getClientById } from "./client-profile.service";
+import { reattachSellerConversationToProject } from "@/services/sellers/seller-chat-context.service";
 import type { SellerProjectEntryChannel } from "@/types/domain/client";
 
 export type CreateSellerProjectFromLeadInput = {
@@ -221,6 +222,15 @@ export const createSellerProjectFromLead = async (
     await supabaseAdmin.from("seller_projects").delete().eq("id", sp.id);
     await supabaseAdmin.from("client_projects").delete().eq("id", projectId);
     throw error;
+  }
+
+  // Conversation continuity: re-attach the anonymous seller-chat history to
+  // the freshly created project so the seller keeps it in their client space.
+  // Best-effort: a failure here must NOT roll back the conversion.
+  try {
+    await reattachSellerConversationToProject(input.sellerLeadId, projectId);
+  } catch {
+    // non-blocking
   }
 
   return { clientProjectId: projectId, sellerProjectId: sp.id, clientProfileId: clientProfileIdResolved };
