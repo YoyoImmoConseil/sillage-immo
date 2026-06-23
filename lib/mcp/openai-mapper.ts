@@ -138,6 +138,36 @@ export type MapToolToOpenAiInput = {
   inputSchema: JsonSchema;
 };
 
+// OpenAI's function-calling API requires the root `parameters` to be an
+// object schema. Our internal registry allows a root-level `oneOf` (e.g.
+// properties.get / mynotary.get_signed_document accept either an id or an
+// alternate key). A root-level `oneOf` maps to `{ oneOf: [...] }` with no
+// top-level `type`, which OpenAI rejects ("schema must be of type object,
+// got type None"). We flatten such a union into a single object schema with
+// every branch's properties optional. The strict server-side validator
+// (validateWithSchema, fed the ORIGINAL oneOf schema) still enforces that
+// exactly one valid branch is provided at call time.
+const buildRootParameters = (schema: JsonSchema): Record<string, unknown> => {
+  if ("oneOf" in schema) {
+    const properties: Record<string, unknown> = {};
+    for (const sub of schema.oneOf) {
+      if ("type" in sub && sub.type === "object") {
+        for (const [key, value] of Object.entries(sub.properties)) {
+          properties[key] = mapSchema(value);
+        }
+      }
+    }
+    return { type: "object", properties, additionalProperties: false };
+  }
+
+  const mapped = mapSchema(schema);
+  if (mapped.type !== "object") {
+    // Defensive: OpenAI demands an object root for tool parameters.
+    return { type: "object", properties: {} };
+  }
+  return mapped;
+};
+
 export const mapToolToOpenAi = (
   tool: MapToolToOpenAiInput
 ): OpenAiToolDefinition => {
@@ -146,7 +176,7 @@ export const mapToolToOpenAi = (
     function: {
       name: safeName(tool.name),
       description: tool.description,
-      parameters: mapSchema(tool.inputSchema),
+      parameters: buildRootParameters(tool.inputSchema),
     },
   };
 };

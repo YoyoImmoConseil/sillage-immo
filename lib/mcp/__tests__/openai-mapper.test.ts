@@ -81,7 +81,7 @@ describe("mapToolToOpenAi", () => {
     });
   });
 
-  it("maps oneOf to OpenAI oneOf", () => {
+  it("flattens a root-level oneOf into a single object schema", () => {
     const schema: JsonSchema = {
       oneOf: [
         {
@@ -104,8 +104,15 @@ describe("mapToolToOpenAi", () => {
       inputSchema: schema,
     });
     const params = out.function.parameters as Record<string, unknown>;
-    expect(params.oneOf).toBeDefined();
-    expect((params.oneOf as unknown[]).length).toBe(2);
+    // OpenAI requires an object root — the union is flattened with both
+    // branches' fields optional (server-side validation still enforces
+    // exactly-one against the original oneOf schema).
+    expect(params.type).toBe("object");
+    expect(params.oneOf).toBeUndefined();
+    const props = params.properties as Record<string, unknown>;
+    expect(props.propertyId).toEqual({ type: "string", format: "uuid" });
+    expect(props.slug).toEqual({ type: "string" });
+    expect(params.required).toBeUndefined();
   });
 
   it("maps array items", () => {
