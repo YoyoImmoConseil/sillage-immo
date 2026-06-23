@@ -52,7 +52,7 @@ export function FloatingAssistant() {
           onClick={() => setOpen(true)}
           aria-label={copy.openAssistant}
           aria-expanded={false}
-          className="fixed bottom-5 right-5 z-50 inline-flex items-center gap-2 rounded-full bg-navy px-4 py-3 text-sand shadow-xl transition hover:opacity-90"
+          className="sillage-btn fixed bottom-5 right-5 z-50 inline-flex items-center gap-2 rounded-full px-4 py-3 shadow-xl"
         >
           <svg aria-hidden viewBox="0 0 24 24" className="h-6 w-6" fill="none">
             <path
