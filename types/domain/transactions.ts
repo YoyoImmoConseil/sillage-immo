@@ -8,9 +8,14 @@ export type TransactionStatus =
   | "acte"
   | "cancelled";
 
-export type TransactionSource = "manual" | "sweepbright" | "mynotary";
+export type TransactionSource = "manual" | "sweepbright" | "mynotary" | "zapier";
 
-export type HonorairesSource = "sweepbright" | "manual" | "adjusted" | "mynotary";
+export type HonorairesSource =
+  | "sweepbright"
+  | "manual"
+  | "adjusted"
+  | "mynotary"
+  | "zapier";
 
 export const TRANSACTION_STATUSES: TransactionStatus[] = [
   "prospect",
@@ -35,6 +40,7 @@ export const HONORAIRES_SOURCE_LABELS: Record<HonorairesSource, string> = {
   manual: "Saisie manuelle",
   adjusted: "Ajustement",
   mynotary: "MyNotary",
+  zapier: "Zapier",
 };
 
 export type TransactionPartyInput = {

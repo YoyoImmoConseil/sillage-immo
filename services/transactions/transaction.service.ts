@@ -45,6 +45,7 @@ export type CreateTransactionInput = {
   preliminarySaleSignedAt?: string | null;
   deedSignedAt?: string | null;
   source?: TransactionSource;
+  externalId?: string | null;
   notes?: string | null;
   metadata?: Record<string, unknown>;
   sellers?: TransactionSellerInput[];
@@ -121,6 +122,7 @@ export const createTransaction = async (
       preliminary_sale_signed_at: input.preliminarySaleSignedAt ?? null,
       deed_signed_at: input.deedSignedAt ?? null,
       source: input.source ?? "manual",
+      external_id: input.externalId ?? null,
       notes: input.notes ?? null,
       metadata: input.metadata ?? {},
       updated_at: new Date().toISOString(),
@@ -299,6 +301,21 @@ export const getTransactionById = async (
     buyers: (buyers.data ?? []) as TransactionBuyerRow[],
     honorairesHistory: (history.data ?? []) as HonorairesHistoryRow[],
   };
+};
+
+// Resolves a transaction by its inbound `external_id` (e.g. a SweepBright
+// deal id forwarded by Zapier). Used to make ingestion idempotent: a Zap
+// retry updates the existing row instead of creating a duplicate.
+export const getTransactionIdByExternalId = async (
+  externalId: string
+): Promise<string | null> => {
+  const { data, error } = await supabaseAdmin
+    .from("transactions")
+    .select("id")
+    .eq("external_id", externalId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data?.id ?? null;
 };
 
 export type ListTransactionsFilters = {

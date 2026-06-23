@@ -3,9 +3,10 @@ import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export type RecordMarketObservationInput = {
-  source?: "loupe" | "manual";
+  source?: "loupe" | "manual" | "zapier";
   valuationId?: string | null;
   propertyId?: string | null;
+  externalId?: string | null;
   city?: string | null;
   postalCode?: string | null;
   zoneSlug?: string | null;
@@ -16,6 +17,12 @@ export type RecordMarketObservationInput = {
   livingAreaM2?: number | null;
   valuationLow?: number | null;
   valuationHigh?: number | null;
+  /**
+   * Direct €/m² override. When provided, it takes precedence over the value
+   * derived from `estimatedPrice / livingAreaM2` (useful for sources that
+   * already publish a price/m² without a total price + area).
+   */
+  pricePerM2?: number | null;
   currency?: string;
   observedAt?: string;
   rawPayload?: Record<string, unknown>;
@@ -51,7 +58,14 @@ export const computePricePerM2 = (
 export const recordMarketObservation = async (
   input: RecordMarketObservationInput
 ): Promise<{ id: string } | null> => {
-  const pricePerM2 = computePricePerM2(input.estimatedPrice, input.livingAreaM2);
+  const derivedPricePerM2 = computePricePerM2(
+    input.estimatedPrice,
+    input.livingAreaM2
+  );
+  const pricePerM2 =
+    typeof input.pricePerM2 === "number" && Number.isFinite(input.pricePerM2)
+      ? Math.round(input.pricePerM2)
+      : derivedPricePerM2;
   const pricePerM2Low = computePricePerM2(input.valuationLow, input.livingAreaM2);
   const pricePerM2High = computePricePerM2(input.valuationHigh, input.livingAreaM2);
 
@@ -61,12 +75,23 @@ export const recordMarketObservation = async (
   }
 
   try {
+    // Idempotent dedupe on the inbound external id (Zap retries).
+    if (input.externalId) {
+      const { data: existing } = await supabaseAdmin
+        .from("market_observations")
+        .select("id")
+        .eq("external_id", input.externalId)
+        .maybeSingle();
+      if (existing?.id) return { id: existing.id };
+    }
+
     const { data, error } = await supabaseAdmin
       .from("market_observations")
       .insert({
         source: input.source ?? "loupe",
         valuation_id: input.valuationId ?? null,
         property_id: input.propertyId ?? null,
+        external_id: input.externalId ?? null,
         city: input.city ?? null,
         postal_code: input.postalCode ?? null,
         zone_slug: input.zoneSlug ?? null,

@@ -26,6 +26,7 @@ export type Database = {
           deed_signed_at: string | null;
           cancelled_at: string | null;
           source: string;
+          external_id: string | null;
           notes: string | null;
           metadata: Record<string, unknown>;
         };
@@ -53,6 +54,7 @@ export type Database = {
           deed_signed_at?: string | null;
           cancelled_at?: string | null;
           source?: string;
+          external_id?: string | null;
           notes?: string | null;
           metadata?: Record<string, unknown>;
         };
@@ -80,6 +82,7 @@ export type Database = {
           deed_signed_at?: string | null;
           cancelled_at?: string | null;
           source?: string;
+          external_id?: string | null;
           notes?: string | null;
           metadata?: Record<string, unknown>;
         };
@@ -275,6 +278,7 @@ export type Database = {
           estimated_price: number | null;
           living_area_m2: number | null;
           currency: string;
+          external_id: string | null;
           raw_payload: Record<string, unknown>;
           metadata: Record<string, unknown>;
         };
@@ -297,6 +301,7 @@ export type Database = {
           estimated_price?: number | null;
           living_area_m2?: number | null;
           currency?: string;
+          external_id?: string | null;
           raw_payload?: Record<string, unknown>;
           metadata?: Record<string, unknown>;
         };
@@ -319,6 +324,7 @@ export type Database = {
           estimated_price?: number | null;
           living_area_m2?: number | null;
           currency?: string;
+          external_id?: string | null;
           raw_payload?: Record<string, unknown>;
           metadata?: Record<string, unknown>;
         };

@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Standalone Zapier Platform app (CommonJS, its own toolchain/runtime).
+    "integrations/zapier/**",
   ]),
 ]);
 

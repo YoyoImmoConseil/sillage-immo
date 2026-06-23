@@ -18,6 +18,16 @@ type KeySummary = {
 
 type ToolInfo = { name: string; mutates: boolean; readsPii: boolean };
 
+// Capabilities for the partner integrations REST surface
+// (/api/integrations/v1/*, consumed by the Zapier app). These are not MCP
+// tools; they are scope strings stored in the same key allowlist and enforced
+// by lib/integrations/auth.ts.
+const INTEGRATION_SCOPES: { scope: string; label: string }[] = [
+  { scope: "integrations:transactions", label: "Transactions (créer / mettre à jour)" },
+  { scope: "integrations:market", label: "Observations de marché (créer)" },
+  { scope: "integrations:buyer_leads", label: "Leads acquéreurs (créer)" },
+];
+
 export function McpKeysManager({
   initialKeys,
   tools,
@@ -43,6 +53,19 @@ export function McpKeysManager({
       else next.add(toolName);
       return next;
     });
+  };
+
+  // One-click setup for a Zapier ingestion key: all integration write scopes
+  // + the write flag, no PII. Admin can then trim scopes if needed.
+  const applyZapierPreset = () => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      INTEGRATION_SCOPES.forEach(({ scope }) => next.add(scope));
+      return next;
+    });
+    setCanWrite(true);
+    setCanReadPii(false);
+    if (!name.trim()) setName("Zapier — ingestion");
   };
 
   const create = async () => {
@@ -170,8 +193,40 @@ export function McpKeysManager({
           </label>
         </div>
 
+        <div className="mt-4 rounded-2xl border border-[rgba(20,20,70,0.12)] p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm font-medium text-navy">
+              Capacités d&apos;intégration (Zapier)
+            </p>
+            <button
+              type="button"
+              onClick={applyZapierPreset}
+              className="rounded-full border border-[rgba(20,20,70,0.2)] px-3 py-1 text-xs hover:bg-[rgba(20,20,70,0.05)]"
+            >
+              Préréglage Zapier
+            </button>
+          </div>
+          <div className="mt-2 grid gap-1 md:grid-cols-2">
+            {INTEGRATION_SCOPES.map(({ scope, label }) => (
+              <label key={scope} className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={selected.has(scope)}
+                  onChange={() => toggleTool(scope)}
+                />
+                <span>{label}</span>
+                <span className="rounded bg-red-100 px-1 text-xs text-red-700">write</span>
+              </label>
+            ))}
+          </div>
+          <p className="mt-2 text-xs text-navy/55">
+            Nécessite « Autoriser l&apos;écriture ». Endpoints REST&nbsp;:
+            <code className="ml-1">/api/integrations/v1/*</code>.
+          </p>
+        </div>
+
         <div className="mt-4">
-          <p className="text-sm text-navy/70">Allowlist d&apos;outils</p>
+          <p className="text-sm text-navy/70">Allowlist d&apos;outils MCP</p>
           <div className="mt-2 grid max-h-64 gap-1 overflow-y-auto rounded-2xl border border-[rgba(20,20,70,0.12)] p-3 md:grid-cols-2">
             {tools.map((tool) => (
               <label key={tool.name} className="flex items-center gap-2 text-sm">
