@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AdminSignOutButton } from "./admin-sign-out-button";
+import { AdminCopilotLauncher } from "./admin-copilot-launcher";
 import type { AdminPermission, AdminRole } from "@/types/domain/admin";
 import { ADMIN_ROLE_LABELS, ADMIN_ROLE_PERMISSIONS } from "@/types/domain/admin";
 
@@ -28,6 +29,9 @@ const NAV_ITEMS = [
 export function AdminShell({ title, description, role, profileName, children }: AdminShellProps) {
   const permissions = ADMIN_ROLE_PERMISSIONS[role];
   const visibleItems = NAV_ITEMS.filter((item) => !item.permission || permissions.includes(item.permission));
+  const canUseCopilot =
+    permissions.includes("admin.dashboard.pilot.view") &&
+    (role === "manager" || role === "administrateur");
 
   return (
     <main className="min-h-screen bg-sand">
@@ -63,6 +67,8 @@ export function AdminShell({ title, description, role, profileName, children }: 
       </section>
 
       <section className="px-6 py-8 md:px-10 xl:px-14 2xl:px-20">{children}</section>
+
+      {canUseCopilot ? <AdminCopilotLauncher /> : null}
     </main>
   );
 }
