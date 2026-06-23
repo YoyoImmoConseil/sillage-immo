@@ -25,8 +25,10 @@ export const getHomeAssistantContextSnapshot = async () => {
     market: "Nice / Cote d'Azur",
     ctaRoutes: {
       seller: "/estimation",
-      buyer: "/#acquereur-form",
-      market: "/#contact-expert",
+      buyer: "/recherche/nouvelle",
+      rental: "/location",
+      listings: "/vente",
+      expert: "/#equipe",
     },
     leadActivity24h: {
       buyerLeads: buyerLeads24h,

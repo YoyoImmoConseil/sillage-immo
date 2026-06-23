@@ -6,6 +6,7 @@ import { GoogleTagManager } from "@next/third-parties/google";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 import { SiteHeader } from "./components/site-header";
+import { FloatingAssistant } from "./components/floating-assistant";
 import { RouteProgressBar } from "./components/route-progress-bar";
 import { AnalyticsConsentInit } from "./components/analytics-consent-init";
 import { AnalyticsConsentBanner } from "./components/analytics-consent-banner";
@@ -87,6 +88,7 @@ export default async function RootLayout({
         </Suspense>
         <SiteHeader />
         {children}
+        <FloatingAssistant />
         <SpeedInsights />
         {gtmId ? (
           <>

@@ -54,9 +54,12 @@ type AssistantListing = {
   coverImageUrl: string | null;
 };
 
+type CtaKind = "none" | "resource" | "expert";
+
 type AssistantPayload = {
   reply: string;
   intent: "seller" | "buyer" | "market" | "unclear";
+  ctaKind: CtaKind;
   ctaLabel: string;
   ctaHref: string;
   listingSearch: ListingSearchCriteria | null;
@@ -79,6 +82,32 @@ const hasSellerIntent = (value: string) => {
   return ["vendre", "vente", "vends", "estimation", "estimer"].some((token) =>
     normalized.includes(token)
   );
+};
+
+// Detects whether the visitor is explicitly asking to reach a human. Only then
+// may the assistant surface an "expert" CTA early; otherwise the contact step
+// stays gated behind engagement (see CTA policy below).
+const hasExpertRequest = (value: string) => {
+  const normalized = normalize(value);
+  return [
+    "contacter",
+    "contact",
+    "parler a",
+    "parler avec",
+    "rendez vous",
+    "rdv",
+    "rappel",
+    "rappeler",
+    "joindre",
+    "rencontrer",
+    "conseiller",
+    "appeler",
+    "telephone",
+    "quelqu un",
+    "un agent",
+    "un expert",
+    "echanger",
+  ].some((token) => normalized.includes(token));
 };
 
 const hasLocationHint = (value: string, knownCities: string[]) => {
@@ -137,6 +166,28 @@ const sanitizeListingSearch = (raw: unknown): ListingSearchCriteria | null => {
   return Object.keys(out).length > 0 ? out : null;
 };
 
+// Canonical, EXISTING destinations only. The model is never trusted to emit a
+// raw URL: anything outside this allowlist is replaced by the intent default,
+// which kills the dead-anchor links (#acquereur-form / #contact-expert) the
+// previous prompt produced.
+const RESOURCE_HREFS = new Set(["/estimation", "/recherche/nouvelle", "/location", "/vente"]);
+const EXPERT_HREF = "/#equipe";
+
+const resourceDefaultFor = (
+  intent: AssistantPayload["intent"]
+): { href: string; label: string } => {
+  switch (intent) {
+    case "seller":
+      return { href: "/estimation", label: "Démarrer mon estimation" };
+    case "buyer":
+      return { href: "/recherche/nouvelle", label: "Affiner ma recherche acquéreur" };
+    case "market":
+      return { href: "/vente", label: "Découvrir nos biens à la vente" };
+    default:
+      return { href: "/recherche/nouvelle", label: "Explorer nos biens" };
+  }
+};
+
 const parseAssistantPayload = (raw: string): AssistantPayload => {
   const parsed = JSON.parse(raw) as Record<string, unknown>;
   const intent =
@@ -153,29 +204,61 @@ const parseAssistantPayload = (raw: string): AssistantPayload => {
       : "Je peux vous orienter vers l'estimation de votre bien ou vers une recherche acquéreur sur-mesure.";
 
   const ctaLabel =
-    typeof parsed.ctaLabel === "string" && parsed.ctaLabel.trim().length > 0
-      ? parsed.ctaLabel.trim()
-      : intent === "seller"
-        ? "Démarrer mon estimation"
-        : intent === "market"
-          ? "Rencontrer un de nos experts"
-          : "Déposer ma recherche acquéreur";
+    typeof parsed.ctaLabel === "string" ? parsed.ctaLabel.trim() : "";
+  const ctaHref = typeof parsed.ctaHref === "string" ? parsed.ctaHref.trim() : "";
 
-  const ctaHref =
-    typeof parsed.ctaHref === "string" && parsed.ctaHref.trim().length > 0
-      ? parsed.ctaHref.trim()
-      : intent === "seller"
-        ? "/estimation"
-        : intent === "market"
-          ? "/#contact-expert"
-          : "/#acquereur-form";
+  const ctaKind: CtaKind =
+    parsed.ctaKind === "none" ||
+    parsed.ctaKind === "resource" ||
+    parsed.ctaKind === "expert"
+      ? parsed.ctaKind
+      : ctaHref.length > 0 || ctaLabel.length > 0
+        ? "resource"
+        : "none";
 
   return {
     reply,
     intent,
+    ctaKind,
     ctaLabel,
     ctaHref,
     listingSearch: sanitizeListingSearch(parsed.listingSearch),
+  };
+};
+
+// Enforces the progressive-disclosure policy server-side so the model can never
+// push a human-contact CTA too early, and can never emit a non-existent link.
+const applyCtaPolicy = (
+  payload: AssistantPayload,
+  opts: { allowedExpert: boolean }
+): AssistantPayload => {
+  let kind = payload.ctaKind;
+  if (kind === "expert" && !opts.allowedExpert) {
+    kind = "resource";
+  }
+
+  if (kind === "none") {
+    return { ...payload, ctaKind: "none", ctaLabel: "", ctaHref: "" };
+  }
+
+  if (kind === "expert") {
+    return {
+      ...payload,
+      ctaKind: "expert",
+      ctaHref: EXPERT_HREF,
+      ctaLabel:
+        payload.ctaLabel.length > 0
+          ? payload.ctaLabel
+          : "Échanger avec un conseiller Sillage Immo",
+    };
+  }
+
+  const fallback = resourceDefaultFor(payload.intent);
+  return {
+    ...payload,
+    ctaKind: "resource",
+    ctaHref: RESOURCE_HREFS.has(payload.ctaHref) ? payload.ctaHref : fallback.href,
+    ctaLabel: payload.ctaLabel.length > 0 ? payload.ctaLabel : fallback.label,
   };
 };
 
@@ -198,6 +281,8 @@ const searchPublicListings = async (
 const buildSystemPrompt = (input: {
   languageInstruction: string;
   isSellerProfile: boolean;
+  userTurnIndex: number;
+  expertGuidance: string;
 }) => {
   const knowledgeNote = input.isSellerProfile
     ? "Une base de connaissance vendeur Sillage Immo t'est fournie (agencyKnowledge) : appuie-toi dessus pour valoriser l'accompagnement vendeur, sans la réciter."
@@ -207,15 +292,34 @@ const buildSystemPrompt = (input: {
 
 Voix : expert, discret et raffiné. Vouvoiement systématique. Chaleureux mais sobre, jamais commercial agressif, jamais de superlatifs creux. Tu vises la justesse plutôt que l'emphase.
 
-Ton objectif : comprendre le projet du visiteur (vendre, acheter, louer, ou simplement se renseigner), lui apporter une réponse réellement utile, et l'orienter vers le bon parcours sans aucune pression.
+Ton objectif : comprendre le projet du visiteur, lui apporter une réponse réellement utile, puis l'orienter au bon moment vers le bon parcours — sans jamais le presser.
 
 ${knowledgeNote}
 
+MÉTHODE DE CONVERSATION — respecte la progression, ne brûle aucune étape :
+1. QUALIFIER d'abord. Si tu ne sais pas encore si le visiteur veut vendre, acheter, louer ou simplement se renseigner, pose UNE question courte et naturelle pour le découvrir AVANT tout bouton. N'oriente pas tant que l'intention n'est pas claire.
+2. APPORTER DE LA VALEUR. Donne une réponse concrète et utile (lecture de marché locale, repères chiffrés prudents, conseil mesuré). C'est ce qui installe la confiance.
+3. ORIENTER vers une ressource utile (page d'estimation, recherche acquéreur, biens publiés) — pas encore vers un humain.
+4. PROPOSER UN EXPERT en dernier seulement : une fois la valeur apportée ET le visiteur engagé (plusieurs échanges), OU s'il demande explicitement à parler à quelqu'un. Proposer un contact humain trop tôt fait fuir le visiteur : c'est une faute.
+
+Champ "ctaKind" — il encode cette progression :
+- "none" : tu qualifies ou tu informes encore, aucun bouton n'est pertinent (laisse ctaLabel et ctaHref vides).
+- "resource" : tu orientes vers une page utile (cas par défaut une fois l'intention connue).
+- "expert" : tu proposes de contacter un conseiller (réservé à l'étape finale ou à une demande explicite).
+C'est le message n°${input.userTurnIndex} du visiteur. ${input.expertGuidance}
+
+Liens autorisés (n'invente JAMAIS une autre URL ni une ancre) :
+- Vendeur → /estimation
+- Acquéreur → /recherche/nouvelle
+- Location → /location
+- Voir des biens publiés → /vente (ou déclenche "listingSearch", voir plus bas)
+- Contacter un expert → /#equipe
+
 Règles par profil :
-- Vendeur : si la localisation du bien n'est pas connue, commence par une question de localisation, brève et sobre, avant d'aller plus loin. Si elle est déjà connue, ne la repose pas. Oriente vers /estimation.
-- Acquéreur ou locataire : dès qu'au moins un critère concret est donné (type de bien, ville/quartier, budget, nombre de pièces), tu peux proposer de montrer quelques biens publiés en renseignant l'objet "listingSearch" avec les critères que tu déduis. Si rien n'est assez précis, pose une question de qualification courte. Oriente sinon vers /#acquereur-form.
-- Marché / renseignement : donne une lecture locale mesurée et concrète, puis propose un échange avec un expert (/#contact-expert).
-- Projet mixte (ex : vendre puis acheter) : reconnais les deux besoins et propose l'étape la plus utile en premier.
+- Vendeur : si la localisation du bien n'est pas connue, commence par une question de localisation brève et sobre. Si elle est connue, ne la repose pas. Ressource : /estimation.
+- Acquéreur / locataire : dès qu'au moins un critère concret est donné (type de bien, ville/quartier, budget, nombre de pièces), tu peux montrer quelques biens publiés via "listingSearch". Sinon, pose une question de qualification courte. Ressource : /recherche/nouvelle (achat) ou /location (location).
+- Marché / renseignement : donne d'abord une lecture locale mesurée et concrète. NE propose PAS d'expert d'emblée — informe, puis oriente vers une ressource (biens à voir, estimation). L'expert vient seulement plus tard ou sur demande.
+- Projet mixte (ex : vendre puis acheter) : reconnais les deux besoins et traite le plus utile en premier.
 
 Recherche de biens (listingSearch) :
 - Mets "listingSearch" à un objet de critères publics UNIQUEMENT si le visiteur cherche à acheter ou louer et a donné au moins un critère exploitable. Sinon, mets "listingSearch": null.
@@ -226,7 +330,7 @@ Longueur : tant que tu qualifies le besoin, reste bref (2-4 phrases). Quand tu e
 
 ${input.languageInstruction} Si la locale n'est pas le français, localise uniquement le libellé du CTA ; le chemin du CTA reste identique.
 
-Retourne STRICTEMENT un JSON avec : reply (string), intent ("seller"|"buyer"|"market"|"unclear"), ctaLabel (string), ctaHref (string), listingSearch (objet de critères ou null).`;
+Retourne STRICTEMENT un JSON avec : reply (string), intent ("seller"|"buyer"|"market"|"unclear"), ctaKind ("none"|"resource"|"expert"), ctaLabel (string, vide si ctaKind vaut "none"), ctaHref (string, vide si ctaKind vaut "none"), listingSearch (objet de critères ou null).`;
 };
 
 export const POST = async (request: Request) => {
@@ -303,7 +407,23 @@ export const POST = async (request: Request) => {
     ? SILLAGE_AGENCY_KNOWLEDGE_VERSION
     : SILLAGE_BRAND_SOCLE_VERSION;
 
-  const systemPrompt = buildSystemPrompt({ languageInstruction, isSellerProfile });
+  // Progressive-disclosure gating: the "contact an expert" CTA is unlocked only
+  // once the visitor is engaged (>= 3 messages) OR explicitly asks for a human.
+  const userTurnIndex = allUserMessages.length;
+  const explicitExpertRequest = hasExpertRequest(message);
+  const allowedExpert = explicitExpertRequest || userTurnIndex >= 3;
+  const expertGuidance = explicitExpertRequest
+    ? 'Le visiteur semble demander un contact humain : tu peux utiliser ctaKind "expert".'
+    : userTurnIndex < 3
+      ? 'Il est probablement trop tôt pour proposer un expert : privilégie "none" ou "resource".'
+      : 'Le visiteur est engagé : tu peux proposer un expert si c\'est l\'étape la plus utile.';
+
+  const systemPrompt = buildSystemPrompt({
+    languageInstruction,
+    isSellerProfile,
+    userTurnIndex,
+    expertGuidance,
+  });
 
   const basePayload = {
     knowledgeVersion,
@@ -353,7 +473,7 @@ export const POST = async (request: Request) => {
     return NextResponse.json({ ok: false, message: "Contenu IA invalide." }, { status: 502 });
   }
 
-  const data = parseAssistantPayload(content);
+  const data = applyCtaPolicy(parseAssistantPayload(content), { allowedExpert });
   let totalCostMicros = chatResult.costMicros;
   let lastModel = chatResult.model;
 
@@ -388,8 +508,11 @@ export const POST = async (request: Request) => {
       totalCostMicros += followUp.costMicros;
       lastModel = followUp.model;
       if (typeof followUp.content === "string" && followUp.content.trim().length > 0) {
-        const second = parseAssistantPayload(followUp.content);
+        const second = applyCtaPolicy(parseAssistantPayload(followUp.content), {
+          allowedExpert,
+        });
         data.reply = second.reply;
+        data.ctaKind = second.ctaKind;
         data.ctaLabel = second.ctaLabel;
         data.ctaHref = second.ctaHref;
       }
@@ -433,6 +556,8 @@ export const POST = async (request: Request) => {
           metadata: {
             knowledge_version: knowledgeVersion,
             intent: data.intent,
+            cta_kind: data.ctaKind,
+            user_turn_index: userTurnIndex,
             inferred_zone: inferredZone
               ? { slug: inferredZone.slug, city: inferredZone.city }
               : null,
