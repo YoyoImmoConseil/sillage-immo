@@ -29,7 +29,7 @@ export function FloatingAssistant() {
     <>
       {open ? (
         <div className="fixed bottom-24 right-4 z-50 w-[min(92vw,400px)] h-[min(72vh,560px)]">
-          <div className="sillage-card flex h-full flex-col gap-3 shadow-2xl">
+          <div className="flex h-full flex-col gap-3 overflow-hidden rounded-2xl border border-[var(--sillage-border)] bg-sand p-4 text-navy shadow-2xl">
             <div className="flex items-start justify-between gap-3">
               <h2 className="sillage-section-title text-base leading-tight">{copy.title}</h2>
               <button
