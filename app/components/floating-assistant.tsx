@@ -6,9 +6,10 @@ import { getPathLocale, stripLocalePrefix } from "@/lib/i18n/routing";
 import { ASSISTANT_COPY, AssistantChat } from "./assistant-chat";
 
 // Site-wide commercial assistant launcher. Mounted once in the root layout so
-// the conversation follows the visitor across client navigations. Hidden on the
-// homepage (the inline assistant already lives there) and on the admin / client
-// space / auth areas, which are not commercial surfaces.
+// the conversation follows the visitor across client navigations. Shown on all
+// public pages (including the homepage, alongside the inline assistant) and
+// hidden only on the admin / client space / auth areas, which are not
+// commercial surfaces.
 export function FloatingAssistant() {
   const pathname = usePathname() ?? "/";
   const locale = getPathLocale(pathname);
@@ -16,7 +17,6 @@ export function FloatingAssistant() {
 
   const withoutLocale = stripLocalePrefix(pathname);
   const hidden =
-    withoutLocale === "/" ||
     withoutLocale.startsWith("/admin") ||
     withoutLocale.startsWith("/espace-client") ||
     withoutLocale.startsWith("/auth");
