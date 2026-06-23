@@ -112,7 +112,11 @@ const listPublicTeamMembersUncached = async (
     );
 
     return profileRows
-      .filter((row) => roleByProfileId.has(row.id))
+      .filter(
+        (row) =>
+          roleByProfileId.has(row.id) &&
+          parseAdminProfileMetadata(row.metadata).showOnSite
+      )
       .map((row) => mapPublicTeamMember(row, roleByProfileId, locale))
       .sort((left, right) => ROLE_ORDER.indexOf(left.role) - ROLE_ORDER.indexOf(right.role));
 };
@@ -160,6 +164,9 @@ const getPublicTeamMemberByEmailUncached = async (
       throw new Error(roleError.message);
     }
     if (!role) {
+      return null;
+    }
+    if (!parseAdminProfileMetadata((profile as TeamMemberRow).metadata).showOnSite) {
       return null;
     }
 

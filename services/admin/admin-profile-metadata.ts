@@ -14,6 +14,10 @@ export type AdminProfileMetadata = {
   bio: string | null;
   avatarUrl: string | null;
   bookingUrl: string | null;
+  // Controls whether the collaborator appears in the public team section.
+  // Defaults to true so existing profiles stay visible; set to false for a
+  // "shadow" collaborator who keeps admin access but is hidden from the site.
+  showOnSite: boolean;
   bioTranslations: Partial<Record<AppLocale, string | null | undefined>>;
 };
 
@@ -46,6 +50,8 @@ export const parseAdminProfileMetadata = (value: unknown): AdminProfileMetadata 
     bio: toStringOrNull(metadata?.bio),
     avatarUrl: toStringOrNull(metadata?.avatar_url),
     bookingUrl: toStringOrNull(metadata?.booking_url),
+    // Only an explicit `false` hides the profile; missing/true => visible.
+    showOnSite: metadata?.show_on_site === false ? false : true,
     bioTranslations: {
       fr: resolveLocalizedText({ locale: "fr", field: "bio", fallback: null, sources: [metadata] }) ?? undefined,
       en: resolveLocalizedText({ locale: "en", field: "bio", fallback: null, sources: [metadata] }) ?? undefined,
@@ -69,6 +75,7 @@ export const buildAdminProfileMetadata = (
     ...(patch.bio !== undefined ? { bio: patch.bio } : {}),
     ...(patch.avatarUrl !== undefined ? { avatar_url: patch.avatarUrl } : {}),
     ...(patch.bookingUrl !== undefined ? { booking_url: patch.bookingUrl } : {}),
+    ...(patch.showOnSite !== undefined ? { show_on_site: patch.showOnSite } : {}),
   };
 
   return mergeLocalizedText(baseMetadata, "bio", patch.bioTranslations);

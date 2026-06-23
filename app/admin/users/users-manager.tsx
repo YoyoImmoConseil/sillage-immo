@@ -19,6 +19,7 @@ type UserItem = {
   phone?: string | null;
   bio?: string | null;
   avatarUrl?: string | null;
+  showOnSite?: boolean;
 };
 
 const ROLES: AdminRole[] = ["collaborateur", "manager", "administrateur"];
@@ -244,6 +245,11 @@ export function UsersManager(props: {
                 <td className="p-3">
                   {user.isActive ? "Actif" : "Suspendu"}
                   {user.authUserId ? " · Connecté" : " · En attente Google"}
+                  {user.showOnSite === false ? (
+                    <span className="mt-1 inline-block rounded-full bg-navy/10 px-2 py-0.5 text-xs text-navy/70">
+                      Masqué du site
+                    </span>
+                  ) : null}
                 </td>
                 <td className="p-3">
                   <div className="space-y-2">

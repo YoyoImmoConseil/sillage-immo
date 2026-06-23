@@ -16,6 +16,7 @@ type PatchBody = {
   bioTranslations?: Partial<Record<AppLocale, string | null | undefined>>;
   avatarUrl?: string | null;
   bookingUrl?: string;
+  showOnSite?: boolean;
 };
 
 export async function GET(request: Request, { params }: RouteParams) {
@@ -73,6 +74,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       bioTranslations: body?.bioTranslations,
       avatarUrl: body?.avatarUrl,
       bookingUrl: body?.bookingUrl,
+      showOnSite: typeof body?.showOnSite === "boolean" ? body.showOnSite : undefined,
     });
 
     return NextResponse.json({ ok: true });

@@ -20,6 +20,7 @@ type UserProfile = {
   bio: string | null;
   avatarUrl: string | null;
   bookingUrl: string | null;
+  showOnSite: boolean;
 };
 
 const countWords = (value: string) =>
@@ -58,6 +59,7 @@ export function UserProfileForm({ user, canManage }: { user: UserProfile; canMan
   const [bio, setBio] = useState(user.bio ?? "");
   const [avatarUrl, setAvatarUrl] = useState(user.avatarUrl);
   const [bookingUrl, setBookingUrl] = useState(user.bookingUrl ?? "");
+  const [showOnSite, setShowOnSite] = useState(user.showOnSite);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -74,7 +76,7 @@ export function UserProfileForm({ user, canManage }: { user: UserProfile; canMan
         const response = await fetch(`/api/admin/users/${user.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ firstName, lastName, title, phone, bio, bookingUrl }),
+          body: JSON.stringify({ firstName, lastName, title, phone, bio, bookingUrl, showOnSite }),
         });
         const parsed = await parseApiResponse(response);
         if (!parsed.ok) {
@@ -207,6 +209,32 @@ export function UserProfileForm({ user, canManage }: { user: UserProfile; canMan
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
+            <div className="flex items-start justify-between gap-4 rounded-2xl border border-[rgba(20,20,70,0.16)] bg-sand/50 px-4 py-3 md:col-span-2">
+              <div>
+                <span className="block text-sm font-medium text-navy">Afficher sur le site</span>
+                <span className="mt-1 block text-xs text-navy/60">
+                  S&apos;il est désactivé, ce collaborateur conserve son adresse et son accès à l&apos;admin,
+                  mais n&apos;apparaît pas dans la section équipe du site public.
+                </span>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={showOnSite}
+                aria-label="Afficher sur le site"
+                disabled={!canManage || isPending}
+                onClick={() => setShowOnSite((value) => !value)}
+                className={`relative inline-flex h-6 w-11 flex-none items-center rounded-full transition disabled:opacity-60 ${
+                  showOnSite ? "bg-navy" : "bg-navy/25"
+                }`}
+              >
+                <span
+                  className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${
+                    showOnSite ? "translate-x-[22px]" : "translate-x-0.5"
+                  }`}
+                />
+              </button>
+            </div>
             <label className="text-sm text-navy">
               <span className="mb-2 block font-medium">Prénom</span>
               <input

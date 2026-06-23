@@ -40,6 +40,7 @@ export type AdminUserListItem = {
   bio: string | null;
   avatarUrl: string | null;
   bookingUrl: string | null;
+  showOnSite: boolean;
 };
 
 const buildFullName = (firstName?: string | null, lastName?: string | null) => {
@@ -192,6 +193,7 @@ export const listAdminUsers = async (): Promise<AdminUserListItem[]> => {
       bio: metadata.bio,
       avatarUrl: metadata.avatarUrl,
       bookingUrl: metadata.bookingUrl,
+      showOnSite: metadata.showOnSite,
     };
   });
 };
@@ -466,6 +468,7 @@ export const updateAdminUserProfile = async (input: {
   bioTranslations?: Partial<Record<AppLocale, string | null | undefined>>;
   avatarUrl?: string | null;
   bookingUrl?: string;
+  showOnSite?: boolean;
 }) => {
   const { data: currentProfile, error: currentProfileError } = await supabaseAdmin
     .from("admin_profiles")
@@ -489,6 +492,8 @@ export const updateAdminUserProfile = async (input: {
   const bio = input.bio === undefined ? currentMetadata.bio : input.bio?.trim() || null;
   const bookingUrl =
     input.bookingUrl === undefined ? currentMetadata.bookingUrl : input.bookingUrl?.trim() || null;
+  const showOnSite =
+    input.showOnSite === undefined ? currentMetadata.showOnSite : input.showOnSite;
   const fullName = buildFullName(firstName, lastName);
 
   if (rawTitle !== null && title === null) {
@@ -517,6 +522,7 @@ export const updateAdminUserProfile = async (input: {
     bioTranslations: input.bioTranslations,
     avatarUrl: input.avatarUrl === undefined ? currentMetadata.avatarUrl : input.avatarUrl,
     bookingUrl,
+    showOnSite,
   });
 
   const { error: updateError } = await supabaseAdmin
@@ -548,6 +554,7 @@ export const updateAdminUserProfile = async (input: {
       bioTranslations: input.bioTranslations,
       avatarUrl: input.avatarUrl === undefined ? undefined : input.avatarUrl,
       bookingUrl,
+      showOnSite,
     }
   );
 
