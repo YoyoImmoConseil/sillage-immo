@@ -10,6 +10,36 @@ import { createBuyerSearchSignup } from "@/services/buyers/buyer-signup.service"
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+// CRM sources (SweepBright, etc.) emit decimals for areas/budgets (e.g. a
+// "min liveable area" of 73.87 m²). Our criteria schema stores integers, so we
+// round these inbound numeric fields instead of rejecting the whole payload.
+const INT_CRITERIA_FIELDS = [
+  "budgetMin",
+  "budgetMax",
+  "roomsMin",
+  "roomsMax",
+  "bedroomsMin",
+  "livingAreaMin",
+  "livingAreaMax",
+  "floorMin",
+  "floorMax",
+] as const;
+
+const normalizeCriteria = (value: unknown): unknown => {
+  if (value == null) return { businessType: "sale", cities: [], propertyTypes: [] };
+  if (typeof value !== "object") return value;
+  const c: Record<string, unknown> = { ...(value as Record<string, unknown>) };
+  for (const key of INT_CRITERIA_FIELDS) {
+    const n = c[key];
+    if (typeof n === "number" && Number.isFinite(n)) {
+      c[key] = Math.round(n);
+    } else if (typeof n === "string" && n.trim() !== "" && Number.isFinite(Number(n))) {
+      c[key] = Math.round(Number(n));
+    }
+  }
+  return c;
+};
+
 // Inbound buyer lead from a partner Zap (e.g. a SweepBright contact or a lead
 // form). Upserts by email through the same signup rail as /recherche/nouvelle
 // (creates the lead + client project + search profile + runs matching), but
@@ -31,9 +61,8 @@ const bodySchema = z.object({
   metadata: z.record(z.string(), z.unknown()).optional(),
   // The shared criteria schema already exposes every search field (rooms,
   // bedrooms, living area min/max, floor, terrace, elevator, budget, …).
-  criteria: buyerSearchCriteriaSchema
-    .optional()
-    .default({ businessType: "sale", cities: [], propertyTypes: [] }),
+  // Decimal areas/budgets are rounded to int before validation.
+  criteria: z.preprocess(normalizeCriteria, buyerSearchCriteriaSchema),
 });
 
 export const POST = async (request: Request) => {

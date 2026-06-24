@@ -115,6 +115,32 @@ describe("POST /api/integrations/v1/buyer-leads", () => {
     expect(arg.externalId).toBe("lead-1");
     expect(arg.initialFilters.note).toBe("Demande via SweepBright");
   });
+
+  it("rounds decimal areas/budgets instead of rejecting them (201)", async () => {
+    createBuyerSearchSignup.mockResolvedValue({
+      buyerLeadId: "bl-2",
+      clientProjectId: "cp-2",
+      buyerSearchProfileId: "bsp-2",
+    });
+    const { POST } = await import("@/app/api/integrations/v1/buyer-leads/route");
+    const res = await POST(
+      post("/api/integrations/v1/buyer-leads", {
+        email: "b2@example.com",
+        rgpdAccepted: true,
+        criteria: {
+          businessType: "sale",
+          cities: ["Nice"],
+          propertyTypes: ["apartment"],
+          livingAreaMin: 73.87,
+          budgetMax: 241500.5,
+        },
+      })
+    );
+    expect(res.status).toBe(201);
+    const arg = createBuyerSearchSignup.mock.calls[0][0];
+    expect(arg.criteria.livingAreaMin).toBe(74);
+    expect(arg.criteria.budgetMax).toBe(241501);
+  });
 });
 
 describe("POST /api/integrations/v1/transactions", () => {

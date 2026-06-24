@@ -15,16 +15,21 @@ const perform = async (z, bundle) => {
     cities: splitList(input.cities),
     propertyTypes: splitList(input.propertyTypes),
   };
+  // CRM fields can be decimals (e.g. area 73.87 m²); the API stores integers.
+  const int = (v) => {
+    const n = Number(v);
+    return Number.isFinite(n) ? Math.round(n) : undefined;
+  };
   if (input.locationText) criteria.locationText = input.locationText;
-  if (input.budgetMin) criteria.budgetMin = Number(input.budgetMin);
-  if (input.budgetMax) criteria.budgetMax = Number(input.budgetMax);
-  if (input.roomsMin) criteria.roomsMin = Number(input.roomsMin);
-  if (input.roomsMax) criteria.roomsMax = Number(input.roomsMax);
-  if (input.bedroomsMin) criteria.bedroomsMin = Number(input.bedroomsMin);
-  if (input.livingAreaMin) criteria.livingAreaMin = Number(input.livingAreaMin);
-  if (input.livingAreaMax) criteria.livingAreaMax = Number(input.livingAreaMax);
-  if (input.floorMin) criteria.floorMin = Number(input.floorMin);
-  if (input.floorMax) criteria.floorMax = Number(input.floorMax);
+  if (input.budgetMin) criteria.budgetMin = int(input.budgetMin);
+  if (input.budgetMax) criteria.budgetMax = int(input.budgetMax);
+  if (input.roomsMin) criteria.roomsMin = int(input.roomsMin);
+  if (input.roomsMax) criteria.roomsMax = int(input.roomsMax);
+  if (input.bedroomsMin) criteria.bedroomsMin = int(input.bedroomsMin);
+  if (input.livingAreaMin) criteria.livingAreaMin = int(input.livingAreaMin);
+  if (input.livingAreaMax) criteria.livingAreaMax = int(input.livingAreaMax);
+  if (input.floorMin) criteria.floorMin = int(input.floorMin);
+  if (input.floorMax) criteria.floorMax = int(input.floorMax);
   if (input.requiresTerrace !== undefined && input.requiresTerrace !== '')
     criteria.requiresTerrace = Boolean(input.requiresTerrace);
   if (input.requiresElevator !== undefined && input.requiresElevator !== '')
