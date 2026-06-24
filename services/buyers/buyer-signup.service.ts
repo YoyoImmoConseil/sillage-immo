@@ -44,6 +44,13 @@ export type BuyerSignupInput = {
   rgpdAcceptedAt: string;
   sourceUrl?: string | null;
   initialFilters?: Record<string, unknown>;
+  /**
+   * Stable id of the originating record (e.g. SweepBright lead id). Used for
+   * idempotent inbound upsert + identity merge: an existing lead matched by
+   * external_id (or email) is enriched and gets the external_id attached
+   * (never overwritten once set).
+   */
+  externalId?: string | null;
   criteria: BuyerSignupCriteriaInput;
   /**
    * Origine de la création. Par défaut le signup public
@@ -74,18 +81,35 @@ const getOrCreateBuyerLead = async (input: {
   rgpdAcceptedAt: string;
   sourceUrl: string | null;
   initialFilters: Record<string, unknown> | undefined;
+  externalId?: string | null;
 }): Promise<BuyerLeadRow> => {
   const fullName = [input.firstName, input.lastName].filter(Boolean).join(" ").trim() || input.email;
 
-  const { data: existingData, error: existingError } = await supabaseAdmin
-    .from("buyer_leads")
-    .select("*")
-    .eq("email", input.email)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (existingError) throw existingError;
-  const existing = (existingData as BuyerLeadRow | null) ?? null;
+  // Identity resolution: prefer the stable external id (a SweepBright Zap
+  // retry / "Lead Updated"), then fall back to email so a self-service lead
+  // created on the website merges with the incoming SweepBright record.
+  let existing: BuyerLeadRow | null = null;
+  if (input.externalId) {
+    const { data, error } = await supabaseAdmin
+      .from("buyer_leads")
+      .select("*")
+      .eq("external_id", input.externalId)
+      .limit(1)
+      .maybeSingle();
+    if (error) throw error;
+    existing = (data as BuyerLeadRow | null) ?? null;
+  }
+  if (!existing) {
+    const { data, error } = await supabaseAdmin
+      .from("buyer_leads")
+      .select("*")
+      .eq("email", input.email)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) throw error;
+    existing = (data as BuyerLeadRow | null) ?? null;
+  }
 
   if (existing) {
     const metadata = (existing.metadata ?? {}) as Record<string, unknown>;
@@ -105,6 +129,9 @@ const getOrCreateBuyerLead = async (input: {
         phone: existing.phone ?? input.phone,
         contact_identity_id: existing.contact_identity_id ?? input.contactIdentityId,
         source: existing.source ?? input.origin,
+        // Attach the SweepBright id the first time; never overwrite an
+        // already-linked external id.
+        external_id: existing.external_id ?? input.externalId ?? null,
         metadata: mergedMetadata,
         updated_at: new Date().toISOString(),
       })
@@ -123,6 +150,7 @@ const getOrCreateBuyerLead = async (input: {
       phone: input.phone,
       source: input.origin,
       contact_identity_id: input.contactIdentityId,
+      external_id: input.externalId ?? null,
       metadata: {
         origin: input.origin,
         rgpdAcceptedAt: input.rgpdAcceptedAt,
@@ -183,6 +211,7 @@ export const createBuyerSearchSignup = async (
     rgpdAcceptedAt: input.rgpdAcceptedAt,
     sourceUrl: input.sourceUrl ?? null,
     initialFilters: input.initialFilters,
+    externalId: input.externalId ?? null,
   });
 
   const clientProfileResult = await createClientProfile({

@@ -7,6 +7,7 @@ const { addBaseUrlAndAuth, handleErrors } = require('./middleware');
 const transaction = require('./creates/transaction');
 const marketObservation = require('./creates/marketObservation');
 const buyerLead = require('./creates/buyerLead');
+const sellerLead = require('./creates/sellerLead');
 
 const App = {
   version: require('./package.json').version,
@@ -23,6 +24,7 @@ const App = {
     [transaction.key]: transaction,
     [marketObservation.key]: marketObservation,
     [buyerLead.key]: buyerLead,
+    [sellerLead.key]: sellerLead,
   },
 };
 

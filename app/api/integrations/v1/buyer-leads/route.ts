@@ -15,6 +15,9 @@ export const dynamic = "force-dynamic";
 // (creates the lead + client project + search profile + runs matching), but
 // does NOT send a portal magic-link email — these leads did not self-subscribe.
 const bodySchema = z.object({
+  // Stable id of the originating record (e.g. SweepBright lead id). Enables
+  // idempotent upsert + identity merge on email with self-service leads.
+  externalId: z.string().trim().min(1).max(255).optional(),
   firstName: z.string().trim().max(120).optional().default(""),
   lastName: z.string().trim().max(120).optional().default(""),
   email: z.string().trim().email().max(240),
@@ -22,6 +25,12 @@ const bodySchema = z.object({
   // RGPD consent must be explicit and traceable for any persisted contact.
   rgpdAccepted: z.literal(true),
   sourceUrl: z.string().trim().max(2048).optional().nullable(),
+  // Free-form note (e.g. SweepBright internal note) + arbitrary extra fields
+  // captured for later use; persisted in the lead metadata.
+  notes: z.string().trim().max(5000).optional().nullable(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+  // The shared criteria schema already exposes every search field (rooms,
+  // bedrooms, living area min/max, floor, terrace, elevator, budget, …).
   criteria: buyerSearchCriteriaSchema
     .optional()
     .default({ businessType: "sale", cities: [], propertyTypes: [] }),
@@ -62,6 +71,9 @@ export const POST = async (request: Request) => {
   const b = parsed.data;
 
   try {
+    const initialFilters: Record<string, unknown> = { ...(b.metadata ?? {}) };
+    if (b.notes) initialFilters.note = b.notes;
+
     const signup = await createBuyerSearchSignup({
       firstName: b.firstName,
       lastName: b.lastName,
@@ -70,6 +82,9 @@ export const POST = async (request: Request) => {
       rgpdAcceptedAt: new Date().toISOString(),
       sourceUrl: b.sourceUrl ?? "zapier_integration",
       origin: "zapier_integration",
+      externalId: b.externalId ?? null,
+      initialFilters:
+        Object.keys(initialFilters).length > 0 ? initialFilters : undefined,
       criteria: toBuyerSignupCriteria(b.criteria),
     });
 

@@ -23,6 +23,10 @@ const bodySchema = z
     valuationHigh: moneyAmount.optional().nullable(),
     currency: z.string().trim().length(3).optional(),
     observedAt: isoDateString.optional().nullable(),
+    // Nature of the data point: a listing asking price, an estimation/
+    // valuation, or a realized sale. Stored in metadata for later filtering.
+    kind: z.enum(["asking", "valuation", "sold"]).optional(),
+    metadata: z.record(z.string(), z.unknown()).optional(),
   })
   .refine(
     (b) =>
@@ -68,6 +72,9 @@ export const POST = async (request: Request) => {
 
   const b = parsed.data;
 
+  const metadata: Record<string, unknown> = { ...(b.metadata ?? {}) };
+  if (b.kind) metadata.kind = b.kind;
+
   try {
     const result = await recordMarketObservation({
       source: "zapier",
@@ -85,6 +92,7 @@ export const POST = async (request: Request) => {
       valuationHigh: b.valuationHigh ?? null,
       currency: b.currency,
       observedAt: b.observedAt ?? undefined,
+      metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
     });
 
     if (!result) {

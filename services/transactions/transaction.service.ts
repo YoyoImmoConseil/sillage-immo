@@ -187,6 +187,24 @@ export const updateTransaction = async (
     update.preliminary_sale_signed_at = patch.preliminarySaleSignedAt;
   if (patch.deedSignedAt !== undefined) update.deed_signed_at = patch.deedSignedAt;
   if (patch.notes !== undefined) update.notes = patch.notes;
+  if (patch.externalId !== undefined) update.external_id = patch.externalId;
+
+  // Metadata is merged (shallow) onto the existing object so inbound syncs
+  // (e.g. Zapier adding a mandate type / SweepBright property ref) never drop
+  // previously stored keys.
+  if (patch.metadata !== undefined) {
+    const { data: current, error: readError } = await supabaseAdmin
+      .from("transactions")
+      .select("metadata")
+      .eq("id", id)
+      .single();
+    if (readError) throw new Error(readError.message);
+    const existing =
+      current?.metadata && typeof current.metadata === "object"
+        ? (current.metadata as Record<string, unknown>)
+        : {};
+    update.metadata = { ...existing, ...patch.metadata };
+  }
 
   const { error } = await supabaseAdmin
     .from("transactions")

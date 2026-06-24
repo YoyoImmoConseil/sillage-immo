@@ -138,6 +138,101 @@ const computeLeadFingerprint = (email: string, phone: string | null, address: st
   return createHash("sha256").update(source).digest("hex");
 };
 
+export type UpsertSellerLeadResult = {
+  sellerLeadId: string;
+  /** True when a brand-new lead row was inserted. */
+  created: boolean;
+  /** True when an existing lead (matched by external_id or email) was enriched. */
+  merged: boolean;
+};
+
+/**
+ * Idempotent upsert + identity merge for the integrations rail (SweepBright
+ * "Owner" Zaps). Resolution order: external_id, then email. An existing lead
+ * is enriched in place and gets the external_id attached the first time
+ * (never overwritten). Falls back to createSellerLead when no match exists.
+ *
+ * This deliberately bypasses createSellerLead's 24h dedupe window: a contact
+ * who self-created an estimation weeks earlier must still merge with the
+ * incoming SweepBright record on email.
+ */
+export const upsertSellerLeadFromIntegration = async (
+  input: SellerLeadInput & { externalId?: string | null }
+): Promise<UpsertSellerLeadResult> => {
+  const email = normalizeEmail(input.email);
+  if (!email) throw new Error("Email vendeur invalide.");
+  const externalId = input.externalId?.trim() || null;
+
+  let existing: { id: string; external_id: string | null } | null = null;
+  if (externalId) {
+    const { data, error } = await supabaseAdmin
+      .from("seller_leads")
+      .select("id, external_id")
+      .eq("external_id", externalId)
+      .limit(1)
+      .maybeSingle();
+    if (error) throw error;
+    existing = data ?? null;
+  }
+  if (!existing) {
+    const { data, error } = await supabaseAdmin
+      .from("seller_leads")
+      .select("id, external_id")
+      .eq("email", email)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) throw error;
+    existing = data ?? null;
+  }
+
+  if (existing) {
+    await hydrateSellerLeadFromCapture({
+      sellerLeadId: existing.id,
+      fullName: input.fullName,
+      email,
+      phone: input.phone,
+      propertyType: input.propertyType,
+      propertyAddress: input.propertyAddress,
+      city: input.city,
+      postalCode: input.postalCode,
+      timeline: input.timeline,
+      occupancyStatus: input.occupancyStatus,
+      estimatedPrice: input.estimatedPrice ?? null,
+      message: input.message,
+      metadata: input.metadata,
+    });
+    if (externalId && !existing.external_id) {
+      await supabaseAdmin
+        .from("seller_leads")
+        .update({ external_id: externalId })
+        .eq("id", existing.id)
+        .is("external_id", null);
+    }
+    return { sellerLeadId: existing.id, created: false, merged: true };
+  }
+
+  const result = await createSellerLead(input, {
+    actor: "system",
+    toolName: "integrations:seller_leads",
+  });
+  if (result.status === "failed") {
+    throw new Error(result.reason);
+  }
+  if (externalId) {
+    await supabaseAdmin
+      .from("seller_leads")
+      .update({ external_id: externalId })
+      .eq("id", result.sellerLeadId)
+      .is("external_id", null);
+  }
+  return {
+    sellerLeadId: result.sellerLeadId,
+    created: result.status === "created",
+    merged: result.status !== "created",
+  };
+};
+
 export const createSellerLead = async (
   input: SellerLeadInput,
   meta?: SellerLeadExecutionMeta

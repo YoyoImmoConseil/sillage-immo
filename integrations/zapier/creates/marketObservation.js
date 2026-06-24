@@ -54,6 +54,17 @@ module.exports = {
       { key: 'valuationHigh', label: 'Fourchette haute (€)', type: 'number' },
       { key: 'currency', label: 'Devise (ISO, ex. EUR)', type: 'string', default: 'EUR' },
       { key: 'observedAt', label: 'Date d\'observation', type: 'datetime' },
+      {
+        key: 'kind',
+        label: 'Nature du point',
+        type: 'string',
+        choices: {
+          asking: 'Prix affiché (annonce)',
+          valuation: 'Estimation / valuation',
+          sold: 'Vendu (prix réalisé)',
+        },
+        helpText: 'Pour filtrer ensuite annonces vs estimations vs ventes.',
+      },
     ],
     perform,
     sample: {

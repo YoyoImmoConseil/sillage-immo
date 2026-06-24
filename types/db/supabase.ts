@@ -527,6 +527,7 @@ export type Database = {
           message: string | null;
           source: string | null;
           status: string;
+          external_id: string | null;
           metadata: Record<string, unknown>;
         };
         Insert: {
@@ -551,6 +552,7 @@ export type Database = {
           message?: string | null;
           source?: string | null;
           status?: string;
+          external_id?: string | null;
           metadata?: Record<string, unknown>;
         };
         Update: {
@@ -575,6 +577,7 @@ export type Database = {
           message?: string | null;
           source?: string | null;
           status?: string;
+          external_id?: string | null;
           metadata?: Record<string, unknown>;
         };
         Relationships: [
@@ -1273,6 +1276,7 @@ export type Database = {
           notes: string | null;
           assigned_admin_profile_id: string | null;
           metadata: Record<string, unknown>;
+          external_id: string | null;
           sweepbright_contact_id: string | null;
           sweepbright_synced_at: string | null;
           sweepbright_last_error: string | null;
@@ -1294,6 +1298,7 @@ export type Database = {
           notes?: string | null;
           assigned_admin_profile_id?: string | null;
           metadata?: Record<string, unknown>;
+          external_id?: string | null;
           sweepbright_contact_id?: string | null;
           sweepbright_synced_at?: string | null;
           sweepbright_last_error?: string | null;
@@ -1315,6 +1320,7 @@ export type Database = {
           notes?: string | null;
           assigned_admin_profile_id?: string | null;
           metadata?: Record<string, unknown>;
+          external_id?: string | null;
           sweepbright_contact_id?: string | null;
           sweepbright_synced_at?: string | null;
           sweepbright_last_error?: string | null;

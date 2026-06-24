@@ -10,6 +10,7 @@ import {
   type CreateTransactionInput,
   type UpdateTransactionInput,
 } from "@/services/transactions/transaction.service";
+import { findPropertyBySweepBrightId } from "@/services/properties/property-visit.service";
 import { TRANSACTION_STATUSES } from "@/types/domain/transactions";
 
 export const runtime = "nodejs";
@@ -24,6 +25,12 @@ const bodySchema = z.object({
   status: z.enum(TRANSACTION_STATUSES as [string, ...string[]]).optional(),
   currency: z.string().trim().length(3).optional(),
   propertyId: z.string().uuid().optional().nullable(),
+  // SweepBright estate id; resolved best-effort to a local property when that
+  // estate was synced (source='sweepbright'). Never fails the request.
+  sweepbrightPropertyId: z.string().trim().min(1).max(255).optional().nullable(),
+  // "exclusive" | "simple" (non-exclusive). Stored in metadata (no dedicated
+  // column on transactions).
+  mandateType: z.enum(["exclusive", "simple"]).optional(),
   assignedAdminProfileId: z.string().uuid().optional().nullable(),
   mandatePriceAmount: moneyAmount.optional().nullable(),
   agreedPriceAmount: moneyAmount.optional().nullable(),
@@ -34,6 +41,7 @@ const bodySchema = z.object({
   preliminarySaleSignedAt: isoDateString.optional().nullable(),
   deedSignedAt: isoDateString.optional().nullable(),
   notes: z.string().trim().max(5000).optional().nullable(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const POST = async (request: Request) => {
@@ -71,6 +79,25 @@ export const POST = async (request: Request) => {
   const b = parsed.data;
 
   try {
+    // Best-effort property resolution from a SweepBright estate id. Only used
+    // when no explicit propertyId is given; failures never block ingestion.
+    let resolvedPropertyId: string | null | undefined = b.propertyId;
+    if (resolvedPropertyId == null && b.sweepbrightPropertyId) {
+      try {
+        const property = await findPropertyBySweepBrightId(b.sweepbrightPropertyId);
+        resolvedPropertyId = property?.id ?? undefined;
+      } catch {
+        resolvedPropertyId = undefined;
+      }
+    }
+
+    // Capture provenance fields that have no dedicated column in metadata.
+    const extraMetadata: Record<string, unknown> = { ...(b.metadata ?? {}) };
+    if (b.mandateType) extraMetadata.mandateType = b.mandateType;
+    if (b.sweepbrightPropertyId)
+      extraMetadata.sweepbrightPropertyId = b.sweepbrightPropertyId;
+    const hasExtraMetadata = Object.keys(extraMetadata).length > 0;
+
     const existingId = b.externalId
       ? await getTransactionIdByExternalId(b.externalId)
       : null;
@@ -81,7 +108,7 @@ export const POST = async (request: Request) => {
         businessType: b.businessType,
         status: b.status as UpdateTransactionInput["status"],
         currency: b.currency,
-        propertyId: b.propertyId,
+        propertyId: resolvedPropertyId,
         assignedAdminProfileId: b.assignedAdminProfileId,
         mandatePriceAmount: b.mandatePriceAmount,
         agreedPriceAmount: b.agreedPriceAmount,
@@ -91,6 +118,7 @@ export const POST = async (request: Request) => {
         preliminarySaleSignedAt: b.preliminarySaleSignedAt,
         deedSignedAt: b.deedSignedAt,
         notes: b.notes,
+        metadata: hasExtraMetadata ? extraMetadata : undefined,
       };
       await updateTransaction(existingId, patch);
 
@@ -117,7 +145,7 @@ export const POST = async (request: Request) => {
       businessType: b.businessType,
       status: b.status as CreateTransactionInput["status"],
       currency: b.currency,
-      propertyId: b.propertyId ?? null,
+      propertyId: resolvedPropertyId ?? null,
       assignedAdminProfileId: b.assignedAdminProfileId ?? null,
       mandatePriceAmount: b.mandatePriceAmount ?? null,
       agreedPriceAmount: b.agreedPriceAmount ?? null,
@@ -130,6 +158,7 @@ export const POST = async (request: Request) => {
       preliminarySaleSignedAt: b.preliminarySaleSignedAt ?? null,
       deedSignedAt: b.deedSignedAt ?? null,
       notes: b.notes ?? null,
+      metadata: hasExtraMetadata ? extraMetadata : undefined,
       source: "zapier",
     };
     const { id } = await createTransaction(input);

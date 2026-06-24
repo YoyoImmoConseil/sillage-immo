@@ -41,6 +41,13 @@ module.exports = {
       },
       { key: 'reference', label: 'Référence', type: 'string' },
       {
+        key: 'sweepbrightPropertyId',
+        label: 'ID bien SweepBright',
+        type: 'string',
+        helpText:
+          'ID de l\'estate SweepBright. Relié automatiquement au bien Sillage si ce bien a été synchronisé.',
+      },
+      {
         key: 'businessType',
         label: 'Type',
         type: 'string',
@@ -59,6 +66,13 @@ module.exports = {
           acte: 'Acte authentique',
           cancelled: 'Annulée',
         },
+      },
+      {
+        key: 'mandateType',
+        label: 'Type de mandat',
+        type: 'string',
+        choices: { exclusive: 'Exclusif', simple: 'Simple (non exclusif)' },
+        helpText: 'Stocké dans les métadonnées de la transaction.',
       },
       { key: 'currency', label: 'Devise (ISO, ex. EUR)', type: 'string', default: 'EUR' },
       { key: 'mandatePriceAmount', label: 'Prix mandat', type: 'number' },

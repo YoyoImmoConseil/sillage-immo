@@ -26,6 +26,7 @@ const INTEGRATION_SCOPES: { scope: string; label: string }[] = [
   { scope: "integrations:transactions", label: "Transactions (créer / mettre à jour)" },
   { scope: "integrations:market", label: "Observations de marché (créer)" },
   { scope: "integrations:buyer_leads", label: "Leads acquéreurs (créer)" },
+  { scope: "integrations:seller_leads", label: "Leads vendeurs / propriétaires (créer)" },
 ];
 
 export function McpKeysManager({

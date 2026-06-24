@@ -17,7 +17,44 @@ SweepBright / MyNotary  ──(Zap)──►  App Zapier "Sillage Immo"  ──H
   - `transaction` → `POST /api/integrations/v1/transactions` (upsert par `externalId`)
   - `market_observation` → `POST /api/integrations/v1/market-observations`
   - `buyer_lead` → `POST /api/integrations/v1/buyer-leads`
+  - `seller_lead` → `POST /api/integrations/v1/seller-leads`
 - Pas de triggers sortants en v1.
+
+## Identité & fusion (leads acquéreurs ET vendeurs)
+
+Clé de fusion = **email**. L'`externalId` (ID SweepBright) est attaché au
+premier rattachement puis sert d'upsert direct.
+
+Ordre de résolution à chaque appel : `externalId` connu → on met à jour le
+lead lié ; sinon email déjà présent → on enrichit le lead existant et on lui
+attache l'`externalId` (jamais réécrit s'il en a déjà un) ; sinon → création.
+
+Conséquence : un contact qui s'est créé en self-service sur le site (recherche
+acquéreur ou estimation vendeur) **fusionne** automatiquement quand il revient
+via un Zap SweepBright, au lieu de créer un doublon.
+
+## Mapping triggers SweepBright → actions Sillage
+
+| Trigger SweepBright | Action Sillage | Champs clés |
+| --- | --- | --- |
+| Lead Created / Lead Updated | Créer un lead acquéreur | `externalId` (= lead id), email, critères (surface, budget, pièces…) |
+| Interaction Registered / Feedback Added | Créer un lead acquéreur | mêmes champs + `notes` (note interne) |
+| Owner Created / Owner Updated | Créer/MAJ un lead vendeur | `externalId` (= owner id), email, bien (adresse, type, prix estimé) |
+| Document Requested: Exclusive Agreement | Transaction | `status=mandate`, `mandateType=exclusive`, `mandateSignedAt` |
+| Document Requested: Non-Exclusive Agreement | Transaction | `status=mandate`, `mandateType=simple`, `mandateSignedAt` |
+| Document Requested: Lease or Purchase Agreement | Transaction | `status=compromis`, `preliminarySaleSignedAt` |
+| Offer Created | Transaction | `status=offer`, `offerReceivedAt`, `agreedPriceAmount` |
+| Offer Accepted / Changed / Updated | Transaction | màj `agreedPriceAmount`, statut |
+| Offer Cancelled / Refused / Archived | Transaction | `status=cancelled` |
+| Property Status Changed | Transaction | `status` (sous offre / vendu) |
+| Document Requested: Valuation | Observation de marché | `kind=valuation`, prix + surface |
+| Property Created or Updated | Observation de marché | `kind=asking`, prix affiché + surface |
+| Visites (Scheduled / Updated / Canceled) | (déjà géré) webhook `x-zapier-secret` → `property_visits`, **ne pas re-router ici** |
+
+Pour les transactions, utilise le **même `externalId`** (ex. l'ID du bien /
+deal SweepBright) sur tous les Zaps du cycle de vie pour qu'ils mettent à jour
+la même transaction. Le prix/m² des observations est **calculé côté serveur**
+(fournis `pricePerM2`, ou `estimatedPrice` + `livingAreaM2`).
 
 ## 1. Générer une clé API
 

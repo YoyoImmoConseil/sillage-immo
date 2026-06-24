@@ -1,33 +1,44 @@
 'use strict';
 
+const splitList = (value) =>
+  value
+    ? String(value)
+        .split(',')
+        .map((v) => v.trim())
+        .filter(Boolean)
+    : [];
+
 const perform = async (z, bundle) => {
   const input = bundle.inputData;
   const criteria = {
     businessType: input.businessType || 'sale',
-    cities: input.cities
-      ? String(input.cities)
-          .split(',')
-          .map((c) => c.trim())
-          .filter(Boolean)
-      : [],
-    propertyTypes: input.propertyTypes
-      ? String(input.propertyTypes)
-          .split(',')
-          .map((p) => p.trim())
-          .filter(Boolean)
-      : [],
+    cities: splitList(input.cities),
+    propertyTypes: splitList(input.propertyTypes),
   };
+  if (input.locationText) criteria.locationText = input.locationText;
   if (input.budgetMin) criteria.budgetMin = Number(input.budgetMin);
   if (input.budgetMax) criteria.budgetMax = Number(input.budgetMax);
-  if (input.locationText) criteria.locationText = input.locationText;
+  if (input.roomsMin) criteria.roomsMin = Number(input.roomsMin);
+  if (input.roomsMax) criteria.roomsMax = Number(input.roomsMax);
+  if (input.bedroomsMin) criteria.bedroomsMin = Number(input.bedroomsMin);
+  if (input.livingAreaMin) criteria.livingAreaMin = Number(input.livingAreaMin);
+  if (input.livingAreaMax) criteria.livingAreaMax = Number(input.livingAreaMax);
+  if (input.floorMin) criteria.floorMin = Number(input.floorMin);
+  if (input.floorMax) criteria.floorMax = Number(input.floorMax);
+  if (input.requiresTerrace !== undefined && input.requiresTerrace !== '')
+    criteria.requiresTerrace = Boolean(input.requiresTerrace);
+  if (input.requiresElevator !== undefined && input.requiresElevator !== '')
+    criteria.requiresElevator = Boolean(input.requiresElevator);
 
   const body = {
+    externalId: input.externalId || undefined,
     firstName: input.firstName || '',
     lastName: input.lastName || '',
     email: input.email,
     phone: input.phone || null,
     rgpdAccepted: true,
     sourceUrl: input.sourceUrl || 'zapier_integration',
+    notes: input.notes || undefined,
     criteria,
   };
 
@@ -49,6 +60,13 @@ module.exports = {
   },
   operation: {
     inputFields: [
+      {
+        key: 'externalId',
+        label: 'ID externe (idempotence / fusion)',
+        type: 'string',
+        helpText:
+          'ID stable du lead SweepBright. Évite les doublons et fusionne avec un acquéreur déjà présent (par email).',
+      },
       { key: 'firstName', label: 'Prénom', type: 'string' },
       { key: 'lastName', label: 'Nom', type: 'string' },
       { key: 'email', label: 'Email', type: 'string', required: true },
@@ -81,7 +99,17 @@ module.exports = {
       },
       { key: 'budgetMin', label: 'Budget min (€)', type: 'number' },
       { key: 'budgetMax', label: 'Budget max (€)', type: 'number' },
+      { key: 'roomsMin', label: 'Pièces min', type: 'number' },
+      { key: 'roomsMax', label: 'Pièces max', type: 'number' },
+      { key: 'bedroomsMin', label: 'Chambres min', type: 'number' },
+      { key: 'livingAreaMin', label: 'Surface habitable min (m²)', type: 'number' },
+      { key: 'livingAreaMax', label: 'Surface habitable max (m²)', type: 'number' },
+      { key: 'floorMin', label: 'Étage min', type: 'number' },
+      { key: 'floorMax', label: 'Étage max', type: 'number' },
+      { key: 'requiresTerrace', label: 'Terrasse requise', type: 'boolean' },
+      { key: 'requiresElevator', label: 'Ascenseur requis', type: 'boolean' },
       { key: 'locationText', label: 'Secteur (texte libre)', type: 'string' },
+      { key: 'notes', label: 'Note interne', type: 'text' },
       { key: 'sourceUrl', label: 'Source', type: 'string' },
     ],
     perform,

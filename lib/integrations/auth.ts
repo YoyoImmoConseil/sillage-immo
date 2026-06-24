@@ -21,7 +21,8 @@ const DEFAULT_RATE_LIMIT_PER_MINUTE = 60;
 export type IntegrationScope =
   | "integrations:transactions"
   | "integrations:market"
-  | "integrations:buyer_leads";
+  | "integrations:buyer_leads"
+  | "integrations:seller_leads";
 
 export type IntegrationAuthResult =
   | { ok: true; key: McpKeyContext }
