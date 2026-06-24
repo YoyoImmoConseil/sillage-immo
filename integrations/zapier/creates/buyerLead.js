@@ -44,6 +44,10 @@ const perform = async (z, bundle) => {
     rgpdAccepted: true,
     sourceUrl: input.sourceUrl || 'zapier_integration',
     notes: input.notes || undefined,
+    sendPortalInvite:
+      input.sendPortalInvite === false || input.sendPortalInvite === 'false'
+        ? false
+        : undefined,
     assigneeEmail: input.assigneeEmail || undefined,
     assigneeExternalId: input.assigneeExternalId || undefined,
     assigneeName: input.assigneeName || undefined,
@@ -136,6 +140,14 @@ module.exports = {
       },
       { key: 'assigneeName', label: 'Collaborateur — nom', type: 'string' },
       { key: 'assigneePhone', label: 'Collaborateur — téléphone', type: 'string' },
+      {
+        key: 'sendPortalInvite',
+        label: 'Envoyer le lien espace client',
+        type: 'boolean',
+        default: 'true',
+        helpText:
+          'Crée l\'espace client et envoie le mail avec le lien de connexion (magic link) à la création du lead. Désactive pour ne pas envoyer d\'email.',
+      },
     ],
     perform,
     sample: {
@@ -146,6 +158,7 @@ module.exports = {
       buyerSearchProfileId: '00000000-0000-0000-0000-000000000000',
       assignedAdminProfileId: null,
       assigneeMatchedBy: null,
+      portalEmailSent: true,
     },
     outputFields: [
       { key: 'buyerLeadId', label: 'ID lead acquéreur' },
@@ -154,6 +167,7 @@ module.exports = {
       { key: 'buyerSearchProfileId', label: 'ID profil de recherche' },
       { key: 'assignedAdminProfileId', label: 'ID collaborateur assigné' },
       { key: 'assigneeMatchedBy', label: 'Assignation par (email/id/nom)' },
+      { key: 'portalEmailSent', label: 'Email espace client envoyé', type: 'boolean' },
     ],
   },
 };

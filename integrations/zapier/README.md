@@ -72,6 +72,15 @@ sont conservés dans `metadata.assignee` pour un rattachement manuel.
 Pour utiliser `assigneeExternalId`, renseigne l'ID utilisateur SweepBright dans
 le profil du collaborateur côté Sillage (`admin_profiles.metadata.sweepbright_user_id`).
 
+## Espace client & magic link
+
+À la **création** d'un lead acquéreur ou vendeur, Sillage crée automatiquement
+l'espace client et envoie le mail de connexion (magic link). Ce comportement est
+contrôlé par le champ `sendPortalInvite` (coché par défaut) ; décoche-le pour ne
+pas envoyer d'email. L'envoi n'a lieu qu'à la création : une mise à jour d'un
+lead existant ne renvoie pas de mail (pas de doublon). La sortie
+`portalEmailSent` indique si l'email a bien été envoyé.
+
 ## 1. Générer une clé API
 
 Dans le back-office Sillage Immo : **/admin/mcp-keys** → bouton

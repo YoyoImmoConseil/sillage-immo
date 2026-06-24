@@ -1,3 +1,12 @@
+## 1.4.0
+
+Espace client + magic link automatiques à la création.
+
+1. Update the create/buyerLead action : à la création d'un lead acquéreur, l'espace client est créé et le mail de connexion (magic link) est envoyé automatiquement. Nouveau champ `sendPortalInvite` (activé par défaut) et sortie `portalEmailSent`.
+2. Update the create/sellerLead action : à la création d'un lead vendeur, l'espace client vendeur est provisionné et le mail de connexion (magic link) est envoyé. Nouveau champ `sendPortalInvite` (activé par défaut) et sortie `portalEmailSent`.
+
+L'envoi n'a lieu qu'à la **création** (pas sur les mises à jour) pour éviter les emails en double.
+
 ## 1.3.0
 
 Mise à jour des leads acquéreurs (idempotence complète).

@@ -392,6 +392,8 @@ export type BuyerUpsertResult = {
   created: boolean;
   clientProjectId: string | null;
   buyerSearchProfileId: string | null;
+  /** Jeton d'invitation portail (présent uniquement à la création). */
+  invitationToken: string | null;
 };
 
 const findExistingBuyerLead = async (
@@ -444,6 +446,7 @@ export const upsertBuyerLeadFromIntegration = async (
       created: true,
       clientProjectId: signup.clientProjectId,
       buyerSearchProfileId: signup.buyerSearchProfileId,
+      invitationToken: signup.invitationToken,
     };
   }
 
@@ -496,6 +499,7 @@ export const upsertBuyerLeadFromIntegration = async (
       created: false,
       clientProjectId: signup.clientProjectId,
       buyerSearchProfileId: signup.buyerSearchProfileId,
+      invitationToken: signup.invitationToken,
     };
   }
 
@@ -540,5 +544,6 @@ export const upsertBuyerLeadFromIntegration = async (
     created: false,
     clientProjectId: (profile.client_project_id as string | null) ?? null,
     buyerSearchProfileId: profile.id,
+    invitationToken: null,
   };
 };

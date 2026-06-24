@@ -4,6 +4,8 @@ import { authenticateIntegrationRequest } from "@/lib/integrations/auth";
 import { moneyAmount } from "@/lib/integrations/parse";
 import { upsertSellerLeadFromIntegration } from "@/services/sellers/seller-lead.service";
 import { assigneeMetadata, resolveAssignee } from "@/lib/integrations/assignee";
+import { ensureSellerPortalAccessFromLead } from "@/services/clients/seller-project.service";
+import { sendClientPortalMagicLink } from "@/services/clients/client-portal-magic-link.service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -31,6 +33,14 @@ const bodySchema = z.object({
   assigneeExternalId: z.string().trim().max(120).optional().nullable(),
   assigneeName: z.string().trim().max(240).optional().nullable(),
   assigneePhone: z.string().trim().max(60).optional().nullable(),
+  // Envoi automatique du mail magic-link (création de l'espace client) à la
+  // création du lead. Activé par défaut ; désactivable par Zap si besoin.
+  // Tolérant aux booléens transmis sous forme de chaîne par Zapier.
+  sendPortalInvite: z.preprocess((v) => {
+    if (v === false || v === "false") return false;
+    if (v === true || v === "true") return true;
+    return undefined;
+  }, z.boolean().optional().default(true)),
 });
 
 export const POST = async (request: Request) => {
@@ -99,6 +109,32 @@ export const POST = async (request: Request) => {
       metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
     });
 
+    // À la création : provisionne l'espace client vendeur et envoie le
+    // magic-link (best-effort : ne fait jamais échouer l'ingestion).
+    let portalEmailSent = false;
+    if (b.sendPortalInvite && result.created) {
+      try {
+        const provision = await ensureSellerPortalAccessFromLead(
+          result.sellerLeadId
+        );
+        const sent = await sendClientPortalMagicLink({
+          email: provision.portalAccess.email,
+          nextPath: provision.portalAccess.nextPath,
+          inviteToken: provision.portalAccess.inviteToken,
+          origin: new URL(request.url).origin,
+        });
+        portalEmailSent = sent.ok;
+        if (!sent.ok) {
+          console.error("[integrations/seller-leads] magic-link not sent", sent.code);
+        }
+      } catch (error) {
+        console.error(
+          "[integrations/seller-leads] portal provisioning/magic-link failed",
+          error instanceof Error ? error.message : error
+        );
+      }
+    }
+
     return NextResponse.json(
       {
         ok: true,
@@ -107,6 +143,7 @@ export const POST = async (request: Request) => {
         merged: result.merged,
         assignedAdminProfileId: resolved.adminProfileId,
         assigneeMatchedBy: resolved.matchedBy,
+        portalEmailSent,
       },
       { status: result.created ? 201 : 200 }
     );

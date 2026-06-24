@@ -67,6 +67,14 @@ module.exports = {
       },
       { key: 'assigneeName', label: 'Collaborateur — nom', type: 'string' },
       { key: 'assigneePhone', label: 'Collaborateur — téléphone', type: 'string' },
+      {
+        key: 'sendPortalInvite',
+        label: 'Envoyer le lien espace client',
+        type: 'boolean',
+        default: 'true',
+        helpText:
+          'Crée l\'espace client vendeur et envoie le mail avec le lien de connexion (magic link) à la création du lead. Désactive pour ne pas envoyer d\'email.',
+      },
     ],
     perform,
     sample: {
@@ -76,6 +84,7 @@ module.exports = {
       merged: false,
       assignedAdminProfileId: null,
       assigneeMatchedBy: null,
+      portalEmailSent: true,
     },
     outputFields: [
       { key: 'sellerLeadId', label: 'ID lead vendeur Sillage' },
@@ -83,6 +92,7 @@ module.exports = {
       { key: 'merged', label: 'Fusionné avec un lead existant', type: 'boolean' },
       { key: 'assignedAdminProfileId', label: 'ID collaborateur assigné' },
       { key: 'assigneeMatchedBy', label: 'Assignation par (email/id/nom)' },
+      { key: 'portalEmailSent', label: 'Email espace client envoyé', type: 'boolean' },
     ],
   },
 };

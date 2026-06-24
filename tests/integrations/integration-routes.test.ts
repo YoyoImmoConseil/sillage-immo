@@ -53,6 +53,17 @@ vi.mock("@/lib/integrations/assignee", () => ({
     Object.keys(hints).some((k) => hints[k]) ? { ...hints } : undefined,
 }));
 
+const sendClientPortalMagicLink = vi.fn();
+vi.mock("@/services/clients/client-portal-magic-link.service", () => ({
+  sendClientPortalMagicLink: (i: unknown) => sendClientPortalMagicLink(i),
+}));
+
+const ensureSellerPortalAccessFromLead = vi.fn();
+vi.mock("@/services/clients/seller-project.service", () => ({
+  ensureSellerPortalAccessFromLead: (id: unknown) =>
+    ensureSellerPortalAccessFromLead(id),
+}));
+
 const post = (path: string, body: unknown) =>
   new Request(`http://localhost${path}`, {
     method: "POST",
@@ -62,6 +73,21 @@ const post = (path: string, body: unknown) =>
 
 beforeEach(() => {
   resolveAssignee.mockResolvedValue({ adminProfileId: null, matchedBy: null });
+  sendClientPortalMagicLink.mockResolvedValue({
+    ok: true,
+    data: { email: "x@example.com", context: "invite" },
+  });
+  ensureSellerPortalAccessFromLead.mockResolvedValue({
+    sellerProjectId: "sp-1",
+    clientProjectId: "cp-1",
+    clientProfileId: "cpr-1",
+    portalAccess: {
+      mode: "invite",
+      email: "x@example.com",
+      nextPath: "/espace-client",
+      inviteToken: "tok-1",
+    },
+  });
 });
 
 afterEach(() => {
@@ -94,6 +120,30 @@ describe("POST /api/integrations/v1/seller-leads", () => {
     const arg = upsertSellerLeadFromIntegration.mock.calls[0][0];
     expect(arg.externalId).toBe("owner-1");
     expect(arg.source).toBe("zapier");
+    expect(ensureSellerPortalAccessFromLead).toHaveBeenCalledWith("sl-1");
+    expect(sendClientPortalMagicLink).toHaveBeenCalledWith(
+      expect.objectContaining({ inviteToken: "tok-1" })
+    );
+    const body = await res.json();
+    expect(body.portalEmailSent).toBe(true);
+  });
+
+  it("does not provision the portal when the lead is merged (200)", async () => {
+    upsertSellerLeadFromIntegration.mockResolvedValue({
+      sellerLeadId: "sl-2",
+      created: false,
+      merged: true,
+    });
+    const { POST } = await import("@/app/api/integrations/v1/seller-leads/route");
+    const res = await POST(
+      post("/api/integrations/v1/seller-leads", {
+        externalId: "owner-2",
+        email: "v2@example.com",
+      })
+    );
+    expect(res.status).toBe(200);
+    expect(ensureSellerPortalAccessFromLead).not.toHaveBeenCalled();
+    expect(sendClientPortalMagicLink).not.toHaveBeenCalled();
   });
 });
 
@@ -106,12 +156,13 @@ describe("POST /api/integrations/v1/buyer-leads", () => {
     expect(res.status).toBe(422);
   });
 
-  it("passes externalId + note through to the upsert (201)", async () => {
+  it("passes externalId + note through to the upsert and sends the magic link (201)", async () => {
     upsertBuyerLeadFromIntegration.mockResolvedValue({
       buyerLeadId: "bl-1",
       created: true,
       clientProjectId: "cp-1",
       buyerSearchProfileId: "bsp-1",
+      invitationToken: "tok-1",
     });
     const { POST } = await import("@/app/api/integrations/v1/buyer-leads/route");
     const res = await POST(
@@ -127,14 +178,41 @@ describe("POST /api/integrations/v1/buyer-leads", () => {
     const arg = upsertBuyerLeadFromIntegration.mock.calls[0][0];
     expect(arg.externalId).toBe("lead-1");
     expect(arg.initialFilters.note).toBe("Demande via SweepBright");
+    expect(sendClientPortalMagicLink).toHaveBeenCalledWith(
+      expect.objectContaining({ inviteToken: "tok-1" })
+    );
+    const body = await res.json();
+    expect(body.portalEmailSent).toBe(true);
   });
 
-  it("returns 200 when the lead is updated rather than created", async () => {
+  it("does NOT send a magic link when sendPortalInvite is false", async () => {
+    upsertBuyerLeadFromIntegration.mockResolvedValue({
+      buyerLeadId: "bl-1",
+      created: true,
+      clientProjectId: "cp-1",
+      buyerSearchProfileId: "bsp-1",
+      invitationToken: "tok-1",
+    });
+    const { POST } = await import("@/app/api/integrations/v1/buyer-leads/route");
+    const res = await POST(
+      post("/api/integrations/v1/buyer-leads", {
+        email: "b@example.com",
+        rgpdAccepted: true,
+        sendPortalInvite: false,
+        criteria: { businessType: "sale", cities: ["Nice"], propertyTypes: [] },
+      })
+    );
+    expect(res.status).toBe(201);
+    expect(sendClientPortalMagicLink).not.toHaveBeenCalled();
+  });
+
+  it("returns 200 and skips the magic link when the lead is updated", async () => {
     upsertBuyerLeadFromIntegration.mockResolvedValue({
       buyerLeadId: "bl-1",
       created: false,
       clientProjectId: "cp-1",
       buyerSearchProfileId: "bsp-1",
+      invitationToken: null,
     });
     const { POST } = await import("@/app/api/integrations/v1/buyer-leads/route");
     const res = await POST(
@@ -148,6 +226,7 @@ describe("POST /api/integrations/v1/buyer-leads", () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.created).toBe(false);
+    expect(sendClientPortalMagicLink).not.toHaveBeenCalled();
   });
 
   it("rounds decimal areas/budgets instead of rejecting them (201)", async () => {
@@ -156,6 +235,7 @@ describe("POST /api/integrations/v1/buyer-leads", () => {
       created: true,
       clientProjectId: "cp-2",
       buyerSearchProfileId: "bsp-2",
+      invitationToken: "tok-2",
     });
     const { POST } = await import("@/app/api/integrations/v1/buyer-leads/route");
     const res = await POST(
@@ -187,6 +267,7 @@ describe("POST /api/integrations/v1/buyer-leads", () => {
       created: true,
       clientProjectId: "cp-3",
       buyerSearchProfileId: "bsp-3",
+      invitationToken: "tok-3",
     });
     const { POST } = await import("@/app/api/integrations/v1/buyer-leads/route");
     const res = await POST(

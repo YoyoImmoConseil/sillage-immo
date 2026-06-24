@@ -7,6 +7,7 @@ import {
 } from "@/lib/buyers/buyer-search-payload";
 import { upsertBuyerLeadFromIntegration } from "@/services/buyers/buyer-signup.service";
 import { assigneeMetadata, resolveAssignee } from "@/lib/integrations/assignee";
+import { sendClientPortalMagicLink } from "@/services/clients/client-portal-magic-link.service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -66,6 +67,14 @@ const bodySchema = z.object({
   assigneeExternalId: z.string().trim().max(120).optional().nullable(),
   assigneeName: z.string().trim().max(240).optional().nullable(),
   assigneePhone: z.string().trim().max(60).optional().nullable(),
+  // Envoi automatique du mail magic-link (création de l'espace client) à la
+  // création du lead. Activé par défaut ; désactivable par Zap si besoin.
+  // Tolérant aux booléens transmis sous forme de chaîne par Zapier.
+  sendPortalInvite: z.preprocess((v) => {
+    if (v === false || v === "false") return false;
+    if (v === true || v === "true") return true;
+    return undefined;
+  }, z.boolean().optional().default(true)),
   // The shared criteria schema already exposes every search field (rooms,
   // bedrooms, living area min/max, floor, terrace, elevator, budget, …).
   // Decimal areas/budgets are rounded to int before validation.
@@ -135,6 +144,34 @@ export const POST = async (request: Request) => {
       criteria: toBuyerSignupCriteria(b.criteria),
     });
 
+    // Crée l'espace client et envoie le magic-link à la création du lead
+    // (best-effort : ne fait jamais échouer l'ingestion).
+    let portalEmailSent = false;
+    if (
+      b.sendPortalInvite &&
+      result.created &&
+      result.invitationToken &&
+      result.clientProjectId
+    ) {
+      try {
+        const sent = await sendClientPortalMagicLink({
+          email: b.email.trim().toLowerCase(),
+          nextPath: `/espace-client/recherches/${result.clientProjectId}`,
+          inviteToken: result.invitationToken,
+          origin: new URL(request.url).origin,
+        });
+        portalEmailSent = sent.ok;
+        if (!sent.ok) {
+          console.error("[integrations/buyer-leads] magic-link not sent", sent.code);
+        }
+      } catch (error) {
+        console.error(
+          "[integrations/buyer-leads] magic-link send failed",
+          error instanceof Error ? error.message : error
+        );
+      }
+    }
+
     return NextResponse.json(
       {
         ok: true,
@@ -144,6 +181,7 @@ export const POST = async (request: Request) => {
         buyerSearchProfileId: result.buyerSearchProfileId,
         assignedAdminProfileId: resolved.adminProfileId,
         assigneeMatchedBy: resolved.matchedBy,
+        portalEmailSent,
       },
       { status: result.created ? 201 : 200 }
     );
