@@ -1,6 +1,6 @@
 {
   "name": "sillage-immo-zapier",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "private": true,
   "description": "App Zapier privée Sillage Immo — ingestion transactions, observations de marché et leads acquéreurs.",
   "main": "index.js",

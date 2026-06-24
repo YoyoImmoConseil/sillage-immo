@@ -19,9 +19,10 @@ vi.mock("@/services/sellers/seller-lead.service", () => ({
     upsertSellerLeadFromIntegration(input),
 }));
 
-const createBuyerSearchSignup = vi.fn();
+const upsertBuyerLeadFromIntegration = vi.fn();
 vi.mock("@/services/buyers/buyer-signup.service", () => ({
-  createBuyerSearchSignup: (input: unknown) => createBuyerSearchSignup(input),
+  upsertBuyerLeadFromIntegration: (input: unknown) =>
+    upsertBuyerLeadFromIntegration(input),
 }));
 
 const createTransaction = vi.fn();
@@ -105,9 +106,10 @@ describe("POST /api/integrations/v1/buyer-leads", () => {
     expect(res.status).toBe(422);
   });
 
-  it("passes externalId + note through to the signup (201)", async () => {
-    createBuyerSearchSignup.mockResolvedValue({
+  it("passes externalId + note through to the upsert (201)", async () => {
+    upsertBuyerLeadFromIntegration.mockResolvedValue({
       buyerLeadId: "bl-1",
+      created: true,
       clientProjectId: "cp-1",
       buyerSearchProfileId: "bsp-1",
     });
@@ -122,14 +124,36 @@ describe("POST /api/integrations/v1/buyer-leads", () => {
       })
     );
     expect(res.status).toBe(201);
-    const arg = createBuyerSearchSignup.mock.calls[0][0];
+    const arg = upsertBuyerLeadFromIntegration.mock.calls[0][0];
     expect(arg.externalId).toBe("lead-1");
     expect(arg.initialFilters.note).toBe("Demande via SweepBright");
   });
 
+  it("returns 200 when the lead is updated rather than created", async () => {
+    upsertBuyerLeadFromIntegration.mockResolvedValue({
+      buyerLeadId: "bl-1",
+      created: false,
+      clientProjectId: "cp-1",
+      buyerSearchProfileId: "bsp-1",
+    });
+    const { POST } = await import("@/app/api/integrations/v1/buyer-leads/route");
+    const res = await POST(
+      post("/api/integrations/v1/buyer-leads", {
+        externalId: "lead-1",
+        email: "b@example.com",
+        rgpdAccepted: true,
+        criteria: { businessType: "sale", cities: ["Nice"], propertyTypes: [] },
+      })
+    );
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.created).toBe(false);
+  });
+
   it("rounds decimal areas/budgets instead of rejecting them (201)", async () => {
-    createBuyerSearchSignup.mockResolvedValue({
+    upsertBuyerLeadFromIntegration.mockResolvedValue({
       buyerLeadId: "bl-2",
+      created: true,
       clientProjectId: "cp-2",
       buyerSearchProfileId: "bsp-2",
     });
@@ -148,7 +172,7 @@ describe("POST /api/integrations/v1/buyer-leads", () => {
       })
     );
     expect(res.status).toBe(201);
-    const arg = createBuyerSearchSignup.mock.calls[0][0];
+    const arg = upsertBuyerLeadFromIntegration.mock.calls[0][0];
     expect(arg.criteria.livingAreaMin).toBe(74);
     expect(arg.criteria.budgetMax).toBe(241501);
   });
@@ -158,8 +182,9 @@ describe("POST /api/integrations/v1/buyer-leads", () => {
       adminProfileId: "admin-42",
       matchedBy: "email",
     });
-    createBuyerSearchSignup.mockResolvedValue({
+    upsertBuyerLeadFromIntegration.mockResolvedValue({
       buyerLeadId: "bl-3",
+      created: true,
       clientProjectId: "cp-3",
       buyerSearchProfileId: "bsp-3",
     });
@@ -176,7 +201,7 @@ describe("POST /api/integrations/v1/buyer-leads", () => {
     expect(resolveAssignee).toHaveBeenCalledWith(
       expect.objectContaining({ email: "agent@sillage-immo.com" })
     );
-    const arg = createBuyerSearchSignup.mock.calls[0][0];
+    const arg = upsertBuyerLeadFromIntegration.mock.calls[0][0];
     expect(arg.assignedAdminProfileId).toBe("admin-42");
     const body = await res.json();
     expect(body.assignedAdminProfileId).toBe("admin-42");

@@ -5,7 +5,7 @@ import {
   buyerSearchCriteriaSchema,
   toBuyerSignupCriteria,
 } from "@/lib/buyers/buyer-search-payload";
-import { createBuyerSearchSignup } from "@/services/buyers/buyer-signup.service";
+import { upsertBuyerLeadFromIntegration } from "@/services/buyers/buyer-signup.service";
 import { assigneeMetadata, resolveAssignee } from "@/lib/integrations/assignee";
 
 export const runtime = "nodejs";
@@ -119,7 +119,7 @@ export const POST = async (request: Request) => {
     const resolved = await resolveAssignee(hints);
     const assignee = assigneeMetadata(hints, resolved);
 
-    const signup = await createBuyerSearchSignup({
+    const result = await upsertBuyerLeadFromIntegration({
       firstName: b.firstName,
       lastName: b.lastName,
       email: b.email,
@@ -138,13 +138,14 @@ export const POST = async (request: Request) => {
     return NextResponse.json(
       {
         ok: true,
-        buyerLeadId: signup.buyerLeadId,
-        clientProjectId: signup.clientProjectId,
-        buyerSearchProfileId: signup.buyerSearchProfileId,
+        buyerLeadId: result.buyerLeadId,
+        created: result.created,
+        clientProjectId: result.clientProjectId,
+        buyerSearchProfileId: result.buyerSearchProfileId,
         assignedAdminProfileId: resolved.adminProfileId,
         assigneeMatchedBy: resolved.matchedBy,
       },
-      { status: 201 }
+      { status: result.created ? 201 : 200 }
     );
   } catch (error) {
     const message =

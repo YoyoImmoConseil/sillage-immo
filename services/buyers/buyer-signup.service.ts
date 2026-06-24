@@ -386,3 +386,159 @@ export const createBuyerSearchSignup = async (
     throw error;
   }
 };
+
+export type BuyerUpsertResult = {
+  buyerLeadId: string;
+  created: boolean;
+  clientProjectId: string | null;
+  buyerSearchProfileId: string | null;
+};
+
+const findExistingBuyerLead = async (
+  externalId: string | null,
+  email: string
+): Promise<BuyerLeadRow | null> => {
+  if (externalId) {
+    const { data, error } = await supabaseAdmin
+      .from("buyer_leads")
+      .select("*")
+      .eq("external_id", externalId)
+      .limit(1)
+      .maybeSingle();
+    if (error) throw error;
+    if (data) return data as BuyerLeadRow;
+  }
+  const { data, error } = await supabaseAdmin
+    .from("buyer_leads")
+    .select("*")
+    .eq("email", email)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return (data as BuyerLeadRow | null) ?? null;
+};
+
+/**
+ * Point d'entrée idempotent pour les intégrations (Zapier / SweepBright).
+ *
+ * - Lead inconnu (external_id puis email) → création complète via
+ *   `createBuyerSearchSignup` (lead + projet + profil de recherche + matching).
+ * - Lead déjà connu → on enrichit la fiche et on met à jour **en place** le
+ *   profil de recherche le plus récent (pas de doublon de projet), puis on
+ *   relance le matching. Sémantique « coalesce » : on n'écrase un critère que
+ *   si une valeur exploitable est fournie (on ne vide jamais un critère
+ *   existant avec un champ non mappé côté SweepBright).
+ */
+export const upsertBuyerLeadFromIntegration = async (
+  input: BuyerSignupInput
+): Promise<BuyerUpsertResult> => {
+  const email = normalizeEmail(input.email);
+  if (!email) throw new Error("Email acquereur invalide.");
+
+  const existing = await findExistingBuyerLead(input.externalId ?? null, email);
+  if (!existing) {
+    const signup = await createBuyerSearchSignup(input);
+    return {
+      buyerLeadId: signup.buyerLeadId,
+      created: true,
+      clientProjectId: signup.clientProjectId,
+      buyerSearchProfileId: signup.buyerSearchProfileId,
+    };
+  }
+
+  const phone = normalizePhone(input.phone);
+  const firstName = input.firstName.trim();
+  const lastName = input.lastName.trim();
+  const fullName =
+    [firstName, lastName].filter(Boolean).join(" ").trim() || email;
+  const origin = input.origin?.trim() || "zapier_integration";
+
+  const contactIdentity = await ensureContactIdentity({
+    email,
+    phone,
+    firstName: firstName || null,
+    lastName: lastName || null,
+    fullName,
+    metadata: { source: origin, capture_kind: "buyer_signup" },
+  });
+
+  const lead = await getOrCreateBuyerLead({
+    firstName,
+    lastName,
+    email,
+    phone,
+    contactIdentityId: contactIdentity?.id ?? null,
+    origin,
+    rgpdAcceptedAt: input.rgpdAcceptedAt,
+    sourceUrl: input.sourceUrl ?? null,
+    initialFilters: input.initialFilters,
+    externalId: input.externalId ?? null,
+    assignedAdminProfileId: input.assignedAdminProfileId ?? null,
+    assignee: input.assignee ?? null,
+  });
+
+  const { data: profile, error: profileError } = await supabaseAdmin
+    .from("buyer_search_profiles")
+    .select("id, client_project_id")
+    .eq("buyer_lead_id", lead.id)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (profileError) throw profileError;
+
+  // Lead connu mais sans profil de recherche (ex. contact self-service fusionné
+  // par email) → on crée le projet/profil manquant via le rail standard.
+  if (!profile) {
+    const signup = await createBuyerSearchSignup(input);
+    return {
+      buyerLeadId: lead.id,
+      created: false,
+      clientProjectId: signup.clientProjectId,
+      buyerSearchProfileId: signup.buyerSearchProfileId,
+    };
+  }
+
+  const c = input.criteria;
+  const patch: Record<string, unknown> = {
+    business_type: c.businessType,
+    updated_at: new Date().toISOString(),
+  };
+  if (c.cities.length > 0) patch.cities = c.cities;
+  if (c.propertyTypes.length > 0) patch.property_types = c.propertyTypes;
+  const setIf = (key: string, value: number | boolean | string | null | undefined) => {
+    if (value !== null && value !== undefined) patch[key] = value;
+  };
+  setIf("location_text", c.locationText ?? undefined);
+  setIf("budget_min", c.budgetMin ?? undefined);
+  setIf("budget_max", c.budgetMax ?? undefined);
+  setIf("rooms_min", c.roomsMin ?? undefined);
+  setIf("rooms_max", c.roomsMax ?? undefined);
+  setIf("bedrooms_min", c.bedroomsMin ?? undefined);
+  setIf("living_area_min", c.livingAreaMin ?? undefined);
+  setIf("living_area_max", c.livingAreaMax ?? undefined);
+  setIf("floor_min", c.floorMin ?? undefined);
+  setIf("floor_max", c.floorMax ?? undefined);
+  setIf("requires_terrace", c.requiresTerrace ?? undefined);
+  setIf("requires_elevator", c.requiresElevator ?? undefined);
+
+  const { error: updateError } = await supabaseAdmin
+    .from("buyer_search_profiles")
+    .update(patch)
+    .eq("id", profile.id);
+  if (updateError) throw updateError;
+
+  try {
+    const { recomputeMatchesForBuyerLead } = await import("./buyer-matching.service");
+    await recomputeMatchesForBuyerLead(lead.id);
+  } catch (error) {
+    console.error("[buyer-upsert] recompute failed", error);
+  }
+
+  return {
+    buyerLeadId: lead.id,
+    created: false,
+    clientProjectId: (profile.client_project_id as string | null) ?? null,
+    buyerSearchProfileId: profile.id,
+  };
+};

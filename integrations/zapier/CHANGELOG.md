@@ -1,3 +1,9 @@
+## 1.3.0
+
+Mise à jour des leads acquéreurs (idempotence complète).
+
+1. Update the create/buyerLead action : l'action crée OU met à jour un lead acquéreur existant (par ID externe ou email). La mise à jour modifie les critères du profil de recherche en place (sans créer de doublon de projet) et relance le matching. Ajout du champ de sortie `created`.
+
 ## 1.2.0
 
 Rattachement des enregistrements au collaborateur Sillage (assignee SweepBright).

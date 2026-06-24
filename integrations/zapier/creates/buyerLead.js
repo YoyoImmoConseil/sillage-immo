@@ -63,9 +63,9 @@ module.exports = {
   key: 'buyer_lead',
   noun: 'Lead acquéreur',
   display: {
-    label: 'Créer un lead acquéreur',
+    label: 'Créer ou mettre à jour un lead acquéreur',
     description:
-      'Crée (ou enrichit par email) un lead acquéreur, son projet et son profil de recherche, et lance le matching. N\'envoie pas d\'email au prospect.',
+      'Crée un lead acquéreur (lead + projet + profil de recherche + matching) ou le met à jour si l\'ID externe ou l\'email existe déjà (mise à jour des critères du profil de recherche, sans doublon). N\'envoie pas d\'email au prospect.',
   },
   operation: {
     inputFields: [
@@ -141,6 +141,7 @@ module.exports = {
     sample: {
       ok: true,
       buyerLeadId: '00000000-0000-0000-0000-000000000000',
+      created: true,
       clientProjectId: '00000000-0000-0000-0000-000000000000',
       buyerSearchProfileId: '00000000-0000-0000-0000-000000000000',
       assignedAdminProfileId: null,
@@ -148,6 +149,7 @@ module.exports = {
     },
     outputFields: [
       { key: 'buyerLeadId', label: 'ID lead acquéreur' },
+      { key: 'created', label: 'Créé (true) ou mis à jour (false)', type: 'boolean' },
       { key: 'clientProjectId', label: 'ID projet client' },
       { key: 'buyerSearchProfileId', label: 'ID profil de recherche' },
       { key: 'assignedAdminProfileId', label: 'ID collaborateur assigné' },
