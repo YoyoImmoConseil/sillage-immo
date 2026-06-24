@@ -26,6 +26,8 @@ export type SellerLeadInput = {
   syndicSupportNeeded?: boolean;
   message?: string;
   source?: string;
+  /** Collaborateur Sillage à rattacher (résolu depuis l'assignee SweepBright). */
+  assignedAdminProfileId?: string | null;
   metadata?: Record<string, unknown>;
 };
 
@@ -209,6 +211,15 @@ export const upsertSellerLeadFromIntegration = async (
         .eq("id", existing.id)
         .is("external_id", null);
     }
+    // Auto-assign the advisor only if the lead has none yet (never override a
+    // manual assignment).
+    if (input.assignedAdminProfileId) {
+      await supabaseAdmin
+        .from("seller_leads")
+        .update({ assigned_admin_profile_id: input.assignedAdminProfileId })
+        .eq("id", existing.id)
+        .is("assigned_admin_profile_id", null);
+    }
     return { sellerLeadId: existing.id, created: false, merged: true };
   }
 
@@ -364,6 +375,7 @@ export const createSellerLead = async (
       email,
       phone,
       contact_identity_id: contactIdentity?.id ?? null,
+      assigned_admin_profile_id: input.assignedAdminProfileId ?? null,
       property_type: normalizeOptional(input.propertyType),
       property_address: normalizeOptional(input.propertyAddress),
       city: normalizeOptional(input.city),

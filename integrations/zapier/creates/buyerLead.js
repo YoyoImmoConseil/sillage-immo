@@ -44,6 +44,10 @@ const perform = async (z, bundle) => {
     rgpdAccepted: true,
     sourceUrl: input.sourceUrl || 'zapier_integration',
     notes: input.notes || undefined,
+    assigneeEmail: input.assigneeEmail || undefined,
+    assigneeExternalId: input.assigneeExternalId || undefined,
+    assigneeName: input.assigneeName || undefined,
+    assigneePhone: input.assigneePhone || undefined,
     criteria,
   };
 
@@ -116,6 +120,22 @@ module.exports = {
       { key: 'locationText', label: 'Secteur (texte libre)', type: 'string' },
       { key: 'notes', label: 'Note interne', type: 'text' },
       { key: 'sourceUrl', label: 'Source', type: 'string' },
+      {
+        key: 'assigneeEmail',
+        label: 'Collaborateur — email',
+        type: 'string',
+        helpText:
+          'Email du collaborateur Sillage assigné (SweepBright assignee). Clé de rattachement la plus fiable.',
+      },
+      {
+        key: 'assigneeExternalId',
+        label: 'Collaborateur — ID SweepBright',
+        type: 'string',
+        helpText:
+          'ID utilisateur SweepBright de l\'assignee (mappé via admin_profiles.metadata.sweepbright_user_id).',
+      },
+      { key: 'assigneeName', label: 'Collaborateur — nom', type: 'string' },
+      { key: 'assigneePhone', label: 'Collaborateur — téléphone', type: 'string' },
     ],
     perform,
     sample: {
@@ -123,11 +143,15 @@ module.exports = {
       buyerLeadId: '00000000-0000-0000-0000-000000000000',
       clientProjectId: '00000000-0000-0000-0000-000000000000',
       buyerSearchProfileId: '00000000-0000-0000-0000-000000000000',
+      assignedAdminProfileId: null,
+      assigneeMatchedBy: null,
     },
     outputFields: [
       { key: 'buyerLeadId', label: 'ID lead acquéreur' },
       { key: 'clientProjectId', label: 'ID projet client' },
       { key: 'buyerSearchProfileId', label: 'ID profil de recherche' },
+      { key: 'assignedAdminProfileId', label: 'ID collaborateur assigné' },
+      { key: 'assigneeMatchedBy', label: 'Assignation par (email/id/nom)' },
     ],
   },
 };

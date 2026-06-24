@@ -6,6 +6,7 @@ import {
   toBuyerSignupCriteria,
 } from "@/lib/buyers/buyer-search-payload";
 import { createBuyerSearchSignup } from "@/services/buyers/buyer-signup.service";
+import { assigneeMetadata, resolveAssignee } from "@/lib/integrations/assignee";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -59,6 +60,12 @@ const bodySchema = z.object({
   // captured for later use; persisted in the lead metadata.
   notes: z.string().trim().max(5000).optional().nullable(),
   metadata: z.record(z.string(), z.unknown()).optional(),
+  // Sillage collaborator the lead is assigned to (SweepBright assignee).
+  // Resolved to an admin_profile by email → sweepbright_user_id → name.
+  assigneeEmail: z.string().trim().max(240).optional().nullable(),
+  assigneeExternalId: z.string().trim().max(120).optional().nullable(),
+  assigneeName: z.string().trim().max(240).optional().nullable(),
+  assigneePhone: z.string().trim().max(60).optional().nullable(),
   // The shared criteria schema already exposes every search field (rooms,
   // bedrooms, living area min/max, floor, terrace, elevator, budget, …).
   // Decimal areas/budgets are rounded to int before validation.
@@ -103,6 +110,15 @@ export const POST = async (request: Request) => {
     const initialFilters: Record<string, unknown> = { ...(b.metadata ?? {}) };
     if (b.notes) initialFilters.note = b.notes;
 
+    const hints = {
+      email: b.assigneeEmail,
+      externalId: b.assigneeExternalId,
+      name: b.assigneeName,
+      phone: b.assigneePhone,
+    };
+    const resolved = await resolveAssignee(hints);
+    const assignee = assigneeMetadata(hints, resolved);
+
     const signup = await createBuyerSearchSignup({
       firstName: b.firstName,
       lastName: b.lastName,
@@ -112,6 +128,8 @@ export const POST = async (request: Request) => {
       sourceUrl: b.sourceUrl ?? "zapier_integration",
       origin: "zapier_integration",
       externalId: b.externalId ?? null,
+      assignedAdminProfileId: resolved.adminProfileId,
+      assignee: assignee ?? null,
       initialFilters:
         Object.keys(initialFilters).length > 0 ? initialFilters : undefined,
       criteria: toBuyerSignupCriteria(b.criteria),
@@ -123,6 +141,8 @@ export const POST = async (request: Request) => {
         buyerLeadId: signup.buyerLeadId,
         clientProjectId: signup.clientProjectId,
         buyerSearchProfileId: signup.buyerSearchProfileId,
+        assignedAdminProfileId: resolved.adminProfileId,
+        assigneeMatchedBy: resolved.matchedBy,
       },
       { status: 201 }
     );

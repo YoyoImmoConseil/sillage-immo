@@ -53,6 +53,14 @@ export type BuyerSignupInput = {
   externalId?: string | null;
   criteria: BuyerSignupCriteriaInput;
   /**
+   * Collaborateur Sillage (admin_profile) auquel rattacher le lead. Résolu en
+   * amont (ex. depuis l'assignee SweepBright). N'écrase jamais une assignation
+   * déjà posée sur un lead existant.
+   */
+  assignedAdminProfileId?: string | null;
+  /** Indices bruts d'assignee (email/id/nom) conservés en metadata. */
+  assignee?: Record<string, unknown> | null;
+  /**
    * Origine de la création. Par défaut le signup public
    * (`website_buyer_signup`). La création manuelle en back-office passe
    * `admin_manual_creation`.
@@ -82,6 +90,8 @@ const getOrCreateBuyerLead = async (input: {
   sourceUrl: string | null;
   initialFilters: Record<string, unknown> | undefined;
   externalId?: string | null;
+  assignedAdminProfileId?: string | null;
+  assignee?: Record<string, unknown> | null;
 }): Promise<BuyerLeadRow> => {
   const fullName = [input.firstName, input.lastName].filter(Boolean).join(" ").trim() || input.email;
 
@@ -120,6 +130,7 @@ const getOrCreateBuyerLead = async (input: {
       sourceUrl: input.sourceUrl ?? metadata.sourceUrl ?? null,
       lastSignupAt: new Date().toISOString(),
       initialFilters: metadata.initialFilters ?? input.initialFilters ?? null,
+      assignee: input.assignee ?? metadata.assignee ?? null,
     };
 
     const { data: updated, error: updateError } = await supabaseAdmin
@@ -132,6 +143,10 @@ const getOrCreateBuyerLead = async (input: {
         // Attach the SweepBright id the first time; never overwrite an
         // already-linked external id.
         external_id: existing.external_id ?? input.externalId ?? null,
+        // Auto-assign only if the lead has no advisor yet (don't override a
+        // manual assignment).
+        assigned_admin_profile_id:
+          existing.assigned_admin_profile_id ?? input.assignedAdminProfileId ?? null,
         metadata: mergedMetadata,
         updated_at: new Date().toISOString(),
       })
@@ -147,6 +162,7 @@ const getOrCreateBuyerLead = async (input: {
     .insert({
       full_name: fullName,
       email: input.email,
+      assigned_admin_profile_id: input.assignedAdminProfileId ?? null,
       phone: input.phone,
       source: input.origin,
       contact_identity_id: input.contactIdentityId,
@@ -156,6 +172,7 @@ const getOrCreateBuyerLead = async (input: {
         rgpdAcceptedAt: input.rgpdAcceptedAt,
         sourceUrl: input.sourceUrl,
         initialFilters: input.initialFilters ?? null,
+        assignee: input.assignee ?? null,
       },
     })
     .select("*")
@@ -212,6 +229,8 @@ export const createBuyerSearchSignup = async (
     sourceUrl: input.sourceUrl ?? null,
     initialFilters: input.initialFilters,
     externalId: input.externalId ?? null,
+    assignedAdminProfileId: input.assignedAdminProfileId ?? null,
+    assignee: input.assignee ?? null,
   });
 
   const clientProfileResult = await createClientProfile({

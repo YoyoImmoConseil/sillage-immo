@@ -53,6 +53,20 @@ module.exports = {
       { key: 'occupancyStatus', label: "Statut d'occupation", type: 'string' },
       { key: 'estimatedPrice', label: 'Prix estimé (€)', type: 'number' },
       { key: 'message', label: 'Message / note', type: 'text' },
+      {
+        key: 'assigneeEmail',
+        label: 'Collaborateur — email',
+        type: 'string',
+        helpText:
+          'Email du collaborateur Sillage assigné (SweepBright assignee). Clé de rattachement la plus fiable.',
+      },
+      {
+        key: 'assigneeExternalId',
+        label: 'Collaborateur — ID SweepBright',
+        type: 'string',
+      },
+      { key: 'assigneeName', label: 'Collaborateur — nom', type: 'string' },
+      { key: 'assigneePhone', label: 'Collaborateur — téléphone', type: 'string' },
     ],
     perform,
     sample: {
@@ -60,11 +74,15 @@ module.exports = {
       sellerLeadId: '00000000-0000-0000-0000-000000000000',
       created: true,
       merged: false,
+      assignedAdminProfileId: null,
+      assigneeMatchedBy: null,
     },
     outputFields: [
       { key: 'sellerLeadId', label: 'ID lead vendeur Sillage' },
       { key: 'created', label: 'Créé (true) ou enrichi (false)', type: 'boolean' },
       { key: 'merged', label: 'Fusionné avec un lead existant', type: 'boolean' },
+      { key: 'assignedAdminProfileId', label: 'ID collaborateur assigné' },
+      { key: 'assigneeMatchedBy', label: 'Assignation par (email/id/nom)' },
     ],
   },
 };

@@ -56,6 +56,22 @@ deal SweepBright) sur tous les Zaps du cycle de vie pour qu'ils mettent à jour
 la même transaction. Le prix/m² des observations est **calculé côté serveur**
 (fournis `pricePerM2`, ou `estimatedPrice` + `livingAreaM2`).
 
+## Rattachement au collaborateur (assignee SweepBright)
+
+Les actions lead acquéreur / lead vendeur / transaction exposent des champs
+`assignee*` pour rattacher l'enregistrement au bon collaborateur Sillage :
+
+- `assigneeEmail` → match sur `admin_profiles.email` (le plus fiable)
+- `assigneeExternalId` → match sur `admin_profiles.metadata.sweepbright_user_id`
+- `assigneeName` → match sur `admin_profiles.full_name`
+
+Mappe au minimum l'**email** de l'assignee SweepBright. Si aucun collaborateur
+ne correspond, l'enregistrement est créé **non assigné** mais les indices bruts
+sont conservés dans `metadata.assignee` pour un rattachement manuel.
+
+Pour utiliser `assigneeExternalId`, renseigne l'ID utilisateur SweepBright dans
+le profil du collaborateur côté Sillage (`admin_profiles.metadata.sweepbright_user_id`).
+
 ## 1. Générer une clé API
 
 Dans le back-office Sillage Immo : **/admin/mcp-keys** → bouton

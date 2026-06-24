@@ -11,6 +11,11 @@ import {
   type UpdateTransactionInput,
 } from "@/services/transactions/transaction.service";
 import { findPropertyBySweepBrightId } from "@/services/properties/property-visit.service";
+import {
+  assigneeMetadata,
+  resolveAssignee,
+  type ResolvedAssignee,
+} from "@/lib/integrations/assignee";
 import { TRANSACTION_STATUSES } from "@/types/domain/transactions";
 
 export const runtime = "nodejs";
@@ -32,6 +37,12 @@ const bodySchema = z.object({
   // column on transactions).
   mandateType: z.enum(["exclusive", "simple"]).optional(),
   assignedAdminProfileId: z.string().uuid().optional().nullable(),
+  // SweepBright assignee → resolved to a Sillage collaborator when no explicit
+  // assignedAdminProfileId is given.
+  assigneeEmail: z.string().trim().max(240).optional().nullable(),
+  assigneeExternalId: z.string().trim().max(120).optional().nullable(),
+  assigneeName: z.string().trim().max(240).optional().nullable(),
+  assigneePhone: z.string().trim().max(60).optional().nullable(),
   mandatePriceAmount: moneyAmount.optional().nullable(),
   agreedPriceAmount: moneyAmount.optional().nullable(),
   deedPriceAmount: moneyAmount.optional().nullable(),
@@ -91,11 +102,25 @@ export const POST = async (request: Request) => {
       }
     }
 
+    // Resolve the assignee to a Sillage collaborator unless an explicit
+    // admin profile id was provided.
+    const hints = {
+      email: b.assigneeEmail,
+      externalId: b.assigneeExternalId,
+      name: b.assigneeName,
+      phone: b.assigneePhone,
+    };
+    const resolved: ResolvedAssignee = b.assignedAdminProfileId
+      ? { adminProfileId: b.assignedAdminProfileId, matchedBy: null }
+      : await resolveAssignee(hints);
+    const assignee = assigneeMetadata(hints, resolved);
+
     // Capture provenance fields that have no dedicated column in metadata.
     const extraMetadata: Record<string, unknown> = { ...(b.metadata ?? {}) };
     if (b.mandateType) extraMetadata.mandateType = b.mandateType;
     if (b.sweepbrightPropertyId)
       extraMetadata.sweepbrightPropertyId = b.sweepbrightPropertyId;
+    if (assignee) extraMetadata.assignee = assignee;
     const hasExtraMetadata = Object.keys(extraMetadata).length > 0;
 
     const existingId = b.externalId
@@ -136,6 +161,8 @@ export const POST = async (request: Request) => {
         ok: true,
         transactionId: existingId,
         created: false,
+        assignedAdminProfileId: resolved.adminProfileId,
+        assigneeMatchedBy: resolved.matchedBy,
       });
     }
 
@@ -146,7 +173,7 @@ export const POST = async (request: Request) => {
       status: b.status as CreateTransactionInput["status"],
       currency: b.currency,
       propertyId: resolvedPropertyId ?? null,
-      assignedAdminProfileId: b.assignedAdminProfileId ?? null,
+      assignedAdminProfileId: resolved.adminProfileId ?? null,
       mandatePriceAmount: b.mandatePriceAmount ?? null,
       agreedPriceAmount: b.agreedPriceAmount ?? null,
       deedPriceAmount: b.deedPriceAmount ?? null,
@@ -164,7 +191,13 @@ export const POST = async (request: Request) => {
     const { id } = await createTransaction(input);
 
     return NextResponse.json(
-      { ok: true, transactionId: id, created: true },
+      {
+        ok: true,
+        transactionId: id,
+        created: true,
+        assignedAdminProfileId: resolved.adminProfileId,
+        assigneeMatchedBy: resolved.matchedBy,
+      },
       { status: 201 }
     );
   } catch (error) {

@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Wiring tests for the integrations endpoints: auth is stubbed OK, services
 // are mocked, and we assert zod validation + the field mapping (externalId,
@@ -45,12 +45,23 @@ vi.mock("@/services/properties/property-visit.service", () => ({
   findPropertyBySweepBrightId: (id: string) => findPropertyBySweepBrightId(id),
 }));
 
+const resolveAssignee = vi.fn();
+vi.mock("@/lib/integrations/assignee", () => ({
+  resolveAssignee: (h: unknown) => resolveAssignee(h),
+  assigneeMetadata: (hints: Record<string, unknown>) =>
+    Object.keys(hints).some((k) => hints[k]) ? { ...hints } : undefined,
+}));
+
 const post = (path: string, body: unknown) =>
   new Request(`http://localhost${path}`, {
     method: "POST",
     headers: { "content-type": "application/json", authorization: "Bearer sk_mcp_x" },
     body: JSON.stringify(body),
   });
+
+beforeEach(() => {
+  resolveAssignee.mockResolvedValue({ adminProfileId: null, matchedBy: null });
+});
 
 afterEach(() => {
   vi.clearAllMocks();
@@ -140,6 +151,36 @@ describe("POST /api/integrations/v1/buyer-leads", () => {
     const arg = createBuyerSearchSignup.mock.calls[0][0];
     expect(arg.criteria.livingAreaMin).toBe(74);
     expect(arg.criteria.budgetMax).toBe(241501);
+  });
+
+  it("assigns the resolved collaborator from the SweepBright assignee (201)", async () => {
+    resolveAssignee.mockResolvedValue({
+      adminProfileId: "admin-42",
+      matchedBy: "email",
+    });
+    createBuyerSearchSignup.mockResolvedValue({
+      buyerLeadId: "bl-3",
+      clientProjectId: "cp-3",
+      buyerSearchProfileId: "bsp-3",
+    });
+    const { POST } = await import("@/app/api/integrations/v1/buyer-leads/route");
+    const res = await POST(
+      post("/api/integrations/v1/buyer-leads", {
+        email: "b3@example.com",
+        rgpdAccepted: true,
+        assigneeEmail: "agent@sillage-immo.com",
+        criteria: { businessType: "sale", cities: ["Nice"], propertyTypes: [] },
+      })
+    );
+    expect(res.status).toBe(201);
+    expect(resolveAssignee).toHaveBeenCalledWith(
+      expect.objectContaining({ email: "agent@sillage-immo.com" })
+    );
+    const arg = createBuyerSearchSignup.mock.calls[0][0];
+    expect(arg.assignedAdminProfileId).toBe("admin-42");
+    const body = await res.json();
+    expect(body.assignedAdminProfileId).toBe("admin-42");
+    expect(body.assigneeMatchedBy).toBe("email");
   });
 });
 

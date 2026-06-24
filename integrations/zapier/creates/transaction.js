@@ -84,16 +84,34 @@ module.exports = {
       { key: 'preliminarySaleSignedAt', label: 'Date compromis', type: 'datetime' },
       { key: 'deedSignedAt', label: 'Date acte authentique', type: 'datetime' },
       { key: 'notes', label: 'Notes', type: 'text' },
+      {
+        key: 'assigneeEmail',
+        label: 'Collaborateur — email',
+        type: 'string',
+        helpText:
+          'Email du collaborateur Sillage assigné (SweepBright assignee). Rattachement automatique à la création.',
+      },
+      {
+        key: 'assigneeExternalId',
+        label: 'Collaborateur — ID SweepBright',
+        type: 'string',
+      },
+      { key: 'assigneeName', label: 'Collaborateur — nom', type: 'string' },
+      { key: 'assigneePhone', label: 'Collaborateur — téléphone', type: 'string' },
     ],
     perform,
     sample: {
       ok: true,
       transactionId: '00000000-0000-0000-0000-000000000000',
       created: true,
+      assignedAdminProfileId: null,
+      assigneeMatchedBy: null,
     },
     outputFields: [
       { key: 'transactionId', label: 'ID transaction Sillage' },
       { key: 'created', label: 'Créée (true) ou mise à jour (false)', type: 'boolean' },
+      { key: 'assignedAdminProfileId', label: 'ID collaborateur assigné' },
+      { key: 'assigneeMatchedBy', label: 'Assignation par (email/id/nom)' },
     ],
   },
 };
