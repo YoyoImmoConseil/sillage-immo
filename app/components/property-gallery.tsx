@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { AppLocale } from "@/lib/i18n/config";
 import type { PropertyMediaSnapshot } from "@/types/domain/properties";
 import { ListingStatusBanner } from "./listing-status-banner";
@@ -90,6 +90,10 @@ export function PropertyGallery({
   const [activeIndex, setActiveIndex] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const safeActiveIndex = activeIndex >= validImages.length ? 0 : activeIndex;
+  // Swipe tactile mobile : on mémorise le point de départ et on signale qu'un
+  // swipe a eu lieu pour ne pas déclencher le plein écran sur un balayage.
+  const touchStartXRef = useRef<number | null>(null);
+  const swipedRef = useRef(false);
 
   useEffect(() => {
     if (!isFullscreen) return;
@@ -155,11 +159,36 @@ export function PropertyGallery({
           role="button"
           tabIndex={0}
           aria-label={copy.fullscreen}
-          onClick={() => setIsFullscreen(true)}
+          onClick={() => {
+            // Un swipe ne doit pas ouvrir le plein écran : on absorbe le clic
+            // synthétique généré juste après un balayage tactile.
+            if (swipedRef.current) {
+              swipedRef.current = false;
+              return;
+            }
+            setIsFullscreen(true);
+          }}
           onKeyDown={(event) => {
             if (event.key === "Enter" || event.key === " ") {
               event.preventDefault();
               setIsFullscreen(true);
+            }
+          }}
+          onTouchStart={(event) => {
+            touchStartXRef.current = event.touches[0]?.clientX ?? null;
+            swipedRef.current = false;
+          }}
+          onTouchEnd={(event) => {
+            const startX = touchStartXRef.current;
+            touchStartXRef.current = null;
+            if (startX === null || validImages.length < 2) return;
+            const deltaX = (event.changedTouches[0]?.clientX ?? startX) - startX;
+            if (Math.abs(deltaX) < 40) return;
+            swipedRef.current = true;
+            if (deltaX < 0) {
+              goNext();
+            } else {
+              goPrev();
             }
           }}
         >
@@ -253,7 +282,24 @@ export function PropertyGallery({
               {copy.close}
             </button>
           </div>
-          <div className="relative flex h-[calc(100vh-6rem)] items-center justify-center">
+          <div
+            className="relative flex h-[calc(100vh-6rem)] items-center justify-center"
+            onTouchStart={(event) => {
+              touchStartXRef.current = event.touches[0]?.clientX ?? null;
+            }}
+            onTouchEnd={(event) => {
+              const startX = touchStartXRef.current;
+              touchStartXRef.current = null;
+              if (startX === null || validImages.length < 2) return;
+              const deltaX = (event.changedTouches[0]?.clientX ?? startX) - startX;
+              if (Math.abs(deltaX) < 40) return;
+              if (deltaX < 0) {
+                goNext();
+              } else {
+                goPrev();
+              }
+            }}
+          >
             {adjacentIndices.map((index) => {
               const image = validImages[index];
               const url = getImageUrl(image);

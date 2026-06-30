@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
 import { Libre_Baskerville, Montserrat, Open_Sans } from "next/font/google";
 import localFont from "next/font/local";
@@ -60,6 +60,13 @@ export const metadata: Metadata = {
     shortcut: "/icon.png",
     apple: "/icon.png",
   },
+};
+
+// Responsive mobile-first : on conserve explicitement le viewport logique
+// (largeur du device, échelle initiale 1) pour un rendu correct sur smartphone.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default async function RootLayout({

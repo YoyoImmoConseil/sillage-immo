@@ -62,16 +62,19 @@ export function PropertyEnergyScale({
           <p className="text-sm font-semibold text-navy">
             {typeof value === "number" ? `${Math.round(value)} ${unit}` : label ?? "-"}
           </p>
+          {/* Légende masquée sur mobile (étiquette compacte) pour gagner de la
+              hauteur ; réaffichée à partir de 768px. */}
           {!compact ? (
-            <p className="text-xs text-navy/65">{PROVIDER_CAPTIONS[locale]}</p>
+            <p className="hidden text-xs text-navy/65 md:block">{PROVIDER_CAPTIONS[locale]}</p>
           ) : null}
         </div>
       </div>
+      {/* Échelle A→G : hauteur réduite sur mobile (compact), pleine à ≥ 768px. */}
       <div className="mt-3 grid grid-cols-7 gap-1">
         {letters.map((entry) => (
           <div
             key={entry}
-            className={`flex h-6 items-center justify-center rounded text-[10px] font-semibold text-white ${energyColor(entry)} ${
+            className={`flex h-4 items-center justify-center rounded text-[10px] font-semibold text-white md:h-6 ${energyColor(entry)} ${
               label?.toUpperCase() === entry ? "ring-2 ring-navy" : ""
             }`}
           >

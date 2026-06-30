@@ -107,6 +107,9 @@ export async function PublicListingDetailPage({
       lotCount: "🏢 Nombre de lots",
       annualCharges: "🧾 Charges annuelles",
       city: "🏙️ Ville",
+      roomsShort: "pièces",
+      requestVisit: "Demander une visite",
+      callAction: "Appeler",
     },
     en: {
       back: "Back to listings",
@@ -153,6 +156,9 @@ export async function PublicListingDetailPage({
       lotCount: "🏢 Number of lots",
       annualCharges: "🧾 Annual charges",
       city: "🏙️ City",
+      roomsShort: "rooms",
+      requestVisit: "Request a viewing",
+      callAction: "Call",
     },
     es: {
       back: "Volver al catálogo",
@@ -199,6 +205,9 @@ export async function PublicListingDetailPage({
       lotCount: "🏢 Número de lotes",
       annualCharges: "🧾 Cargas anuales",
       city: "🏙️ Ciudad",
+      roomsShort: "estancias",
+      requestVisit: "Solicitar visita",
+      callAction: "Llamar",
     },
     ru: {
       back: "Назад к каталогу",
@@ -245,6 +254,9 @@ export async function PublicListingDetailPage({
       lotCount: "🏢 Количество лотов",
       annualCharges: "🧾 Годовые расходы",
       city: "🏙️ Город",
+      roomsShort: "комн.",
+      requestVisit: "Записаться на просмотр",
+      callAction: "Позвонить",
     },
   }[locale];
   // Localized, marketing-safe label (`Disponible`, `Sous Compromis`, `Sous Offre`, ...).
@@ -304,10 +316,49 @@ export async function PublicListingDetailPage({
   const hasLocationMap =
     typeof listing.property.address.latitude === "number" && typeof listing.property.address.longitude === "number";
 
+  const listingTitle = listing.title ?? copy.propertyFallback;
+  const priceLabel = formatListingPrice({
+    amount: listing.priceAmount,
+    currency: listing.priceCurrency,
+  });
+  // Ligne condensée du bloc résumé mobile : Carrez · pièces · ville.
+  const summaryMeta = [
+    typeof listing.property.surfaces.loiCarrezArea === "number"
+      ? `${Math.round(listing.property.surfaces.loiCarrezArea)} m²`
+      : null,
+    typeof listing.property.rooms.roomCount === "number"
+      ? `${listing.property.rooms.roomCount} ${copy.roomsShort}`
+      : null,
+    listing.city,
+  ]
+    .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+    .join(" · ");
+  // CTA « Demander une visite » → WhatsApp vers l'interlocuteur, message
+  // pré-rempli avec le titre du bien. Numéro normalisé (on retire +, espaces,
+  // points, tirets, parenthèses). Repli si numéro absent : tel: puis ancre vers
+  // le bloc interlocuteur — le bouton n'est jamais inerte.
+  const contactPhone =
+    typeof contact.phone === "string" && contact.phone.trim() ? contact.phone.trim() : null;
+  const whatsappNumber = contactPhone ? contactPhone.replace(/\D/g, "") : "";
+  const visitMessage = {
+    fr: `Bonjour, je suis intéressé(e) par le bien ${listingTitle} et souhaite organiser une visite.`,
+    en: `Hello, I'm interested in the property ${listingTitle} and would like to arrange a viewing.`,
+    es: `Hola, estoy interesado/a en el inmueble ${listingTitle} y deseo organizar una visita.`,
+    ru: `Здравствуйте, меня интересует объект ${listingTitle}, и я хотел(а) бы организовать просмотр.`,
+  }[locale];
+  const whatsappHref = whatsappNumber
+    ? `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(visitMessage)}`
+    : null;
+  const visitHref = whatsappHref ?? (contactPhone ? `tel:${contactPhone}` : "#interlocuteur");
+  const visitOpensWhatsApp = Boolean(whatsappHref);
+
   return (
     <main className="min-h-screen">
+      {/* En-tête de marque. Sur mobile (< 768px) on n'affiche que la flèche
+          retour : le titre et le prix descendent dans le bloc résumé compact
+          placé juste sous la photo, pour que la photo occupe le premier écran. */}
       <section className="bg-navy text-sand">
-        <div className="w-full px-6 pb-8 pt-4 md:px-10 md:pb-8 md:pt-3 xl:px-14 2xl:px-20 space-y-3">
+        <div className="w-full px-4 pb-4 pt-3 md:px-10 md:pb-8 xl:px-14 2xl:px-20 space-y-3">
           <Link
             href={localizePath(listing.businessType === "sale" ? "/vente" : "/location", locale)}
             className="inline-flex text-xl leading-none"
@@ -315,36 +366,55 @@ export async function PublicListingDetailPage({
           >
             ←
           </Link>
-          <div className="space-y-2">
-            <h1 className="sillage-section-title text-sand">
-              {listing.title ?? copy.propertyFallback}
-            </h1>
+          <div className="hidden space-y-2 md:block">
+            <h1 className="sillage-section-title text-sand">{listingTitle}</h1>
             <p className="text-sm text-sand/80">
               {[listing.city, listing.postalCode].filter(Boolean).join(" • ")}
             </p>
-            <p className="text-2xl font-semibold">
-              {formatListingPrice({
-                amount: listing.priceAmount,
-                currency: listing.priceCurrency,
-              })}
-            </p>
+            <p className="text-2xl font-semibold">{priceLabel}</p>
             {feeMention ? <p className="text-sm text-sand/80">{feeMention}</p> : null}
           </div>
         </div>
       </section>
 
       <section className="bg-sand text-navy">
-        <div className="w-full px-6 py-8 md:px-10 xl:px-14 2xl:px-20 grid gap-8 lg:grid-cols-[1.6fr_0.9fr]">
-          <div className="space-y-6">
-            <PropertyGallery
-              images={gallery}
-              title={listing.title ?? copy.propertyFallback}
-              showThumbnails={false}
-              availabilityStatus={listing.property.availabilityStatus}
-              locale={locale}
-            />
+        {/*
+          Conteneur de contenu responsive (mobile-first) :
+          - MOBILE (< 768px) : flex colonne ; chaque bloc est ordonné via `order-*`
+            (les deux conteneurs colonnes passent en display:contents pour devenir
+            des items frères réordonnables). pb mobile pour la barre collante.
+          - INTERMÉDIAIRE (≥ 768px) : grille 2 colonnes ; placement par
+            `md:col-start-*` + `md:order-*` (Description et Caractéristiques inversées).
+          - GRAND ÉCRAN (≥ 1665px) : les conteneurs redeviennent des colonnes flex
+            indépendantes → mise en page identique à l'origine (order réinitialisé).
+        */}
+        <div className="w-full px-4 pb-28 pt-6 md:grid md:grid-cols-[1.6fr_0.9fr] md:items-start md:gap-8 md:px-10 md:pb-8 md:pt-8 xl:px-14 2xl:px-20 flex flex-col gap-6">
+          <div className="contents min-[1665px]:flex min-[1665px]:flex-col min-[1665px]:gap-6">
+            {/* Galerie : photo principale plein écran (swipe au doigt sur mobile) */}
+            <div className="order-1 md:order-1 md:col-start-1 min-[1665px]:order-none">
+              <PropertyGallery
+                images={gallery}
+                title={listingTitle}
+                showThumbnails={false}
+                availabilityStatus={listing.property.availabilityStatus}
+                locale={locale}
+              />
+            </div>
 
-            <section className="grid gap-4 lg:grid-cols-2">
+            {/* MOBILE — bloc résumé compact, toujours juste sous la photo
+                (au-dessus de la ligne de flottaison). Hiérarchie : prix = plus
+                gros texte de la page, puis Carrez · pièces · ville, titre réduit. */}
+            <section className="order-2 space-y-1 md:hidden">
+              <p className="sillage-section-title-font line-clamp-2 text-base font-semibold leading-snug">
+                {listingTitle}
+              </p>
+              <p className="text-3xl font-bold leading-tight">{priceLabel}</p>
+              {feeMention ? <p className="text-xs opacity-70">{feeMention}</p> : null}
+              {summaryMeta ? <p className="text-sm opacity-70">{summaryMeta}</p> : null}
+            </section>
+
+            {/* Étiquettes DPE / GES (version compacte sur mobile) */}
+            <section className="order-7 grid gap-4 sm:grid-cols-2 md:order-3 md:col-start-1 min-[1665px]:order-none">
               <PropertyEnergyScale
                 title="⚡ DPE"
                 value={listing.property.energy.dpeValue}
@@ -361,9 +431,13 @@ export async function PublicListingDetailPage({
               />
             </section>
 
-            <section className="rounded-2xl border border-[rgba(20,20,70,0.18)] p-6 space-y-4">
+            {/* Caractéristiques détaillées. Grille compacte 2 colonnes
+                (scannable d'un coup d'œil sur mobile). Ordre orienté
+                conversion : surfaces puis critères les plus vendeurs
+                (exposition, parking, balcon, terrasse, cave, vue mer) en tête. */}
+            <section className="order-5 rounded-2xl border border-[rgba(20,20,70,0.18)] p-6 space-y-4 md:order-8 md:col-start-2 min-[1665px]:order-none">
               <h2 className="sillage-section-title">{copy.features}</h2>
-              <dl className="grid gap-3 text-sm sm:grid-cols-2 xl:grid-cols-3">
+              <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm xl:grid-cols-3">
                 <div>
                   <dt className="opacity-65">{copy.livingArea}</dt>
                   <dd>
@@ -381,52 +455,8 @@ export async function PublicListingDetailPage({
                   </dd>
                 </div>
                 <div>
-                  <dt className="opacity-65">{copy.bedrooms}</dt>
-                  <dd>{typeof listing.bedrooms === "number" ? listing.bedrooms : "-"}</dd>
-                </div>
-                <div>
-                  <dt className="opacity-65">{copy.livingRooms}</dt>
-                  <dd>
-                    {typeof listing.property.rooms.livingRooms === "number"
-                      ? listing.property.rooms.livingRooms
-                      : "-"}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="opacity-65">{copy.livingRoomArea}</dt>
-                  <dd>
-                    {typeof listing.property.surfaces.livingRoomArea === "number"
-                      ? `${Math.round(listing.property.surfaces.livingRoomArea)} m²`
-                      : "-"}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="opacity-65">{copy.floor}</dt>
-                  <dd>{floorLabel}</dd>
-                </div>
-                <div>
-                  <dt className="opacity-65">{copy.topFloor}</dt>
-                  <dd>
-                    {listing.property.rooms.isTopFloor === null
-                      ? "-"
-                      : listing.property.rooms.isTopFloor
-                        ? copy.yes
-                        : copy.no}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="opacity-65">{copy.elevator}</dt>
-                  <dd>{listing.property.amenities.hasElevator ? copy.yes : copy.no}</dd>
-                </div>
-                <div>
-                  <dt className="opacity-65">{copy.cellar}</dt>
-                  <dd>
-                    {listing.property.amenities.hasCellar === null
-                      ? "-"
-                      : listing.property.amenities.hasCellar
-                        ? copy.yes
-                        : copy.no}
-                  </dd>
+                  <dt className="opacity-65">{copy.exposure}</dt>
+                  <dd>{getExposureLabel(listing.property.amenities.exposure, locale) ?? "-"}</dd>
                 </div>
                 <div>
                   <dt className="opacity-65">{copy.parking}</dt>
@@ -455,12 +485,56 @@ export async function PublicListingDetailPage({
                   </div>
                 ) : null}
                 <div>
-                  <dt className="opacity-65">{copy.exposure}</dt>
-                  <dd>{getExposureLabel(listing.property.amenities.exposure, locale) ?? "-"}</dd>
+                  <dt className="opacity-65">{copy.cellar}</dt>
+                  <dd>
+                    {listing.property.amenities.hasCellar === null
+                      ? "-"
+                      : listing.property.amenities.hasCellar
+                        ? copy.yes
+                        : copy.no}
+                  </dd>
                 </div>
                 <div>
                   <dt className="opacity-65">{copy.seaView}</dt>
                   <dd>{getSeaViewLabel(listing.property.amenities.seaView, locale) ?? copy.no}</dd>
+                </div>
+                <div>
+                  <dt className="opacity-65">{copy.floor}</dt>
+                  <dd>{floorLabel}</dd>
+                </div>
+                <div>
+                  <dt className="opacity-65">{copy.topFloor}</dt>
+                  <dd>
+                    {listing.property.rooms.isTopFloor === null
+                      ? "-"
+                      : listing.property.rooms.isTopFloor
+                        ? copy.yes
+                        : copy.no}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="opacity-65">{copy.elevator}</dt>
+                  <dd>{listing.property.amenities.hasElevator ? copy.yes : copy.no}</dd>
+                </div>
+                <div>
+                  <dt className="opacity-65">{copy.bedrooms}</dt>
+                  <dd>{typeof listing.bedrooms === "number" ? listing.bedrooms : "-"}</dd>
+                </div>
+                <div>
+                  <dt className="opacity-65">{copy.livingRooms}</dt>
+                  <dd>
+                    {typeof listing.property.rooms.livingRooms === "number"
+                      ? listing.property.rooms.livingRooms
+                      : "-"}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="opacity-65">{copy.livingRoomArea}</dt>
+                  <dd>
+                    {typeof listing.property.surfaces.livingRoomArea === "number"
+                      ? `${Math.round(listing.property.surfaces.livingRoomArea)} m²`
+                      : "-"}
+                  </dd>
                 </div>
                 <div>
                   <dt className="opacity-65">{copy.generalCondition}</dt>
@@ -474,7 +548,7 @@ export async function PublicListingDetailPage({
             </section>
 
             {hasLocationMap ? (
-              <section className="rounded-2xl border border-[rgba(20,20,70,0.18)] p-6 space-y-4">
+              <section className="order-9 rounded-2xl border border-[rgba(20,20,70,0.18)] p-6 space-y-4 md:order-7 md:col-start-1 min-[1665px]:order-none">
                 <h2 className="sillage-section-title">{copy.location}</h2>
                 <PropertyLocationMap
                   latitude={listing.property.address.latitude}
@@ -486,7 +560,7 @@ export async function PublicListingDetailPage({
             ) : null}
 
             {gallery.length > 1 ? (
-              <section className="rounded-2xl border border-[rgba(20,20,70,0.18)] p-6 space-y-4">
+              <section className="order-10 rounded-2xl border border-[rgba(20,20,70,0.18)] p-6 space-y-4 md:order-9 md:col-start-1 min-[1665px]:order-none">
                 <h2 className="sillage-section-title">{copy.photos}</h2>
                 <div className="grid gap-3 grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
                   {gallery.map((image, index) =>
@@ -508,8 +582,11 @@ export async function PublicListingDetailPage({
             ) : null}
           </div>
 
-          <aside className="space-y-6">
-            <section className="rounded-2xl bg-navy p-6 text-sand space-y-3">
+          <aside className="contents min-[1665px]:flex min-[1665px]:flex-col min-[1665px]:gap-6">
+            <section
+              id="interlocuteur"
+              className="order-6 rounded-2xl bg-navy p-6 text-sand space-y-3 md:order-2 md:col-start-2 min-[1665px]:order-none scroll-mt-20"
+            >
               <h2 className="sillage-section-title text-sand">{copy.contact}</h2>
               {contactAvatarUrl ? (
                 <img
@@ -533,21 +610,37 @@ export async function PublicListingDetailPage({
               ) : null}
             </section>
 
+            {/* Visite virtuelle Matterport remontée haut de page sur mobile
+                (juste après le résumé/photos) — libellé incitatif + icône. */}
             {listing.property.virtualTourUrl ? (
-              <section className="rounded-2xl border border-[rgba(20,20,70,0.18)] p-6 space-y-2">
+              <section className="order-3 rounded-2xl border border-[rgba(20,20,70,0.18)] p-6 space-y-2 md:order-4 md:col-start-2 min-[1665px]:order-none">
                 <h2 className="sillage-section-title">{copy.virtualTour}</h2>
                 <a
                   href={listing.property.virtualTourUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="sillage-btn inline-block rounded px-4 py-2 text-sm"
+                  className="sillage-btn inline-flex items-center gap-2 rounded px-4 py-2 text-sm"
                 >
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 24 24"
+                    className="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M12 3 3 7.5 12 12l9-4.5L12 3Z" />
+                    <path d="M3 7.5v9L12 21l9-4.5v-9" />
+                    <path d="M12 12v9" />
+                  </svg>
                   {copy.openMatterport}
                 </a>
               </section>
             ) : null}
 
-            <section className="rounded-2xl border border-[rgba(20,20,70,0.18)] p-6 space-y-4">
+            <section className="order-8 rounded-2xl border border-[rgba(20,20,70,0.18)] p-6 space-y-4 md:order-6 md:col-start-2 min-[1665px]:order-none">
               <h2 className="sillage-section-title">{copy.highlights}</h2>
               <dl className="grid gap-3 text-sm sm:grid-cols-2">
                 <div>
@@ -601,7 +694,10 @@ export async function PublicListingDetailPage({
               </dl>
             </section>
 
-            <section className="rounded-2xl border border-[rgba(20,20,70,0.18)] p-6 space-y-3">
+            {/* Description détaillée. Sur mobile et en intermédiaire (768–1664px)
+                elle passe AVANT les Caractéristiques (col. 1) ; à ≥ 1665px elle
+                reprend sa place d'origine (colonne de droite). */}
+            <section className="order-4 rounded-2xl border border-[rgba(20,20,70,0.18)] p-6 space-y-3 md:order-5 md:col-start-1 min-[1665px]:order-none">
               <h2 className="sillage-section-title">{copy.description}</h2>
               <p className="sillage-editorial-text opacity-85">
                 {listing.property.description ?? copy.descriptionFallback}
@@ -609,7 +705,7 @@ export async function PublicListingDetailPage({
             </section>
 
             {listing.property.videoUrl ? (
-              <section className="rounded-2xl border border-[rgba(20,20,70,0.18)] p-6 space-y-2">
+              <section className="order-11 rounded-2xl border border-[rgba(20,20,70,0.18)] p-6 space-y-2 md:order-10 md:col-start-2 min-[1665px]:order-none">
                 <h2 className="sillage-section-title">{copy.video}</h2>
                 <a
                   href={listing.property.videoUrl}
@@ -622,6 +718,30 @@ export async function PublicListingDetailPage({
               </section>
             ) : null}
           </aside>
+        </div>
+
+        {/* MOBILE — barre d'action collante en bas d'écran (conversion).
+            Bouton principal « Demander une visite » → WhatsApp vers
+            l'interlocuteur (repli tel: puis ancre). Bouton secondaire
+            « Appeler » → tel:. Hauteur tactile ≥ 48px, safe-area iOS respectée. */}
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[rgba(20,20,70,0.18)] bg-sand/95 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur md:hidden">
+          <div className="flex items-center gap-3">
+            <a
+              href={visitHref}
+              {...(visitOpensWhatsApp ? { target: "_blank", rel: "noreferrer" } : {})}
+              className="inline-flex min-h-12 flex-1 items-center justify-center rounded-full bg-navy px-5 text-sm font-semibold text-sand"
+            >
+              {copy.requestVisit}
+            </a>
+            {contactPhone ? (
+              <a
+                href={`tel:${contactPhone}`}
+                className="inline-flex min-h-12 items-center justify-center rounded-full border border-navy px-5 text-sm font-semibold text-navy"
+              >
+                {copy.callAction}
+              </a>
+            ) : null}
+          </div>
         </div>
       </section>
     </main>
