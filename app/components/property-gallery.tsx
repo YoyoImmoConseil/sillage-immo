@@ -135,10 +135,34 @@ export function PropertyGallery({
     setActiveIndex((current) => (current + 1) % validImages.length);
   };
 
+  // Indices of the active image and its neighbours, deduplicated. Rendering the
+  // neighbours (hidden) inside the fullscreen viewer keeps them warm in the
+  // browser/Next image cache so navigation is instant instead of re-fetching a
+  // fresh 100vw variant on every arrow press.
+  const adjacentIndices = Array.from(
+    new Set(
+      [safeActiveIndex - 1, safeActiveIndex, safeActiveIndex + 1].map(
+        (index) => (index + validImages.length) % validImages.length
+      )
+    )
+  );
+
   return (
     <>
       <section className="space-y-4">
-        <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-[rgba(20,20,70,0.18)] bg-[rgba(20,20,70,0.05)]">
+        <div
+          className="group relative aspect-[4/3] cursor-zoom-in overflow-hidden rounded-2xl border border-[rgba(20,20,70,0.18)] bg-[rgba(20,20,70,0.05)]"
+          role="button"
+          tabIndex={0}
+          aria-label={copy.fullscreen}
+          onClick={() => setIsFullscreen(true)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              setIsFullscreen(true);
+            }
+          }}
+        >
           <Image
             src={activeUrl}
             alt={activeImage.description ?? title}
@@ -154,7 +178,10 @@ export function PropertyGallery({
               <button
                 type="button"
                 className="absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-[rgba(20,20,70,0.7)] text-lg text-white"
-                onClick={goPrev}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  goPrev();
+                }}
                 aria-label={copy.previousPhoto}
               >
                 ‹
@@ -162,7 +189,10 @@ export function PropertyGallery({
               <button
                 type="button"
                 className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-[rgba(20,20,70,0.7)] text-lg text-white"
-                onClick={goNext}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  goNext();
+                }}
                 aria-label={copy.nextPhoto}
               >
                 ›
@@ -173,13 +203,6 @@ export function PropertyGallery({
             <span className="rounded-full bg-[rgba(20,20,70,0.7)] px-3 py-1 text-xs text-white">
               {safeActiveIndex + 1} / {validImages.length}
             </span>
-            <button
-              type="button"
-              className="rounded-full bg-[rgba(20,20,70,0.7)] px-3 py-1 text-xs text-white"
-              onClick={() => setIsFullscreen(true)}
-            >
-              {copy.fullscreen}
-            </button>
           </div>
         </div>
 
@@ -231,14 +254,27 @@ export function PropertyGallery({
             </button>
           </div>
           <div className="relative flex h-[calc(100vh-6rem)] items-center justify-center">
-            <Image
-              src={activeUrl}
-              alt={activeImage.description ?? title}
-              fill
-              sizes="100vw"
-              className="rounded-2xl object-contain"
-              unoptimized={!shouldOptimizeImage(activeImage)}
-            />
+            {adjacentIndices.map((index) => {
+              const image = validImages[index];
+              const url = getImageUrl(image);
+              if (!url) return null;
+              const isActive = index === safeActiveIndex;
+              return (
+                <Image
+                  key={image.id}
+                  src={url}
+                  alt={image.description ?? title}
+                  fill
+                  sizes="100vw"
+                  priority={isActive}
+                  aria-hidden={!isActive}
+                  className={`rounded-2xl object-contain transition-opacity duration-150 ${
+                    isActive ? "opacity-100" : "opacity-0"
+                  }`}
+                  unoptimized={!shouldOptimizeImage(image)}
+                />
+              );
+            })}
             {validImages.length > 1 ? (
               <>
                 <button

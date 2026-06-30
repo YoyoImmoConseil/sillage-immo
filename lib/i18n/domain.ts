@@ -222,11 +222,14 @@ const GENERAL_CONDITION_LABELS: Record<string, Record<AppLocale, string>> = {
     es: "Buen estado",
     ru: "Хорошее состояние",
   },
+  // SweepBright's `fair` corresponds to the French agency label "À rafraîchir"
+  // (the 5-level FR scale is: poor=À rénover, fair=À rafraîchir, good=Bon état,
+  // mint=Comme neuf, new=Neuf).
   fair: {
-    fr: "État correct",
-    en: "Fair condition",
-    es: "Estado aceptable",
-    ru: "Удовлетворительное состояние",
+    fr: "À rafraîchir",
+    en: "To refresh",
+    es: "Para refrescar",
+    ru: "Косметический ремонт",
   },
   poor: {
     fr: "À rénover",

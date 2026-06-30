@@ -93,10 +93,14 @@ export async function PublicListingDetailPage({
       elevator: "🛗 Ascenseur",
       cellar: "🧱 Cave",
       terrace: "🌿 Terrasse",
+      terraceArea: "📐 Surface terrasse",
       balcony: "🌤️ Balcon",
+      balconyArea: "📐 Surface balcon",
+      parking: "🅿️ Parking / Garage",
+      balconyTerrace: "🌤️ Balcon / Terrasse",
       exposure: "☀️ Exposition",
       seaView: "🌊 Vue mer",
-      generalCondition: "🧭 Condition générale",
+      generalCondition: "🧭 État général",
       propertyType: "🏠 Typologie",
       loiCarrezArea: "📐 Surface Carrez",
       roomCount: "🛋️ Nombre de pièces",
@@ -135,7 +139,11 @@ export async function PublicListingDetailPage({
       elevator: "🛗 Elevator",
       cellar: "🧱 Cellar",
       terrace: "🌿 Terrace",
+      terraceArea: "📐 Terrace area",
       balcony: "🌤️ Balcony",
+      balconyArea: "📐 Balcony area",
+      parking: "🅿️ Parking / Garage",
+      balconyTerrace: "🌤️ Balcony / Terrace",
       exposure: "☀️ Exposure",
       seaView: "🌊 Sea view",
       generalCondition: "🧭 General condition",
@@ -177,7 +185,11 @@ export async function PublicListingDetailPage({
       elevator: "🛗 Ascensor",
       cellar: "🧱 Bodega",
       terrace: "🌿 Terraza",
+      terraceArea: "📐 Superficie terraza",
       balcony: "🌤️ Balcón",
+      balconyArea: "📐 Superficie balcón",
+      parking: "🅿️ Parking / Garaje",
+      balconyTerrace: "🌤️ Balcón / Terraza",
       exposure: "☀️ Orientación",
       seaView: "🌊 Vista al mar",
       generalCondition: "🧭 Estado general",
@@ -219,7 +231,11 @@ export async function PublicListingDetailPage({
       elevator: "🛗 Лифт",
       cellar: "🧱 Подвал",
       terrace: "🌿 Терраса",
+      terraceArea: "📐 Площадь террасы",
       balcony: "🌤️ Балкон",
+      balconyArea: "📐 Площадь балкона",
+      parking: "🅿️ Паркинг / Гараж",
+      balconyTerrace: "🌤️ Балкон / Терраса",
       exposure: "☀️ Ориентация",
       seaView: "🌊 Вид на море",
       generalCondition: "🧭 Общее состояние",
@@ -357,6 +373,14 @@ export async function PublicListingDetailPage({
                   </dd>
                 </div>
                 <div>
+                  <dt className="opacity-65">{copy.loiCarrezArea}</dt>
+                  <dd>
+                    {typeof listing.property.surfaces.loiCarrezArea === "number"
+                      ? `${Math.round(listing.property.surfaces.loiCarrezArea)} m²`
+                      : "-"}
+                  </dd>
+                </div>
+                <div>
                   <dt className="opacity-65">{copy.bedrooms}</dt>
                   <dd>{typeof listing.bedrooms === "number" ? listing.bedrooms : "-"}</dd>
                 </div>
@@ -392,13 +416,7 @@ export async function PublicListingDetailPage({
                 </div>
                 <div>
                   <dt className="opacity-65">{copy.elevator}</dt>
-                  <dd>
-                    {listing.property.amenities.hasElevator === null
-                      ? "-"
-                      : listing.property.amenities.hasElevator
-                        ? copy.yes
-                        : copy.no}
-                  </dd>
+                  <dd>{listing.property.amenities.hasElevator ? copy.yes : copy.no}</dd>
                 </div>
                 <div>
                   <dt className="opacity-65">{copy.cellar}</dt>
@@ -411,36 +429,38 @@ export async function PublicListingDetailPage({
                   </dd>
                 </div>
                 <div>
-                  <dt className="opacity-65">{copy.terrace}</dt>
-                  <dd>
-                    {listing.property.amenities.hasTerrace === null
-                      ? "-"
-                      : listing.property.amenities.hasTerrace
-                      ? typeof listing.property.surfaces.terraceArea === "number"
-                        ? `${copy.yes} • ${Math.round(listing.property.surfaces.terraceArea)} m²`
-                        : copy.yes
-                      : copy.no}
-                  </dd>
+                  <dt className="opacity-65">{copy.parking}</dt>
+                  <dd>{listing.property.amenities.hasParking ? copy.yes : copy.no}</dd>
                 </div>
                 <div>
                   <dt className="opacity-65">{copy.balcony}</dt>
-                  <dd>
-                    {listing.property.amenities.hasBalcony === null
-                      ? "-"
-                      : listing.property.amenities.hasBalcony
-                      ? typeof listing.property.surfaces.balconyArea === "number"
-                        ? `${copy.yes} • ${Math.round(listing.property.surfaces.balconyArea)} m²`
-                        : copy.yes
-                      : copy.no}
-                  </dd>
+                  <dd>{listing.property.amenities.hasBalcony ? copy.yes : copy.no}</dd>
                 </div>
+                {listing.property.amenities.hasBalcony &&
+                typeof listing.property.surfaces.balconyArea === "number" ? (
+                  <div>
+                    <dt className="opacity-65">{copy.balconyArea}</dt>
+                    <dd>{`${Math.round(listing.property.surfaces.balconyArea)} m²`}</dd>
+                  </div>
+                ) : null}
+                <div>
+                  <dt className="opacity-65">{copy.terrace}</dt>
+                  <dd>{listing.property.amenities.hasTerrace ? copy.yes : copy.no}</dd>
+                </div>
+                {listing.property.amenities.hasTerrace &&
+                typeof listing.property.surfaces.terraceArea === "number" ? (
+                  <div>
+                    <dt className="opacity-65">{copy.terraceArea}</dt>
+                    <dd>{`${Math.round(listing.property.surfaces.terraceArea)} m²`}</dd>
+                  </div>
+                ) : null}
                 <div>
                   <dt className="opacity-65">{copy.exposure}</dt>
                   <dd>{getExposureLabel(listing.property.amenities.exposure, locale) ?? "-"}</dd>
                 </div>
                 <div>
                   <dt className="opacity-65">{copy.seaView}</dt>
-                  <dd>{getSeaViewLabel(listing.property.amenities.seaView, locale) ?? "-"}</dd>
+                  <dd>{getSeaViewLabel(listing.property.amenities.seaView, locale) ?? copy.no}</dd>
                 </div>
                 <div>
                   <dt className="opacity-65">{copy.generalCondition}</dt>
@@ -545,6 +565,18 @@ export async function PublicListingDetailPage({
                 <div>
                   <dt className="opacity-65">{copy.roomCount}</dt>
                   <dd>{typeof listing.property.rooms.roomCount === "number" ? listing.property.rooms.roomCount : "-"}</dd>
+                </div>
+                <div>
+                  <dt className="opacity-65">{copy.parking}</dt>
+                  <dd>{listing.property.amenities.hasParking ? copy.yes : copy.no}</dd>
+                </div>
+                <div>
+                  <dt className="opacity-65">{copy.balconyTerrace}</dt>
+                  <dd>
+                    {listing.property.amenities.hasBalcony || listing.property.amenities.hasTerrace
+                      ? copy.yes
+                      : copy.no}
+                  </dd>
                 </div>
                 <div>
                   <dt className="opacity-65">{copy.lotCount}</dt>

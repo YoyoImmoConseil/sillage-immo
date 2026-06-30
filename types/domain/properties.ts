@@ -82,6 +82,7 @@ export type PropertySnapshot = {
     hasTerrace: boolean | null;
     hasBalcony: boolean | null;
     hasElevator: boolean | null;
+    hasParking: boolean | null;
     hasCellar: boolean | null;
     seaView: string | null;
     exposure: string | null;

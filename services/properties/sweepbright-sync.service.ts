@@ -76,11 +76,15 @@ const inferFloor = (estate: SweepBrightEstateData) => {
 
 const inferHasTerrace = (estate: SweepBrightEstateData) => {
   const record = estate as Record<string, unknown>;
-  if (hasAnyAmenity(estate, ["terrace", "balcon", "balcony"])) return true;
+  // A terrace is its own SweepBright checkbox — never infer it from a balcony.
+  if (hasAnyAmenity(estate, ["terrace", "terrasse"])) return true;
   const fromTerrace = asBoolean(record.terrace);
   if (fromTerrace !== null) return fromTerrace;
   const fromHasTerrace = asBoolean(record.has_terrace);
   if (fromHasTerrace !== null) return fromHasTerrace;
+  // When SweepBright sent an explicit amenities checklist, the absence of a
+  // terrace token means "no terrace" (false), not "unknown".
+  if (Array.isArray(estate.amenities)) return false;
   return null;
 };
 

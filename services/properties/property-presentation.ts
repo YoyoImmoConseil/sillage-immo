@@ -188,9 +188,53 @@ export const buildPropertyDerivedFields = (property: PropertyRow, priceAmount: n
     getNestedNumber(rawPayload, ["building", "number_of_floor_building"]) ?? asNumber(rawPayload?.floors);
   const isTopFloor =
     typeof floor === "number" && typeof totalFloors === "number" ? floor === totalFloors : null;
-  const hasBalcony =
-    countAmenitiesMatch(rawPayload, ["balcony", "balcon"]) ||
-    Boolean(getNestedNumber(rawPayload, ["sizes", "balcony_area", "size"]));
+
+  // SweepBright exposes equipment as an explicit `amenities` checklist: a token
+  // is present only when the corresponding box is ticked in SweepBright. When the
+  // list exists, the ABSENCE of a token therefore means "no" (false), not
+  // "unknown". Manual properties carry no amenities array, so we fall back to the
+  // stored boolean columns instead.
+  const hasAmenitiesList = Array.isArray(rawPayload?.amenities);
+
+  // Surfaces can be carried either under `sizes.*` or as typed entries in the
+  // `rooms` array (e.g. { type: "balcony", size: 4.15 }).
+  const roomsArray = Array.isArray(rawPayload?.rooms) ? rawPayload.rooms : [];
+  const sumRoomAreaByType = (type: string) =>
+    roomsArray
+      .map((item) => asRecord(item))
+      .filter((item) => item?.type === type)
+      .reduce((sum, item) => sum + (asNumber(item?.size) ?? 0), 0);
+  const livingRoomArea = sumRoomAreaByType("living_room");
+  const terraceRoomArea = sumRoomAreaByType("terrace");
+  const balconyRoomArea = sumRoomAreaByType("balcony");
+  const terraceArea =
+    getNestedNumber(rawPayload, ["sizes", "terrace_area", "size"]) ??
+    (terraceRoomArea > 0 ? terraceRoomArea : null);
+  const balconyArea =
+    getNestedNumber(rawPayload, ["sizes", "balcony_area", "size"]) ??
+    (balconyRoomArea > 0 ? balconyRoomArea : null);
+
+  // Balcony and terrace are two independent SweepBright checkboxes. Never infer
+  // one from the other.
+  const hasBalcony = hasAmenitiesList
+    ? countAmenitiesMatch(rawPayload, ["balcony", "balcon"]) || Boolean(balconyArea)
+    : Boolean(balconyArea) || null;
+  const hasTerrace = hasAmenitiesList
+    ? countAmenitiesMatch(rawPayload, ["terrace", "terrasse"]) || Boolean(terraceArea)
+    : property.has_terrace;
+
+  const building = asRecord(rawPayload?.building);
+  const hasElevator = hasAmenitiesList
+    ? countAmenitiesMatch(rawPayload, ["elevator", "lift", "ascenseur"]) ||
+      asBoolean(building?.elevator ?? building?.lift) === true
+    : property.has_elevator;
+
+  // A French "box" is a closed garage, covered by the garage / closed_parking
+  // tokens; tokens like exterior_parking / interior_parking all contain "parking".
+  const hasParking = hasAmenitiesList
+    ? countAmenitiesMatch(rawPayload, ["parking", "garage", "carport"]) || null
+    : null;
+
   const storageRoomsCount = asNumber(rawPayload?.storage_rooms);
   const cellarCount = asNumber(rawPayload?.cellars);
   const hasCellar =
@@ -205,10 +249,16 @@ export const buildPropertyDerivedFields = (property: PropertyRow, priceAmount: n
     Boolean(getNestedNumber(rawPayload, ["sizes", "cellar_area", "size"])) ||
     Boolean(getNestedNumber(rawPayload, ["sizes", "basement_area", "size"])) ||
     Boolean(getNestedNumber(rawPayload, ["sizes", "storage_area", "size"]));
+  const seaViewFeature = asBoolean(
+    asRecord(asRecord(rawPayload?.features)?.comfort)?.seaside_view
+  );
   const seaView =
     asString(rawPayload?.sea_view) ??
     asString(rawPayload?.view) ??
-    (countAmenitiesMatch(rawPayload, ["sea view", "vue mer", "mer"]) ? "Vue mer" : null);
+    (seaViewFeature === true ||
+    countAmenitiesMatch(rawPayload, ["sea view", "vue mer", "mer"])
+      ? "classic"
+      : null);
   const exposure =
     normalizeOrientation(
       asString(rawPayload?.exposure) ??
@@ -219,12 +269,6 @@ export const buildPropertyDerivedFields = (property: PropertyRow, priceAmount: n
         asString(rawPayload?.garden_orientation)
     ) ?? null;
 
-  const roomsArray = Array.isArray(rawPayload?.rooms) ? rawPayload.rooms : [];
-  const livingRoomArea = roomsArray
-    .map((item) => asRecord(item))
-    .filter((item) => item?.type === "living_room")
-    .reduce((sum, item) => sum + (asNumber(item?.size) ?? 0), 0);
-
   return {
     sale: buildPropertySaleSnapshot(property, priceAmount),
     energy: buildPropertyEnergySnapshot(property),
@@ -234,8 +278,8 @@ export const buildPropertyDerivedFields = (property: PropertyRow, priceAmount: n
       plotArea: property.plot_area,
       loiCarrezArea: getNestedNumber(rawPayload, ["sizes", "loi_carrez_area", "size"]),
       livingRoomArea: livingRoomArea > 0 ? livingRoomArea : null,
-      terraceArea: getNestedNumber(rawPayload, ["sizes", "terrace_area", "size"]),
-      balconyArea: getNestedNumber(rawPayload, ["sizes", "balcony_area", "size"]),
+      terraceArea,
+      balconyArea,
     },
     rooms: {
       bedrooms: property.bedrooms,
@@ -247,9 +291,10 @@ export const buildPropertyDerivedFields = (property: PropertyRow, priceAmount: n
       isTopFloor,
     },
     amenities: {
-      hasTerrace: property.has_terrace,
-      hasBalcony: hasBalcony || null,
-      hasElevator: property.has_elevator,
+      hasTerrace,
+      hasBalcony,
+      hasElevator,
+      hasParking,
       hasCellar: hasCellar || null,
       seaView,
       exposure,
