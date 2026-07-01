@@ -14,10 +14,15 @@ const BuyerSearchZoneMap = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="h-[360px] w-full animate-pulse rounded-xl border border-[rgba(20,20,70,0.18)] bg-[#e9e1d8]" />
+      <div className="h-[55vh] min-h-[340px] w-full animate-pulse rounded-xl border border-[rgba(20,20,70,0.18)] bg-[#e9e1d8] md:h-[360px]" />
     ),
   }
 );
+
+// CRO : hauteur tactile >= 48px et corps >= 16px sur mobile (évite le zoom iOS),
+// retour à l'apparence d'origine (text-sm, hauteur auto) sur desktop.
+const FIELD_CLASS =
+  "mt-1 w-full rounded border bg-white/80 px-3 py-2 text-base md:text-sm max-md:min-h-[48px]";
 
 type BuyerSignupCriteriaStepProps = {
   copy: BuyerSignupCopy;
@@ -37,19 +42,20 @@ export function BuyerSignupCriteriaStep({
   onSubmit,
 }: BuyerSignupCriteriaStepProps) {
   return (
-    <form className="space-y-6" onSubmit={onSubmit}>
+    <form id="buyer-criteria-form" className="space-y-6" onSubmit={onSubmit}>
       <h2 className="text-xl font-semibold">{copy.sections.criteria}</h2>
       <p className="rounded-[16px] border-l-4 border-navy bg-white/70 px-4 py-3 text-sm italic text-navy/85 leading-relaxed">
         {copy.sections.criteriaIntro}
       </p>
+      {/* Achat / Location en premier : gros segments tactiles sur mobile (pills sur desktop). */}
       <fieldset className="space-y-2">
         <legend className="text-sm font-medium">{copy.fields.businessType}</legend>
-        <div className="flex gap-2">
+        <div className="grid grid-cols-2 gap-2 md:flex">
           {(["sale", "rental"] as const).map((bt) => (
             <button
               key={bt}
               type="button"
-              className={`rounded-full border px-4 py-2 text-sm ${
+              className={`rounded-full border px-4 py-2 text-base max-md:min-h-[48px] max-md:font-medium md:text-sm ${
                 form.businessType === bt
                   ? "border-navy bg-navy text-sand"
                   : "border-[rgba(20,20,70,0.18)] bg-white/70 text-navy"
@@ -62,20 +68,25 @@ export function BuyerSignupCriteriaStep({
         </div>
       </fieldset>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <label className="text-sm">
+      {/*
+        Mobile : ville & type en pleine largeur, puis chaque paire min/max sur une
+        seule ligne à 2 colonnes. Desktop : `md:col-span-1` rétablit la grille
+        2 colonnes d'origine (agencement inchangé).
+      */}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-2 md:gap-4">
+        <label className="col-span-2 text-sm md:col-span-1">
           {copy.fields.city}
           <input
-            className="mt-1 w-full rounded border bg-white/80 px-3 py-2"
+            className={FIELD_CLASS}
             value={form.city}
             onChange={(event) => updateField("city", event.target.value)}
             placeholder={copy.fields.cityPlaceholder}
           />
         </label>
-        <label className="text-sm">
+        <label className="col-span-2 text-sm md:col-span-1">
           {copy.fields.propertyType}
           <select
-            className="mt-1 w-full rounded border bg-white/80 px-3 py-2"
+            className={FIELD_CLASS}
             value={form.propertyType}
             onChange={(event) => updateField("propertyType", event.target.value)}
           >
@@ -90,7 +101,7 @@ export function BuyerSignupCriteriaStep({
         <label className="text-sm">
           {copy.fields.minBudget}
           <input
-            className="mt-1 w-full rounded border bg-white/80 px-3 py-2"
+            className={FIELD_CLASS}
             inputMode="numeric"
             value={form.minPrice}
             onChange={(event) => updateField("minPrice", event.target.value)}
@@ -99,7 +110,7 @@ export function BuyerSignupCriteriaStep({
         <label className="text-sm">
           {copy.fields.maxBudget}
           <input
-            className="mt-1 w-full rounded border bg-white/80 px-3 py-2"
+            className={FIELD_CLASS}
             inputMode="numeric"
             value={form.maxPrice}
             onChange={(event) => updateField("maxPrice", event.target.value)}
@@ -108,7 +119,7 @@ export function BuyerSignupCriteriaStep({
         <label className="text-sm">
           {copy.fields.minRooms}
           <input
-            className="mt-1 w-full rounded border bg-white/80 px-3 py-2"
+            className={FIELD_CLASS}
             inputMode="numeric"
             value={form.minRooms}
             onChange={(event) => updateField("minRooms", event.target.value)}
@@ -117,7 +128,7 @@ export function BuyerSignupCriteriaStep({
         <label className="text-sm">
           {copy.fields.maxRooms}
           <input
-            className="mt-1 w-full rounded border bg-white/80 px-3 py-2"
+            className={FIELD_CLASS}
             inputMode="numeric"
             value={form.maxRooms}
             onChange={(event) => updateField("maxRooms", event.target.value)}
@@ -126,7 +137,7 @@ export function BuyerSignupCriteriaStep({
         <label className="text-sm">
           {copy.fields.minSurface}
           <input
-            className="mt-1 w-full rounded border bg-white/80 px-3 py-2"
+            className={FIELD_CLASS}
             inputMode="numeric"
             value={form.minSurface}
             onChange={(event) => updateField("minSurface", event.target.value)}
@@ -135,7 +146,7 @@ export function BuyerSignupCriteriaStep({
         <label className="text-sm">
           {copy.fields.maxSurface}
           <input
-            className="mt-1 w-full rounded border bg-white/80 px-3 py-2"
+            className={FIELD_CLASS}
             inputMode="numeric"
             value={form.maxSurface}
             onChange={(event) => updateField("maxSurface", event.target.value)}
@@ -144,7 +155,7 @@ export function BuyerSignupCriteriaStep({
         <label className="text-sm">
           {copy.fields.minFloor}
           <input
-            className="mt-1 w-full rounded border bg-white/80 px-3 py-2"
+            className={FIELD_CLASS}
             inputMode="numeric"
             value={form.minFloor}
             onChange={(event) => updateField("minFloor", event.target.value)}
@@ -153,16 +164,16 @@ export function BuyerSignupCriteriaStep({
         <label className="text-sm">
           {copy.fields.maxFloor}
           <input
-            className="mt-1 w-full rounded border bg-white/80 px-3 py-2"
+            className={FIELD_CLASS}
             inputMode="numeric"
             value={form.maxFloor}
             onChange={(event) => updateField("maxFloor", event.target.value)}
           />
         </label>
-        <label className="text-sm">
+        <label className="col-span-2 text-sm md:col-span-1">
           {copy.fields.terrace}
           <select
-            className="mt-1 w-full rounded border bg-white/80 px-3 py-2"
+            className={FIELD_CLASS}
             value={form.terrace}
             onChange={(event) =>
               updateField("terrace", normalizeTerrace(event.target.value))
@@ -173,10 +184,10 @@ export function BuyerSignupCriteriaStep({
             <option value="false">{copy.fields.no}</option>
           </select>
         </label>
-        <label className="text-sm">
+        <label className="col-span-2 text-sm md:col-span-1">
           {copy.fields.elevator}
           <select
-            className="mt-1 w-full rounded border bg-white/80 px-3 py-2"
+            className={FIELD_CLASS}
             value={form.elevator}
             onChange={(event) =>
               updateField("elevator", normalizeTerrace(event.target.value))
@@ -202,7 +213,8 @@ export function BuyerSignupCriteriaStep({
         <p className="text-xs italic opacity-70">{copy.sections.zoneReassurance}</p>
       </div>
 
-      <div className="flex justify-end">
+      {/* Bouton desktop inchangé ; sur mobile, action déportée dans la barre collante. */}
+      <div className="flex justify-end max-md:hidden">
         <button type="submit" className="sillage-btn rounded px-5 py-2 text-sm">
           {copy.buttons.next}
         </button>

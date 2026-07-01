@@ -35,6 +35,8 @@ const COPY: Record<
     tooltipStart: string;
     tooltipContinue: string;
     tooltipFinish: string;
+    // CRO mobile : consigne courte et exacte pour le tactile (tap pour poser des points)
+    touchHint: string;
   }
 > = {
   fr: {
@@ -48,6 +50,7 @@ const COPY: Record<
     tooltipStart: "Cliquez sur la carte pour commencer",
     tooltipContinue: "Cliquez pour continuer",
     tooltipFinish: "Double-cliquez pour terminer",
+    touchHint: "Touchez la carte pour poser des points, double-touch pour fermer la zone.",
   },
   en: {
     helperIdle:
@@ -60,6 +63,7 @@ const COPY: Record<
     tooltipStart: "Click on the map to start",
     tooltipContinue: "Click to continue",
     tooltipFinish: "Double-click to finish",
+    touchHint: "Tap the map to drop points, double-tap to close the zone.",
   },
   es: {
     helperIdle:
@@ -72,6 +76,7 @@ const COPY: Record<
     tooltipStart: "Haga clic en el mapa para empezar",
     tooltipContinue: "Haga clic para continuar",
     tooltipFinish: "Doble clic para terminar",
+    touchHint: "Toque el mapa para colocar puntos, doble toque para cerrar la zona.",
   },
   ru: {
     helperIdle:
@@ -84,6 +89,7 @@ const COPY: Record<
     tooltipStart: "Кликните по карте, чтобы начать",
     tooltipContinue: "Кликните для продолжения",
     tooltipFinish: "Двойной клик — готово",
+    touchHint: "Коснитесь карты, чтобы поставить точки, двойное касание — закрыть зону.",
   },
 };
 
@@ -108,7 +114,7 @@ export function BuyerSearchZoneMap({
   onChange,
   center = DEFAULT_CENTER,
   initialZoom = DEFAULT_ZOOM,
-  height = "360px",
+  height,
 }: BuyerSearchZoneMapProps) {
   const copy = useMemo(() => COPY[locale], [locale]);
   const mapRef = useRef<HTMLDivElement | null>(null);
@@ -280,20 +286,26 @@ export function BuyerSearchZoneMap({
       ? copy.helperDone(pointCount)
       : copy.helperIdle;
 
+  // Hauteur : responsive par défaut (généreuse sur mobile sans plein écran, on garde
+  // un repère de scroll) ; si un `height` explicite est fourni, on le respecte.
+  const mapHeightClass = height ? "" : "h-[55vh] min-h-[340px] md:h-[360px]";
+
   return (
     <div className="space-y-3">
       <div
         ref={mapRef}
-        className="w-full overflow-hidden rounded-xl border border-[rgba(20,20,70,0.18)] bg-[#e9e1d8]"
-        style={{ height }}
+        className={`w-full overflow-hidden rounded-xl border border-[rgba(20,20,70,0.18)] bg-[#e9e1d8] ${mapHeightClass}`}
+        style={height ? { height } : undefined}
       />
       <p className="text-xs text-navy/75">{helper}</p>
+      {/* Consigne tactile — mobile uniquement (desktop inchangé) */}
+      <p className="text-xs font-medium text-navy/80 md:hidden">{copy.touchHint}</p>
       <div className="flex flex-wrap gap-2">
         {!isDrawing ? (
           <button
             type="button"
             onClick={handleStartDrawing}
-            className="sillage-btn-secondary rounded px-4 py-2 text-xs uppercase tracking-[0.12em]"
+            className="sillage-btn-secondary rounded px-4 py-2 text-xs uppercase tracking-[0.12em] max-md:min-h-[48px] max-md:flex-1 max-md:text-sm"
           >
             {hasZone ? copy.buttonDraw + " (remplacer)" : copy.buttonDraw}
           </button>
@@ -301,7 +313,7 @@ export function BuyerSearchZoneMap({
           <button
             type="button"
             onClick={handleCancelDrawing}
-            className="rounded border border-[rgba(20,20,70,0.24)] px-4 py-2 text-xs uppercase tracking-[0.12em]"
+            className="rounded border border-[rgba(20,20,70,0.24)] px-4 py-2 text-xs uppercase tracking-[0.12em] max-md:min-h-[48px] max-md:flex-1 max-md:text-sm"
           >
             {copy.buttonCancel}
           </button>
@@ -310,7 +322,7 @@ export function BuyerSearchZoneMap({
           <button
             type="button"
             onClick={handleClear}
-            className="rounded border border-red-400 px-4 py-2 text-xs uppercase tracking-[0.12em] text-red-700"
+            className="rounded border border-red-400 px-4 py-2 text-xs uppercase tracking-[0.12em] text-red-700 max-md:min-h-[48px] max-md:flex-1 max-md:text-sm"
           >
             {copy.buttonClear}
           </button>

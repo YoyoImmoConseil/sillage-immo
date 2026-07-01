@@ -252,7 +252,7 @@ export function BuyerSignupForm(props: BuyerSignupFormProps) {
   }
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className="mx-auto max-w-4xl max-md:pb-28">
       <ol className="mb-6 flex gap-2 text-xs uppercase tracking-[0.14em]">
         {copy.steps.map((label, index) => {
           const stepNumber = (index + 1) as 1 | 2;
@@ -294,6 +294,44 @@ export function BuyerSignupForm(props: BuyerSignupFormProps) {
           onBack={handleBack}
         />
       )}
+
+      {/*
+        Barre d'action collante — mobile uniquement (md:hidden, safe-area iOS).
+        Le bouton pilote la soumission de l'étape courante via l'attribut `form`
+        (soumission native du <form> concerné) : aucun changement de logique.
+      */}
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-navy/10 bg-sand/95 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur md:hidden">
+        <div className="mx-auto flex max-w-4xl items-center gap-3">
+          {step === 2 ? (
+            <button
+              type="button"
+              onClick={handleBack}
+              disabled={status.kind === "submitting"}
+              className="min-h-[48px] shrink-0 rounded-lg border border-navy/25 px-4 text-sm font-medium text-navy disabled:opacity-50"
+            >
+              {copy.buttons.back}
+            </button>
+          ) : null}
+          {step === 1 ? (
+            <button
+              type="submit"
+              form="buyer-criteria-form"
+              className="min-h-[48px] flex-1 rounded-lg bg-navy px-4 text-sm font-semibold text-sand"
+            >
+              {copy.buttons.continue}
+            </button>
+          ) : (
+            <button
+              type="submit"
+              form="buyer-contact-form"
+              disabled={status.kind === "submitting"}
+              className="min-h-[48px] flex-1 rounded-lg bg-[#141446] px-4 text-sm font-semibold text-sand disabled:opacity-50"
+            >
+              {status.kind === "submitting" ? "…" : copy.buttons.submit}
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

@@ -38,10 +38,12 @@ export type BuyerSignupCopy = {
     email: string;
     phone: string;
     phoneHint: string;
+    magicLinkReassurance: string;
     rgpd: string;
   };
   buttons: {
     next: string;
+    continue: string;
     back: string;
     submit: string;
   };
@@ -108,11 +110,13 @@ export const buyerSignupCopy: Record<AppLocale, BuyerSignupCopy> = {
       email: "Email",
       phone: "Téléphone",
       phoneHint: "Facultatif mais recommandé pour être rappelé.",
+      magicLinkReassurance: "Lien magique par email, sans mot de passe à créer.",
       rgpd:
         "J'accepte que Sillage Immo conserve ces informations pour traiter ma recherche et m'envoyer des alertes. Je peux me désabonner à tout moment.",
     },
     buttons: {
       next: "Valider mes critères",
+      continue: "Continuer",
       back: "Retour",
       submit: "Activer ma recherche Sillage",
     },
@@ -179,11 +183,13 @@ export const buyerSignupCopy: Record<AppLocale, BuyerSignupCopy> = {
       email: "Email",
       phone: "Phone",
       phoneHint: "Optional but recommended if you'd like a callback.",
+      magicLinkReassurance: "Magic link by email, no password to create.",
       rgpd:
         "I agree that Sillage Immo can keep this information to process my search and send me alerts. I can unsubscribe at any time.",
     },
     buttons: {
       next: "Validate my criteria",
+      continue: "Continue",
       back: "Back",
       submit: "Activate my Sillage search",
     },
@@ -250,11 +256,13 @@ export const buyerSignupCopy: Record<AppLocale, BuyerSignupCopy> = {
       email: "Email",
       phone: "Teléfono",
       phoneHint: "Opcional pero recomendado para ser contactado.",
+      magicLinkReassurance: "Enlace mágico por email, sin contraseña que crear.",
       rgpd:
         "Acepto que Sillage Immo conserve estos datos para procesar mi búsqueda y enviarme alertas. Puedo darme de baja en cualquier momento.",
     },
     buttons: {
       next: "Validar mis criterios",
+      continue: "Continuar",
       back: "Atrás",
       submit: "Activar mi búsqueda Sillage",
     },
@@ -321,11 +329,13 @@ export const buyerSignupCopy: Record<AppLocale, BuyerSignupCopy> = {
       email: "Email",
       phone: "Телефон",
       phoneHint: "Необязательно, но поможет связаться с вами.",
+      magicLinkReassurance: "Волшебная ссылка по email, без пароля.",
       rgpd:
         "Я согласен, чтобы Sillage Immo хранила эти данные для обработки моего запроса и отправки уведомлений. Я могу отписаться в любой момент.",
     },
     buttons: {
       next: "Подтвердить критерии",
+      continue: "Продолжить",
       back: "Назад",
       submit: "Активировать мой поиск Sillage",
     },

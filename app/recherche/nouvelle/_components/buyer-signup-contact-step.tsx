@@ -3,6 +3,10 @@
 import type { BuyerSignupCopy } from "./buyer-signup-copy";
 import type { FormState, UiStatus } from "./buyer-signup-helpers";
 
+// CRO : hauteur tactile >= 48px et corps >= 16px sur mobile ; desktop inchangé.
+const FIELD_CLASS =
+  "mt-1 w-full rounded border bg-white/80 px-3 py-2 text-base md:text-sm max-md:min-h-[48px]";
+
 type BuyerSignupContactStepProps = {
   copy: BuyerSignupCopy;
   form: FormState;
@@ -21,7 +25,7 @@ export function BuyerSignupContactStep({
   onBack,
 }: BuyerSignupContactStepProps) {
   return (
-    <form className="space-y-6" onSubmit={onSubmit}>
+    <form id="buyer-contact-form" className="space-y-6" onSubmit={onSubmit}>
       <h2 className="text-xl font-semibold">{copy.sections.contact}</h2>
       <p className="text-sm leading-relaxed text-navy/80">
         {copy.sections.contactIntro}
@@ -30,7 +34,7 @@ export function BuyerSignupContactStep({
         <label className="text-sm">
           {copy.fields.firstName}
           <input
-            className="mt-1 w-full rounded border bg-white/80 px-3 py-2"
+            className={FIELD_CLASS}
             value={form.firstName}
             onChange={(event) => updateField("firstName", event.target.value)}
             autoComplete="given-name"
@@ -40,7 +44,7 @@ export function BuyerSignupContactStep({
         <label className="text-sm">
           {copy.fields.lastName}
           <input
-            className="mt-1 w-full rounded border bg-white/80 px-3 py-2"
+            className={FIELD_CLASS}
             value={form.lastName}
             onChange={(event) => updateField("lastName", event.target.value)}
             autoComplete="family-name"
@@ -51,18 +55,24 @@ export function BuyerSignupContactStep({
           {copy.fields.email}
           <input
             type="email"
-            className="mt-1 w-full rounded border bg-white/80 px-3 py-2"
+            inputMode="email"
+            className={FIELD_CLASS}
             value={form.email}
             onChange={(event) => updateField("email", event.target.value)}
             autoComplete="email"
             required
           />
+          {/* Réassurance CRO : rappelle le lien magique sans mot de passe. */}
+          <span className="mt-1 block text-xs italic text-navy/70">
+            {copy.fields.magicLinkReassurance}
+          </span>
         </label>
         <label className="text-sm md:col-span-2">
           {copy.fields.phone}
           <input
             type="tel"
-            className="mt-1 w-full rounded border bg-white/80 px-3 py-2"
+            inputMode="tel"
+            className={FIELD_CLASS}
             value={form.phone}
             onChange={(event) => updateField("phone", event.target.value)}
             autoComplete="tel"
@@ -91,7 +101,8 @@ export function BuyerSignupContactStep({
         </p>
       ) : null}
 
-      <div className="flex flex-wrap justify-between gap-3">
+      {/* Boutons desktop inchangés ; sur mobile, action déportée dans la barre collante. */}
+      <div className="flex flex-wrap justify-between gap-3 max-md:hidden">
         <button
           type="button"
           className="sillage-btn-secondary rounded px-5 py-2 text-sm"

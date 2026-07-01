@@ -80,7 +80,7 @@ export default async function NouvelleRecherchePage({ searchParams }: NouvelleRe
         aria-labelledby="recherche-hero-title"
         className="bg-navy text-sand"
       >
-        <div className="w-full px-6 py-12 md:px-10 md:py-20 xl:px-14 xl:py-24 2xl:px-20 space-y-5">
+        <div className="w-full px-4 py-12 md:px-10 md:py-20 xl:px-14 xl:py-24 2xl:px-20 space-y-5">
           <p className="text-[11px] md:text-xs uppercase tracking-[0.22em] text-sand/75">
             {copy.kicker}
           </p>
@@ -123,7 +123,7 @@ export default async function NouvelleRecherchePage({ searchParams }: NouvelleRe
         aria-labelledby="recherche-why-title"
         className="bg-sand text-navy border-b border-navy/10"
       >
-        <div className="w-full px-6 py-12 md:px-10 md:py-16 xl:px-14 2xl:px-20 space-y-8">
+        <div className="w-full px-4 py-12 md:px-10 md:py-16 xl:px-14 2xl:px-20 space-y-8">
           <h2 id="recherche-why-title" className="sillage-section-title max-w-3xl">
             {copy.whyTitle}
           </h2>
@@ -147,7 +147,7 @@ export default async function NouvelleRecherchePage({ searchParams }: NouvelleRe
         aria-labelledby="recherche-after-title"
         className="bg-sand text-navy"
       >
-        <div className="w-full px-6 py-12 md:px-10 md:py-16 xl:px-14 2xl:px-20 space-y-8">
+        <div className="w-full px-4 py-12 md:px-10 md:py-16 xl:px-14 2xl:px-20 space-y-8">
           <h2 id="recherche-after-title" className="sillage-section-title max-w-3xl">
             {copy.afterTitle}
           </h2>
@@ -176,9 +176,10 @@ export default async function NouvelleRecherchePage({ searchParams }: NouvelleRe
       </section>
 
       <section className="bg-sand text-navy">
-        <div className="w-full px-6 py-10 md:px-10 xl:px-14 2xl:px-20 space-y-8">
+        <div className="w-full px-4 py-10 md:px-10 xl:px-14 2xl:px-20 space-y-8">
           <div className="grid gap-4 md:grid-cols-2">
-            <article className="rounded-2xl border border-[rgba(20,20,70,0.18)] bg-white/70 p-5 shadow-sm">
+            {/* Connexion : carte complète sur desktop, réduite à un lien discret sur mobile. */}
+            <article className="rounded-2xl border border-[rgba(20,20,70,0.18)] bg-white/70 p-5 shadow-sm max-md:hidden">
               <h2 className="text-base font-semibold uppercase tracking-[0.12em] text-navy">
                 {copy.existingAccountTitle}
               </h2>
@@ -190,6 +191,7 @@ export default async function NouvelleRecherchePage({ searchParams }: NouvelleRe
                 {copy.existingAccountCta}
               </Link>
             </article>
+            {/* Création de compte mise en avant. */}
             <article className="rounded-2xl border border-navy bg-navy p-5 text-sand shadow-sm">
               <h2 className="text-base font-semibold uppercase tracking-[0.12em] text-[#f4c47a]">
                 {copy.newAccountTitle}
@@ -197,6 +199,14 @@ export default async function NouvelleRecherchePage({ searchParams }: NouvelleRe
               <p className="mt-2 text-sm text-sand/82">{copy.newAccountBody}</p>
             </article>
           </div>
+
+          {/* Mobile : connexion en lien discret pour ne pas concurrencer la création. */}
+          <p className="text-center text-sm text-navy/70 md:hidden">
+            {copy.existingAccountTitle}{" "}
+            <Link href={loginHref} className="font-semibold text-navy underline underline-offset-2">
+              {copy.existingAccountCta}
+            </Link>
+          </p>
 
           <BuyerSignupForm
             locale={locale}
