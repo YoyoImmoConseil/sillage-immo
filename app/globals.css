@@ -179,3 +179,14 @@ textarea:focus {
   border: 3px solid #f4ece4;
   box-shadow: 0 0 0 3px rgba(20, 20, 70, 0.18);
 }
+
+/* Masque la barre de défilement des carrousels horizontaux mobile
+   (scroll-snap) sans désactiver le scroll. */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

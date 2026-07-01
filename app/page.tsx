@@ -13,12 +13,14 @@ import { NeighborhoodsSection } from "./_home/sections/neighborhoods-section";
 import { InternationalSection } from "./_home/sections/international-section";
 import { FinalCtaSection } from "./_home/sections/final-cta-section";
 import { HomeTeamSection } from "./components/home-team-section";
+import { HomeMobileCtaBar } from "./_home/sections/home-mobile-cta-bar";
 
 export default async function Home() {
   const locale = await getRequestLocale();
 
   return (
-    <main className="min-h-screen">
+    // pb mobile : évite que la barre d'action collante ne masque le bas de page.
+    <main className="min-h-screen pb-24 md:pb-0">
       <HeroSection locale={locale} />
       <SocialProofSection locale={locale} />
       <AssistantSection locale={locale} />
@@ -33,6 +35,7 @@ export default async function Home() {
       <InternationalSection locale={locale} />
       <HomeTeamSection locale={locale} />
       <FinalCtaSection locale={locale} />
+      <HomeMobileCtaBar locale={locale} />
     </main>
   );
 }

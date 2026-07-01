@@ -7,6 +7,7 @@ import {
   SILLAGE_PHONE_RAW,
 } from "../copy";
 import { PhoneIcon } from "../shared/cta-button";
+import { CAROUSEL_ITEM, HCarousel } from "../shared/mobile-carousel";
 
 type Props = { locale: AppLocale };
 
@@ -20,7 +21,7 @@ export function SellerSection({ locale }: Props) {
       aria-labelledby="seller-title"
       className="sillage-section-light"
     >
-      <div className="w-full px-6 py-16 md:px-10 md:py-24 xl:px-14 2xl:px-20 space-y-10">
+      <div className="w-full px-4 py-16 md:px-10 md:py-24 xl:px-14 2xl:px-20 space-y-10">
         <div className="max-w-3xl space-y-4">
           <p className="text-xs uppercase tracking-[0.22em] text-navy/65">
             {copy.eyebrow}
@@ -35,11 +36,12 @@ export function SellerSection({ locale }: Props) {
           {copy.exclusiveMandate}
         </p>
 
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+        {/* Mobile : carrousel horizontal. Desktop : grille 2/4 colonnes inchangée. */}
+        <HCarousel desktopClassName="md:grid-cols-2 xl:grid-cols-4 md:gap-6" ariaLabel={copy.title}>
           {copy.benefits.map((benefit, index) => (
             <article
               key={benefit.title}
-              className="flex flex-col gap-3 rounded-[24px] bg-white p-6 ring-1 ring-navy/5"
+              className={`${CAROUSEL_ITEM} flex flex-col gap-3 rounded-[24px] bg-white p-6 ring-1 ring-navy/5`}
             >
               <span className="font-serif text-sm text-navy/50">
                 0{index + 1}
@@ -52,7 +54,7 @@ export function SellerSection({ locale }: Props) {
               </p>
             </article>
           ))}
-        </div>
+        </HCarousel>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <Link

@@ -1,6 +1,7 @@
 import type { AppLocale } from "@/lib/i18n/config";
 import { HOME_COPY } from "../copy";
 import { ArrowIcon } from "../shared/cta-button";
+import { CAROUSEL_ITEM, HCarousel } from "../shared/mobile-carousel";
 
 type Props = { locale: AppLocale };
 
@@ -11,7 +12,7 @@ export function PositioningSection({ locale }: Props) {
       aria-labelledby="positioning-title"
       className="bg-white"
     >
-      <div className="w-full px-6 py-16 md:px-10 md:py-24 xl:px-14 2xl:px-20 space-y-12">
+      <div className="w-full px-4 py-16 md:px-10 md:py-24 xl:px-14 2xl:px-20 space-y-12">
         <div className="max-w-3xl space-y-4">
           <p className="text-xs uppercase tracking-[0.22em] text-navy/65">
             {copy.eyebrow}
@@ -21,11 +22,12 @@ export function PositioningSection({ locale }: Props) {
           </h2>
           <p className="sillage-editorial-text text-navy/80">{copy.intro}</p>
         </div>
-        <div className="grid gap-6 md:grid-cols-3">
+        {/* Mobile : carrousel horizontal (réduit la longueur de page). Desktop : grille 3 colonnes inchangée. */}
+        <HCarousel desktopClassName="md:grid-cols-3 md:gap-6" ariaLabel={copy.title}>
           {copy.cards.map((card, index) => (
             <article
               key={card.title}
-              className="relative flex flex-col gap-4 rounded-[28px] bg-sand p-8 ring-1 ring-navy/5"
+              className={`${CAROUSEL_ITEM} relative flex flex-col gap-4 rounded-[28px] bg-sand p-8 ring-1 ring-navy/5`}
             >
               <span className="absolute right-6 top-6 font-serif text-sm text-navy/40">
                 {String(index + 1).padStart(2, "0")}
@@ -38,7 +40,7 @@ export function PositioningSection({ locale }: Props) {
               </p>
             </article>
           ))}
-        </div>
+        </HCarousel>
         <div className="flex">
           <a
             href="#methode"

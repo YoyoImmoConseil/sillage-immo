@@ -14,7 +14,7 @@ export function CatalogSection({ locale }: Props) {
       aria-labelledby="catalog-title"
       className="sillage-section-light"
     >
-      <div className="w-full px-6 py-16 md:px-10 md:py-24 xl:px-14 2xl:px-20 space-y-10">
+      <div className="w-full px-4 py-16 md:px-10 md:py-24 xl:px-14 2xl:px-20 space-y-10">
         <div className="max-w-3xl space-y-4">
           <p className="text-xs uppercase tracking-[0.22em] text-navy/65">
             {copy.eyebrow}

@@ -10,7 +10,7 @@ export function HomeTeamSection({ locale = "fr" }: { locale?: AppLocale }) {
   const copy = HOME_COPY[locale].team;
   return (
     <section id="equipe" aria-labelledby="equipe-title" className="sillage-section-light">
-      <div className="w-full px-6 py-14 md:px-10 md:py-20 xl:px-14 2xl:px-20 space-y-10">
+      <div className="w-full px-4 py-14 md:px-10 md:py-20 xl:px-14 2xl:px-20 space-y-10">
         <div className="max-w-3xl space-y-3">
           <p className="text-xs uppercase tracking-[0.22em] text-navy/65">
             {copy.eyebrow}
@@ -31,13 +31,13 @@ export function HomeTeamSection({ locale = "fr" }: { locale?: AppLocale }) {
 
 function HomeTeamMembersSkeleton() {
   return (
-    <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+    <div className="grid gap-4 md:grid-cols-2 md:gap-6 xl:grid-cols-3">
       {Array.from({ length: 3 }).map((_, index) => (
         <article
           key={index}
           className="overflow-hidden rounded-[28px] bg-white/80 shadow-sm"
         >
-          <SkeletonBar className="aspect-[3/4] w-full rounded-none" />
+          <SkeletonBar className="aspect-[4/3] w-full rounded-none md:aspect-[3/4]" />
           <div className="space-y-3 p-6">
             <SkeletonBar className="h-3 w-1/3" />
             <SkeletonBar className="h-5 w-2/3" />
@@ -64,7 +64,9 @@ async function HomeTeamMembers({ locale }: { locale: AppLocale }) {
   }
 
   return (
-    <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+    // Mobile : fiches resserrées (image moins haute, padding réduit) pour éviter
+    // l'effet inachevé, notamment sur les cartes « Portrait à venir ». Desktop inchangé.
+    <div className="grid gap-4 md:grid-cols-2 md:gap-6 xl:grid-cols-3">
       {members.map((member) => {
         const cleanedPhone = member.phone?.replace(/\s+/g, "") ?? null;
         const hasBooking = Boolean(member.bookingUrl);
@@ -73,7 +75,7 @@ async function HomeTeamMembers({ locale }: { locale: AppLocale }) {
             key={member.id}
             className="group flex flex-col overflow-hidden rounded-[28px] bg-white shadow-sm ring-1 ring-navy/5"
           >
-            <div className="relative aspect-[3/4] bg-sand">
+            <div className="relative aspect-[4/3] bg-sand md:aspect-[3/4]">
               {member.avatarUrl ? (
                 <Image
                   src={member.avatarUrl}
@@ -88,7 +90,7 @@ async function HomeTeamMembers({ locale }: { locale: AppLocale }) {
                 </div>
               )}
             </div>
-            <div className="flex flex-1 flex-col gap-4 p-6 text-navy">
+            <div className="flex flex-1 flex-col gap-3 p-4 text-navy md:gap-4 md:p-6">
               <div>
                 <p className="text-xs uppercase tracking-[0.18em] text-navy/55">
                   {getAdminRoleLabel(member.role, locale)}

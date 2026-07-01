@@ -11,7 +11,7 @@ export function AssistantSection({ locale }: Props) {
       aria-labelledby="assistant-title"
       className="sillage-section-light"
     >
-      <div className="w-full px-6 py-14 md:px-10 md:py-20 xl:px-14 2xl:px-20 space-y-8">
+      <div className="w-full px-4 py-14 md:px-10 md:py-20 xl:px-14 2xl:px-20 space-y-8">
         <div className="max-w-3xl space-y-3">
           <p className="text-xs uppercase tracking-[0.22em] text-navy/65">
             {copy.eyebrow}

@@ -119,6 +119,8 @@ export type HomeCopy = {
     search: string;
     viewSales: string;
     viewRentals: string;
+    /** Libellé court (barre d'action mobile). */
+    call: string;
     callAdvisor: string;
     callSillage: string;
     bookAppointment: string;
@@ -426,6 +428,7 @@ const fr: HomeCopy = {
     search: "Créer ma recherche",
     viewSales: "Voir les biens en vente",
     viewRentals: "Voir les locations",
+    call: "Appeler",
     callAdvisor: "Parler à un conseiller",
     callSillage: "Appeler Sillage Immo",
     bookAppointment: "Prendre rendez-vous",
@@ -726,6 +729,7 @@ const en: HomeCopy = {
     estimate: "Value my property",
     search: "Create my search",
     viewSales: "See properties for sale",
+    call: "Call",
     viewRentals: "See rentals",
     callAdvisor: "Talk to an advisor",
     callSillage: "Call Sillage Immo",
@@ -1027,6 +1031,7 @@ const es: HomeCopy = {
     estimate: "Valorar mi bien",
     search: "Crear mi búsqueda",
     viewSales: "Ver los bienes en venta",
+    call: "Llamar",
     viewRentals: "Ver los alquileres",
     callAdvisor: "Hablar con un asesor",
     callSillage: "Llamar a Sillage Immo",
@@ -1328,6 +1333,7 @@ const ru: HomeCopy = {
     estimate: "Оценить мой объект",
     search: "Создать поиск",
     viewSales: "Смотреть объекты на продажу",
+    call: "Позвонить",
     viewRentals: "Смотреть аренду",
     callAdvisor: "Связаться с консультантом",
     callSillage: "Позвонить Sillage Immo",

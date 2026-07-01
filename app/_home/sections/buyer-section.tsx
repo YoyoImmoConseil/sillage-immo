@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { AppLocale } from "@/lib/i18n/config";
 import { localizePath } from "@/lib/i18n/routing";
 import { HOME_COPY } from "../copy";
+import { CAROUSEL_ITEM, HCarousel } from "../shared/mobile-carousel";
 
 type Props = { locale: AppLocale };
 
@@ -102,7 +103,7 @@ export function BuyerSection({ locale }: Props) {
       aria-labelledby="buyer-title"
       className="bg-white"
     >
-      <div className="w-full px-6 py-16 md:px-10 md:py-24 xl:px-14 2xl:px-20">
+      <div className="w-full px-4 py-16 md:px-10 md:py-24 xl:px-14 2xl:px-20">
         <div className="grid gap-10 lg:grid-cols-[55%_45%] lg:items-center">
           <div className="space-y-8">
             <div className="max-w-2xl space-y-4">
@@ -116,11 +117,12 @@ export function BuyerSection({ locale }: Props) {
                 {copy.subtitle}
               </p>
             </div>
-            <div className="grid gap-5 sm:grid-cols-2">
+            {/* Mobile : carrousel horizontal. Desktop : grille 2 colonnes inchangée. */}
+            <HCarousel desktopClassName="md:grid-cols-2 md:gap-5" ariaLabel={copy.title}>
               {copy.benefits.map((benefit) => (
                 <article
                   key={benefit.title}
-                  className="flex flex-col gap-2 rounded-[20px] bg-sand p-5 ring-1 ring-navy/5"
+                  className={`${CAROUSEL_ITEM} flex flex-col gap-2 rounded-[20px] bg-sand p-5 ring-1 ring-navy/5`}
                 >
                   <h3 className="font-serif text-base font-semibold text-navy">
                     {benefit.title}
@@ -130,7 +132,7 @@ export function BuyerSection({ locale }: Props) {
                   </p>
                 </article>
               ))}
-            </div>
+            </HCarousel>
             <div className="flex flex-col gap-3 sm:flex-row">
               <Link
                 href={localizePath("/recherche/nouvelle", locale)}

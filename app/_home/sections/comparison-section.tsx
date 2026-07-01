@@ -14,7 +14,7 @@ export function ComparisonSection({ locale }: Props) {
       aria-labelledby="comparison-title"
       className="bg-white"
     >
-      <div className="w-full px-6 py-16 md:px-10 md:py-24 xl:px-14 2xl:px-20 space-y-10">
+      <div className="w-full px-4 py-16 md:px-10 md:py-24 xl:px-14 2xl:px-20 space-y-10">
         <div className="max-w-3xl space-y-4">
           <p className="text-xs uppercase tracking-[0.22em] text-navy/65">
             {copy.eyebrow}
@@ -24,8 +24,11 @@ export function ComparisonSection({ locale }: Props) {
           </h2>
         </div>
 
+        {/* Mobile : « Avec Sillage Immo » affichée EN PREMIER et mise en avant
+            (via order) ; « Vendre seul » ensuite en neutre. Desktop : 2 colonnes
+            inchangées (Vendre seul à gauche, Avec Sillage à droite). */}
         <div className="grid gap-6 md:grid-cols-2">
-          <article className="flex flex-col gap-5 rounded-[28px] border border-navy/10 bg-sand/40 p-8">
+          <article className="order-2 flex flex-col gap-5 rounded-[28px] border border-navy/10 bg-sand/40 p-8 md:order-none">
             <h3 className="font-serif text-xl font-semibold text-navy/70">
               {copy.aloneTitle}
             </h3>
@@ -41,7 +44,7 @@ export function ComparisonSection({ locale }: Props) {
             </ul>
           </article>
 
-          <article className="flex flex-col gap-5 rounded-[28px] bg-navy p-8 text-sand shadow-xl">
+          <article className="order-1 flex flex-col gap-5 rounded-[28px] bg-navy p-8 text-sand shadow-xl md:order-none">
             <h3 className="font-serif text-xl font-semibold">
               {copy.sillageTitle}
             </h3>
