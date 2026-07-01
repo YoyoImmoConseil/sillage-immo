@@ -132,7 +132,7 @@ export function SellerPropertyMediaUpload({
         <label className="rounded-lg border border-dashed border-[rgba(20,20,70,0.2)] px-4 py-3 text-sm cursor-pointer hover:border-[rgba(20,20,70,0.35)]">
           <span className="block font-medium">{copy.photos}</span>
           <span className="block text-xs opacity-70">{copy.photosHint}</span>
-          <span className="mt-2 inline-flex rounded bg-navy px-3 py-2 text-xs text-sand">
+          <span className="mt-2 inline-flex min-h-[48px] items-center justify-center rounded bg-navy px-4 py-2 text-sm text-sand max-md:w-full">
             {copy.addPhotos}
           </span>
           <input
@@ -149,7 +149,7 @@ export function SellerPropertyMediaUpload({
         <label className="rounded-lg border border-dashed border-[rgba(20,20,70,0.2)] px-4 py-3 text-sm cursor-pointer hover:border-[rgba(20,20,70,0.35)]">
           <span className="block font-medium">{copy.videos}</span>
           <span className="block text-xs opacity-70">{copy.videosHint}</span>
-          <span className="mt-2 inline-flex rounded bg-navy px-3 py-2 text-xs text-sand">
+          <span className="mt-2 inline-flex min-h-[48px] items-center justify-center rounded bg-navy px-4 py-2 text-sm text-sand max-md:w-full">
             {copy.addVideos}
           </span>
           <input

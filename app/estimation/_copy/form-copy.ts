@@ -81,6 +81,18 @@ const fr = {
   usefulInfoPlaceholder: "Ex : travaux récents, contraintes de calendrier, contexte particulier...",
   send: "Sécuriser mon estimation",
   sending: "Envoi...",
+  // CRO : libellés du parcours multi-étapes mobile (affichage uniquement)
+  optional: "facultatif",
+  optionalNote:
+    "Champs facultatifs : votre conseiller pourra les compléter ou les corriger avec vous.",
+  stepWord: "Étape",
+  step1Title: "Contact & localisation",
+  step2Title: "Caractéristiques",
+  step3Title: "Photos & validation",
+  back: "Précédent",
+  continueLabel: "Continuer",
+  finalReassurance:
+    "Sans engagement. Vos informations servent uniquement à l'analyse de votre dossier.",
 };
 
 export type SellerProjectFormCopy = typeof fr;
@@ -168,6 +180,17 @@ export const SELLER_PROJECT_FORM_COPY: Record<AppLocale, SellerProjectFormCopy> 
     usefulInfoPlaceholder: "Ex: recent works, timing constraints, special context...",
     send: "Secure my valuation",
     sending: "Sending...",
+    optional: "optional",
+    optionalNote:
+      "Optional fields: your advisor can complete or adjust them with you.",
+    stepWord: "Step",
+    step1Title: "Contact & location",
+    step2Title: "Features",
+    step3Title: "Photos & confirmation",
+    back: "Back",
+    continueLabel: "Continue",
+    finalReassurance:
+      "No commitment. Your information is used solely to analyse your file.",
   },
   es: {
     title: "Paso 1 — Entender su inmueble y su proyecto",
@@ -250,6 +273,17 @@ export const SELLER_PROJECT_FORM_COPY: Record<AppLocale, SellerProjectFormCopy> 
     usefulInfoPlaceholder: "Ej: obras recientes, restricciones de calendario, contexto particular...",
     send: "Asegurar mi valoración",
     sending: "Envío...",
+    optional: "opcional",
+    optionalNote:
+      "Campos opcionales: su asesor podrá completarlos o ajustarlos con usted.",
+    stepWord: "Paso",
+    step1Title: "Contacto y ubicación",
+    step2Title: "Características",
+    step3Title: "Fotos y validación",
+    back: "Anterior",
+    continueLabel: "Continuar",
+    finalReassurance:
+      "Sin compromiso. Su información se utiliza únicamente para analizar su expediente.",
   },
   ru: {
     title: "Шаг 1 — Понять ваш объект и ваш проект",
@@ -332,5 +366,16 @@ export const SELLER_PROJECT_FORM_COPY: Record<AppLocale, SellerProjectFormCopy> 
     usefulInfoPlaceholder: "Например: недавние работы, ограничения по срокам, особый контекст...",
     send: "Защитить мою оценку",
     sending: "Отправка...",
+    optional: "необязательно",
+    optionalNote:
+      "Необязательные поля: ваш консультант сможет дополнить или уточнить их вместе с вами.",
+    stepWord: "Шаг",
+    step1Title: "Контакты и адрес",
+    step2Title: "Характеристики",
+    step3Title: "Фото и подтверждение",
+    back: "Назад",
+    continueLabel: "Продолжить",
+    finalReassurance:
+      "Без обязательств. Ваши данные используются только для анализа вашего досье.",
   },
 };

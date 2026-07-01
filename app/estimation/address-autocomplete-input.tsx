@@ -151,8 +151,10 @@ export function AddressAutocompleteInput({
       {copy.label}
       <div ref={wrapperRef} className="relative mt-1">
         <input
-          className="w-full rounded border px-3 py-2"
+          className="w-full rounded border px-3 py-2 text-base md:text-sm max-md:min-h-[48px]"
           value={value}
+          inputMode="text"
+          autoCapitalize="words"
           onChange={(event) => {
             setError(null);
             onAddressChange(event.target.value);

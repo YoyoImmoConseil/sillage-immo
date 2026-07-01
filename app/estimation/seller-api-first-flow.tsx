@@ -35,6 +35,7 @@ export function SellerApiFirstFlow({ locale = "fr" }: { locale?: AppLocale }) {
       ? crypto.randomUUID()
       : `${Date.now()}-${Math.random().toString(36).slice(2)}`
   );
+  const verifyRef = useRef<HTMLDivElement | null>(null);
   const [step, setStep] = useState<Step>("form");
   const [form, setForm] = useState<FlowForm>(initialForm);
   const [uploadedMedia, setUploadedMedia] = useState<SellerUploadedPropertyMedia[]>([]);
@@ -72,6 +73,14 @@ export function SellerApiFirstFlow({ locale = "fr" }: { locale?: AppLocale }) {
   useEffect(() => {
     track("seller_estimation_started", { locale });
   }, [locale]);
+
+  // CRO mobile : après "Sécuriser mon estimation", amener l'utilisateur
+  // directement à l'étape de vérification email plutôt que de le laisser scroller.
+  useEffect(() => {
+    if (step === "verify") {
+      verifyRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [step]);
 
   const update = <K extends keyof FlowForm>(key: K, value: FlowForm[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -348,21 +357,24 @@ export function SellerApiFirstFlow({ locale = "fr" }: { locale?: AppLocale }) {
         onUploadMedia={(kind, files) => void uploadMedia(kind, files)}
         onRemoveMedia={removeUploadedMedia}
         onSendOtp={() => void sendOtp()}
+        flowStep={step}
       />
 
       {step === "verify" ? (
-        <SellerEmailVerificationSection
-          locale={locale}
-          otp={otp}
-          loading={loading}
-          previewCode={previewCode}
-          verificationToken={verificationToken}
-          isEstimating={isEstimating}
-          estimateProgress={estimateProgress}
-          onOtpChange={setOtp}
-          onVerifyOtp={() => void verifyOtp()}
-          onEstimateAndCreate={() => void estimateAndCreate()}
-        />
+        <div ref={verifyRef} className="scroll-mt-4">
+          <SellerEmailVerificationSection
+            locale={locale}
+            otp={otp}
+            loading={loading}
+            previewCode={previewCode}
+            verificationToken={verificationToken}
+            isEstimating={isEstimating}
+            estimateProgress={estimateProgress}
+            onOtpChange={setOtp}
+            onVerifyOtp={() => void verifyOtp()}
+            onEstimateAndCreate={() => void estimateAndCreate()}
+          />
+        </div>
       ) : null}
 
       {step === "result" && valuation && thankYouAccessToken ? (

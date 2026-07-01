@@ -22,7 +22,7 @@ export default async function EstimationPage() {
           aria-hidden
           className="pointer-events-none absolute right-6 top-6 opacity-[0.10]"
         />
-        <div className="relative w-full px-6 py-12 md:px-10 md:py-20 xl:px-14 xl:py-24 2xl:px-20">
+        <div className="relative w-full px-4 py-12 md:px-10 md:py-20 xl:px-14 xl:py-24 2xl:px-20">
           <div className="grid gap-10 lg:grid-cols-[50%_50%] lg:items-center">
             <div className="max-w-[840px]">
               <SillageLogo priority className="h-auto w-full" />
@@ -59,7 +59,7 @@ export default async function EstimationPage() {
         aria-label="Sillage Immo - réassurance estimation"
         className="bg-sand text-navy border-b border-navy/10"
       >
-        <div className="w-full px-6 py-10 md:px-10 md:py-12 xl:px-14 2xl:px-20">
+        <div className="w-full px-4 py-10 md:px-10 md:py-12 xl:px-14 2xl:px-20">
           <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
             {copy.reassurance.map((item) => (
               <li
@@ -82,7 +82,7 @@ export default async function EstimationPage() {
         aria-labelledby="estimation-what-title"
         className="bg-sand text-navy"
       >
-        <div className="w-full px-6 py-12 md:px-10 md:py-16 xl:px-14 2xl:px-20 space-y-8">
+        <div className="w-full px-4 py-12 md:px-10 md:py-16 xl:px-14 2xl:px-20 space-y-8">
           <div className="max-w-3xl space-y-3">
             <p className="text-xs uppercase tracking-[0.22em] text-navy/65">
               {copy.whatYouGet.eyebrow}
@@ -116,7 +116,7 @@ export default async function EstimationPage() {
       </section>
 
       <section className="bg-sand text-navy">
-        <div className="w-full px-6 py-8 md:px-10 md:py-12 xl:px-14 2xl:px-20">
+        <div className="w-full px-4 py-8 md:px-10 md:py-12 xl:px-14 2xl:px-20">
           <SellerApiFirstFlow locale={locale} />
         </div>
       </section>
