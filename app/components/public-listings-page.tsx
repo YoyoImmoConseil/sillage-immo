@@ -56,7 +56,7 @@ export function PublicListingsPage(props: PublicListingsPageProps) {
   return (
     <main className="min-h-screen">
       <section className="bg-navy text-sand">
-        <div className="w-full px-6 py-10 md:px-10 md:py-14 xl:px-14 2xl:px-20 space-y-4">
+        <div className="w-full px-4 py-10 md:px-10 md:py-14 xl:px-14 2xl:px-20 space-y-4">
           <p className="text-xs uppercase tracking-[0.18em] text-sand/70">
             {CATALOG_EYEBROW[props.locale]}
           </p>
@@ -66,7 +66,7 @@ export function PublicListingsPage(props: PublicListingsPageProps) {
       </section>
 
       <section className="bg-sand text-navy">
-        <div className="w-full px-6 py-8 md:px-10 xl:px-14 2xl:px-20 space-y-8">
+        <div className="w-full px-4 py-8 md:px-10 xl:px-14 2xl:px-20 space-y-8">
           <Suspense
             fallback={
               <div className="space-y-6">

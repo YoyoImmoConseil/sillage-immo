@@ -8,6 +8,10 @@ import { formatPropertyTypeLabel } from "@/lib/properties/property-type-label";
 import { PropertyCard } from "./property-card";
 import type { PropertyBusinessType, PublicPropertyListingSummary } from "@/types/domain/properties";
 
+// CRO : hauteur tactile >= 48px et corps >= 16px sur mobile (évite le zoom iOS au focus) ;
+// desktop inchangé (text-sm, hauteur auto).
+const FILTER_FIELD = "mt-1 w-full rounded border px-3 py-2 text-base md:text-sm max-md:min-h-[48px]";
+
 type ListingFilters = {
   city: string;
   type: string;
@@ -65,6 +69,9 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
         count > 1 ? `${count} biens disponibles` : `${count} bien disponible`,
       noResultsTitle: "Aucun bien ne correspond à ces critères",
       noResultsBody: "Ajustez vos filtres ou contactez Sillage Immo pour nous partager votre recherche.",
+      filter: "Filtrer",
+      closeFilters: "Fermer les filtres",
+      createAlert: "Créer une alerte",
     },
     en: {
       loadError: "Unable to load properties with these filters.",
@@ -95,6 +102,9 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
         count > 1 ? `${count} properties available` : `${count} property available`,
       noResultsTitle: "No property matches these criteria",
       noResultsBody: "Adjust your filters or contact Sillage Immo to share your search with us.",
+      filter: "Filter",
+      closeFilters: "Close filters",
+      createAlert: "Create an alert",
     },
     es: {
       loadError: "No se pudieron cargar los inmuebles con estos filtros.",
@@ -125,6 +135,9 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
         count > 1 ? `${count} inmuebles disponibles` : `${count} inmueble disponible`,
       noResultsTitle: "Ningún inmueble coincide con estos criterios",
       noResultsBody: "Ajuste sus filtros o contacte con Sillage Immo para compartirnos su búsqueda.",
+      filter: "Filtrar",
+      closeFilters: "Cerrar filtros",
+      createAlert: "Crear una alerta",
     },
     ru: {
       loadError: "Не удалось загрузить объекты с такими фильтрами.",
@@ -162,6 +175,9 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
       },
       noResultsTitle: "По этим критериям ничего не найдено",
       noResultsBody: "Измените фильтры или свяжитесь с Sillage Immo, чтобы поделиться вашим запросом.",
+      filter: "Фильтры",
+      closeFilters: "Закрыть фильтры",
+      createAlert: "Создать оповещение",
     },
   }[props.locale];
   const [filters, setFilters] = useState<ListingFilters>(props.initialFilters);
@@ -169,6 +185,10 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
   const [propertyTypes, setPropertyTypes] = useState<string[]>(props.initialPropertyTypes);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Mobile : panneau de filtres repliable (fermé par défaut pour dégager les résultats).
+  // Sur desktop, le panneau reste toujours visible (md:).
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const activeFilterCount = filterEntries(filters).length;
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams();
@@ -261,12 +281,17 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
   };
 
   return (
-    <div className="space-y-8">
-      <div className="grid gap-3 rounded-2xl border border-[rgba(20,20,70,0.18)] p-5 md:grid-cols-4">
+    <div className="space-y-8 max-md:pb-24">
+      {/* Panneau de filtres : replié sur mobile (contrôlé par la barre collante), toujours visible sur desktop. */}
+      <div
+        className={`grid gap-3 rounded-2xl border border-[rgba(20,20,70,0.18)] p-5 md:grid-cols-4 ${
+          filtersOpen ? "" : "max-md:hidden"
+        }`}
+      >
         <label className="text-sm">
           {copy.city}
           <input
-            className="mt-1 w-full rounded border px-3 py-2"
+            className={FILTER_FIELD}
             value={filters.city}
             onChange={(event) => onFilterChange("city", event.target.value)}
             placeholder={copy.cityPlaceholder}
@@ -275,7 +300,7 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
         <label className="text-sm">
           {copy.propertyType}
           <select
-            className="mt-1 w-full rounded border px-3 py-2"
+            className={FILTER_FIELD}
             value={filters.type}
             onChange={(event) => onFilterChange("type", event.target.value)}
           >
@@ -290,7 +315,7 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
         <label className="text-sm">
           {copy.minBudget}
           <input
-            className="mt-1 w-full rounded border px-3 py-2"
+            className={FILTER_FIELD}
             value={filters.minPrice}
             onChange={(event) => onFilterChange("minPrice", event.target.value)}
             inputMode="numeric"
@@ -300,7 +325,7 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
         <label className="text-sm">
           {copy.maxBudget}
           <input
-            className="mt-1 w-full rounded border px-3 py-2"
+            className={FILTER_FIELD}
             value={filters.maxPrice}
             onChange={(event) => onFilterChange("maxPrice", event.target.value)}
             inputMode="numeric"
@@ -311,7 +336,7 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
         <label className="text-sm">
           {copy.minRooms}
           <input
-            className="mt-1 w-full rounded border px-3 py-2"
+            className={FILTER_FIELD}
             value={filters.minRooms}
             onChange={(event) => onFilterChange("minRooms", event.target.value)}
             inputMode="numeric"
@@ -321,7 +346,7 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
         <label className="text-sm">
           {copy.maxRooms}
           <input
-            className="mt-1 w-full rounded border px-3 py-2"
+            className={FILTER_FIELD}
             value={filters.maxRooms}
             onChange={(event) => onFilterChange("maxRooms", event.target.value)}
             inputMode="numeric"
@@ -331,7 +356,7 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
         <label className="text-sm">
           {copy.minSurface}
           <input
-            className="mt-1 w-full rounded border px-3 py-2"
+            className={FILTER_FIELD}
             value={filters.minSurface}
             onChange={(event) => onFilterChange("minSurface", event.target.value)}
             inputMode="numeric"
@@ -341,7 +366,7 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
         <label className="text-sm">
           {copy.maxSurface}
           <input
-            className="mt-1 w-full rounded border px-3 py-2"
+            className={FILTER_FIELD}
             value={filters.maxSurface}
             onChange={(event) => onFilterChange("maxSurface", event.target.value)}
             inputMode="numeric"
@@ -352,7 +377,7 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
         <label className="text-sm">
           {copy.minFloor}
           <input
-            className="mt-1 w-full rounded border px-3 py-2"
+            className={FILTER_FIELD}
             value={filters.minFloor}
             onChange={(event) => onFilterChange("minFloor", event.target.value)}
             inputMode="numeric"
@@ -362,7 +387,7 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
         <label className="text-sm">
           {copy.maxFloor}
           <input
-            className="mt-1 w-full rounded border px-3 py-2"
+            className={FILTER_FIELD}
             value={filters.maxFloor}
             onChange={(event) => onFilterChange("maxFloor", event.target.value)}
             inputMode="numeric"
@@ -372,7 +397,7 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
         <label className="text-sm">
           {copy.terrace}
           <select
-            className="mt-1 w-full rounded border px-3 py-2"
+            className={FILTER_FIELD}
             value={filters.terrace}
             onChange={(event) => onFilterChange("terrace", event.target.value)}
           >
@@ -384,7 +409,7 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
         <label className="text-sm">
           {copy.elevator}
           <select
-            className="mt-1 w-full rounded border px-3 py-2"
+            className={FILTER_FIELD}
             value={filters.elevator}
             onChange={(event) => onFilterChange("elevator", event.target.value)}
           >
@@ -397,6 +422,14 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
         <div className="md:col-span-4 flex flex-wrap items-center gap-3">
           <button type="button" className="sillage-btn-secondary rounded px-4 py-2 text-sm" onClick={resetFilters}>
             {copy.reset}
+          </button>
+          {/* Mobile : refermer le panneau après réglage des filtres. */}
+          <button
+            type="button"
+            className="rounded border border-navy/25 px-4 py-2 text-sm font-medium text-navy md:hidden"
+            onClick={() => setFiltersOpen(false)}
+          >
+            {copy.closeFilters}
           </button>
           <Link
             href={saveSearchHref}
@@ -425,10 +458,40 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
       ) : (
         <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           {listings.map((listing) => (
-            <PropertyCard key={listing.id} listing={listing} locale={props.locale} />
+            <PropertyCard
+              key={listing.id}
+              listing={listing}
+              locale={props.locale}
+              businessType={props.businessType}
+            />
           ))}
         </section>
       )}
+
+      {/*
+        Barre d'action collante — mobile uniquement (md:hidden, safe-area iOS).
+        Accès tri/filtre + CTA principal « Créer une alerte » orienté selon le
+        type de transaction (saveSearchHref conserve déjà businessType + filtres).
+      */}
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-navy/10 bg-sand/95 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur md:hidden">
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setFiltersOpen((open) => !open)}
+            className="min-h-[48px] shrink-0 rounded-lg border border-navy/25 px-4 text-sm font-medium text-navy"
+          >
+            {copy.filter}
+            {activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
+          </button>
+          <Link
+            href={saveSearchHref}
+            className="inline-flex min-h-[48px] flex-1 items-center justify-center rounded-lg bg-[#141446] px-4 text-sm font-semibold text-sand"
+            data-testid="sticky-create-alert-cta"
+          >
+            {copy.createAlert}
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }
