@@ -19,8 +19,10 @@ export default async function Home() {
   const locale = await getRequestLocale();
 
   return (
-    // pb mobile : évite que la barre d'action collante ne masque le bas de page.
-    <main className="min-h-screen pb-24 md:pb-0">
+    // Réserve tactile : évite que la barre d'action collante ne masque le bas
+    // de page. Même condition que la barre elle-même, sinon trou ou contenu
+    // masqué (cf. HomeMobileCtaBar).
+    <main className="min-h-screen touch:pb-24">
       <HeroSection locale={locale} />
       <SocialProofSection locale={locale} />
       <AssistantSection locale={locale} />

@@ -213,8 +213,8 @@ export function BuyerSignupCriteriaStep({
         <p className="text-xs italic opacity-70">{copy.sections.zoneReassurance}</p>
       </div>
 
-      {/* Bouton desktop inchangé ; sur mobile, action déportée dans la barre collante. */}
-      <div className="flex justify-end max-md:hidden">
+      {/* Bouton ordinateur ; sur téléphone, action déportée dans la barre collante. */}
+      <div className="flex justify-end touch:hidden">
         <button type="submit" className="sillage-btn rounded px-5 py-2 text-sm">
           {copy.buttons.next}
         </button>

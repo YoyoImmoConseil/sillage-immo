@@ -281,11 +281,13 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
   };
 
   return (
-    <div className="space-y-8 max-md:pb-24">
-      {/* Panneau de filtres : replié sur mobile (contrôlé par la barre collante), toujours visible sur desktop. */}
+    <div className="space-y-8 touch:pb-24">
+      {/* Panneau de filtres : repliable sur téléphone via la barre collante,
+          toujours visible sur ordinateur. La condition doit rester alignée sur
+          celle de la barre : le seul bouton d'ouverture vit à l'intérieur. */}
       <div
         className={`grid gap-3 rounded-2xl border border-[rgba(20,20,70,0.18)] p-5 md:grid-cols-4 ${
-          filtersOpen ? "" : "max-md:hidden"
+          filtersOpen ? "" : "touch:hidden"
         }`}
       >
         <label className="text-sm">
@@ -423,10 +425,10 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
           <button type="button" className="sillage-btn-secondary rounded px-4 py-2 text-sm" onClick={resetFilters}>
             {copy.reset}
           </button>
-          {/* Mobile : refermer le panneau après réglage des filtres. */}
+          {/* Téléphone : refermer le panneau après réglage des filtres. */}
           <button
             type="button"
-            className="rounded border border-navy/25 px-4 py-2 text-sm font-medium text-navy md:hidden"
+            className="rounded border border-navy/25 px-4 py-2 text-sm font-medium text-navy desktop:hidden"
             onClick={() => setFiltersOpen(false)}
           >
             {copy.closeFilters}
@@ -469,11 +471,11 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
       )}
 
       {/*
-        Barre d'action collante — mobile uniquement (md:hidden, safe-area iOS).
+        Barre d'action collante — téléphone uniquement (desktop:hidden, safe-area iOS).
         Accès tri/filtre + CTA principal « Créer une alerte » orienté selon le
         type de transaction (saveSearchHref conserve déjà businessType + filtres).
       */}
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-navy/10 bg-sand/95 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur md:hidden">
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-navy/10 bg-sand/95 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur desktop:hidden">
         <div className="flex items-center gap-3">
           <button
             type="button"

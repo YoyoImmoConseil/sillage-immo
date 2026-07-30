@@ -9,6 +9,8 @@ import {
   generateAnonymousSessionUuid,
   parseAnonymousSessionCookie,
 } from "@/lib/ai/anonymous-session";
+import { PLATFORM_HEADER_NAME } from "@/lib/platform/config";
+import { detectPlatform } from "@/lib/platform/detect";
 
 const EXCLUDED_PREFIXES = ["/api", "/_next", "/admin"];
 const LOCALE_COOKIE_NAME = "sillage-locale";
@@ -58,18 +60,25 @@ const isExcludedPath = (pathname: string) => {
 
 export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
+
+  // Plateforme résolue une seule fois par requête, puis transmise aux
+  // composants serveur via un en-tête (cf. lib/platform/request.ts).
+  const headers = new Headers(request.headers);
+  headers.set(
+    PLATFORM_HEADER_NAME,
+    detectPlatform(request.headers.get("user-agent"))
+  );
+
   if (isExcludedPath(pathname)) {
+    const response = NextResponse.next({ request: { headers } });
     if (isAnonymousSessionTrigger(pathname)) {
-      const response = NextResponse.next();
       await ensureAnonymousSessionCookie(request, response);
-      return response;
     }
-    return NextResponse.next();
+    return response;
   }
 
   const segments = pathname.split("/");
   const maybeLocale = segments[1];
-  const headers = new Headers(request.headers);
 
   if (isSupportedLocale(maybeLocale) && maybeLocale !== DEFAULT_LOCALE) {
     const strippedPath = stripLocalePrefix(pathname);

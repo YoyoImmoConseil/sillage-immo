@@ -21,6 +21,16 @@
   --font-mono: var(--font-open-sans);
 }
 
+/* Variantes de plateforme, alimentées par l'attribut data-platform posé sur
+   <html> par le layout racine (cf. lib/platform). Elles complètent les
+   breakpoints sans les remplacer : `md:` parle de la largeur disponible,
+   `touch:` / `ios:` / `android:` / `desktop:` parlent de l'appareil.
+   Exemple : `touch:pb-28` ne s'applique qu'aux téléphones. */
+@custom-variant touch (&:where([data-platform="ios"] *, [data-platform="android"] *));
+@custom-variant ios (&:where([data-platform="ios"] *));
+@custom-variant android (&:where([data-platform="android"] *));
+@custom-variant desktop (&:where([data-platform="desktop"] *));
+
 body {
   background: var(--background);
   color: var(--foreground);
@@ -46,12 +56,21 @@ button:not(.sillage-btn):not(.sillage-btn-secondary) {
   border-radius: 0.35rem;
 }
 
-a:not(.sillage-btn):not(.sillage-btn-secondary):hover,
 a:not(.sillage-btn):not(.sillage-btn-secondary):focus-visible,
-button:not(.sillage-btn):not(.sillage-btn-secondary):hover,
 button:not(.sillage-btn):not(.sillage-btn-secondary):focus-visible {
   background-color: color-mix(in srgb, currentColor 10%, transparent);
   box-shadow: 0 0 0 0.3rem color-mix(in srgb, currentColor 8%, transparent);
+}
+
+/* Le survol n'est servi qu'aux pointeurs capables de survoler : au doigt,
+   :hover reste collé après le tap jusqu'à ce qu'on touche ailleurs, ce qui
+   laisse des éléments allumés à tort. */
+@media (hover: hover) {
+  a:not(.sillage-btn):not(.sillage-btn-secondary):hover,
+  button:not(.sillage-btn):not(.sillage-btn-secondary):hover {
+    background-color: color-mix(in srgb, currentColor 10%, transparent);
+    box-shadow: 0 0 0 0.3rem color-mix(in srgb, currentColor 8%, transparent);
+  }
 }
 
 h1 {
@@ -110,11 +129,18 @@ label {
   color: var(--sillage-beige);
 }
 
-.sillage-btn:hover,
 .sillage-btn:focus-visible {
   opacity: 0.94;
   transform: translateY(-1px);
   box-shadow: 0 0 0 0.3rem rgba(244, 236, 228, 0.18);
+}
+
+@media (hover: hover) {
+  .sillage-btn:hover {
+    opacity: 0.94;
+    transform: translateY(-1px);
+    box-shadow: 0 0 0 0.3rem rgba(244, 236, 228, 0.18);
+  }
 }
 
 .sillage-btn-secondary {
@@ -123,9 +149,14 @@ label {
   background: rgba(20, 20, 70, 0.04);
 }
 
-.sillage-btn-secondary:hover,
 .sillage-btn-secondary:focus-visible {
   box-shadow: 0 0 0 0.3rem rgba(20, 20, 70, 0.08);
+}
+
+@media (hover: hover) {
+  .sillage-btn-secondary:hover {
+    box-shadow: 0 0 0 0.3rem rgba(20, 20, 70, 0.08);
+  }
 }
 
 .sillage-chip {

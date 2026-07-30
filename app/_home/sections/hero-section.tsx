@@ -69,8 +69,8 @@ export function HeroSection({ locale }: Props) {
             {/* HIÉRARCHIE CTA MOBILE : un seul primaire (Estimer, en crème pour
                 contraster sur le hero sombre) + un secondaire outline (Voir les
                 biens). « Créer ma recherche » et « Parler à un conseiller » sont
-                masqués sur mobile (repris dans le flux + barre collante) et
-                restent inchangés à partir de md. */}
+                masqués sur téléphone (repris dans le flux + barre collante) et
+                servis sur ordinateur, y compris en fenêtre étroite. */}
             <div className="pt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:flex lg:flex-wrap">
               <Link
                 href={localizePath("/estimation", locale)}
@@ -82,7 +82,7 @@ export function HeroSection({ locale }: Props) {
               </Link>
               <Link
                 href={localizePath("/recherche/nouvelle", locale)}
-                className="order-2 inline-flex items-center justify-center rounded-full border border-sand bg-transparent px-6 py-3 text-sm font-semibold text-sand transition hover:bg-sand hover:text-navy max-md:hidden"
+                className="order-2 inline-flex items-center justify-center rounded-full border border-sand bg-transparent px-6 py-3 text-sm font-semibold text-sand transition hover:bg-sand hover:text-navy touch:hidden"
                 data-track-cta="hero_buyer_search"
                 data-track-location="hero"
               >
@@ -91,7 +91,7 @@ export function HeroSection({ locale }: Props) {
               <a
                 href={`tel:${SILLAGE_PHONE_RAW}`}
                 aria-label={phoneAria}
-                className="order-3 lg:order-4 inline-flex items-center justify-center gap-2 rounded-full border border-sand/60 bg-transparent px-6 py-3 text-sm font-semibold text-sand transition hover:bg-sand/10 max-md:hidden"
+                className="order-3 lg:order-4 inline-flex items-center justify-center gap-2 rounded-full border border-sand/60 bg-transparent px-6 py-3 text-sm font-semibold text-sand transition hover:bg-sand/10 touch:hidden"
                 data-track-location="hero"
               >
                 <PhoneIcon className="h-4 w-4" />

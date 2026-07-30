@@ -101,8 +101,8 @@ export function BuyerSignupContactStep({
         </p>
       ) : null}
 
-      {/* Boutons desktop inchangés ; sur mobile, action déportée dans la barre collante. */}
-      <div className="flex flex-wrap justify-between gap-3 max-md:hidden">
+      {/* Boutons ordinateur ; sur téléphone, action déportée dans la barre collante. */}
+      <div className="flex flex-wrap justify-between gap-3 touch:hidden">
         <button
           type="button"
           className="sillage-btn-secondary rounded px-5 py-2 text-sm"

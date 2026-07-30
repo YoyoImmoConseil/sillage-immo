@@ -15,6 +15,8 @@ import { AnalyticsClickDelegate } from "./components/analytics-click-delegate";
 import { AnalyticsErrorTracker } from "./components/analytics-error-tracker";
 import { AnalyticsWebVitals } from "./components/analytics-web-vitals";
 import { getRequestLocale } from "@/lib/i18n/request";
+import { getRequestPlatform } from "@/lib/platform/request";
+import { PlatformProvider } from "./components/platform-provider";
 
 const hkGrotesk = localFont({
   variable: "--font-hk-grotesk",
@@ -74,13 +76,17 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const locale = await getRequestLocale();
+  const [locale, platform] = await Promise.all([
+    getRequestLocale(),
+    getRequestPlatform(),
+  ]);
   // Only inject GTM when an ID is configured (prod). Empty / unset on local
   // and preview branches avoids polluting analytics with non-prod traffic.
   const gtmId = process.env.NEXT_PUBLIC_GTM_ID;
 
   return (
-    <html lang={locale}>
+    // data-platform alimente les variantes CSS touch: / ios: / android: / desktop:
+    <html lang={locale} data-platform={platform}>
       {gtmId ? (
         <>
           <AnalyticsConsentInit />
@@ -90,24 +96,26 @@ export default async function RootLayout({
       <body
         className={`${hkGrotesk.variable} ${montagna.variable} ${libreBaskerville.variable} ${montserrat.variable} ${openSans.variable} antialiased`}
       >
-        <Suspense fallback={null}>
-          <RouteProgressBar />
-        </Suspense>
-        <SiteHeader />
-        {children}
-        <FloatingAssistant />
-        <SpeedInsights />
-        {gtmId ? (
-          <>
-            <Suspense fallback={null}>
-              <AnalyticsPageTracker locale={locale} />
-            </Suspense>
-            <AnalyticsClickDelegate />
-            <AnalyticsErrorTracker />
-            <AnalyticsWebVitals />
-            <AnalyticsConsentBanner locale={locale} />
-          </>
-        ) : null}
+        <PlatformProvider platform={platform}>
+          <Suspense fallback={null}>
+            <RouteProgressBar />
+          </Suspense>
+          <SiteHeader />
+          {children}
+          <FloatingAssistant />
+          <SpeedInsights />
+          {gtmId ? (
+            <>
+              <Suspense fallback={null}>
+                <AnalyticsPageTracker locale={locale} />
+              </Suspense>
+              <AnalyticsClickDelegate />
+              <AnalyticsErrorTracker />
+              <AnalyticsWebVitals />
+              <AnalyticsConsentBanner locale={locale} />
+            </>
+          ) : null}
+        </PlatformProvider>
       </body>
     </html>
   );

@@ -10,7 +10,8 @@ type Props = { locale: AppLocale };
  * Barre d'action collante mobile (conversion).
  * Intention marketing : garder en permanence, pendant tout le scroll, le lead
  * prioritaire (estimation vendeur) et le contact direct (appel agence).
- * - md:hidden : n'apparaît jamais sur desktop (≥ 768px inchangé).
+ * - desktop:hidden : réservée aux téléphones, quelle que soit la largeur de la
+ *   fenêtre (une fenêtre desktop rétrécie garde les CTA du hero).
  * - safe-area iOS respectée, boutons ≥ 48px.
  */
 export function HomeMobileCtaBar({ locale }: Props) {
@@ -18,7 +19,7 @@ export function HomeMobileCtaBar({ locale }: Props) {
   const phoneAria = PHONE_ARIA_LABEL[locale];
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-navy/10 bg-sand/95 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur md:hidden">
+    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-navy/10 bg-sand/95 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur desktop:hidden">
       <div className="flex items-center gap-3">
         {/* CTA primaire : estimation vendeur (couleur de marque #141446 = navy). */}
         <Link

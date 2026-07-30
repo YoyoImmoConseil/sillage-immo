@@ -388,7 +388,9 @@ export async function PublicListingDetailPage({
           - GRAND ÉCRAN (≥ 1665px) : les conteneurs redeviennent des colonnes flex
             indépendantes → mise en page identique à l'origine (order réinitialisé).
         */}
-        <div className="w-full px-4 pb-28 pt-6 md:grid md:grid-cols-[1.6fr_0.9fr] md:items-start md:gap-8 md:px-10 md:pb-8 md:pt-8 xl:px-14 2xl:px-20 flex flex-col gap-6">
+        {/* touch:pb-28 réserve la place de la barre collante ; les téléphones en
+            paysage dépassent 768px, un md:pb-* entrerait en conflit avec elle. */}
+        <div className="w-full px-4 pb-8 pt-6 md:grid md:grid-cols-[1.6fr_0.9fr] md:items-start md:gap-8 md:px-10 md:pt-8 xl:px-14 2xl:px-20 flex flex-col gap-6 touch:pb-28">
           <div className="contents min-[1665px]:flex min-[1665px]:flex-col min-[1665px]:gap-6">
             {/* Galerie : photo principale plein écran (swipe au doigt sur mobile) */}
             <div className="order-1 md:order-1 md:col-start-1 min-[1665px]:order-none">
@@ -720,11 +722,11 @@ export async function PublicListingDetailPage({
           </aside>
         </div>
 
-        {/* MOBILE — barre d'action collante en bas d'écran (conversion).
+        {/* TÉLÉPHONE — barre d'action collante en bas d'écran (conversion).
             Bouton principal « Demander une visite » → WhatsApp vers
             l'interlocuteur (repli tel: puis ancre). Bouton secondaire
             « Appeler » → tel:. Hauteur tactile ≥ 48px, safe-area iOS respectée. */}
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[rgba(20,20,70,0.18)] bg-sand/95 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur md:hidden">
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[rgba(20,20,70,0.18)] bg-sand/95 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur desktop:hidden">
           <div className="flex items-center gap-3">
             <a
               href={visitHref}

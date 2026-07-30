@@ -252,7 +252,7 @@ export function BuyerSignupForm(props: BuyerSignupFormProps) {
   }
 
   return (
-    <div className="mx-auto max-w-4xl max-md:pb-28">
+    <div className="mx-auto max-w-4xl touch:pb-28">
       <ol className="mb-6 flex gap-2 text-xs uppercase tracking-[0.14em]">
         {copy.steps.map((label, index) => {
           const stepNumber = (index + 1) as 1 | 2;
@@ -296,11 +296,11 @@ export function BuyerSignupForm(props: BuyerSignupFormProps) {
       )}
 
       {/*
-        Barre d'action collante — mobile uniquement (md:hidden, safe-area iOS).
+        Barre d'action collante — téléphone uniquement (desktop:hidden, safe-area iOS).
         Le bouton pilote la soumission de l'étape courante via l'attribut `form`
         (soumission native du <form> concerné) : aucun changement de logique.
       */}
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-navy/10 bg-sand/95 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur md:hidden">
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-navy/10 bg-sand/95 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur desktop:hidden">
         <div className="mx-auto flex max-w-4xl items-center gap-3">
           {step === 2 ? (
             <button

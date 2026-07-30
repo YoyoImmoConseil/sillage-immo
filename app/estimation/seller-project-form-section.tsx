@@ -109,10 +109,11 @@ export function SellerProjectFormSection({
     scrollToTop();
   };
 
-  // Groupe de champs : transparent sur desktop (md:contents => grille d'origine
-  // inchangée) ; sur mobile, colonne unique affichée/masquée selon l'étape.
+  // Groupe de champs : transparent sur ordinateur (desktop:contents => grille
+  // d'origine, formulaire entier visible d'un coup) ; sur téléphone, colonne
+  // unique affichée ou masquée selon l'étape.
   const groupClass = (step: MobileStep) =>
-    `${!stepping || mobileStep === step ? "flex" : "hidden"} flex-col gap-3 md:contents`;
+    `${!stepping || mobileStep === step ? "flex" : "hidden"} flex-col gap-3 desktop:contents`;
 
   // Marqueur "facultatif" : mobile uniquement (desktop reste strictement inchangé).
   const optionalTag = (
@@ -130,7 +131,7 @@ export function SellerProjectFormSection({
   return (
     <section
       ref={sectionRef}
-      className="scroll-mt-4 rounded-2xl border border-[rgba(20,20,70,0.2)] bg-sand p-4 md:p-6 space-y-4 max-md:pb-28"
+      className="scroll-mt-4 rounded-2xl border border-[rgba(20,20,70,0.2)] bg-sand p-4 md:p-6 space-y-4 touch:pb-28"
     >
       <h2 className="sillage-section-title">{copy.title}</h2>
       <p className="text-sm opacity-75">{copy.intro}</p>
@@ -138,9 +139,9 @@ export function SellerProjectFormSection({
         {copy.antiFriction}
       </p>
 
-      {/* Barre de progression — mobile uniquement, pendant la saisie */}
+      {/* Barre de progression — téléphone uniquement, pendant la saisie */}
       {stepping ? (
-        <div className="md:hidden" aria-hidden={false}>
+        <div className="desktop:hidden" aria-hidden={false}>
           <div className="flex items-center justify-between text-xs font-medium text-navy/70">
             <span>
               {copy.stepWord} {mobileStep}/3 — {stepTitles[mobileStep]}
@@ -497,9 +498,9 @@ export function SellerProjectFormSection({
         </div>
       </div>
 
-      {/* Bouton d'envoi desktop — inchangé (masqué sur mobile, remplacé par la barre collante) */}
+      {/* Bouton d'envoi ordinateur — masqué sur téléphone, où la barre collante le remplace */}
       <button
-        className="sillage-btn rounded px-4 py-2 text-sm disabled:opacity-60 max-md:hidden"
+        className="sillage-btn rounded px-4 py-2 text-sm disabled:opacity-60 touch:hidden"
         type="button"
         disabled={submitDisabled}
         onClick={onSendOtp}
@@ -507,9 +508,9 @@ export function SellerProjectFormSection({
         {loading ? copy.sending : copy.send}
       </button>
 
-      {/* Barre d'action collante — mobile uniquement, pendant la saisie */}
+      {/* Barre d'action collante — téléphone uniquement, pendant la saisie */}
       {stepping ? (
-        <div className="md:hidden fixed inset-x-0 bottom-0 z-40 border-t border-navy/10 bg-sand/95 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur">
+        <div className="desktop:hidden fixed inset-x-0 bottom-0 z-40 border-t border-navy/10 bg-sand/95 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur">
           {mobileStep === 3 ? (
             <p className="mb-2 text-center text-xs leading-snug text-navy/70">
               {copy.finalReassurance}
