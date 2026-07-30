@@ -10,6 +10,13 @@ import { ASSISTANT_COPY, AssistantChat } from "./assistant-chat";
 // public pages (including the homepage, alongside the inline assistant) and
 // hidden only on the admin / client space / auth areas, which are not
 // commercial surfaces.
+// Décalage tactile : sur téléphone, les barres CTA collantes occupent le bas
+// d'écran (4.5rem + safe-area) et la bulle, en z-50, passerait par-dessus le
+// bouton « Appeler ». On la remonte juste au-dessus. Sur ordinateur il n'y a
+// pas de barre, donc la position d'origine est conservée.
+const ABOVE_STICKY_BAR =
+  "touch:bottom-[calc(5.5rem+env(safe-area-inset-bottom))]";
+
 export function FloatingAssistant() {
   const pathname = usePathname() ?? "/";
   const locale = getPathLocale(pathname);
@@ -28,7 +35,9 @@ export function FloatingAssistant() {
   return (
     <>
       {open ? (
-        <div className="fixed bottom-24 right-4 z-50 w-[min(92vw,400px)] h-[min(72vh,560px)]">
+        <div
+          className={`fixed bottom-24 right-4 z-50 w-[min(92vw,400px)] h-[min(72vh,560px)] ${ABOVE_STICKY_BAR}`}
+        >
           <div className="flex h-full flex-col gap-3 overflow-hidden rounded-2xl border border-[var(--sillage-border)] bg-sand p-4 text-navy shadow-2xl">
             <div className="flex items-start justify-between gap-3">
               <h2 className="sillage-section-title text-base leading-tight">{copy.title}</h2>
@@ -52,7 +61,7 @@ export function FloatingAssistant() {
           onClick={() => setOpen(true)}
           aria-label={copy.openAssistant}
           aria-expanded={false}
-          className="sillage-btn fixed bottom-5 right-5 z-50 inline-flex items-center gap-2 rounded-full px-4 py-3 shadow-xl"
+          className={`sillage-btn fixed bottom-5 right-5 z-50 inline-flex items-center gap-2 rounded-full px-4 py-3 shadow-xl ${ABOVE_STICKY_BAR}`}
         >
           <svg aria-hidden viewBox="0 0 24 24" className="h-6 w-6" fill="none">
             <path
