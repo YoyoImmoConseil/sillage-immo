@@ -48,8 +48,10 @@ export function SiteHeaderClient() {
           {copy.home}
         </Link>
 
-        {/* Mobile nav (hamburger) - visible below md breakpoint */}
-        <div className="relative md:hidden">
+        {/* Nav repliée (hamburger) — jusqu'à lg, car la nav déployée réclame
+            ~900px (logo + liens + sélecteur de langue) et débordait sur iPad
+            portrait et sur les fenêtres étroites. */}
+        <div className="relative lg:hidden">
           <button
             type="button"
             className="inline-flex h-11 w-11 items-center justify-center text-sand"
@@ -94,8 +96,8 @@ export function SiteHeaderClient() {
           ) : null}
         </div>
 
-        {/* Desktop nav - visible from md breakpoint */}
-        <nav className="hidden items-center gap-5 text-sm uppercase tracking-[0.14em] text-sand/90 md:flex md:text-[0.95rem]">
+        {/* Nav déployée — à partir de lg seulement (cf. commentaire ci-dessus). */}
+        <nav className="hidden items-center gap-5 text-sm uppercase tracking-[0.14em] text-sand/90 lg:flex lg:text-[0.95rem]">
           {navItems.map((item) => (
             <Link
               key={item.href}
