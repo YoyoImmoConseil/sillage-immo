@@ -31,6 +31,14 @@
 @custom-variant android (&:where([data-platform="android"] *));
 @custom-variant desktop (&:where([data-platform="desktop"] *));
 
+/* Garde-fou : un élément trop large ne doit jamais rendre la page baladeuse
+   horizontalement (au doigt, un scroll un peu oblique décalait tout le site).
+   `clip` et non `hidden` : hidden crée un conteneur de défilement, ce qui
+   casserait le `position: sticky` de l'en-tête. */
+html {
+  overflow-x: clip;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);

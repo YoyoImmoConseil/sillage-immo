@@ -149,7 +149,7 @@ export function SellerProjectChat({
           onChange={(event) => setInput(event.target.value)}
           placeholder={copy.placeholder}
           maxLength={700}
-          className="flex-1 rounded-full border border-[rgba(20,20,70,0.2)] bg-white px-4 py-2 text-sm text-navy outline-none focus:border-navy"
+          className="min-w-0 flex-1 rounded-full border border-[rgba(20,20,70,0.2)] bg-white px-4 py-2 text-sm text-navy outline-none focus:border-navy"
         />
         <button
           type="submit"
