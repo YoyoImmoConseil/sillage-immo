@@ -20,11 +20,13 @@ import {
  *   (classes passées via `desktopClassName`) → rendu desktop strictement inchangé.
  *
  * Les classes de snap/largeur sont posées sur les cartes par l'appelant via
- * la constante `CAROUSEL_ITEM` (inertes en grille desktop).
+ * la constante `CAROUSEL_ITEM` (inertes en grille desktop), exportée par
+ * `./carousel-item` et non par ce module, qui est un module client.
+ *
+ * Attention : placé dans une grille ou un flex, le parent direct du carrousel
+ * doit porter `min-w-0`. Sans cela son `min-width: auto` laisse la piste
+ * s'étirer à la largeur intrinsèque des cartes et déborde la page.
  */
-
-// À appliquer sur chaque enfant/carte du carrousel.
-export const CAROUSEL_ITEM = "snap-start shrink-0 basis-[86%] md:basis-auto";
 
 const SCROLLER_BASE =
   "no-scrollbar flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-px-4 -mx-4 px-4 md:mx-0 md:grid md:snap-none md:overflow-visible md:px-0 md:scroll-px-0";

@@ -2,7 +2,8 @@ import Link from "next/link";
 import type { AppLocale } from "@/lib/i18n/config";
 import { localizePath } from "@/lib/i18n/routing";
 import { HOME_COPY } from "../copy";
-import { CAROUSEL_ITEM, HCarousel } from "../shared/mobile-carousel";
+import { CAROUSEL_ITEM } from "../shared/carousel-item";
+import { HCarousel } from "../shared/mobile-carousel";
 
 type Props = { locale: AppLocale };
 
@@ -105,7 +106,10 @@ export function BuyerSection({ locale }: Props) {
     >
       <div className="w-full px-4 py-16 md:px-10 md:py-24 xl:px-14 2xl:px-20">
         <div className="grid gap-10 lg:grid-cols-[55%_45%] lg:items-center">
-          <div className="space-y-8">
+          {/* min-w-0 : sans lui, le `min-width: auto` de cet élément de grille
+              laisse le carrousel étirer la colonne à la largeur intrinsèque de
+              ses cartes, ce qui rend toute la page décalable horizontalement. */}
+          <div className="min-w-0 space-y-8">
             <div className="max-w-2xl space-y-4">
               <p className="text-xs uppercase tracking-[0.22em] text-navy/65">
                 {copy.eyebrow}

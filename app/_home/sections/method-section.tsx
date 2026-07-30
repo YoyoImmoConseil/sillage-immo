@@ -2,7 +2,8 @@ import Link from "next/link";
 import type { AppLocale } from "@/lib/i18n/config";
 import { localizePath } from "@/lib/i18n/routing";
 import { HOME_COPY } from "../copy";
-import { CAROUSEL_ITEM, HCarousel } from "../shared/mobile-carousel";
+import { CAROUSEL_ITEM } from "../shared/carousel-item";
+import { HCarousel } from "../shared/mobile-carousel";
 
 type Props = { locale: AppLocale };
 

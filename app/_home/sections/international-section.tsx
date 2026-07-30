@@ -5,7 +5,8 @@ import {
   SILLAGE_PHONE_RAW,
 } from "../copy";
 import { PhoneIcon } from "../shared/cta-button";
-import { CAROUSEL_ITEM, HCarousel } from "../shared/mobile-carousel";
+import { CAROUSEL_ITEM } from "../shared/carousel-item";
+import { HCarousel } from "../shared/mobile-carousel";
 
 type Props = { locale: AppLocale };
 
