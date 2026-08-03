@@ -72,8 +72,25 @@ const emptyFinancials = {
   owner_fee_percentage: null,
 } as const;
 
+/**
+ * `Offer Created` and `Offer Changed` are distinct SweepBright triggers, and
+ * "changed" may well exclude creation. The endpoint therefore accepts the whole
+ * family, so a second Zap can be wired without redeploying — the milestone is
+ * derived from the offer's own dates, never from the event name.
+ */
+export const OFFER_EVENT_NAMES = [
+  "offer.changed",
+  "offer.created",
+  "offer.updated",
+  "offer.accepted",
+  "offer.refused",
+  "offer.cancelled",
+  "offer.archived",
+  "offer.restored",
+] as const;
+
 export const zapierOfferPayloadSchema = z.object({
-  event: z.literal("offer.changed"),
+  event: z.enum(OFFER_EVENT_NAMES),
   reason: nullableStringField,
   offer: z.preprocess(preprocessObjectField, offerBodySchema),
   // Zapier omits a sub-object entirely when all its fields are blank.
