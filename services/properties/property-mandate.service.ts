@@ -72,6 +72,28 @@ export const upsertPropertyMandate = async (
   return data as MandateRow;
 };
 
+/**
+ * Most recent mandate of a property. Stamped on price events so the
+ * mandate-to-sale ratio is computable in a single query, and so a re-mandated
+ * property never mixes two references.
+ */
+export const getLatestPropertyMandate = async (
+  propertyId: string
+): Promise<MandateRow | null> => {
+  const { data, error } = await supabaseAdmin
+    .from("property_mandates")
+    .select("*")
+    .eq("property_id", propertyId)
+    .order("start_date", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false })
+    .limit(1);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+  return (data?.[0] as MandateRow | undefined) ?? null;
+};
+
 export const getPropertyMandate = async (input: {
   propertyId: string;
   mandateNumber: string;

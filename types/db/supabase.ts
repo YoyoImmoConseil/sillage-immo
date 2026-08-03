@@ -2361,6 +2361,106 @@ export type Database = {
           }
         ];
       };
+      property_offers: {
+        Row: {
+          id: string;
+          created_at: string;
+          updated_at: string;
+          property_id: string;
+          external_offer_id: string;
+          parent_external_offer_id: string | null;
+          company_id: string | null;
+          status: string | null;
+          reason: string | null;
+          notes: string | null;
+          currency: string;
+          transaction_amount: number | null;
+          buyer_gross_amount: number | null;
+          owner_net_amount: number | null;
+          total_agency_fee: number | null;
+          buyer_total_fee: number | null;
+          buyer_fee_fixed: number | null;
+          buyer_fee_percentage: number | null;
+          owner_total_fee: number | null;
+          owner_fee_fixed: number | null;
+          owner_fee_percentage: number | null;
+          source_created_at: string | null;
+          source_updated_at: string | null;
+          valid_until: string | null;
+          accepted_at: string | null;
+          refused_at: string | null;
+          cancelled_at: string | null;
+          archived_at: string | null;
+          occurred_at: string;
+          occurrence_kind: string;
+          source: string;
+          raw_payload: Record<string, unknown>;
+          metadata: Record<string, unknown>;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          property_id: string;
+          external_offer_id: string;
+          parent_external_offer_id?: string | null;
+          company_id?: string | null;
+          status?: string | null;
+          reason?: string | null;
+          notes?: string | null;
+          currency?: string;
+          transaction_amount?: number | null;
+          buyer_gross_amount?: number | null;
+          owner_net_amount?: number | null;
+          total_agency_fee?: number | null;
+          buyer_total_fee?: number | null;
+          buyer_fee_fixed?: number | null;
+          buyer_fee_percentage?: number | null;
+          owner_total_fee?: number | null;
+          owner_fee_fixed?: number | null;
+          owner_fee_percentage?: number | null;
+          source_created_at?: string | null;
+          source_updated_at?: string | null;
+          valid_until?: string | null;
+          accepted_at?: string | null;
+          refused_at?: string | null;
+          cancelled_at?: string | null;
+          archived_at?: string | null;
+          occurred_at: string;
+          occurrence_kind: string;
+          source?: string;
+          raw_payload?: Record<string, unknown>;
+          metadata?: Record<string, unknown>;
+        };
+        Update: {
+          id?: string;
+          updated_at?: string;
+          status?: string | null;
+          reason?: string | null;
+          notes?: string | null;
+          transaction_amount?: number | null;
+          buyer_gross_amount?: number | null;
+          owner_net_amount?: number | null;
+          total_agency_fee?: number | null;
+          accepted_at?: string | null;
+          refused_at?: string | null;
+          cancelled_at?: string | null;
+          archived_at?: string | null;
+          occurred_at?: string;
+          occurrence_kind?: string;
+          raw_payload?: Record<string, unknown>;
+          metadata?: Record<string, unknown>;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "property_offers_property_id_fkey";
+            columns: ["property_id"];
+            isOneToOne: false;
+            referencedRelation: "properties";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       property_status_events: {
         Row: {
           id: string;

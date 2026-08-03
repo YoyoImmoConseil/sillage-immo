@@ -63,7 +63,7 @@ const stringNumberToNumber = (value: unknown): unknown => {
  * Returns `null` when the input does not look like a stringified object/array
  * or when parsing fails — callers handle that gracefully via fallback paths.
  */
-const tryParsePythonRepr = (raw: string): unknown => {
+export const tryParsePythonRepr = (raw: string): unknown => {
   const trimmed = raw.trim();
   if (
     !(
@@ -138,7 +138,7 @@ const tryParsePythonRepr = (raw: string): unknown => {
  * Anything else (number, boolean, weird string) is passed through unchanged
  * so the downstream Zod schema can emit a precise validation error.
  */
-const preprocessObjectField = (value: unknown): unknown => {
+export const preprocessObjectField = (value: unknown): unknown => {
   if (value === null || value === undefined) return value;
   if (typeof value === "object") return value;
   if (typeof value === "string") {
