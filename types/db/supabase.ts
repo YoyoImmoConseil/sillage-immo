@@ -2195,6 +2195,230 @@ export type Database = {
           }
         ];
       };
+      property_mandates: {
+        Row: {
+          id: string;
+          created_at: string;
+          updated_at: string;
+          property_id: string;
+          mandate_number: string;
+          is_exclusive: boolean | null;
+          start_date: string | null;
+          end_date: string | null;
+          vendor_percentage: number | null;
+          vendor_fixed_fee: number | null;
+          buyer_percentage: number | null;
+          buyer_fixed_fee: number | null;
+          mandate_price_amount: number | null;
+          mandate_price_currency: string;
+          first_published_at: string | null;
+          source: string;
+          metadata: Record<string, unknown>;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          property_id: string;
+          mandate_number: string;
+          is_exclusive?: boolean | null;
+          start_date?: string | null;
+          end_date?: string | null;
+          vendor_percentage?: number | null;
+          vendor_fixed_fee?: number | null;
+          buyer_percentage?: number | null;
+          buyer_fixed_fee?: number | null;
+          mandate_price_amount?: number | null;
+          mandate_price_currency?: string;
+          first_published_at?: string | null;
+          source?: string;
+          metadata?: Record<string, unknown>;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          property_id?: string;
+          mandate_number?: string;
+          is_exclusive?: boolean | null;
+          start_date?: string | null;
+          end_date?: string | null;
+          vendor_percentage?: number | null;
+          vendor_fixed_fee?: number | null;
+          buyer_percentage?: number | null;
+          buyer_fixed_fee?: number | null;
+          mandate_price_amount?: number | null;
+          mandate_price_currency?: string;
+          first_published_at?: string | null;
+          source?: string;
+          metadata?: Record<string, unknown>;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "property_mandates_property_id_fkey";
+            columns: ["property_id"];
+            isOneToOne: false;
+            referencedRelation: "properties";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      property_price_events: {
+        Row: {
+          id: string;
+          created_at: string;
+          property_id: string | null;
+          seller_project_id: string | null;
+          mandate_number: string | null;
+          context:
+            | "baseline"
+            | "estimation"
+            | "mandate"
+            | "listing_change"
+            | "offer"
+            | "agreement"
+            | "deed"
+            | "withdrawn";
+          amount: number;
+          previous_amount: number | null;
+          currency: string;
+          occurred_at: string;
+          recorded_at: string;
+          source:
+            | "sweepbright_webhook"
+            | "zapier"
+            | "admin"
+            | "valuation"
+            | "estimation_tunnel"
+            | "backfill";
+          source_ref: string | null;
+          delivery_id: string | null;
+          dedupe_key: string;
+          metadata: Record<string, unknown>;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          property_id?: string | null;
+          seller_project_id?: string | null;
+          mandate_number?: string | null;
+          context:
+            | "baseline"
+            | "estimation"
+            | "mandate"
+            | "listing_change"
+            | "offer"
+            | "agreement"
+            | "deed"
+            | "withdrawn";
+          amount: number;
+          previous_amount?: number | null;
+          currency?: string;
+          occurred_at: string;
+          recorded_at?: string;
+          source:
+            | "sweepbright_webhook"
+            | "zapier"
+            | "admin"
+            | "valuation"
+            | "estimation_tunnel"
+            | "backfill";
+          source_ref?: string | null;
+          delivery_id?: string | null;
+          dedupe_key: string;
+          metadata?: Record<string, unknown>;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          property_id?: string | null;
+          seller_project_id?: string | null;
+          mandate_number?: string | null;
+          amount?: number;
+          previous_amount?: number | null;
+          currency?: string;
+          occurred_at?: string;
+          recorded_at?: string;
+          source_ref?: string | null;
+          delivery_id?: string | null;
+          dedupe_key?: string;
+          metadata?: Record<string, unknown>;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "property_price_events_property_id_fkey";
+            columns: ["property_id"];
+            isOneToOne: false;
+            referencedRelation: "properties";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "property_price_events_seller_project_id_fkey";
+            columns: ["seller_project_id"];
+            isOneToOne: false;
+            referencedRelation: "seller_projects";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      property_status_events: {
+        Row: {
+          id: string;
+          created_at: string;
+          property_id: string;
+          mandate_number: string | null;
+          status: string;
+          previous_status: string | null;
+          is_public: boolean;
+          occurred_at: string;
+          recorded_at: string;
+          source: "sweepbright_webhook" | "zapier" | "admin" | "backfill";
+          source_ref: string | null;
+          delivery_id: string | null;
+          dedupe_key: string;
+          metadata: Record<string, unknown>;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          property_id: string;
+          mandate_number?: string | null;
+          status: string;
+          previous_status?: string | null;
+          is_public?: boolean;
+          occurred_at: string;
+          recorded_at?: string;
+          source: "sweepbright_webhook" | "zapier" | "admin" | "backfill";
+          source_ref?: string | null;
+          delivery_id?: string | null;
+          dedupe_key: string;
+          metadata?: Record<string, unknown>;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          property_id?: string;
+          mandate_number?: string | null;
+          status?: string;
+          previous_status?: string | null;
+          is_public?: boolean;
+          occurred_at?: string;
+          recorded_at?: string;
+          source_ref?: string | null;
+          delivery_id?: string | null;
+          dedupe_key?: string;
+          metadata?: Record<string, unknown>;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "property_status_events_property_id_fkey";
+            columns: ["property_id"];
+            isOneToOne: false;
+            referencedRelation: "properties";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       property_documents: {
         Row: {
           id: string;

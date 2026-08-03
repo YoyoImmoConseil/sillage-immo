@@ -10,6 +10,11 @@ import { recomputeMatchesForProperty } from "@/services/buyers/buyer-matching.se
 import { processBuyerAlertsForNewMatches } from "@/services/buyers/buyer-alert.service";
 import { isPublicAvailabilityStatus } from "@/lib/properties/canonical-types";
 import { ensureContactIdentity } from "@/services/contacts/contact-identity.service";
+import {
+  readSweepBrightProjectionSnapshot,
+  recordSweepBrightDeletionHistory,
+  recordSweepBrightHistory,
+} from "./sweepbright-history.service";
 
 type WebhookDeliveryRow = Database["public"]["Tables"]["crm_webhook_deliveries"]["Row"];
 type PropertyRow = Database["public"]["Tables"]["properties"]["Row"];
@@ -380,7 +385,21 @@ const cachePropertyMediaAssets = async (input: { propertyId: string; listingId: 
   return { preferredCoverImageUrl };
 };
 
-const upsertPropertyProjection = async (estate: SweepBrightEstateData) => {
+const upsertPropertyProjection = async (
+  estate: SweepBrightEstateData,
+  options?: { occurredAt?: string; deliveryId?: string | null }
+) => {
+  // Read the previous price and status BEFORE the upsert overwrites them: this
+  // is the only moment where they are still readable. Best-effort — a failure
+  // must never block the projection.
+  const historySnapshot = await readSweepBrightProjectionSnapshot({
+    sourceRef: estate.id,
+    businessType: inferBusinessType(estate),
+  }).catch((snapshotError) => {
+    console.error("[sweepbright-sync] history snapshot failed", snapshotError);
+    return null;
+  });
+
   const propertyPayload = mapEstateToPropertyInsert(estate);
   const { data: propertyData, error: propertyError } = await supabaseAdmin
     .from("properties")
@@ -449,6 +468,23 @@ const upsertPropertyProjection = async (estate: SweepBrightEstateData) => {
     throw new Error(listingError?.message ?? "Unable to upsert property listing projection.");
   }
 
+  // Append-only journals (price, status, mandate). The upsert above keeps only
+  // the latest state; this is what preserves the chronology the public register
+  // and the analytics views read. Best-effort by design.
+  try {
+    await recordSweepBrightHistory({
+      estate,
+      propertyId: property.id,
+      priceAmount: computePriceAmount(estate),
+      priceCurrency: estate.price?.currency ?? estate.price_base_rent?.currency ?? "EUR",
+      snapshot: historySnapshot,
+      occurredAt: options?.occurredAt ?? nowIso,
+      deliveryId: options?.deliveryId ?? null,
+    });
+  } catch (historyError) {
+    console.error("[sweepbright-sync] history recording failed", historyError);
+  }
+
   const { error: deleteMediaError } = await supabaseAdmin
     .from("property_media")
     .delete()
@@ -469,10 +505,13 @@ const upsertPropertyProjection = async (estate: SweepBrightEstateData) => {
   if (estate.is_project && Array.isArray(estate.properties)) {
     for (const unit of estate.properties) {
       if (unit && typeof unit === "object" && typeof unit.id === "string") {
-        await upsertPropertyProjection({
-          ...unit,
-          project_id: estate.id,
-        });
+        await upsertPropertyProjection(
+          {
+            ...unit,
+            project_id: estate.id,
+          },
+          options
+        );
       }
     }
   }
@@ -623,12 +662,17 @@ const syncSweepBrightVendors = async (
   }
 };
 
-const markEstateDeleted = async (estateId: string) => {
+const markEstateDeleted = async (
+  estateId: string,
+  options?: { occurredAt?: string; deliveryId?: string | null }
+) => {
   const now = new Date().toISOString();
 
+  // `availability_status` is read before the update so the status journal can
+  // record the transition it is about to be overwritten by.
   const { data: properties, error: propertiesError } = await supabaseAdmin
     .from("properties")
-    .select("id")
+    .select("id, availability_status")
     .eq("source", SWEEPBRIGHT_SOURCE)
     .or(`source_ref.eq.${estateId},project_id.eq.${estateId}`);
 
@@ -666,6 +710,22 @@ const markEstateDeleted = async (estateId: string) => {
 
   if (propertyError) {
     throw new Error(propertyError.message);
+  }
+
+  // Best-effort: a mandate that ended without a sale is the denominator of the
+  // conversion indicator, but journaling it must never fail the deletion.
+  try {
+    await recordSweepBrightDeletionHistory({
+      properties: (properties ?? []).map((row) => ({
+        id: row.id,
+        previousStatus: row.availability_status ?? null,
+      })),
+      sourceRef: estateId,
+      occurredAt: options?.occurredAt ?? now,
+      deliveryId: options?.deliveryId ?? null,
+    });
+  } catch (historyError) {
+    console.error("[sweepbright-sync] deletion history failed", historyError);
   }
 };
 
@@ -708,9 +768,15 @@ export const processSweepBrightDelivery = async (deliveryId: string) => {
     const payload = delivery.payload as {
       estate_id?: unknown;
       event?: unknown;
+      happened_at?: unknown;
     };
     const estateId = typeof payload.estate_id === "string" ? payload.estate_id : null;
     const event = typeof payload.event === "string" ? payload.event : null;
+    // Business date of the event, as stated by SweepBright. Falls back to the
+    // reception time rather than now(), so replaying an old delivery through
+    // the cron does not date the history at replay time.
+    const happenedAt =
+      typeof payload.happened_at === "string" ? payload.happened_at : delivery.created_at;
 
     if (!estateId || !event) {
       throw new Error("Invalid SweepBright delivery payload.");
@@ -726,7 +792,10 @@ export const processSweepBrightDelivery = async (deliveryId: string) => {
     }
 
     if (event === "estate-deleted") {
-      await markEstateDeleted(estateId);
+      await markEstateDeleted(estateId, {
+        occurredAt: happenedAt,
+        deliveryId: delivery.id,
+      });
       await updateDeliveryStatus(delivery.id, {
         status: "processed",
         processed_at: new Date().toISOString(),
@@ -737,7 +806,10 @@ export const processSweepBrightDelivery = async (deliveryId: string) => {
     }
 
     const estate = await sweepBrightClient.getEstate(estateId);
-    const projection = await upsertPropertyProjection(estate);
+    const projection = await upsertPropertyProjection(estate, {
+      occurredAt: happenedAt,
+      deliveryId: delivery.id,
+    });
     // Extract owner PII (vendors) into the deduped contact_identities
     // graph so the reconciliation engine can match the seller across
     // sources. Best-effort, never blocks the sync.

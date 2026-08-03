@@ -110,6 +110,37 @@ export type SweepBrightMoney = {
   hidden?: boolean | null;
 };
 
+/**
+ * Mandate block carried at the root of the REST estate payload.
+ *
+ * Verified on production estates 158, 161, 164, 168 and 232 on 3 Aug 2026.
+ * `exclusive` is the perimeter marker of the public sales register: at Sillage
+ * every exclusive mandate is a "Mandat Sillage". `start_date` / `end_date` are
+ * filled by the advisor and may be absent (estate 158) or implausible
+ * (estate 232 ends in 2041) — never trust them without a sanity check.
+ */
+export type SweepBrightMandate = {
+  number?: string | number | null;
+  exclusive?: boolean | null;
+  start_date?: string | null;
+  end_date?: string | null;
+};
+
+/**
+ * Agency fees. SweepBright fills the flat `vendor_*` / `buyer_*` root keys and
+ * leaves `agency_commission` null on the Sillage account, so both shapes are
+ * probed. The historical `extractSweepBrightHonoraires` helper looked for
+ * `commission`, `agency_fee`, `fees`… none of which exist in the payload.
+ */
+export type SweepBrightAgencyCommission = {
+  fixed_fee?: number | null;
+  percentage?: number | null;
+  seller_fixed_fee?: number | null;
+  seller_percentage?: number | null;
+  buyer_fixed_fee?: number | null;
+  buyer_percentage?: number | null;
+};
+
 export type SweepBrightMediaItem = {
   id?: string;
   filename?: string | null;
@@ -135,6 +166,14 @@ export type SweepBrightEstateData = {
   living_rooms?: number | null;
   price?: SweepBrightMoney | null;
   price_base_rent?: SweepBrightMoney | null;
+  /** Always null on the Sillage account — the sale price never transits here. */
+  price_negotiated?: SweepBrightMoney | null;
+  mandate?: SweepBrightMandate | null;
+  agency_commission?: SweepBrightAgencyCommission | null;
+  vendor_percentage?: number | null;
+  vendor_fixed_fee?: number | null;
+  buyer_percentage?: number | null;
+  buyer_fixed_fee?: number | null;
   video_url?: string | null;
   virtual_tour_url?: string | null;
   appointment_service_url?: string | null;
