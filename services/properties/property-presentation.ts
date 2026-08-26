@@ -1,8 +1,11 @@
 import type { Database } from "@/types/db/supabase";
+import { inferListingTransactionKind } from "@/lib/properties/listing-price";
 import type {
   PropertyCondoSnapshot,
   PropertyEnergySnapshot,
   PropertyFeeChargeBearer,
+  PropertyPriceSnapshot,
+  PropertyRentalPriceSnapshot,
   PropertySaleSnapshot,
 } from "@/types/domain/properties";
 
@@ -134,14 +137,78 @@ const computeFeeAmount = (
   return null;
 };
 
-export const buildPropertySaleSnapshot = (property: PropertyRow, priceAmount: number | null): PropertySaleSnapshot => {
+const roundCents = (value: number) => Math.round(value * 100) / 100;
+
+const readMoneyAmount = (rawPayload: Record<string, unknown> | null, key: string) => {
+  if (!rawPayload) return null;
+  const direct = asNumber(rawPayload[key]);
+  if (direct !== null) return direct;
+  return asNumber(asRecord(rawPayload[key])?.amount);
+};
+
+const positiveMoney = (value: number | null) => {
+  return typeof value === "number" && value > 0 ? value : null;
+};
+
+export const buildPropertySaleSnapshot = (
+  property: PropertyRow,
+  priceAmount: number | null
+): PropertySaleSnapshot => {
   const rawPayload = asRecord(property.raw_payload);
   const feeChargeBearer = inferFeeChargeBearer(rawPayload);
   return {
+    kind: "sale",
     feeChargeBearer,
     feeAmount: computeFeeAmount(rawPayload, priceAmount, feeChargeBearer),
     priceIncludesFees: true,
   };
+};
+
+export const buildPropertyRentalPriceSnapshot = (
+  property: PropertyRow,
+  priceAmount: number | null
+): PropertyRentalPriceSnapshot => {
+  const rawPayload = asRecord(property.raw_payload);
+  const rentExcludingCharges =
+    readMoneyAmount(rawPayload, "price_base_rent") ??
+    readMoneyAmount(rawPayload, "price") ??
+    priceAmount;
+  const chargesProvision = readMoneyAmount(rawPayload, "price_recurring_costs");
+  const tenantAgencyFees = positiveMoney(readMoneyAmount(rawPayload, "buyer_fixed_fee"));
+  const inventoryReportFees = positiveMoney(
+    readMoneyAmount(rawPayload, "price_inventory_report_cost")
+  );
+  const feeParts = [tenantAgencyFees, inventoryReportFees].filter(
+    (value): value is number => typeof value === "number"
+  );
+  const rentIncludingCharges =
+    rentExcludingCharges === null
+      ? null
+      : chargesProvision === null
+        ? rentExcludingCharges
+        : roundCents(rentExcludingCharges + chargesProvision);
+
+  return {
+    kind: "rental",
+    rentExcludingCharges,
+    chargesProvision,
+    rentIncludingCharges,
+    tenantAgencyFees,
+    inventoryReportFees,
+    totalTenantFees: feeParts.length > 0 ? roundCents(feeParts.reduce((sum, value) => sum + value, 0)) : null,
+    securityDeposit: positiveMoney(readMoneyAmount(rawPayload, "price_guarantee")),
+    rentSupplement: positiveMoney(readMoneyAmount(rawPayload, "price_rent_supplement")),
+  };
+};
+
+export const buildPropertyPriceSnapshot = (
+  property: PropertyRow,
+  priceAmount: number | null
+): PropertyPriceSnapshot => {
+  if (inferListingTransactionKind(property.negotiation) === "rental") {
+    return buildPropertyRentalPriceSnapshot(property, priceAmount);
+  }
+  return buildPropertySaleSnapshot(property, priceAmount);
 };
 
 export const buildPropertyEnergySnapshot = (property: PropertyRow): PropertyEnergySnapshot => {
@@ -270,7 +337,7 @@ export const buildPropertyDerivedFields = (property: PropertyRow, priceAmount: n
     ) ?? null;
 
   return {
-    sale: buildPropertySaleSnapshot(property, priceAmount),
+    price: buildPropertyPriceSnapshot(property, priceAmount),
     energy: buildPropertyEnergySnapshot(property),
     condo: buildPropertyCondoSnapshot(property),
     surfaces: {

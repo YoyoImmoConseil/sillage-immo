@@ -37,3 +37,11 @@ export const formatCurrency = (
     ...options,
   }).format(value);
 };
+
+/** Loi Carrez is a legally binding surface: never round, always 2 decimals. */
+export const formatLoiCarrezArea = (value: number, locale: AppLocale) => {
+  return `${formatNumber(value, locale, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })} m²`;
+};

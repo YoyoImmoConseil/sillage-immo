@@ -3,7 +3,6 @@ import { cache } from "react";
 import { unstable_cache } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import type { AppLocale } from "@/lib/i18n/config";
-import { formatCurrency } from "@/lib/i18n/format";
 import { resolveLocalizedText } from "@/lib/i18n/localized-content";
 import type { Database } from "@/types/db/supabase";
 import type {
@@ -83,7 +82,7 @@ const mapPropertySnapshot = (
     },
     rooms: derived.rooms,
     amenities: derived.amenities,
-    sale: derived.sale,
+    price: derived.price,
     energy: derived.energy,
     condo: derived.condo,
     media: media.map((item) => ({
@@ -254,22 +253,7 @@ const hydrateListingSnapshotWithProperty = (
 
 const normalizePostalCode = (value: string) => value.trim().replace(/\s+/g, "");
 
-export const formatListingPrice = (input: {
-  amount: number | null;
-  currency: string;
-  locale?: AppLocale;
-}) => {
-  if (typeof input.amount !== "number") {
-    return input.locale === "en"
-      ? "Price on request"
-      : input.locale === "es"
-        ? "Precio a consultar"
-        : input.locale === "ru"
-          ? "Цена по запросу"
-          : "Prix sur demande";
-  }
-  return formatCurrency(input.amount, input.locale ?? "fr", input.currency || "EUR");
-};
+export { formatListingPrice } from "@/lib/properties/listing-price";
 
 export const toPublicPropertyListingSummary = (
   listing: PropertyListingSnapshot
@@ -290,7 +274,7 @@ export const toPublicPropertyListingSummary = (
   roomCount: listing.roomCount,
   annualCharges: listing.annualCharges,
   lotCount: listing.lotCount,
-  sale: listing.property.sale,
+  price: listing.property.price,
   energy: listing.property.energy,
 });
 

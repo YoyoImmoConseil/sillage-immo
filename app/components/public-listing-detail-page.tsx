@@ -2,17 +2,22 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { AppLocale } from "@/lib/i18n/config";
-import { formatCurrency } from "@/lib/i18n/format";
+import { formatCurrency, formatLoiCarrezArea } from "@/lib/i18n/format";
 import { localizePath } from "@/lib/i18n/routing";
 import {
   getExposureLabel,
   getGeneralConditionLabel,
   getSeaViewLabel,
 } from "@/lib/i18n/domain";
+import {
+  buildListingPriceSublines,
+  formatListingPrice,
+  getListingDisplayAmount,
+  LISTING_PRICE_COPY,
+} from "@/lib/properties/listing-price";
 import { formatPropertyTypeLabel } from "@/lib/properties/property-type-label";
 import { getPublicTeamMemberByEmail } from "@/services/home/team.service";
 import type { PropertyListingSnapshot } from "@/types/domain/properties";
-import { formatListingPrice } from "@/services/properties/property-listing.service";
 import { PropertyEnergyScale } from "./property-energy-scale";
 import { PropertyGallery } from "./property-gallery";
 import { PropertyLocationMap } from "./property-location-map";
@@ -286,16 +291,12 @@ export async function PublicListingDetailPage({
   // Public listing galleries remain photo-only on purpose even if the
   // underlying property object can now store additional media kinds.
   const gallery = listing.property.media.filter((item) => item.kind === "image");
-  const feeMention =
-    listing.property.sale.feeChargeBearer === "buyer" && typeof listing.property.sale.feeAmount === "number"
-      ? locale === "en"
-        ? `Including ${formatCurrency(listing.property.sale.feeAmount, locale, listing.priceCurrency || "EUR")} fees payable by the buyer`
-        : locale === "es"
-          ? `Incluye ${formatCurrency(listing.property.sale.feeAmount, locale, listing.priceCurrency || "EUR")} de honorarios a cargo del comprador`
-          : locale === "ru"
-            ? `Включая ${formatCurrency(listing.property.sale.feeAmount, locale, listing.priceCurrency || "EUR")} комиссии за счет покупателя`
-            : `Incluant ${formatCurrency(listing.property.sale.feeAmount, locale, listing.priceCurrency || "EUR")} d'honoraires à la charge de l'acquéreur`
-      : null;
+  const priceCopy = LISTING_PRICE_COPY[locale];
+  const priceSublines = buildListingPriceSublines({
+    price: listing.property.price,
+    currency: listing.priceCurrency,
+    locale,
+  });
   const floorLabel =
     typeof listing.property.rooms.floor === "number"
       ? typeof listing.property.rooms.totalFloors === "number"
@@ -318,13 +319,15 @@ export async function PublicListingDetailPage({
 
   const listingTitle = listing.title ?? copy.propertyFallback;
   const priceLabel = formatListingPrice({
-    amount: listing.priceAmount,
+    amount: getListingDisplayAmount(listing.property.price, listing.priceAmount),
     currency: listing.priceCurrency,
+    locale,
+    periodSuffix: listing.property.price.kind === "rental" ? priceCopy.perMonth : undefined,
   });
   // Ligne condensée du bloc résumé mobile : Carrez · pièces · ville.
   const summaryMeta = [
     typeof listing.property.surfaces.loiCarrezArea === "number"
-      ? `${Math.round(listing.property.surfaces.loiCarrezArea)} m²`
+      ? formatLoiCarrezArea(listing.property.surfaces.loiCarrezArea, locale)
       : null,
     typeof listing.property.rooms.roomCount === "number"
       ? `${listing.property.rooms.roomCount} ${copy.roomsShort}`
@@ -372,7 +375,11 @@ export async function PublicListingDetailPage({
               {[listing.city, listing.postalCode].filter(Boolean).join(" • ")}
             </p>
             <p className="text-2xl font-semibold">{priceLabel}</p>
-            {feeMention ? <p className="text-sm text-sand/80">{feeMention}</p> : null}
+            {priceSublines.map((line) => (
+              <p key={line.key} className="text-sm text-sand/80">
+                {line.text}
+              </p>
+            ))}
           </div>
         </div>
       </section>
@@ -411,7 +418,11 @@ export async function PublicListingDetailPage({
                 {listingTitle}
               </p>
               <p className="text-3xl font-bold leading-tight">{priceLabel}</p>
-              {feeMention ? <p className="text-xs opacity-70">{feeMention}</p> : null}
+              {priceSublines.map((line) => (
+                <p key={line.key} className="text-xs opacity-70">
+                  {line.text}
+                </p>
+              ))}
               {summaryMeta ? <p className="text-sm opacity-70">{summaryMeta}</p> : null}
             </section>
 
@@ -452,7 +463,7 @@ export async function PublicListingDetailPage({
                   <dt className="opacity-65">{copy.loiCarrezArea}</dt>
                   <dd>
                     {typeof listing.property.surfaces.loiCarrezArea === "number"
-                      ? `${Math.round(listing.property.surfaces.loiCarrezArea)} m²`
+                      ? formatLoiCarrezArea(listing.property.surfaces.loiCarrezArea, locale)
                       : "-"}
                   </dd>
                 </div>
@@ -653,7 +664,7 @@ export async function PublicListingDetailPage({
                   <dt className="opacity-65">{copy.loiCarrezArea}</dt>
                   <dd>
                     {typeof listing.property.surfaces.loiCarrezArea === "number"
-                      ? `${Math.round(listing.property.surfaces.loiCarrezArea)} m²`
+                      ? formatLoiCarrezArea(listing.property.surfaces.loiCarrezArea, locale)
                       : "-"}
                   </dd>
                 </div>

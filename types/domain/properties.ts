@@ -31,10 +31,30 @@ export type PropertyCondoSnapshot = {
 };
 
 export type PropertySaleSnapshot = {
+  kind: "sale";
   feeChargeBearer: PropertyFeeChargeBearer;
   feeAmount: number | null;
   priceIncludesFees: boolean;
 };
+
+/**
+ * Public rental price breakdown. Every optional field is `null` when the
+ * corresponding SweepBright key is absent or empty — callers must not invent
+ * a fallback for display.
+ */
+export type PropertyRentalPriceSnapshot = {
+  kind: "rental";
+  rentExcludingCharges: number | null;
+  chargesProvision: number | null;
+  rentIncludingCharges: number | null;
+  tenantAgencyFees: number | null;
+  inventoryReportFees: number | null;
+  totalTenantFees: number | null;
+  securityDeposit: number | null;
+  rentSupplement: number | null;
+};
+
+export type PropertyPriceSnapshot = PropertySaleSnapshot | PropertyRentalPriceSnapshot;
 
 export type PropertySnapshot = {
   id: string;
@@ -87,7 +107,7 @@ export type PropertySnapshot = {
     seaView: string | null;
     exposure: string | null;
   };
-  sale: PropertySaleSnapshot;
+  price: PropertyPriceSnapshot;
   energy: PropertyEnergySnapshot;
   condo: PropertyCondoSnapshot;
   media: PropertyMediaSnapshot[];
@@ -147,6 +167,6 @@ export type PublicPropertyListingSummary = {
   roomCount: number | null;
   annualCharges: number | null;
   lotCount: number | null;
-  sale: PropertySaleSnapshot;
+  price: PropertyPriceSnapshot;
   energy: PropertyEnergySnapshot;
 };

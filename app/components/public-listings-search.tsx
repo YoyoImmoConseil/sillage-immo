@@ -464,7 +464,6 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
               key={listing.id}
               listing={listing}
               locale={props.locale}
-              businessType={props.businessType}
             />
           ))}
         </section>

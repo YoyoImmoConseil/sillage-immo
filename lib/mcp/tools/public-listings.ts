@@ -1,9 +1,11 @@
 import type { ToolDefinition } from "../types";
+import { listPublicPropertyListings } from "@/services/properties/property-listing.service";
+import type { AppLocale } from "@/lib/i18n/config";
 import {
   formatListingPrice,
-  listPublicPropertyListings,
-} from "@/services/properties/property-listing.service";
-import type { AppLocale } from "@/lib/i18n/config";
+  getListingDisplayAmount,
+  LISTING_PRICE_COPY,
+} from "@/lib/properties/listing-price";
 import type { PropertyBusinessType } from "@/types/domain/properties";
 
 // Public, anonymous-safe listing search for the Home Assistant (Porte 1).
@@ -103,9 +105,13 @@ export const publicListingsTools: ToolDefinition<unknown, unknown>[] = [
           priceAmount: listing.priceAmount,
           priceCurrency: listing.priceCurrency,
           priceLabel: formatListingPrice({
-            amount: listing.priceAmount,
+            amount: getListingDisplayAmount(listing.property.price, listing.priceAmount),
             currency: listing.priceCurrency,
             locale,
+            periodSuffix:
+              listing.property.price.kind === "rental"
+                ? LISTING_PRICE_COPY[locale].perMonth
+                : undefined,
           }),
           url: listing.canonicalPath,
           coverImageUrl: listing.coverImageUrl,

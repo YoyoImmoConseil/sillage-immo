@@ -166,6 +166,18 @@ export type SweepBrightEstateData = {
   living_rooms?: number | null;
   price?: SweepBrightMoney | null;
   price_base_rent?: SweepBrightMoney | null;
+  /**
+   * REST-flattened rental money. SweepBright GraphQL names these
+   * `attributes.price.*`; the Website API used by the estate webhook stores
+   * them as `price_*` at the estate root. Verified on published lets
+   * 8068f08f and 1f0c16e7 (26 Aug 2026).
+   */
+  price_recurring_costs?: SweepBrightMoney | null;
+  price_guarantee?: SweepBrightMoney | null;
+  price_inventory_report_cost?: SweepBrightMoney | null;
+  price_rent_supplement?: SweepBrightMoney | null;
+  price_reference_rent?: SweepBrightMoney | null;
+  rent_period?: string | null;
   /** Always null on the Sillage account — the sale price never transits here. */
   price_negotiated?: SweepBrightMoney | null;
   mandate?: SweepBrightMandate | null;
@@ -196,6 +208,7 @@ export type SweepBrightEstateData = {
   sizes?: {
     plot_area?: { size?: number | null } | null;
     liveable_area?: { size?: number | null } | null;
+    loi_carrez_area?: { size?: number | null } | null;
   } | null;
   amenities?: Array<string | null> | null;
   images?: SweepBrightMediaItem[] | null;
