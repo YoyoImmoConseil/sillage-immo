@@ -1,5 +1,6 @@
 import type { AppLocale } from "@/lib/i18n/config";
 import { formatCurrency } from "@/lib/i18n/format";
+import { fromCents, toCents } from "@/lib/properties/money";
 import type { PropertyPriceSnapshot } from "@/types/domain/properties";
 
 export const LISTING_PRICE_COPY = {
@@ -56,8 +57,16 @@ export type ListingPriceSubline = {
   text: string;
 };
 
-const formatRentalLegalAmount = (value: number, locale: AppLocale, currency: string) => {
-  return formatCurrency(value, locale, currency, {
+/**
+ * Legal rental mentions (fees, charges, deposit) always carry their cents:
+ * they engage the agency contractually.
+ */
+export const formatRentalLegalAmount = (
+  cents: number,
+  locale: AppLocale,
+  currency: string
+) => {
+  return formatCurrency(fromCents(cents), locale, currency || "EUR", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
@@ -69,27 +78,39 @@ export const inferListingTransactionKind = (
   return negotiation === "let" ? "rental" : "sale";
 };
 
-export const getListingDisplayAmount = (
+export const getListingDisplayAmountCents = (
   price: PropertyPriceSnapshot,
   fallbackAmount: number | null
 ) => {
   if (price.kind === "rental") {
-    return price.rentIncludingCharges ?? price.rentExcludingCharges ?? fallbackAmount;
+    return (
+      price.rentIncludingChargesCents ??
+      price.rentExcludingChargesCents ??
+      toCents(fallbackAmount)
+    );
   }
-  return fallbackAmount;
+  return toCents(fallbackAmount);
 };
 
 export const formatListingPrice = (input: {
-  amount: number | null;
+  amountCents: number | null;
   currency: string;
   locale?: AppLocale;
   periodSuffix?: string;
 }) => {
   const locale = input.locale ?? "fr";
-  if (typeof input.amount !== "number") {
+  if (typeof input.amountCents !== "number") {
     return LISTING_PRICE_COPY[locale].priceOnRequest;
   }
-  const formatted = formatCurrency(input.amount, locale, input.currency || "EUR");
+  // Whole euros stay unsuffixed (sale prices, most rents); a headline amount
+  // carrying cents shows them rather than being silently rounded.
+  const fractionDigits = input.amountCents % 100 === 0 ? 0 : 2;
+  const formatted = formatCurrency(
+    fromCents(input.amountCents),
+    locale,
+    input.currency || "EUR",
+    { minimumFractionDigits: fractionDigits, maximumFractionDigits: fractionDigits }
+  );
   return input.periodSuffix ? `${formatted}${input.periodSuffix}` : formatted;
 };
 
@@ -102,63 +123,59 @@ export const buildListingPriceSublines = (input: {
   const currency = input.currency || "EUR";
 
   if (input.price.kind === "sale") {
-    if (input.price.feeChargeBearer !== "buyer" || typeof input.price.feeAmount !== "number") {
+    if (input.price.feeChargeBearer !== "buyer" || typeof input.price.feeAmountCents !== "number") {
       return [];
     }
     return [
       {
         key: "saleFees",
-        text: copy.saleBuyerFees(formatCurrency(input.price.feeAmount, input.locale, currency)),
+        text: copy.saleBuyerFees(
+          formatCurrency(fromCents(input.price.feeAmountCents), input.locale, currency)
+        ),
       },
     ];
   }
 
   const lines: ListingPriceSubline[] = [];
-  if ((input.price.chargesProvision ?? 0) > 0) {
+  const { chargesProvisionCents, totalTenantFeesCents, inventoryReportFeesCents } = input.price;
+
+  if (typeof chargesProvisionCents === "number") {
     lines.push({
       key: "charges",
       text: copy.chargesProvision(
-        formatRentalLegalAmount(input.price.chargesProvision as number, input.locale, currency)
+        formatRentalLegalAmount(chargesProvisionCents, input.locale, currency)
       ),
     });
   }
 
-  if ((input.price.totalTenantFees ?? 0) > 0) {
-    const total = formatRentalLegalAmount(
-      input.price.totalTenantFees as number,
-      input.locale,
-      currency
-    );
+  if (typeof totalTenantFeesCents === "number") {
+    const total = formatRentalLegalAmount(totalTenantFeesCents, input.locale, currency);
     lines.push({
       key: "fees",
       text:
-        (input.price.inventoryReportFees ?? 0) > 0
+        typeof inventoryReportFeesCents === "number"
           ? copy.tenantFeesWithInventory(
               total,
-              formatRentalLegalAmount(
-                input.price.inventoryReportFees as number,
-                input.locale,
-                currency
-              )
+              formatRentalLegalAmount(inventoryReportFeesCents, input.locale, currency)
             )
           : copy.tenantFees(total),
     });
   }
 
-  if ((input.price.securityDeposit ?? 0) > 0) {
+  if (typeof input.price.securityDepositCents === "number") {
     lines.push({
       key: "deposit",
       text: copy.securityDeposit(
-        formatRentalLegalAmount(input.price.securityDeposit as number, input.locale, currency)
+        formatRentalLegalAmount(input.price.securityDepositCents, input.locale, currency)
       ),
     });
   }
 
-  if ((input.price.rentSupplement ?? 0) > 0) {
+  if (typeof input.price.rentSupplementCents === "number") {
     lines.push({
       key: "supplement",
       text: copy.rentSupplement(
-        formatRentalLegalAmount(input.price.rentSupplement as number, input.locale, currency)
+        formatRentalLegalAmount(input.price.rentSupplementCents, input.locale, currency)
       ),
     });
   }

@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { formatLoiCarrezArea } from "@/lib/i18n/format";
+import { normalizeListingDescriptionFees } from "@/lib/properties/listing-description";
 import {
   buildListingPriceSublines,
   formatListingPrice,
-  getListingDisplayAmount,
+  getListingDisplayAmountCents,
 } from "@/lib/properties/listing-price";
 import { buildPropertyPriceSnapshot } from "@/services/properties/property-presentation";
 import type { Database } from "@/types/db/supabase";
@@ -77,27 +78,79 @@ describe("buildPropertyPriceSnapshot", () => {
 
     expect(price).toEqual({
       kind: "rental",
-      rentExcludingCharges: 800,
-      chargesProvision: 50,
-      rentIncludingCharges: 850,
-      tenantAgencyFees: 462.22,
-      inventoryReportFees: 138.8,
-      totalTenantFees: 601.02,
-      securityDeposit: 800,
-      rentSupplement: null,
+      rentExcludingChargesCents: 80000,
+      chargesProvisionCents: 5000,
+      rentIncludingChargesCents: 85000,
+      tenantAgencyFeesCents: 46222,
+      inventoryReportFeesCents: 13880,
+      totalTenantFeesCents: 60102,
+      securityDepositCents: 80000,
+      rentSupplementCents: null,
     });
 
     const lines = buildListingPriceSublines({ price, currency: "EUR", locale: "fr" });
     const blob = lines.map((line) => line.text).join(" | ");
-    expect(blob).toContain("dont");
-    expect(blob).toContain("locataire");
-    expect(blob).toContain("état des lieux");
+    // Intl sépare le montant du symbole par une espace fine insécable.
+    expect(blob).toMatch(/601,02\s€/);
+    expect(blob).toMatch(/138,80\s€/);
     expect(blob).toContain("Dépôt de garantie");
     expect(blob).not.toMatch(/Incluant|acquéreur|buyer|comprador|покупателя/i);
-    expect(getListingDisplayAmount(price, 800)).toBe(850);
-    expect(formatListingPrice({ amount: 850, currency: "EUR", locale: "fr", periodSuffix: "/mois" })).toMatch(
-      /\/mois$/
+    expect(getListingDisplayAmountCents(price, 800)).toBe(85000);
+    expect(
+      formatListingPrice({ amountCents: 85000, currency: "EUR", locale: "fr", periodSuffix: "/mois" })
+    ).toMatch(/^850\s?€\/mois$/);
+  });
+
+  it("aucune addition flottante : une somme qui dérive en number reste exacte en centimes", () => {
+    // 8.11 + 2.02 vaut 10.129999999999999 en IEEE-754.
+    expect((8.11 + 2.02) * 100).not.toBe(1013);
+
+    const price = buildPropertyPriceSnapshot(
+      makeProperty({
+        raw_payload: {
+          price_base_rent: { amount: 800, currency: "EUR" },
+          buyer_fixed_fee: 8.11,
+          price_inventory_report_cost: { amount: 2.02, currency: "EUR" },
+        },
+      }),
+      800
     );
+
+    expect(price.kind).toBe("rental");
+    if (price.kind !== "rental") return;
+    expect(price.totalTenantFeesCents).toBe(1013);
+    expect(Number.isInteger(price.totalTenantFeesCents)).toBe(true);
+
+    const [fees] = buildListingPriceSublines({ price, currency: "EUR", locale: "fr" });
+    expect(fees.text).toMatch(/10,13\s€/);
+  });
+
+  it("loyer de base à zéro : bascule sur price au lieu de publier 0 €", () => {
+    const price = buildPropertyPriceSnapshot(
+      makeProperty({
+        source_ref: "d527b2ae-9664-4cb7-93cd-28375ee771d1",
+        raw_payload: {
+          price: { amount: 880, currency: "EUR" },
+          price_base_rent: { amount: 0, currency: "EUR" },
+          price_recurring_costs: { amount: null, currency: "EUR" },
+          price_guarantee: { amount: 855, currency: "EUR" },
+          buyer_fixed_fee: 351.52,
+          price_inventory_report_cost: { amount: 81.12, currency: "EUR" },
+          price_rent_supplement: { amount: 0, currency: "EUR" },
+        },
+      }),
+      0
+    );
+
+    expect(price.kind).toBe("rental");
+    if (price.kind !== "rental") return;
+    expect(price.rentExcludingChargesCents).toBe(88000);
+    expect(price.rentIncludingChargesCents).toBe(88000);
+    expect(price.rentSupplementCents).toBeNull();
+    expect(getListingDisplayAmountCents(price, 0)).toBe(88000);
+    expect(
+      formatListingPrice({ amountCents: 88000, currency: "EUR", locale: "fr", periodSuffix: "/mois" })
+    ).toMatch(/^880\s?€\/mois$/);
   });
 
   it("location sans charges connues : affiche le HC, omet la ligne provision", () => {
@@ -116,14 +169,13 @@ describe("buildPropertyPriceSnapshot", () => {
 
     expect(price.kind).toBe("rental");
     if (price.kind !== "rental") return;
-    expect(price.rentExcludingCharges).toBe(1400);
-    expect(price.chargesProvision).toBeNull();
-    expect(price.rentIncludingCharges).toBe(1400);
-    expect(price.totalTenantFees).toBe(819);
+    expect(price.rentExcludingChargesCents).toBe(140000);
+    expect(price.chargesProvisionCents).toBeNull();
+    expect(price.rentIncludingChargesCents).toBe(140000);
+    expect(price.totalTenantFeesCents).toBe(81900);
 
     const lines = buildListingPriceSublines({ price, currency: "EUR", locale: "fr" });
     expect(lines.some((line) => line.key === "charges")).toBe(false);
-    expect(getListingDisplayAmount(price, 1400)).toBe(1400);
   });
 
   it("location avec complément de loyer : le complément n'apparaît que s'il est > 0", () => {
@@ -139,7 +191,7 @@ describe("buildPropertyPriceSnapshot", () => {
     );
     expect(withSupplement.kind).toBe("rental");
     if (withSupplement.kind !== "rental") return;
-    expect(withSupplement.rentSupplement).toBe(75);
+    expect(withSupplement.rentSupplementCents).toBe(7500);
     expect(
       buildListingPriceSublines({ price: withSupplement, currency: "EUR", locale: "fr" }).some(
         (line) => line.key === "supplement"
@@ -157,10 +209,10 @@ describe("buildPropertyPriceSnapshot", () => {
     );
     expect(withoutSupplement.kind).toBe("rental");
     if (withoutSupplement.kind !== "rental") return;
-    expect(withoutSupplement.rentSupplement).toBeNull();
+    expect(withoutSupplement.rentSupplementCents).toBeNull();
   });
 
-  it("vente honoraires acquéreur : snapshot inchangé (inclus, arrondi, kind sale)", () => {
+  it("vente honoraires acquéreur : mention inchangée, à l'euro, sans /mois", () => {
     const price = buildPropertyPriceSnapshot(
       makeProperty({
         kind: "sale",
@@ -177,15 +229,17 @@ describe("buildPropertyPriceSnapshot", () => {
     expect(price).toEqual({
       kind: "sale",
       feeChargeBearer: "buyer",
-      feeAmount: 12000,
+      feeAmountCents: 1200040,
       priceIncludesFees: true,
     });
 
     const lines = buildListingPriceSublines({ price, currency: "EUR", locale: "fr" });
     expect(lines).toHaveLength(1);
-    expect(lines[0]?.text).toMatch(/^Incluant .+ d'honoraires à la charge de l'acquéreur$/);
-    expect(getListingDisplayAmount(price, 400000)).toBe(400000);
-    expect(formatListingPrice({ amount: 400000, currency: "EUR", locale: "fr" })).not.toMatch(/\/mois/);
+    expect(lines[0]?.text).toMatch(/^Incluant 12\s?000\s?€ d'honoraires à la charge de l'acquéreur$/);
+    expect(getListingDisplayAmountCents(price, 400000)).toBe(40000000);
+    expect(formatListingPrice({ amountCents: 40000000, currency: "EUR", locale: "fr" })).not.toMatch(
+      /\/mois/
+    );
   });
 
   it("vente honoraires vendeur : pas de mention acquéreur, FAI conservé", () => {
@@ -205,10 +259,73 @@ describe("buildPropertyPriceSnapshot", () => {
     expect(price).toEqual({
       kind: "sale",
       feeChargeBearer: "vendor",
-      feeAmount: 13740,
+      feeAmountCents: 1374000,
       priceIncludesFees: true,
     });
     expect(buildListingPriceSublines({ price, currency: "EUR", locale: "fr" })).toEqual([]);
+  });
+});
+
+describe("normalizeListingDescriptionFees", () => {
+  const montBoron = buildPropertyPriceSnapshot(
+    makeProperty({
+      raw_payload: {
+        price_base_rent: { amount: 800, currency: "EUR" },
+        price_recurring_costs: { amount: 50, currency: "EUR" },
+        buyer_fixed_fee: 462.22,
+        price_inventory_report_cost: { amount: 138.8, currency: "EUR" },
+      },
+    }),
+    800
+  );
+
+  it("réaligne le total du texte libre sur le modèle de prix (fr)", () => {
+    const description = [
+      "Loyer hors charges : 800 €. Pas de complément de loyer.",
+      "Dépôt de garantie : 800 €.",
+      "Honoraires TTC à la charge du locataire : 601,03 €, dont 138,80 € au titre de la réalisation de l'état des lieux d'entrée.",
+      "Location meublée.",
+    ].join("\n");
+
+    const result = normalizeListingDescriptionFees({
+      description,
+      price: montBoron,
+      locale: "fr",
+    });
+
+    expect(result).toContain("Honoraires TTC à la charge du locataire : 601,02 €");
+    expect(result).not.toContain("601,03");
+    expect(result).toContain("dont 138,80 € au titre de la réalisation de l'état des lieux");
+    expect(result).toContain("Dépôt de garantie : 800 €.");
+    expect(result).toContain("Location meublée.");
+  });
+
+  it("réaligne aussi la version anglaise sans casser la prose", () => {
+    const result = normalizeListingDescriptionFees({
+      description: "Tenant fees: €601.03 incl. VAT, of which €138.80 for the inventory of fixtures.",
+      price: montBoron,
+      locale: "en",
+    });
+
+    expect(result).toBe(
+      "Tenant fees: €601.02 incl. VAT, of which €138.80 for the inventory of fixtures."
+    );
+  });
+
+  it("laisse intacte une description sans montant d'honoraires, et toute annonce vente", () => {
+    const noAmount = "Bel appartement meublé, disponible immédiatement.";
+    expect(
+      normalizeListingDescriptionFees({ description: noAmount, price: montBoron, locale: "fr" })
+    ).toBe(noAmount);
+
+    const salePrice = buildPropertyPriceSnapshot(
+      makeProperty({ kind: "sale", negotiation: "sale", raw_payload: { buyer_fixed_fee: 12000 } }),
+      400000
+    );
+    const saleText = "Honoraires à la charge du locataire : 601,03 €.";
+    expect(
+      normalizeListingDescriptionFees({ description: saleText, price: salePrice, locale: "fr" })
+    ).toBe(saleText);
   });
 });
 

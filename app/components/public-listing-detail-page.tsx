@@ -12,7 +12,7 @@ import {
 import {
   buildListingPriceSublines,
   formatListingPrice,
-  getListingDisplayAmount,
+  getListingDisplayAmountCents,
   LISTING_PRICE_COPY,
 } from "@/lib/properties/listing-price";
 import { formatPropertyTypeLabel } from "@/lib/properties/property-type-label";
@@ -319,7 +319,7 @@ export async function PublicListingDetailPage({
 
   const listingTitle = listing.title ?? copy.propertyFallback;
   const priceLabel = formatListingPrice({
-    amount: getListingDisplayAmount(listing.property.price, listing.priceAmount),
+    amountCents: getListingDisplayAmountCents(listing.property.price, listing.priceAmount),
     currency: listing.priceCurrency,
     locale,
     periodSuffix: listing.property.price.kind === "rental" ? priceCopy.perMonth : undefined,

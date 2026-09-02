@@ -7,7 +7,7 @@ import { localizePath } from "@/lib/i18n/routing";
 import {
   buildListingPriceSublines,
   formatListingPrice,
-  getListingDisplayAmount,
+  getListingDisplayAmountCents,
   LISTING_PRICE_COPY,
 } from "@/lib/properties/listing-price";
 import { formatPropertyTypeLabel } from "@/lib/properties/property-type-label";
@@ -162,7 +162,7 @@ export function PropertyCard({ listing, locale = "fr" }: PropertyCardProps) {
             <p className="text-lg font-semibold">
               💶{" "}
               {formatListingPrice({
-                amount: getListingDisplayAmount(listing.price, listing.priceAmount),
+                amountCents: getListingDisplayAmountCents(listing.price, listing.priceAmount),
                 currency: listing.priceCurrency,
                 locale,
                 periodSuffix: isRental ? priceCopy.perMonth : undefined,

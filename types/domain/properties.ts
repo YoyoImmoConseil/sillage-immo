@@ -30,28 +30,36 @@ export type PropertyCondoSnapshot = {
   annualCharges: number | null;
 };
 
+/**
+ * All monetary fields of the price model are integer cents (see
+ * `lib/properties/money.ts`): euros are floats and must never be summed.
+ */
 export type PropertySaleSnapshot = {
   kind: "sale";
   feeChargeBearer: PropertyFeeChargeBearer;
-  feeAmount: number | null;
+  feeAmountCents: number | null;
   priceIncludesFees: boolean;
 };
 
 /**
  * Public rental price breakdown. Every optional field is `null` when the
- * corresponding SweepBright key is absent or empty — callers must not invent
- * a fallback for display.
+ * corresponding SweepBright key is absent, empty or zero — callers must not
+ * invent a fallback for display.
+ *
+ * `totalTenantFeesCents` is the sum of the components carried by the payload.
+ * SweepBright exposes no contractual total, so this sum is the single source
+ * of truth for the whole page, free-text description included.
  */
 export type PropertyRentalPriceSnapshot = {
   kind: "rental";
-  rentExcludingCharges: number | null;
-  chargesProvision: number | null;
-  rentIncludingCharges: number | null;
-  tenantAgencyFees: number | null;
-  inventoryReportFees: number | null;
-  totalTenantFees: number | null;
-  securityDeposit: number | null;
-  rentSupplement: number | null;
+  rentExcludingChargesCents: number | null;
+  chargesProvisionCents: number | null;
+  rentIncludingChargesCents: number | null;
+  tenantAgencyFeesCents: number | null;
+  inventoryReportFeesCents: number | null;
+  totalTenantFeesCents: number | null;
+  securityDepositCents: number | null;
+  rentSupplementCents: number | null;
 };
 
 export type PropertyPriceSnapshot = PropertySaleSnapshot | PropertyRentalPriceSnapshot;

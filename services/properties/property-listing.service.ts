@@ -17,6 +17,7 @@ import {
   cacheTagListingBySlug,
 } from "@/lib/cache/tags";
 import { isPublicAvailabilityStatus } from "@/lib/properties/canonical-types";
+import { normalizeListingDescriptionFees } from "@/lib/properties/listing-description";
 
 type ListingRow = Database["public"]["Tables"]["property_listings"]["Row"];
 type PropertyRow = Database["public"]["Tables"]["properties"]["Row"];
@@ -42,6 +43,12 @@ const mapPropertySnapshot = (
   locale: AppLocale
 ) => {
   const derived = buildPropertyDerivedFields(property, priceAmount);
+  const description = resolveLocalizedText({
+    locale,
+    field: "description",
+    fallback: property.description,
+    sources: [property.metadata, property.raw_payload],
+  });
   return {
     id: property.id,
     source: property.source,
@@ -57,11 +64,10 @@ const mapPropertySnapshot = (
       fallback: property.title,
       sources: [property.metadata, property.raw_payload],
     }),
-    description: resolveLocalizedText({
+    description: normalizeListingDescriptionFees({
+      description,
+      price: derived.price,
       locale,
-      field: "description",
-      fallback: property.description,
-      sources: [property.metadata, property.raw_payload],
     }),
     propertyType: property.property_type,
     subType: property.sub_type,

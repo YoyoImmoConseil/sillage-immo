@@ -1,5 +1,6 @@
 import type { Database } from "@/types/db/supabase";
 import { inferListingTransactionKind } from "@/lib/properties/listing-price";
+import { positiveCents, sumCents, toCents } from "@/lib/properties/money";
 import type {
   PropertyCondoSnapshot,
   PropertyEnergySnapshot,
@@ -100,7 +101,7 @@ const inferFeeChargeBearer = (rawPayload: Record<string, unknown> | null): Prope
   return null;
 };
 
-const computeFeeAmount = (
+const computeFeeAmountCents = (
   rawPayload: Record<string, unknown> | null,
   priceAmount: number | null,
   feeChargeBearer: PropertyFeeChargeBearer
@@ -112,7 +113,7 @@ const computeFeeAmount = (
       ? asNumber(rawPayload.buyer_fixed_fee)
       : asNumber(rawPayload.vendor_fixed_fee);
   if ((fixedFee ?? 0) > 0) {
-    return Math.round(fixedFee as number);
+    return toCents(fixedFee);
   }
 
   const percentage =
@@ -120,34 +121,28 @@ const computeFeeAmount = (
       ? asNumber(rawPayload.buyer_percentage)
       : asNumber(rawPayload.vendor_percentage);
   if ((percentage ?? 0) > 0 && (priceAmount ?? 0) > 0) {
-    return Math.round((priceAmount as number) * ((percentage as number) / 100));
+    return toCents((priceAmount as number) * ((percentage as number) / 100));
   }
 
   const agencyCommission = asRecord(rawPayload.agency_commission);
   const fallbackFixedFee = asNumber(agencyCommission?.fixed_fee);
   if ((fallbackFixedFee ?? 0) > 0) {
-    return Math.round(fallbackFixedFee as number);
+    return toCents(fallbackFixedFee);
   }
 
   const fallbackPercentage = asNumber(agencyCommission?.percentage);
   if ((fallbackPercentage ?? 0) > 0 && (priceAmount ?? 0) > 0) {
-    return Math.round((priceAmount as number) * ((fallbackPercentage as number) / 100));
+    return toCents((priceAmount as number) * ((fallbackPercentage as number) / 100));
   }
 
   return null;
 };
 
-const roundCents = (value: number) => Math.round(value * 100) / 100;
-
-const readMoneyAmount = (rawPayload: Record<string, unknown> | null, key: string) => {
+const readMoneyCents = (rawPayload: Record<string, unknown> | null, key: string) => {
   if (!rawPayload) return null;
   const direct = asNumber(rawPayload[key]);
-  if (direct !== null) return direct;
-  return asNumber(asRecord(rawPayload[key])?.amount);
-};
-
-const positiveMoney = (value: number | null) => {
-  return typeof value === "number" && value > 0 ? value : null;
+  if (direct !== null) return positiveCents(toCents(direct));
+  return positiveCents(toCents(asNumber(asRecord(rawPayload[key])?.amount)));
 };
 
 export const buildPropertySaleSnapshot = (
@@ -159,7 +154,7 @@ export const buildPropertySaleSnapshot = (
   return {
     kind: "sale",
     feeChargeBearer,
-    feeAmount: computeFeeAmount(rawPayload, priceAmount, feeChargeBearer),
+    feeAmountCents: computeFeeAmountCents(rawPayload, priceAmount, feeChargeBearer),
     priceIncludesFees: true,
   };
 };
@@ -169,35 +164,29 @@ export const buildPropertyRentalPriceSnapshot = (
   priceAmount: number | null
 ): PropertyRentalPriceSnapshot => {
   const rawPayload = asRecord(property.raw_payload);
-  const rentExcludingCharges =
-    readMoneyAmount(rawPayload, "price_base_rent") ??
-    readMoneyAmount(rawPayload, "price") ??
-    priceAmount;
-  const chargesProvision = readMoneyAmount(rawPayload, "price_recurring_costs");
-  const tenantAgencyFees = positiveMoney(readMoneyAmount(rawPayload, "buyer_fixed_fee"));
-  const inventoryReportFees = positiveMoney(
-    readMoneyAmount(rawPayload, "price_inventory_report_cost")
-  );
-  const feeParts = [tenantAgencyFees, inventoryReportFees].filter(
-    (value): value is number => typeof value === "number"
-  );
-  const rentIncludingCharges =
-    rentExcludingCharges === null
-      ? null
-      : chargesProvision === null
-        ? rentExcludingCharges
-        : roundCents(rentExcludingCharges + chargesProvision);
+  // A zero amount means "left empty in SweepBright", not "free": `readMoneyCents`
+  // drops it so the next candidate is probed instead of publishing 0 €/month.
+  const rentExcludingChargesCents =
+    readMoneyCents(rawPayload, "price_base_rent") ??
+    readMoneyCents(rawPayload, "price") ??
+    positiveCents(toCents(priceAmount));
+  const chargesProvisionCents = readMoneyCents(rawPayload, "price_recurring_costs");
+  const tenantAgencyFeesCents = readMoneyCents(rawPayload, "buyer_fixed_fee");
+  const inventoryReportFeesCents = readMoneyCents(rawPayload, "price_inventory_report_cost");
 
   return {
     kind: "rental",
-    rentExcludingCharges,
-    chargesProvision,
-    rentIncludingCharges,
-    tenantAgencyFees,
-    inventoryReportFees,
-    totalTenantFees: feeParts.length > 0 ? roundCents(feeParts.reduce((sum, value) => sum + value, 0)) : null,
-    securityDeposit: positiveMoney(readMoneyAmount(rawPayload, "price_guarantee")),
-    rentSupplement: positiveMoney(readMoneyAmount(rawPayload, "price_rent_supplement")),
+    rentExcludingChargesCents,
+    chargesProvisionCents,
+    rentIncludingChargesCents:
+      rentExcludingChargesCents === null
+        ? null
+        : rentExcludingChargesCents + (chargesProvisionCents ?? 0),
+    tenantAgencyFeesCents,
+    inventoryReportFeesCents,
+    totalTenantFeesCents: sumCents([tenantAgencyFeesCents, inventoryReportFeesCents]),
+    securityDepositCents: readMoneyCents(rawPayload, "price_guarantee"),
+    rentSupplementCents: readMoneyCents(rawPayload, "price_rent_supplement"),
   };
 };
 

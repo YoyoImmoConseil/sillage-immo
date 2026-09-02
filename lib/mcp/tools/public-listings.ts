@@ -3,7 +3,7 @@ import { listPublicPropertyListings } from "@/services/properties/property-listi
 import type { AppLocale } from "@/lib/i18n/config";
 import {
   formatListingPrice,
-  getListingDisplayAmount,
+  getListingDisplayAmountCents,
   LISTING_PRICE_COPY,
 } from "@/lib/properties/listing-price";
 import type { PropertyBusinessType } from "@/types/domain/properties";
@@ -105,7 +105,7 @@ export const publicListingsTools: ToolDefinition<unknown, unknown>[] = [
           priceAmount: listing.priceAmount,
           priceCurrency: listing.priceCurrency,
           priceLabel: formatListingPrice({
-            amount: getListingDisplayAmount(listing.property.price, listing.priceAmount),
+            amountCents: getListingDisplayAmountCents(listing.property.price, listing.priceAmount),
             currency: listing.priceCurrency,
             locale,
             periodSuffix:

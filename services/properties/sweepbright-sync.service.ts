@@ -140,14 +140,17 @@ const inferKind = (estate: SweepBrightEstateData): "sale" | "rental" | "project"
   return inferBusinessType(estate);
 };
 
+const positiveAmount = (value: number | null | undefined) => {
+  return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : null;
+};
+
 const computePriceAmount = (estate: SweepBrightEstateData) => {
   const businessType = inferBusinessType(estate);
   if (businessType === "rental") {
-    return typeof estate.price_base_rent?.amount === "number"
-      ? estate.price_base_rent.amount
-      : typeof estate.price?.amount === "number"
-        ? estate.price.amount
-        : null;
+    // A zero `price_base_rent` means the advisor left that field empty in
+    // SweepBright, never that the rent is nil: probing `typeof === "number"`
+    // would accept the 0 and publish a listing at 0 €/month.
+    return positiveAmount(estate.price_base_rent?.amount) ?? positiveAmount(estate.price?.amount);
   }
 
   return typeof estate.price?.amount === "number" ? estate.price.amount : null;
