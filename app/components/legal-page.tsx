@@ -46,8 +46,8 @@ export function LegalSection({ title, children }: { title: string; children: Rea
 export function LegalFacts({ items }: { items: Array<{ label: string; value: string }> }) {
   return (
     <dl className="grid gap-x-6 gap-y-2 sm:grid-cols-[minmax(0,220px)_1fr]">
-      {items.map((item) => (
-        <div key={item.label} className="contents">
+      {items.map((item, index) => (
+        <div key={`${item.label}-${index}`} className="contents">
           <dt className="text-navy/60">{item.label}</dt>
           <dd className="m-0 text-navy">{item.value}</dd>
         </div>

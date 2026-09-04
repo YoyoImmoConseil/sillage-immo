@@ -32,15 +32,17 @@ export default function MentionsLegalesPage() {
       <LegalSection title="Éditeur du site">
         <LegalFacts
           items={[
-            { label: "Dénomination", value: `Sillage Immo — ${SILLAGE_LEGAL.legalName}` },
+            { label: "Dénomination sociale", value: SILLAGE_LEGAL.legalName },
+            { label: "Nom commercial", value: SILLAGE_LEGAL.tradeName },
             { label: "Forme juridique", value: SILLAGE_LEGAL.legalForm },
             { label: "Capital social", value: SILLAGE_LEGAL.shareCapital },
             { label: "Siège social", value: SILLAGE_ADDRESS_DISPLAY },
-            { label: "RCS", value: SILLAGE_LEGAL.rcs },
+            { label: "Immatriculation", value: SILLAGE_LEGAL.rcs },
             { label: "TVA intracommunautaire", value: SILLAGE_LEGAL.vatNumber },
+            { label: "Représentant légal", value: SILLAGE_LEGAL.legalRepresentative },
+            { label: "Directeur de la publication", value: SILLAGE_LEGAL.publicationDirector },
             { label: "Téléphone", value: SILLAGE_PHONE_DISPLAY },
             { label: "Email", value: SILLAGE_CONTACT_EMAIL },
-            { label: "Directeur de la publication", value: SILLAGE_LEGAL.publicationDirector },
           ]}
         />
       </LegalSection>
@@ -49,8 +51,12 @@ export default function MentionsLegalesPage() {
         <LegalFacts
           items={[
             { label: "Carte professionnelle", value: SILLAGE_LEGAL.professionalCard },
-            { label: "Délivrée par", value: SILLAGE_LEGAL.professionalCardIssuer },
-            { label: "Détention de fonds", value: SILLAGE_LEGAL.fundsHandling },
+            {
+              label: "Délivrée par",
+              value: `${SILLAGE_LEGAL.professionalCardIssuer}, le ${SILLAGE_LEGAL.professionalCardIssuedAt}`,
+            },
+            { label: "Détention de fonds", value: SILLAGE_LEGAL.fundsHandlingTransaction },
+            { label: "", value: SILLAGE_LEGAL.fundsHandlingManagement },
             { label: "Garantie financière", value: SILLAGE_LEGAL.financialGuarantee },
             { label: "Assurance RC professionnelle", value: SILLAGE_LEGAL.liabilityInsurance },
           ]}

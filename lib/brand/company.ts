@@ -21,24 +21,31 @@ export const SHOW_HOME_TEAM_SECTION = false;
 export const SILLAGE_CONTACT_EMAIL = "yu@sillage-immo.com";
 
 /**
- * Identité légale — à compléter avec les informations de la carte
- * professionnelle et du Kbis. Tant qu'un champ est « [À COMPLÉTER] », les
- * pages légales l'affichent tel quel : ne pas mettre en production sans les
- * renseigner.
+ * Identité légale — source : fiche « SARL IMMO CONSEIL » (agent immobilier,
+ * personne morale) dans MyNotary, relevée le 04/09/2026. À mettre à jour
+ * ici uniquement ; les pages légales lisent ces constantes.
  */
 export const SILLAGE_LEGAL = {
-  legalName: "[À COMPLÉTER — raison sociale]",
-  legalForm: "[À COMPLÉTER — forme juridique]",
-  shareCapital: "[À COMPLÉTER — capital social]",
-  rcs: "[À COMPLÉTER — RCS Nice n°]",
-  vatNumber: "[À COMPLÉTER — n° TVA intracommunautaire]",
-  professionalCard: "[À COMPLÉTER — carte professionnelle n°, mention Transaction / Gestion]",
+  legalName: "IMMO CONSEIL",
+  tradeName: "Sillage Immo",
+  legalForm: "Société à responsabilité limitée (SARL)",
+  shareCapital: "8 003,57 €",
+  siren: "344 290 705",
+  rcs: "RCS Nice 344 290 705",
+  vatNumber: "FR25 344 290 705",
+  legalRepresentative: "Jacques Cassan, gérant",
+  publicationDirector: "Yoann Uzzan, directeur",
+  professionalCard: "CPI 0605 2018 000 036 059 — Transaction sur immeubles et fonds de commerce, Gestion immobilière",
+  professionalCardIssuedAt: "25 septembre 2024",
   professionalCardIssuer: "CCI Nice Côte d'Azur",
-  fundsHandling: "[À COMPLÉTER — sans / avec détention de fonds]",
-  financialGuarantee: "[À COMPLÉTER — organisme et montant de la garantie financière]",
-  liabilityInsurance: "[À COMPLÉTER — assureur RC professionnelle]",
-  publicationDirector: "Yoann Uzzan",
-  mediator: "[À COMPLÉTER — médiateur de la consommation et site web]",
+  fundsHandlingTransaction: "Transaction : sans détention de fonds",
+  fundsHandlingManagement: "Gestion : avec détention de fonds",
+  financialGuarantee:
+    "QBE Insurance (Europe), 110 Esplanade du Général de Gaulle, 92400 Courbevoie — montant garanti : 110 000 € (activité gestion)",
+  liabilityInsurance:
+    "AXA France IARD, 313 Terrasses de l'Arche, 92000 Nanterre — police n° 0000010283464104",
+  mediator:
+    "MCP – Médiation de la Consommation & Patrimoine, 12 square Desnouettes, 75015 Paris — www.mcpmediation.org",
   host: "Vercel Inc., 440 N Barranca Ave #4133, Covina, CA 91723, États-Unis — vercel.com",
 } as const;
 

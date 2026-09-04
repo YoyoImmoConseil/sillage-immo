@@ -25,7 +25,7 @@ export default function ConfidentialitePage() {
     >
       <LegalSection title="Responsable du traitement">
         <p>
-          Sillage Immo ({SILLAGE_LEGAL.legalName}), {SILLAGE_ADDRESS_DISPLAY}. Contact pour toute
+          Sillage Immo (SARL {SILLAGE_LEGAL.legalName}, {SILLAGE_LEGAL.rcs}), {SILLAGE_ADDRESS_DISPLAY}. Contact pour toute
           question relative à vos données : {SILLAGE_CONTACT_EMAIL}.
         </p>
       </LegalSection>
