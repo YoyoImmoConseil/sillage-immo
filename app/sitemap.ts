@@ -12,6 +12,9 @@ const STATIC_PATHS: Array<{ path: string; priority: number; changeFrequency: "da
   { path: "/location", priority: 0.8, changeFrequency: "daily" },
   { path: "/estimation", priority: 0.9, changeFrequency: "monthly" },
   { path: "/recherche/nouvelle", priority: 0.8, changeFrequency: "monthly" },
+  { path: "/mentions-legales", priority: 0.2, changeFrequency: "monthly" },
+  { path: "/honoraires", priority: 0.4, changeFrequency: "monthly" },
+  { path: "/confidentialite", priority: 0.2, changeFrequency: "monthly" },
 ];
 
 const withLanguages = (path: string) => ({
