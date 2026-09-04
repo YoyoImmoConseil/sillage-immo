@@ -171,7 +171,9 @@ const sanitizeListingSearch = (raw: unknown): ListingSearchCriteria | null => {
 // which kills the dead-anchor links (#acquereur-form / #contact-expert) the
 // previous prompt produced.
 const RESOURCE_HREFS = new Set(["/estimation", "/recherche/nouvelle", "/location", "/vente"]);
-const EXPERT_HREF = "/#equipe";
+// La section équipe est masquée tant que les portraits ne sont pas prêts
+// (SHOW_HOME_TEAM_SECTION dans lib/brand/company) : on renvoie vers le bloc contact.
+const EXPERT_HREF = "/#contact";
 
 const resourceDefaultFor = (
   intent: AssistantPayload["intent"]
@@ -313,7 +315,7 @@ Liens autorisés (n'invente JAMAIS une autre URL ni une ancre) :
 - Acquéreur → /recherche/nouvelle
 - Location → /location
 - Voir des biens publiés → /vente (ou déclenche "listingSearch", voir plus bas)
-- Contacter un expert → /#equipe
+- Contacter un expert → /#contact
 
 Règles par profil :
 - Vendeur : si la localisation du bien n'est pas connue, commence par une question de localisation brève et sobre. Si elle est connue, ne la repose pas. Ressource : /estimation.

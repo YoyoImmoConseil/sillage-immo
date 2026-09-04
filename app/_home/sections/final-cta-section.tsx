@@ -17,6 +17,7 @@ export function FinalCtaSection({ locale }: Props) {
 
   return (
     <section
+      id="contact"
       aria-labelledby="final-cta-title"
       className="bg-navy text-sand"
     >
