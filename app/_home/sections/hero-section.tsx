@@ -59,10 +59,10 @@ export function HeroSection({ locale }: Props) {
             </h1>
             {/* Intro tronquée visuellement sur mobile (contenu conservé dans le
                 DOM) pour réduire l'espace occupé avant les CTA. */}
-            <p className="sillage-editorial-text text-sand/90 max-w-3xl line-clamp-3 md:line-clamp-none">
+            <p className="sillage-editorial-text text-sand/90 max-w-3xl">
               {copy.subtitle}
             </p>
-            <p className="text-sm md:text-base text-sand/70 max-w-3xl line-clamp-2 md:line-clamp-none">
+            <p className="text-sm md:text-base text-sand/70 max-w-3xl">
               {copy.tagline}
             </p>
 
