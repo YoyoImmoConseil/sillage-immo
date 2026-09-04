@@ -14,7 +14,11 @@ export const LISTING_PRICE_COPY = {
     securityDeposit: (amount: string) => `Dépôt de garantie : ${amount}`,
     rentSupplement: (amount: string) => `Complément de loyer : ${amount}`,
     saleBuyerFees: (amount: string) =>
-      `Incluant ${amount} d'honoraires à la charge de l'acquéreur`,
+      `Incluant ${amount} d'honoraires TTC à la charge de l'acquéreur`,
+    saleBuyerFeesWithRate: (amount: string, rate: string) =>
+      `Incluant ${amount} d'honoraires TTC à la charge de l'acquéreur (${rate} du prix hors honoraires)`,
+    saleBuyerFeesUnknown: "Honoraires TTC à la charge de l'acquéreur",
+    saleVendorFees: "Honoraires à la charge du vendeur",
   },
   en: {
     priceOnRequest: "Price on request",
@@ -25,7 +29,11 @@ export const LISTING_PRICE_COPY = {
       `Tenant fees (incl. VAT): ${total}, of which ${inventory} for the inventory of fixtures`,
     securityDeposit: (amount: string) => `Security deposit: ${amount}`,
     rentSupplement: (amount: string) => `Rent supplement: ${amount}`,
-    saleBuyerFees: (amount: string) => `Including ${amount} fees payable by the buyer`,
+    saleBuyerFees: (amount: string) => `Including ${amount} agency fees (incl. VAT) payable by the buyer`,
+    saleBuyerFeesWithRate: (amount: string, rate: string) =>
+      `Including ${amount} agency fees (incl. VAT) payable by the buyer (${rate} of the net price)`,
+    saleBuyerFeesUnknown: "Agency fees (incl. VAT) payable by the buyer",
+    saleVendorFees: "Agency fees payable by the vendor",
   },
   es: {
     priceOnRequest: "Precio a consultar",
@@ -37,7 +45,11 @@ export const LISTING_PRICE_COPY = {
     securityDeposit: (amount: string) => `Depósito de garantía: ${amount}`,
     rentSupplement: (amount: string) => `Complemento de alquiler: ${amount}`,
     saleBuyerFees: (amount: string) =>
-      `Incluye ${amount} de honorarios a cargo del comprador`,
+      `Incluye ${amount} de honorarios IVA incl. a cargo del comprador`,
+    saleBuyerFeesWithRate: (amount: string, rate: string) =>
+      `Incluye ${amount} de honorarios IVA incl. a cargo del comprador (${rate} del precio sin honorarios)`,
+    saleBuyerFeesUnknown: "Honorarios IVA incl. a cargo del comprador",
+    saleVendorFees: "Honorarios a cargo del vendedor",
   },
   ru: {
     priceOnRequest: "Цена по запросу",
@@ -48,7 +60,11 @@ export const LISTING_PRICE_COPY = {
       `Комиссия с НДС за счет арендатора: ${total}, из них ${inventory} за акт приёма-передачи`,
     securityDeposit: (amount: string) => `Залог: ${amount}`,
     rentSupplement: (amount: string) => `Доплата к аренде: ${amount}`,
-    saleBuyerFees: (amount: string) => `Включая ${amount} комиссии за счет покупателя`,
+    saleBuyerFees: (amount: string) => `Включая ${amount} комиссии с НДС за счет покупателя`,
+    saleBuyerFeesWithRate: (amount: string, rate: string) =>
+      `Включая ${amount} комиссии с НДС за счет покупателя (${rate} от цены без комиссии)`,
+    saleBuyerFeesUnknown: "Комиссия с НДС за счет покупателя",
+    saleVendorFees: "Комиссия за счет продавца",
   },
 } as const;
 
@@ -118,22 +134,40 @@ export const buildListingPriceSublines = (input: {
   price: PropertyPriceSnapshot;
   currency: string;
   locale: AppLocale;
+  /**
+   * Prix affiché (honoraires inclus), en centimes. Permet d'indiquer le taux
+   * d'honoraires acquéreur rapporté au prix hors honoraires (arrêté du
+   * 10 janvier 2017). Optionnel : sans lui, seul le montant est affiché.
+   */
+  displayAmountCents?: number | null;
 }): ListingPriceSubline[] => {
   const copy = LISTING_PRICE_COPY[input.locale];
   const currency = input.currency || "EUR";
 
   if (input.price.kind === "sale") {
-    if (input.price.feeChargeBearer !== "buyer" || typeof input.price.feeAmountCents !== "number") {
-      return [];
+    // Mention obligatoire sur toute annonce de vente : qui paie les honoraires.
+    // Sans information SweepBright, on considère les honoraires à la charge du
+    // vendeur (cas standard de l'agence).
+    if (input.price.feeChargeBearer !== "buyer") {
+      return [{ key: "saleFees", text: copy.saleVendorFees }];
     }
-    return [
-      {
-        key: "saleFees",
-        text: copy.saleBuyerFees(
-          formatCurrency(fromCents(input.price.feeAmountCents), input.locale, currency)
-        ),
-      },
-    ];
+    if (typeof input.price.feeAmountCents !== "number") {
+      return [{ key: "saleFees", text: copy.saleBuyerFeesUnknown }];
+    }
+    const feeText = formatCurrency(fromCents(input.price.feeAmountCents), input.locale, currency);
+    const netCents =
+      typeof input.displayAmountCents === "number"
+        ? input.displayAmountCents - input.price.feeAmountCents
+        : null;
+    if (netCents !== null && netCents > 0) {
+      const rate = (input.price.feeAmountCents / netCents) * 100;
+      const rateText = `${new Intl.NumberFormat(input.locale, {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+      }).format(rate)} %`;
+      return [{ key: "saleFees", text: copy.saleBuyerFeesWithRate(feeText, rateText) }];
+    }
+    return [{ key: "saleFees", text: copy.saleBuyerFees(feeText) }];
   }
 
   const lines: ListingPriceSubline[] = [];

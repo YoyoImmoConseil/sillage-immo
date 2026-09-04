@@ -319,6 +319,7 @@ export async function PublicListingDetailPage({
     price: listing.property.price,
     currency: listing.priceCurrency,
     locale,
+    displayAmountCents: getListingDisplayAmountCents(listing.property.price, listing.priceAmount),
   });
   const floorLabel =
     typeof listing.property.rooms.floor === "number"
@@ -326,17 +327,14 @@ export async function PublicListingDetailPage({
         ? `${listing.property.rooms.floor} / ${listing.property.rooms.totalFloors}`
         : String(listing.property.rooms.floor)
       : "-";
-  const fullAddress =
-    listing.property.address.formattedAddress ??
-    [
-      listing.property.address.streetNumber,
-      listing.property.address.street,
-      listing.property.address.postalCode,
-      listing.property.address.city,
-      listing.property.address.country,
-    ]
-      .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
-      .join(" ");
+  // Page publique : on n'expose jamais la rue (secteur + ville seulement).
+  // L'adresse complète est réservée à l'espace client et à l'admin.
+  const publicLocationLabel = [
+    listing.property.address.postalCode,
+    listing.property.address.city,
+  ]
+    .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+    .join(" ");
   const hasLocationMap =
     typeof listing.property.address.latitude === "number" && typeof listing.property.address.longitude === "number";
 
@@ -589,8 +587,9 @@ export async function PublicListingDetailPage({
                 <PropertyLocationMap
                   latitude={listing.property.address.latitude}
                   longitude={listing.property.address.longitude}
-                  address={fullAddress || null}
+                  address={publicLocationLabel || null}
                   title={listing.title ?? copy.propertyFallback}
+                  approximate
                 />
               </section>
             ) : null}

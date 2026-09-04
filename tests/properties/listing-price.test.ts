@@ -235,7 +235,14 @@ describe("buildPropertyPriceSnapshot", () => {
 
     const lines = buildListingPriceSublines({ price, currency: "EUR", locale: "fr" });
     expect(lines).toHaveLength(1);
-    expect(lines[0]?.text).toMatch(/^Incluant 12\s?000\s?€ d'honoraires à la charge de l'acquéreur$/);
+    expect(lines[0]?.text).toMatch(/^Incluant 12\s?000\s?€ d'honoraires TTC à la charge de l'acquéreur$/);
+    const linesWithRate = buildListingPriceSublines({
+      price,
+      currency: "EUR",
+      locale: "fr",
+      displayAmountCents: 40000000,
+    });
+    expect(linesWithRate[0]?.text).toMatch(/\(3,09 % du prix hors honoraires\)$/);
     expect(getListingDisplayAmountCents(price, 400000)).toBe(40000000);
     expect(formatListingPrice({ amountCents: 40000000, currency: "EUR", locale: "fr" })).not.toMatch(
       /\/mois/
@@ -262,7 +269,9 @@ describe("buildPropertyPriceSnapshot", () => {
       feeAmountCents: 1374000,
       priceIncludesFees: true,
     });
-    expect(buildListingPriceSublines({ price, currency: "EUR", locale: "fr" })).toEqual([]);
+    expect(buildListingPriceSublines({ price, currency: "EUR", locale: "fr" })).toEqual([
+      { key: "saleFees", text: "Honoraires à la charge du vendeur" },
+    ]);
   });
 });
 

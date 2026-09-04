@@ -18,6 +18,24 @@ type PropertyLocationMapProps = {
    * - `compact` (smaller fixed height, capped width) for admin / dense layouts.
    */
   size?: "default" | "compact";
+  /**
+   * Localisation approximative (pages publiques) : un cercle de ~300 m,
+   * légèrement décalé de façon déterministe, à la place du repère exact.
+   * L'adresse exacte reste réservée à l'admin et à l'espace client.
+   */
+  approximate?: boolean;
+};
+
+const APPROXIMATE_RADIUS_METERS = 300;
+
+/** Décalage déterministe (≈ ±120 m) pour ne pas centrer le cercle sur le bien. */
+const approximateCenter = (latitude: number, longitude: number): [number, number] => {
+  const seed = Math.abs(Math.sin(latitude * 1000 + longitude * 1000));
+  const angle = seed * Math.PI * 2;
+  const meters = 60 + seed * 60;
+  const dLat = (meters * Math.cos(angle)) / 111_320;
+  const dLng = (meters * Math.sin(angle)) / (111_320 * Math.cos((latitude * Math.PI) / 180));
+  return [latitude + dLat, longitude + dLng];
 };
 
 
@@ -27,6 +45,7 @@ export function PropertyLocationMap({
   address,
   title,
   size = "default",
+  approximate = false,
 }: PropertyLocationMapProps) {
   const mapRef = useRef<HTMLDivElement | null>(null);
 
@@ -42,9 +61,13 @@ export function PropertyLocationMap({
       const L = await import("leaflet");
       if (isDisposed || !mapRef.current) return;
 
+      const center: [number, number] = approximate
+        ? approximateCenter(latitude, longitude)
+        : [latitude, longitude];
+
       mapInstance = L.map(mapRef.current, {
-        center: [latitude, longitude],
-        zoom: 16,
+        center,
+        zoom: approximate ? 15 : 16,
         scrollWheelZoom: false,
       });
 
@@ -53,14 +76,23 @@ export function PropertyLocationMap({
         maxZoom: MAP_TILE_MAX_ZOOM,
       }).addTo(mapInstance);
 
-      const marker = L.divIcon({
-        className: "sillage-map-pin-wrapper",
-        html: '<span class="sillage-map-pin"></span>',
-        iconSize: [18, 18],
-        iconAnchor: [9, 9],
-      });
-
-      L.marker([latitude, longitude], { icon: marker, title }).addTo(mapInstance);
+      if (approximate) {
+        L.circle(center, {
+          radius: APPROXIMATE_RADIUS_METERS,
+          color: "#1c1e4a",
+          weight: 2,
+          fillColor: "#1c1e4a",
+          fillOpacity: 0.16,
+        }).addTo(mapInstance);
+      } else {
+        const marker = L.divIcon({
+          className: "sillage-map-pin-wrapper",
+          html: '<span class="sillage-map-pin"></span>',
+          iconSize: [18, 18],
+          iconAnchor: [9, 9],
+        });
+        L.marker([latitude, longitude], { icon: marker, title }).addTo(mapInstance);
+      }
       mapInstance.attributionControl.setPrefix(false);
       mapInstance.invalidateSize();
     })();
@@ -71,7 +103,7 @@ export function PropertyLocationMap({
         mapInstance.remove();
       }
     };
-  }, [latitude, longitude, title]);
+  }, [latitude, longitude, title, approximate]);
 
   if (typeof latitude !== "number" || typeof longitude !== "number") {
     return null;

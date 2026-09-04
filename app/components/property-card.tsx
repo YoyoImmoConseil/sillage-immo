@@ -77,6 +77,7 @@ export function PropertyCard({ listing, locale = "fr" }: PropertyCardProps) {
     price: listing.price,
     currency: listing.priceCurrency,
     locale,
+    displayAmountCents: getListingDisplayAmountCents(listing.price, listing.priceAmount),
   });
   const typeLabel = formatPropertyTypeLabel(listing.propertyType, locale) ?? copy.asset;
   const isRental = listing.price.kind === "rental";
