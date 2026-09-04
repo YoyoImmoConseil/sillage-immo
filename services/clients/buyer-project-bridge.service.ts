@@ -111,7 +111,7 @@ const buildNextAction = (bridge: BuyerBridgeData, locale: AppLocale) => {
         ? "Abra el proyecto para revisar sus criterios y seguir su búsqueda"
         : locale === "ru"
           ? "Откройте проект, чтобы пересмотреть критерии и следить за поиском"
-          : "Ouvrir le projet pour revoir vos criteres et suivre votre recherche";
+          : "Ouvrir la recherche pour revoir vos critères et voir les biens compatibles";
   }
   return locale === "en"
     ? "Open the project to complete your search"
@@ -288,7 +288,7 @@ export const buildBuyerPortalProjectPlaceholderDetail = (
           ? "Este proyecto comprador ya existe en su espacio, pero algunos criterios aún deben completarse."
           : locale === "ru"
             ? "Этот проект покупателя уже существует в вашем пространстве, но некоторые критерии еще нужно заполнить."
-            : "Ce projet acquereur existe deja dans votre espace, mais certains criteres restent a completer.",
+            : "Ce projet acquéreur existe déjà dans votre espace, mais certains critères restent à compléter.",
     locationLabel: summary.locationLabel,
     budgetLabel: summary.budgetLabel,
     searchStatus: summary.searchStatus,

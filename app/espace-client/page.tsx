@@ -39,8 +39,8 @@ export default async function SellerPortalHomePage() {
   const copy = {
     fr: {
       greeting: "Bonjour",
-      intro: "Retrouvez ici tous vos projets rattachés à Sillage Immo, leurs prochaines étapes et vos points de contact.",
-      projects: "Projets rattachés",
+      intro: "Retrouvez ici vos projets avec Sillage Immo, leurs prochaines étapes et vos points de contact.",
+      projects: "Vos projets",
       lastLogin: "Dernière connexion",
       firstLogin: "Première connexion",
       nextStep: "Prochaine étape",
@@ -64,7 +64,7 @@ export default async function SellerPortalHomePage() {
     en: {
       greeting: "Hello",
       intro: "Here you can find all your projects linked to Sillage Immo, their next steps and your points of contact.",
-      projects: "Linked projects",
+      projects: "Your projects",
       lastLogin: "Last login",
       firstLogin: "First login",
       nextStep: "Next step",
@@ -88,7 +88,7 @@ export default async function SellerPortalHomePage() {
     es: {
       greeting: "Hola",
       intro: "Aquí encontrará todos sus proyectos vinculados a Sillage Immo, sus próximas etapas y sus puntos de contacto.",
-      projects: "Proyectos vinculados",
+      projects: "Sus proyectos",
       lastLogin: "Última conexión",
       firstLogin: "Primera conexión",
       nextStep: "Próxima etapa",
@@ -112,7 +112,7 @@ export default async function SellerPortalHomePage() {
     ru: {
       greeting: "Здравствуйте",
       intro: "Здесь вы найдете все проекты, связанные с Sillage Immo, их следующие этапы и ваши контактные точки.",
-      projects: "Связанные проекты",
+      projects: "Ваши проекты",
       lastLogin: "Последний вход",
       firstLogin: "Первый вход",
       nextStep: "Следующий этап",

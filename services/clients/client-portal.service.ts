@@ -126,7 +126,7 @@ const getUnsupportedProjectDetail = (
         ? "Este tipo de proyecto se integrará progresivamente en su espacio cliente. Su cuenta ya está preparada para recibirlo."
         : locale === "ru"
           ? "Этот тип проекта будет постепенно интегрирован в ваше клиентское пространство. Ваш аккаунт уже готов его принять."
-          : "Ce type de projet sera integre progressivement dans votre espace client. Votre compte est deja pret pour l'accueillir.",
+          : "Ce type de projet sera intégré progressivement dans votre espace Sillage. Votre compte est déjà prêt pour l'accueillir.",
 });
 
 const mapSellerProjectSummary = (
@@ -222,7 +222,7 @@ const mapNonSellerProjectSummary = (
             ? "Su espacio cliente ya está preparado para acoger este proyecto."
             : locale === "ru"
               ? "Ваше клиентское пространство уже готово принять этот проект."
-              : "Votre espace client est deja pret pour accueillir ce projet.",
+              : "Votre recherche est active : vous serez alerté dès qu'un bien correspond.",
       nextAction: buyerSummary.nextAction,
       seller: null,
       buyer: buyerSummary,

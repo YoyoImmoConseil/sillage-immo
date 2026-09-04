@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { AppLocale } from "@/lib/i18n/config";
+import { formatPropertyTypeLabel } from "@/lib/i18n/domain";
 import type { BuyerSearchMatchListItem } from "@/services/buyers/buyer-portal.service";
 import type { DashboardCopy } from "./buyer-search-helpers";
 
@@ -34,10 +35,10 @@ export function BuyerSearchMatchesSection({
                 </span>
               ) : null}
               <p className="text-sm font-semibold text-navy">
-                {match.title ?? match.propertyType ?? match.propertyId}
+                {match.title ?? formatPropertyTypeLabel(match.propertyType, locale) ?? match.propertyId}
               </p>
               <p className="mt-1 text-sm text-navy/75">
-                {[match.city, match.propertyType].filter(Boolean).join(" · ")}
+                {[match.city, formatPropertyTypeLabel(match.propertyType, locale)].filter(Boolean).join(" · ")}
               </p>
               {match.priceAmount !== null ? (
                 <p className="mt-1 text-sm text-navy/80">
@@ -54,7 +55,7 @@ export function BuyerSearchMatchesSection({
                 </p>
               ) : null}
               <p className="mt-2 text-xs text-navy/60">
-                {copy.scoreLabel} · {match.score}
+                {copy.scoreLabel} · {match.score} %
               </p>
               <Link
                 href={match.canonicalPath}

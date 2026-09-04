@@ -67,6 +67,12 @@ const CLIENT_PROJECT_TYPE_LABELS: Record<string, Record<AppLocale, string>> = {
 const SELLER_PROJECT_STATUS_LABELS: Record<string, Record<AppLocale, string>> = {
   draft: { fr: "Brouillon", en: "Draft", es: "Borrador", ru: "Черновик" },
   active: { fr: "Actif", en: "Active", es: "Activo", ru: "Активен" },
+  estimation_realisee: {
+    fr: "Estimation réalisée",
+    en: "Valuation completed",
+    es: "Valoración realizada",
+    ru: "Оценка выполнена",
+  },
   valuation_ready: {
     fr: "Estimation disponible",
     en: "Valuation available",
@@ -90,7 +96,7 @@ const SELLER_PROJECT_STATUS_LABELS: Record<string, Record<AppLocale, string>> = 
 };
 
 const MANDATE_STATUS_LABELS: Record<string, Record<AppLocale, string>> = {
-  none: { fr: "Aucun", en: "None", es: "Ninguno", ru: "Нет" },
+  none: { fr: "Pas encore de mandat", en: "No mandate yet", es: "Aún sin mandato", ru: "Мандата пока нет" },
   pending: { fr: "En préparation", en: "Pending", es: "En preparación", ru: "Подготовка" },
   signed: { fr: "Signé", en: "Signed", es: "Firmado", ru: "Подписан" },
   expired: { fr: "Expiré", en: "Expired", es: "Caducado", ru: "Истек" },
