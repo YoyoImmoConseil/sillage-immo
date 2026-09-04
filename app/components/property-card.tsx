@@ -87,19 +87,19 @@ export function PropertyCard({ listing, locale = "fr" }: PropertyCardProps) {
   if (typeof listing.loiCarrezArea === "number") {
     criteria.push({
       key: "carrez",
-      node: `📐 ${copy.carrez}: ${formatLoiCarrezArea(listing.loiCarrezArea, locale)}`,
+      node: `${copy.carrez}: ${formatLoiCarrezArea(listing.loiCarrezArea, locale)}`,
     });
   }
   if (typeof listing.roomCount === "number") {
-    criteria.push({ key: "rooms", node: `🛋️ ${copy.rooms}: ${listing.roomCount}` });
+    criteria.push({ key: "rooms", node: `${copy.rooms}: ${listing.roomCount}` });
   }
   if (typeof listing.lotCount === "number") {
-    criteria.push({ key: "lots", node: `🏢 ${copy.lots}: ${listing.lotCount}` });
+    criteria.push({ key: "lots", node: `${copy.lots}: ${listing.lotCount}` });
   }
   if (typeof listing.annualCharges === "number") {
     criteria.push({
       key: "charges",
-      node: `🧾 ${copy.charges}: ${formatCurrency(listing.annualCharges, locale, listing.priceCurrency)}`,
+      node: `${copy.charges}: ${formatCurrency(listing.annualCharges, locale, listing.priceCurrency)}`,
     });
   }
 
@@ -135,7 +135,7 @@ export function PropertyCard({ listing, locale = "fr" }: PropertyCardProps) {
           />
           {/* Badge de type en overlay — mobile uniquement (desktop inchangé). */}
           <span className="absolute bottom-2 left-2 rounded-full bg-navy/85 px-2.5 py-1 text-xs font-medium text-sand md:hidden">
-            🏠 {typeLabel}
+            {typeLabel}
           </span>
         </div>
         {/*
@@ -148,7 +148,7 @@ export function PropertyCard({ listing, locale = "fr" }: PropertyCardProps) {
               {/* Mobile : ville seule (le type est en overlay) ; desktop : type • ville. */}
               <span className="md:hidden">{listing.city ?? typeLabel}</span>
               <span className="max-md:hidden">
-                🏠 {typeLabel} {listing.city ? `• ${listing.city}` : ""}
+                {typeLabel} {listing.city ? `• ${listing.city}` : ""}
               </span>
             </p>
             <h2 className="text-xl font-semibold leading-tight">
@@ -160,7 +160,6 @@ export function PropertyCard({ listing, locale = "fr" }: PropertyCardProps) {
           </div>
           <div className="order-1 space-y-1 md:order-2">
             <p className="text-lg font-semibold">
-              💶{" "}
               {formatListingPrice({
                 amountCents: getListingDisplayAmountCents(listing.price, listing.priceAmount),
                 currency: listing.priceCurrency,
@@ -185,7 +184,7 @@ export function PropertyCard({ listing, locale = "fr" }: PropertyCardProps) {
           ) : null}
           <div className="order-4 grid gap-2 md:grid-cols-2">
             <PropertyEnergyScale
-              title="⚡ DPE"
+              title="DPE"
               value={listing.energy.dpeValue}
               label={listing.energy.dpeLabel}
               unit={copy.dpeUnit}
@@ -193,7 +192,7 @@ export function PropertyCard({ listing, locale = "fr" }: PropertyCardProps) {
               locale={locale}
             />
             <PropertyEnergyScale
-              title="🌿 GES"
+              title="GES"
               value={listing.energy.gesValue}
               label={listing.energy.gesLabel}
               unit={copy.gesUnit}
