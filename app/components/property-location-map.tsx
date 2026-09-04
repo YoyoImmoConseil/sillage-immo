@@ -1,6 +1,11 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import {
+  MAP_TILE_ATTRIBUTION,
+  MAP_TILE_MAX_ZOOM,
+  MAP_TILE_URL,
+} from "@/lib/maps/tiles";
 
 type PropertyLocationMapProps = {
   latitude: number | null;
@@ -15,11 +20,6 @@ type PropertyLocationMapProps = {
   size?: "default" | "compact";
 };
 
-const TILE_URL =
-  "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
-const TILE_SUBDOMAINS = "abcd";
-const ATTRIBUTION =
-  '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions" target="_blank" rel="noreferrer">CARTO</a>';
 
 export function PropertyLocationMap({
   latitude,
@@ -48,10 +48,9 @@ export function PropertyLocationMap({
         scrollWheelZoom: false,
       });
 
-      L.tileLayer(TILE_URL, {
-        attribution: ATTRIBUTION,
-        subdomains: TILE_SUBDOMAINS,
-        maxZoom: 19,
+      L.tileLayer(MAP_TILE_URL, {
+        attribution: MAP_TILE_ATTRIBUTION,
+        maxZoom: MAP_TILE_MAX_ZOOM,
       }).addTo(mapInstance);
 
       const marker = L.divIcon({

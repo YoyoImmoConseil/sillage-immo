@@ -2,6 +2,11 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { AppLocale } from "@/lib/i18n/config";
+import {
+  MAP_TILE_ATTRIBUTION,
+  MAP_TILE_MAX_ZOOM,
+  MAP_TILE_URL,
+} from "@/lib/maps/tiles";
 
 export type ZonePolygon = Array<[number, number]>;
 
@@ -14,11 +19,6 @@ type BuyerSearchZoneMapProps = {
   height?: string;
 };
 
-const TILE_URL =
-  "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
-const TILE_SUBDOMAINS = "abcd";
-const ATTRIBUTION =
-  '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions" target="_blank" rel="noreferrer">CARTO</a>';
 
 const DEFAULT_CENTER: [number, number] = [43.7102, 7.262]; // Nice
 const DEFAULT_ZOOM = 11;
@@ -155,10 +155,9 @@ export function BuyerSearchZoneMap({
       });
       mapInstanceRef.current = map;
 
-      L.tileLayer(TILE_URL, {
-        attribution: ATTRIBUTION,
-        subdomains: TILE_SUBDOMAINS,
-        maxZoom: 19,
+      L.tileLayer(MAP_TILE_URL, {
+        attribution: MAP_TILE_ATTRIBUTION,
+        maxZoom: MAP_TILE_MAX_ZOOM,
       }).addTo(map);
 
       const drawnItems = new L.FeatureGroup();
