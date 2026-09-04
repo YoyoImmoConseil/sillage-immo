@@ -1,4 +1,5 @@
 import "server-only";
+import { SILLAGE_ADDRESS_DISPLAY } from "@/lib/brand/company";
 
 /**
  * Premium email layout helpers shared across Sillage Immo transactional emails.
@@ -144,7 +145,7 @@ export const renderEmailLayout = (input: EmailLayoutInput): string => {
             <tr>
               <td align="center" style="padding:20px 4px 0;">
                 <p style="margin:0;font-family:${FONT_STACK};font-size:12px;line-height:1.5;color:#5b5b78;">
-                  Sillage Immo &middot; Nice &middot; Cote d'Azur
+                  Sillage Immo &middot; ${SILLAGE_ADDRESS_DISPLAY}
                 </p>
               </td>
             </tr>
