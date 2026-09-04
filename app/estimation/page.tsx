@@ -1,8 +1,16 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import { SellerApiFirstFlow } from "./seller-api-first-flow";
 import { SillageLogo } from "../components/sillage-logo";
 import { getRequestLocale } from "@/lib/i18n/request";
+import { buildPublicPageMetadata } from "@/lib/seo/site";
+import { PAGE_SEO } from "@/lib/seo/page-copy";
 import { ESTIMATION_PAGE_COPY } from "./_copy/page-copy";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getRequestLocale();
+  return buildPublicPageMetadata({ path: "/estimation", locale, ...PAGE_SEO.estimation[locale] });
+}
 
 export default async function EstimationPage() {
   const locale = await getRequestLocale();

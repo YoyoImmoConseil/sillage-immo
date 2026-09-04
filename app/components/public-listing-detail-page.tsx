@@ -5,6 +5,13 @@ import type { AppLocale } from "@/lib/i18n/config";
 import { formatCurrency, formatLoiCarrezArea } from "@/lib/i18n/format";
 import { localizePath } from "@/lib/i18n/routing";
 import {
+  OG_LOCALES,
+  SITE_NAME,
+  SITE_URL,
+  buildPublicPageMetadata,
+  toMetaDescription,
+} from "@/lib/seo/site";
+import {
   getExposureLabel,
   getGeneralConditionLabel,
   getSeaViewLabel,
@@ -53,9 +60,25 @@ export const buildPublicListingMetadata = (
     };
   }
 
+  const title = `${listing.title ?? fallback.title} | Sillage Immo`;
+  const description = toMetaDescription(listing.property.description) ?? fallback.description;
   return {
-    title: `${listing.title ?? fallback.title} | Sillage Immo`,
-    description: listing.property.description?.slice(0, 160) ?? fallback.description,
+    ...buildPublicPageMetadata({
+      path: listing.canonicalPath,
+      locale,
+      title,
+      description,
+      image: listing.coverImageUrl,
+    }),
+    openGraph: {
+      type: "article",
+      siteName: SITE_NAME,
+      locale: OG_LOCALES[locale],
+      url: `${SITE_URL}${localizePath(listing.canonicalPath, locale)}`,
+      title,
+      description,
+      ...(listing.coverImageUrl ? { images: [{ url: listing.coverImageUrl }] } : {}),
+    },
   };
 };
 

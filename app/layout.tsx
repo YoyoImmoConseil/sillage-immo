@@ -5,6 +5,8 @@ import localFont from "next/font/local";
 import { GoogleTagManager } from "@next/third-parties/google";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
+import { SITE_NAME, SITE_URL } from "@/lib/seo/site";
+import { PAGE_SEO } from "@/lib/seo/page-copy";
 import { SiteHeader } from "./components/site-header";
 import { SiteFooter } from "./components/site-footer";
 import { FloatingAssistant } from "./components/floating-assistant";
@@ -55,9 +57,17 @@ const openSans = Open_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Sillage Immo",
-  description:
-    "Sillage Immo, boutique immobiliere a Nice: estimation vendeur et accompagnement acquereur sur-mesure.",
+  metadataBase: new URL(SITE_URL),
+  title: PAGE_SEO.home.fr.title,
+  description: PAGE_SEO.home.fr.description,
+  openGraph: {
+    type: "website",
+    siteName: SITE_NAME,
+    locale: "fr_FR",
+  },
+  twitter: {
+    card: "summary_large_image",
+  },
   icons: {
     icon: "/icon.png",
     shortcut: "/icon.png",
