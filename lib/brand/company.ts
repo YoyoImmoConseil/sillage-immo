@@ -49,15 +49,20 @@ export const SILLAGE_LEGAL = {
   host: "Vercel Inc., 440 N Barranca Ave #4133, Covina, CA 91723, États-Unis — vercel.com",
 } as const;
 
-/** Barème d'honoraires — à compléter (affiché sur /honoraires et exigé par l'arrêté du 10 janvier 2017). */
+/** Barème d'honoraires (arrêté du 10 janvier 2017) — affiché sur /honoraires. Communiqué par Yoann le 05/09/2026. */
 export const SILLAGE_FEES = {
   saleTiers: [
-    { range: "[À COMPLÉTER — ex. jusqu'à 150 000 €]", fee: "[À COMPLÉTER — ex. 6 000 € TTC forfait]" },
-    { range: "[À COMPLÉTER — ex. de 150 001 € à 500 000 €]", fee: "[À COMPLÉTER — ex. 5 % TTC]" },
-    { range: "[À COMPLÉTER — ex. au-delà de 500 000 €]", fee: "[À COMPLÉTER — ex. 4 % TTC]" },
+    { range: "Jusqu'à 50 000 €", fee: "5 000 € TTC (forfait)" },
+    { range: "De 50 001 € à 100 000 €", fee: "8 % TTC" },
+    { range: "De 100 001 € à 200 000 €", fee: "7 % TTC" },
+    { range: "De 200 001 € à 500 000 €", fee: "6 % TTC" },
+    { range: "Au-delà de 500 000 €", fee: "5 % TTC" },
   ],
-  saleNote: "Honoraires TTC, à la charge du vendeur sauf mention contraire sur l'annonce. Pourcentage calculé sur le prix de vente hors honoraires.",
-  rentalTenant: "Honoraires à la charge du locataire (visite, constitution du dossier, rédaction du bail) : 10 € TTC / m² de surface habitable (zone tendue, plafond légal), auxquels s'ajoutent 3 € TTC / m² pour l'état des lieux d'entrée.",
-  rentalLandlord: "[À COMPLÉTER — honoraires à la charge du bailleur (mise en location, gestion)]",
-  updatedAt: "[À COMPLÉTER — date de mise à jour du barème]",
+  saleNote:
+    "Honoraires TTC, à la charge du vendeur sauf mention contraire sur l'annonce. Pourcentage appliqué au prix de vente hors honoraires ; le taux de la tranche s'applique à la totalité du prix.",
+  rentalTenant:
+    "Honoraires à la charge du locataire (visite, constitution du dossier, rédaction du bail) : 10 € TTC / m² de surface habitable (zone tendue, plafond légal), auxquels s'ajoutent 3 € TTC / m² pour l'état des lieux d'entrée.",
+  rentalLandlord:
+    "Honoraires à la charge du bailleur (mise en location, gestion locative) : communiqués sur devis avant toute signature de mandat.",
+  updatedAt: "5 septembre 2026",
 } as const;
