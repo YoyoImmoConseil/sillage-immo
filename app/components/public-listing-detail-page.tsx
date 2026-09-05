@@ -5,6 +5,13 @@ import type { AppLocale } from "@/lib/i18n/config";
 import { formatCurrency, formatLoiCarrezArea } from "@/lib/i18n/format";
 import { localizePath } from "@/lib/i18n/routing";
 import {
+  OG_LOCALES,
+  SITE_NAME,
+  SITE_URL,
+  buildPublicPageMetadata,
+  toMetaDescription,
+} from "@/lib/seo/site";
+import {
   getExposureLabel,
   getGeneralConditionLabel,
   getSeaViewLabel,
@@ -53,9 +60,25 @@ export const buildPublicListingMetadata = (
     };
   }
 
+  const title = `${listing.title ?? fallback.title} | Sillage Immo`;
+  const description = toMetaDescription(listing.property.description) ?? fallback.description;
   return {
-    title: `${listing.title ?? fallback.title} | Sillage Immo`,
-    description: listing.property.description?.slice(0, 160) ?? fallback.description,
+    ...buildPublicPageMetadata({
+      path: listing.canonicalPath,
+      locale,
+      title,
+      description,
+      image: listing.coverImageUrl,
+    }),
+    openGraph: {
+      type: "article",
+      siteName: SITE_NAME,
+      locale: OG_LOCALES[locale],
+      url: `${SITE_URL}${localizePath(listing.canonicalPath, locale)}`,
+      title,
+      description,
+      ...(listing.coverImageUrl ? { images: [{ url: listing.coverImageUrl }] } : {}),
+    },
   };
 };
 
@@ -89,29 +112,29 @@ export async function PublicListingDetailPage({
       no: "Non",
       dpeUnit: "kWh/m²/an",
       gesUnit: "kgCO₂/m²/an",
-      livingArea: "📐 Surface habitable",
-      bedrooms: "🛏️ Chambres",
-      livingRooms: "🛋️ Séjours",
-      livingRoomArea: "📏 Surface du séjour",
-      floor: "🏢 Étage / immeuble",
-      topFloor: "🔝 Dernier étage",
-      elevator: "🛗 Ascenseur",
-      cellar: "🧱 Cave",
-      terrace: "🌿 Terrasse",
-      terraceArea: "📐 Surface terrasse",
-      balcony: "🌤️ Balcon",
-      balconyArea: "📐 Surface balcon",
+      livingArea: "Surface habitable",
+      bedrooms: "Chambres",
+      livingRooms: "Séjours",
+      livingRoomArea: "Surface du séjour",
+      floor: "Étage / immeuble",
+      topFloor: "Dernier étage",
+      elevator: "Ascenseur",
+      cellar: "Cave",
+      terrace: "Terrasse",
+      terraceArea: "Surface terrasse",
+      balcony: "Balcon",
+      balconyArea: "Surface balcon",
       parking: "🅿️ Parking / Garage",
-      balconyTerrace: "🌤️ Balcon / Terrasse",
-      exposure: "☀️ Exposition",
-      seaView: "🌊 Vue mer",
-      generalCondition: "🧭 État général",
-      propertyType: "🏠 Typologie",
-      loiCarrezArea: "📐 Surface Carrez",
-      roomCount: "🛋️ Nombre de pièces",
-      lotCount: "🏢 Nombre de lots",
-      annualCharges: "🧾 Charges annuelles",
-      city: "🏙️ Ville",
+      balconyTerrace: "Balcon / Terrasse",
+      exposure: "Exposition",
+      seaView: "Vue mer",
+      generalCondition: "État général",
+      propertyType: "Typologie",
+      loiCarrezArea: "Surface Carrez",
+      roomCount: "Nombre de pièces",
+      lotCount: "Nombre de lots",
+      annualCharges: "Charges annuelles",
+      city: "Ville",
       roomsShort: "pièces",
       requestVisit: "Demander une visite",
       callAction: "Appeler",
@@ -138,29 +161,29 @@ export async function PublicListingDetailPage({
       no: "No",
       dpeUnit: "kWh/m²/yr",
       gesUnit: "kgCO₂/m²/yr",
-      livingArea: "📐 Living area",
-      bedrooms: "🛏️ Bedrooms",
-      livingRooms: "🛋️ Living rooms",
-      livingRoomArea: "📏 Living room area",
-      floor: "🏢 Floor / building",
-      topFloor: "🔝 Top floor",
-      elevator: "🛗 Elevator",
-      cellar: "🧱 Cellar",
-      terrace: "🌿 Terrace",
-      terraceArea: "📐 Terrace area",
-      balcony: "🌤️ Balcony",
-      balconyArea: "📐 Balcony area",
+      livingArea: "Living area",
+      bedrooms: "Bedrooms",
+      livingRooms: "Living rooms",
+      livingRoomArea: "Living room area",
+      floor: "Floor / building",
+      topFloor: "Top floor",
+      elevator: "Elevator",
+      cellar: "Cellar",
+      terrace: "Terrace",
+      terraceArea: "Terrace area",
+      balcony: "Balcony",
+      balconyArea: "Balcony area",
       parking: "🅿️ Parking / Garage",
-      balconyTerrace: "🌤️ Balcony / Terrace",
-      exposure: "☀️ Exposure",
-      seaView: "🌊 Sea view",
-      generalCondition: "🧭 General condition",
-      propertyType: "🏠 Property type",
-      loiCarrezArea: "📐 Carrez area",
-      roomCount: "🛋️ Number of rooms",
-      lotCount: "🏢 Number of lots",
-      annualCharges: "🧾 Annual charges",
-      city: "🏙️ City",
+      balconyTerrace: "Balcony / Terrace",
+      exposure: "Exposure",
+      seaView: "Sea view",
+      generalCondition: "General condition",
+      propertyType: "Property type",
+      loiCarrezArea: "Carrez area",
+      roomCount: "Number of rooms",
+      lotCount: "Number of lots",
+      annualCharges: "Annual charges",
+      city: "City",
       roomsShort: "rooms",
       requestVisit: "Request a viewing",
       callAction: "Call",
@@ -187,29 +210,29 @@ export async function PublicListingDetailPage({
       no: "No",
       dpeUnit: "kWh/m²/año",
       gesUnit: "kgCO₂/m²/año",
-      livingArea: "📐 Superficie habitable",
-      bedrooms: "🛏️ Dormitorios",
-      livingRooms: "🛋️ Salones",
-      livingRoomArea: "📏 Superficie del salón",
-      floor: "🏢 Planta / edificio",
-      topFloor: "🔝 Última planta",
-      elevator: "🛗 Ascensor",
-      cellar: "🧱 Bodega",
-      terrace: "🌿 Terraza",
-      terraceArea: "📐 Superficie terraza",
-      balcony: "🌤️ Balcón",
-      balconyArea: "📐 Superficie balcón",
+      livingArea: "Superficie habitable",
+      bedrooms: "Dormitorios",
+      livingRooms: "Salones",
+      livingRoomArea: "Superficie del salón",
+      floor: "Planta / edificio",
+      topFloor: "Última planta",
+      elevator: "Ascensor",
+      cellar: "Bodega",
+      terrace: "Terraza",
+      terraceArea: "Superficie terraza",
+      balcony: "Balcón",
+      balconyArea: "Superficie balcón",
       parking: "🅿️ Parking / Garaje",
-      balconyTerrace: "🌤️ Balcón / Terraza",
-      exposure: "☀️ Orientación",
-      seaView: "🌊 Vista al mar",
-      generalCondition: "🧭 Estado general",
-      propertyType: "🏠 Tipología",
-      loiCarrezArea: "📐 Superficie Carrez",
-      roomCount: "🛋️ Número de estancias",
-      lotCount: "🏢 Número de lotes",
-      annualCharges: "🧾 Cargas anuales",
-      city: "🏙️ Ciudad",
+      balconyTerrace: "Balcón / Terraza",
+      exposure: "Orientación",
+      seaView: "Vista al mar",
+      generalCondition: "Estado general",
+      propertyType: "Tipología",
+      loiCarrezArea: "Superficie Carrez",
+      roomCount: "Número de estancias",
+      lotCount: "Número de lotes",
+      annualCharges: "Cargas anuales",
+      city: "Ciudad",
       roomsShort: "estancias",
       requestVisit: "Solicitar visita",
       callAction: "Llamar",
@@ -236,29 +259,29 @@ export async function PublicListingDetailPage({
       no: "Нет",
       dpeUnit: "кВт·ч/м²/год",
       gesUnit: "кгCO₂/м²/год",
-      livingArea: "📐 Жилая площадь",
-      bedrooms: "🛏️ Спальни",
-      livingRooms: "🛋️ Гостиные",
-      livingRoomArea: "📏 Площадь гостиной",
-      floor: "🏢 Этаж / здание",
-      topFloor: "🔝 Последний этаж",
-      elevator: "🛗 Лифт",
-      cellar: "🧱 Подвал",
-      terrace: "🌿 Терраса",
-      terraceArea: "📐 Площадь террасы",
-      balcony: "🌤️ Балкон",
-      balconyArea: "📐 Площадь балкона",
+      livingArea: "Жилая площадь",
+      bedrooms: "Спальни",
+      livingRooms: "Гостиные",
+      livingRoomArea: "Площадь гостиной",
+      floor: "Этаж / здание",
+      topFloor: "Последний этаж",
+      elevator: "Лифт",
+      cellar: "Подвал",
+      terrace: "Терраса",
+      terraceArea: "Площадь террасы",
+      balcony: "Балкон",
+      balconyArea: "Площадь балкона",
       parking: "🅿️ Паркинг / Гараж",
-      balconyTerrace: "🌤️ Балкон / Терраса",
-      exposure: "☀️ Ориентация",
-      seaView: "🌊 Вид на море",
-      generalCondition: "🧭 Общее состояние",
-      propertyType: "🏠 Тип объекта",
-      loiCarrezArea: "📐 Площадь по Carrez",
-      roomCount: "🛋️ Количество комнат",
-      lotCount: "🏢 Количество лотов",
-      annualCharges: "🧾 Годовые расходы",
-      city: "🏙️ Город",
+      balconyTerrace: "Балкон / Терраса",
+      exposure: "Ориентация",
+      seaView: "Вид на море",
+      generalCondition: "Общее состояние",
+      propertyType: "Тип объекта",
+      loiCarrezArea: "Площадь по Carrez",
+      roomCount: "Количество комнат",
+      lotCount: "Количество лотов",
+      annualCharges: "Годовые расходы",
+      city: "Город",
       roomsShort: "комн.",
       requestVisit: "Записаться на просмотр",
       callAction: "Позвонить",
@@ -296,6 +319,7 @@ export async function PublicListingDetailPage({
     price: listing.property.price,
     currency: listing.priceCurrency,
     locale,
+    displayAmountCents: getListingDisplayAmountCents(listing.property.price, listing.priceAmount),
   });
   const floorLabel =
     typeof listing.property.rooms.floor === "number"
@@ -303,17 +327,14 @@ export async function PublicListingDetailPage({
         ? `${listing.property.rooms.floor} / ${listing.property.rooms.totalFloors}`
         : String(listing.property.rooms.floor)
       : "-";
-  const fullAddress =
-    listing.property.address.formattedAddress ??
-    [
-      listing.property.address.streetNumber,
-      listing.property.address.street,
-      listing.property.address.postalCode,
-      listing.property.address.city,
-      listing.property.address.country,
-    ]
-      .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
-      .join(" ");
+  // Page publique : on n'expose jamais la rue (secteur + ville seulement).
+  // L'adresse complète est réservée à l'espace client et à l'admin.
+  const publicLocationLabel = [
+    listing.property.address.postalCode,
+    listing.property.address.city,
+  ]
+    .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+    .join(" ");
   const hasLocationMap =
     typeof listing.property.address.latitude === "number" && typeof listing.property.address.longitude === "number";
 
@@ -429,14 +450,14 @@ export async function PublicListingDetailPage({
             {/* Étiquettes DPE / GES (version compacte sur mobile) */}
             <section className="order-7 grid gap-4 sm:grid-cols-2 md:order-3 md:col-start-1 min-[1665px]:order-none">
               <PropertyEnergyScale
-                title="⚡ DPE"
+                title="DPE"
                 value={listing.property.energy.dpeValue}
                 label={listing.property.energy.dpeLabel}
                 unit={copy.dpeUnit}
                 locale={locale}
               />
               <PropertyEnergyScale
-                title="🌿 GES"
+                title="GES"
                 value={listing.property.energy.gesValue}
                 label={listing.property.energy.gesLabel}
                 unit={copy.gesUnit}
@@ -554,7 +575,7 @@ export async function PublicListingDetailPage({
                   <dd>{getGeneralConditionLabel(listing.property.generalCondition, locale) ?? "-"}</dd>
                 </div>
                 <div>
-                  <dt className="opacity-65">📌 {copy.statusLabel}</dt>
+                  <dt className="opacity-65">{copy.statusLabel}</dt>
                   <dd>{commercialStatusLabel}</dd>
                 </div>
               </dl>
@@ -566,8 +587,9 @@ export async function PublicListingDetailPage({
                 <PropertyLocationMap
                   latitude={listing.property.address.latitude}
                   longitude={listing.property.address.longitude}
-                  address={fullAddress || null}
+                  address={publicLocationLabel || null}
                   title={listing.title ?? copy.propertyFallback}
+                  approximate
                 />
               </section>
             ) : null}

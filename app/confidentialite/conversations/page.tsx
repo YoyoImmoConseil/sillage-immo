@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { DeleteConversationsForm } from "./form";
+import { SILLAGE_CONTACT_EMAIL } from "@/lib/brand/company";
 
 export const dynamic = "force-dynamic";
 
@@ -34,11 +35,8 @@ export default function ConversationsDeletionPage() {
           Cette procédure couvre uniquement les conversations avec
           l&apos;assistant IA (page d&apos;accueil, estimation, espace
           vendeur). Pour toute autre demande RGPD, écrivez à{" "}
-          <a
-            className="underline underline-offset-2"
-            href="mailto:contact@sillage-immobilier.com"
-          >
-            contact@sillage-immobilier.com
+          <a className="underline underline-offset-2" href={`mailto:${SILLAGE_CONTACT_EMAIL}`}>
+            {SILLAGE_CONTACT_EMAIL}
           </a>
           .
         </p>

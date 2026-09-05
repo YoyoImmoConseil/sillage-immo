@@ -1,9 +1,21 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { getRequestLocale } from "@/lib/i18n/request";
 import { localizePath } from "@/lib/i18n/routing";
 import { getClientSpacePageContext } from "@/lib/client-space/auth";
+import { buildPublicPageMetadata } from "@/lib/seo/site";
+import { PAGE_SEO } from "@/lib/seo/page-copy";
 import { SellerLoginPageContent } from "./login-page-content";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getRequestLocale();
+  return buildPublicPageMetadata({
+    path: "/espace-client/login",
+    locale,
+    ...PAGE_SEO.clientLogin[locale],
+  });
+}
 
 export default async function SellerLoginPage() {
   const locale = await getRequestLocale();

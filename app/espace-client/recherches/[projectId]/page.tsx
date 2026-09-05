@@ -36,7 +36,7 @@ export default async function SavedBuyerSearchPage(props: SavedBuyerSearchPagePr
     fr: {
       kicker: "Recherche acquéreur",
       emailVerified: "Email vérifié",
-      emailPending: "Email non encore vérifié",
+      emailPending: "Email à confirmer",
       createdAt: "Créée le",
       updatedAt: "Mise à jour",
       statusActive: "Active",
@@ -62,7 +62,7 @@ export default async function SavedBuyerSearchPage(props: SavedBuyerSearchPagePr
       noMatches:
         "Aucun bien ne correspond encore à cette recherche. Vous serez notifié dès qu'un bien est publié.",
       newBadge: "Nouveau",
-      scoreLabel: "Score",
+      scoreLabel: "Correspondance",
       openListing: "Voir le bien",
       confirmArchive:
         "Archiver cette recherche ? Vous ne recevrez plus d'alertes et elle sera masquée de votre tableau de bord.",
@@ -111,7 +111,7 @@ export default async function SavedBuyerSearchPage(props: SavedBuyerSearchPagePr
       noMatches:
         "No matching property yet. You'll be notified as soon as a new one is listed.",
       newBadge: "New",
-      scoreLabel: "Score",
+      scoreLabel: "Match",
       openListing: "View listing",
       confirmArchive:
         "Archive this search? You will stop receiving alerts and it will be hidden from your dashboard.",
@@ -160,7 +160,7 @@ export default async function SavedBuyerSearchPage(props: SavedBuyerSearchPagePr
       noMatches:
         "Aún ningún inmueble coincide. Le avisaremos en cuanto se publique uno nuevo.",
       newBadge: "Nuevo",
-      scoreLabel: "Puntuación",
+      scoreLabel: "Coincidencia",
       openListing: "Ver inmueble",
       confirmArchive:
         "¿Archivar esta búsqueda? Dejará de recibir alertas y se ocultará del panel.",
@@ -209,7 +209,7 @@ export default async function SavedBuyerSearchPage(props: SavedBuyerSearchPagePr
       noMatches:
         "Пока нет подходящих объектов. Мы уведомим вас, как только появится подходящий.",
       newBadge: "Новое",
-      scoreLabel: "Оценка",
+      scoreLabel: "Совпадение",
       openListing: "Открыть объект",
       confirmArchive:
         "Переместить запрос в архив? Вы перестанете получать уведомления.",

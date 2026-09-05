@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getRequestLocale } from "@/lib/i18n/request";
+import { buildPublicPageMetadata } from "@/lib/seo/site";
 import { localizePath } from "@/lib/i18n/routing";
 import { listPropertyTypesForBusinessType } from "@/services/properties/property-listing.service";
 import { mergeWithCanonicalPropertyTypes } from "@/lib/properties/canonical-types";
@@ -32,7 +33,7 @@ export async function generateMetadata(): Promise<Metadata> {
         "Доверьте нам поиск недвижимости в Ницце и на Лазурном Берегу: нарисованная зона, целевые уведомления и возможность сопровождения консультантом Sillage.",
     },
   }[locale];
-  return metadata;
+  return buildPublicPageMetadata({ path: "/recherche/nouvelle", locale, ...metadata });
 }
 
 type BuyerSignupSearchParams = {

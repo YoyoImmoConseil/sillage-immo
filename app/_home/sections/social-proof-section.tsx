@@ -28,7 +28,7 @@ export function SocialProofSection({ locale }: Props) {
             </li>
           ))}
         </ul>
-        <p className="max-w-3xl text-sm md:text-base text-navy/70 leading-relaxed line-clamp-3 md:line-clamp-none">
+        <p className="max-w-3xl text-sm md:text-base text-navy/70 leading-relaxed">
           {bridge}
         </p>
       </div>

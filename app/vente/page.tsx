@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getRequestLocale } from "@/lib/i18n/request";
+import { buildPublicPageMetadata } from "@/lib/seo/site";
 import { PublicListingsPage } from "../components/public-listings-page";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -26,7 +27,7 @@ export async function generateMetadata(): Promise<Metadata> {
         "Откройте для себя подборку объектов на продажу от Sillage Immo в Ницце и на Лазурном Берегу.",
     },
   }[locale];
-  return metadata;
+  return buildPublicPageMetadata({ path: "/vente", locale, ...metadata });
 }
 
 type VentePageProps = {

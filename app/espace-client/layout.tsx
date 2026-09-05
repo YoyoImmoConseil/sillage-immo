@@ -14,7 +14,7 @@ export default async function SellerPortalLayout({
   const copy = {
     fr: {
       eyebrow: "Espace client Sillage",
-      title: "Hub client multi-projets",
+      title: "Mon espace Sillage",
       connectedAs: "Connecté en tant que",
       projects: "Mes projets",
       login: "Connexion client",
@@ -22,7 +22,7 @@ export default async function SellerPortalLayout({
     },
     en: {
       eyebrow: "Sillage client space",
-      title: "Multi-project client hub",
+      title: "My Sillage space",
       connectedAs: "Signed in as",
       projects: "My projects",
       login: "Client login",
@@ -30,7 +30,7 @@ export default async function SellerPortalLayout({
     },
     es: {
       eyebrow: "Espacio cliente Sillage",
-      title: "Hub cliente multi-proyectos",
+      title: "Mi espacio Sillage",
       connectedAs: "Conectado como",
       projects: "Mis proyectos",
       login: "Acceso cliente",
@@ -38,7 +38,7 @@ export default async function SellerPortalLayout({
     },
     ru: {
       eyebrow: "Клиентское пространство Sillage",
-      title: "Мультипроектный клиентский хаб",
+      title: "Мой кабинет Sillage",
       connectedAs: "Вход выполнен как",
       projects: "Мои проекты",
       login: "Вход для клиента",

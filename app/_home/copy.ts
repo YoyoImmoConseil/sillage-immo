@@ -1,4 +1,10 @@
 import type { AppLocale } from "@/lib/i18n/config";
+import { SILLAGE_PHONE_DISPLAY } from "@/lib/brand/company";
+
+export {
+  SILLAGE_PHONE_DISPLAY,
+  SILLAGE_PHONE_RAW,
+} from "@/lib/brand/company";
 
 export type SocialProofItem = { figure: string; label: string };
 
@@ -136,10 +142,10 @@ export type HomeCopy = {
   };
 };
 
-const PHONE_ARIA_FR = "Appeler Sillage Immo au +33 4 23 45 04 85";
-const PHONE_ARIA_EN = "Call Sillage Immo at +33 4 23 45 04 85";
-const PHONE_ARIA_ES = "Llamar a Sillage Immo al +33 4 23 45 04 85";
-const PHONE_ARIA_RU = "Позвонить Sillage Immo по номеру +33 4 23 45 04 85";
+const PHONE_ARIA_FR = `Appeler Sillage Immo au ${SILLAGE_PHONE_DISPLAY}`;
+const PHONE_ARIA_EN = `Call Sillage Immo at ${SILLAGE_PHONE_DISPLAY}`;
+const PHONE_ARIA_ES = `Llamar a Sillage Immo al ${SILLAGE_PHONE_DISPLAY}`;
+const PHONE_ARIA_RU = `Позвонить Sillage Immo по номеру ${SILLAGE_PHONE_DISPLAY}`;
 
 const fr: HomeCopy = {
   hero: {
@@ -1359,5 +1365,3 @@ export const PHONE_ARIA_LABEL: Record<AppLocale, string> = {
   ru: PHONE_ARIA_RU,
 };
 
-export const SILLAGE_PHONE_RAW = "+33423450485";
-export const SILLAGE_PHONE_DISPLAY = "+33 4 23 45 04 85";

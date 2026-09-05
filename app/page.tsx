@@ -1,4 +1,7 @@
+import type { Metadata } from "next";
 import { getRequestLocale } from "@/lib/i18n/request";
+import { buildPublicPageMetadata } from "@/lib/seo/site";
+import { PAGE_SEO } from "@/lib/seo/page-copy";
 import { HeroSection } from "./_home/sections/hero-section";
 import { SocialProofSection } from "./_home/sections/social-proof-section";
 import { AssistantSection } from "./_home/sections/assistant-section";
@@ -13,7 +16,13 @@ import { NeighborhoodsSection } from "./_home/sections/neighborhoods-section";
 import { InternationalSection } from "./_home/sections/international-section";
 import { FinalCtaSection } from "./_home/sections/final-cta-section";
 import { HomeTeamSection } from "./components/home-team-section";
+import { SHOW_HOME_TEAM_SECTION } from "@/lib/brand/company";
 import { HomeMobileCtaBar } from "./_home/sections/home-mobile-cta-bar";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getRequestLocale();
+  return buildPublicPageMetadata({ path: "/", locale, ...PAGE_SEO.home[locale] });
+}
 
 export default async function Home() {
   const locale = await getRequestLocale();
@@ -35,7 +44,7 @@ export default async function Home() {
       <CatalogSection locale={locale} />
       <NeighborhoodsSection locale={locale} />
       <InternationalSection locale={locale} />
-      <HomeTeamSection locale={locale} />
+      {SHOW_HOME_TEAM_SECTION ? <HomeTeamSection locale={locale} /> : null}
       <FinalCtaSection locale={locale} />
       <HomeMobileCtaBar locale={locale} />
     </main>

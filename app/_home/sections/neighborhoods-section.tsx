@@ -45,7 +45,7 @@ export function NeighborhoodsSection({ locale }: Props) {
               <h3 className="font-serif text-base font-semibold text-navy">
                 {item.name}
               </h3>
-              <p className="text-sm leading-relaxed text-navy/75 line-clamp-1 md:line-clamp-none">
+              <p className="text-sm leading-relaxed text-navy/75">
                 {item.body}
               </p>
             </article>
