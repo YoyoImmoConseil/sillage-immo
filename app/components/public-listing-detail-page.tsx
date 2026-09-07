@@ -29,6 +29,12 @@ import type { PropertyListingSnapshot } from "@/types/domain/properties";
 import { PropertyEnergyScale } from "./property-energy-scale";
 import { PropertyGallery } from "./property-gallery";
 import { PropertyLocationMap } from "./property-location-map";
+import { ListingShareButtons } from "./listing-share-buttons";
+import { PropertyCard } from "./property-card";
+import {
+  listPublicPropertyListings,
+  toPublicPropertyListingSummary,
+} from "@/services/properties/property-listing.service";
 import { getListingCommercialStatusLabel } from "./listing-status-banner";
 
 const METADATA_FALLBACKS: Record<AppLocale, { title: string; description: string }> = {
@@ -139,6 +145,9 @@ export async function PublicListingDetailPage({
       roomsShort: "pièces",
       requestVisit: "Demander une visite",
       callAction: "Appeler",
+      alertCta: "Recevoir les biens similaires",
+      alertHint: "Une alerte pré-remplie avec le type, la ville et le budget de ce bien.",
+      similar: "Biens similaires",
     },
     en: {
       back: "Back to listings",
@@ -188,6 +197,9 @@ export async function PublicListingDetailPage({
       roomsShort: "rooms",
       requestVisit: "Request a viewing",
       callAction: "Call",
+      alertCta: "Get similar properties",
+      alertHint: "A pre-filled alert with this property's type, city and budget.",
+      similar: "Similar properties",
     },
     es: {
       back: "Volver al catálogo",
@@ -237,6 +249,9 @@ export async function PublicListingDetailPage({
       roomsShort: "estancias",
       requestVisit: "Solicitar visita",
       callAction: "Llamar",
+      alertCta: "Recibir inmuebles similares",
+      alertHint: "Una alerta prellenada con el tipo, la ciudad y el presupuesto de este inmueble.",
+      similar: "Inmuebles similares",
     },
     ru: {
       back: "Назад к каталогу",
@@ -286,6 +301,9 @@ export async function PublicListingDetailPage({
       roomsShort: "комн.",
       requestVisit: "Записаться на просмотр",
       callAction: "Позвонить",
+      alertCta: "Получать похожие объекты",
+      alertHint: "Оповещение с типом, городом и бюджетом этого объекта.",
+      similar: "Похожие объекты",
     },
   }[locale];
   // Localized, marketing-safe label (`Disponible`, `Sous Compromis`, `Sous Offre`, ...).
@@ -377,6 +395,39 @@ export async function PublicListingDetailPage({
   const visitHref = whatsappHref ?? (contactPhone ? `tel:${contactPhone}` : "#interlocuteur");
   const visitOpensWhatsApp = Boolean(whatsappHref);
 
+  // Alerte pré-remplie : type, ville, budget ±15 % autour du prix affiché.
+  const displayAmountCents = getListingDisplayAmountCents(listing.property.price, listing.priceAmount);
+  const displayAmount = typeof displayAmountCents === "number" ? displayAmountCents / 100 : null;
+  const alertParams = new URLSearchParams();
+  alertParams.set("businessType", listing.businessType);
+  if (listing.city) alertParams.set("city", listing.city);
+  if (listing.propertyType) alertParams.set("type", listing.propertyType);
+  if (displayAmount && displayAmount > 0) {
+    alertParams.set("minPrice", String(Math.round((displayAmount * 0.85) / 1000) * 1000));
+    alertParams.set("maxPrice", String(Math.round((displayAmount * 1.15) / 1000) * 1000));
+  }
+  const alertHref = `${localizePath("/recherche/nouvelle", locale)}?${alertParams.toString()}`;
+  const shareUrl = `${SITE_URL}${localizePath(listing.canonicalPath, locale)}`;
+
+  // Biens similaires : même transaction, même ville, prix ±30 %, 3 maximum.
+  let similarListings: ReturnType<typeof toPublicPropertyListingSummary>[] = [];
+  try {
+    const candidates = await listPublicPropertyListings({
+      locale,
+      businessType: listing.businessType,
+      city: listing.city ?? undefined,
+      minPrice: displayAmount ? Math.floor(displayAmount * 0.7) : undefined,
+      maxPrice: displayAmount ? Math.ceil(displayAmount * 1.3) : undefined,
+      pageSize: 12,
+    });
+    similarListings = candidates
+      .filter((candidate) => candidate.id !== listing.id)
+      .slice(0, 3)
+      .map(toPublicPropertyListingSummary);
+  } catch (error) {
+    console.error("[listing-detail] similar listings unavailable", error);
+  }
+
   return (
     <main className="min-h-screen">
       {/* En-tête de marque. Sur mobile (< 768px) on n'affiche que la flèche
@@ -402,6 +453,9 @@ export async function PublicListingDetailPage({
                 {line.text}
               </p>
             ))}
+            <div className="pt-2">
+              <ListingShareButtons url={shareUrl} title={listingTitle} locale={locale} tone="dark" />
+            </div>
           </div>
         </div>
       </section>
@@ -446,6 +500,9 @@ export async function PublicListingDetailPage({
                 </p>
               ))}
               {summaryMeta ? <p className="text-sm opacity-70">{summaryMeta}</p> : null}
+              <div className="pt-2">
+                <ListingShareButtons url={shareUrl} title={listingTitle} locale={locale} />
+              </div>
             </section>
 
             {/* Étiquettes DPE / GES (version compacte sur mobile) */}
@@ -644,6 +701,17 @@ export async function PublicListingDetailPage({
                   {contact.phone}
                 </a>
               ) : null}
+              <div className="border-t border-sand/20 pt-4">
+                <Link
+                  href={alertHref}
+                  className="inline-flex min-h-11 items-center justify-center rounded-full border border-sand/60 px-5 text-sm font-semibold text-sand transition hover:bg-sand/10"
+                  data-track-cta="listing_create_alert"
+                  data-track-location="listing_contact"
+                >
+                  {copy.alertCta}
+                </Link>
+                <p className="mt-2 text-xs text-sand/70">{copy.alertHint}</p>
+              </div>
             </section>
 
             {/* Visite virtuelle Matterport remontée haut de page sur mobile
@@ -755,6 +823,22 @@ export async function PublicListingDetailPage({
             ) : null}
           </aside>
         </div>
+
+        {similarListings.length > 0 ? (
+          <section
+            aria-labelledby="similar-title"
+            className="w-full px-4 pb-10 md:px-10 xl:px-14 2xl:px-20 touch:pb-32"
+          >
+            <h2 id="similar-title" className="sillage-section-title mb-4">
+              {copy.similar}
+            </h2>
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {similarListings.map((item) => (
+                <PropertyCard key={item.id} listing={item} locale={locale} />
+              ))}
+            </div>
+          </section>
+        ) : null}
 
         {/* TÉLÉPHONE — barre d'action collante en bas d'écran (conversion).
             Bouton principal « Demander une visite » → WhatsApp vers
