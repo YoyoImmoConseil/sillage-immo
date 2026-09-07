@@ -30,11 +30,8 @@ export default async function EstimationPage() {
           aria-hidden
           className="pointer-events-none absolute right-6 top-6 opacity-[0.10]"
         />
-        <div className="relative w-full px-4 py-12 md:px-10 md:py-20 xl:px-14 xl:py-24 2xl:px-20">
-          <div className="grid gap-10 lg:grid-cols-[50%_50%] lg:items-center">
-            <div className="max-w-[840px]">
-              <SillageLogo priority className="h-auto w-full" />
-            </div>
+        <div className="relative w-full px-4 py-10 md:px-10 md:py-14 xl:px-14 xl:py-16 2xl:px-20">
+          <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-center">
             <div className="space-y-5 max-w-3xl">
               <p className="text-[11px] md:text-xs uppercase tracking-[0.22em] text-sand/75">
                 {copy.eyebrow}
@@ -59,7 +56,18 @@ export default async function EstimationPage() {
                 ))}
               </ul>
             </div>
+            {/* Logo réduit et relégué à droite sur grand écran : le hero vend, il ne se présente pas. */}
+            <div className="hidden lg:block max-w-[320px] opacity-90">
+              <SillageLogo className="h-auto w-full" />
+            </div>
           </div>
+        </div>
+      </section>
+
+      {/* Le formulaire d'abord : c'est ce que le vendeur vient chercher. L'argumentaire suit. */}
+      <section id="formulaire" className="bg-sand text-navy scroll-mt-24">
+        <div className="w-full px-4 py-8 md:px-10 md:py-12 xl:px-14 2xl:px-20">
+          <SellerApiFirstFlow locale={locale} />
         </div>
       </section>
 
@@ -123,11 +131,6 @@ export default async function EstimationPage() {
         </div>
       </section>
 
-      <section className="bg-sand text-navy">
-        <div className="w-full px-4 py-8 md:px-10 md:py-12 xl:px-14 2xl:px-20">
-          <SellerApiFirstFlow locale={locale} />
-        </div>
-      </section>
     </main>
   );
 }

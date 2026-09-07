@@ -1,12 +1,12 @@
 import type { AppLocale } from "@/lib/i18n/config";
 
 const fr = {
-  title: "Étape 1 — Comprendre votre bien et votre projet",
+  title: "Estimez votre bien en 2 minutes",
   intro:
-    "Quelques informations suffisent pour préparer une estimation cohérente et vous orienter vers le bon accompagnement.",
+    "Commencez par votre bien : l'adresse, la surface et quelques caractéristiques suffisent. Vos coordonnées ne sont demandées qu'à la fin, pour vous envoyer l'estimation.",
   antiFriction:
     "Répondez avec les informations dont vous disposez aujourd'hui. Votre conseiller pourra compléter ou corriger les éléments avec vous si nécessaire.",
-  contactDetails: "Vos coordonnées",
+  contactDetails: "Où envoyer votre estimation ?",
   firstName: "Prénom *",
   lastName: "Nom *",
   email: "Email *",
@@ -86,9 +86,9 @@ const fr = {
   optionalNote:
     "Champs facultatifs : votre conseiller pourra les compléter ou les corriger avec vous.",
   stepWord: "Étape",
-  step1Title: "Contact & localisation",
-  step2Title: "Caractéristiques",
-  step3Title: "Photos & validation",
+  step1Title: "Votre bien",
+  step2Title: "Caractéristiques & projet",
+  step3Title: "Recevoir mon estimation",
   back: "Précédent",
   continueLabel: "Continuer",
   finalReassurance:
@@ -100,12 +100,12 @@ export type SellerProjectFormCopy = typeof fr;
 export const SELLER_PROJECT_FORM_COPY: Record<AppLocale, SellerProjectFormCopy> = {
   fr,
   en: {
-    title: "Step 1 — Understanding your property and project",
+    title: "Value your property in 2 minutes",
     intro:
-      "A few details are enough to prepare a coherent valuation and guide you towards the right level of support.",
+      "Start with the property: address, surface and a few features are enough. Your contact details are only asked at the end, to send you the valuation.",
     antiFriction:
       "Answer with the information you have today. Your advisor can complete or adjust the details with you if needed.",
-    contactDetails: "Your contact details",
+    contactDetails: "Where should we send your valuation?",
     firstName: "First name *",
     lastName: "Last name *",
     email: "Email *",
@@ -184,21 +184,21 @@ export const SELLER_PROJECT_FORM_COPY: Record<AppLocale, SellerProjectFormCopy> 
     optionalNote:
       "Optional fields: your advisor can complete or adjust them with you.",
     stepWord: "Step",
-    step1Title: "Contact & location",
-    step2Title: "Features",
-    step3Title: "Photos & confirmation",
+    step1Title: "Your property",
+    step2Title: "Features & project",
+    step3Title: "Receive my valuation",
     back: "Back",
     continueLabel: "Continue",
     finalReassurance:
       "No commitment. Your information is used solely to analyse your file.",
   },
   es: {
-    title: "Paso 1 — Entender su inmueble y su proyecto",
+    title: "Valore su inmueble en 2 minutos",
     intro:
-      "Unos pocos datos bastan para preparar una valoración coherente y orientarle hacia el acompañamiento adecuado.",
+      "Empiece por su inmueble: la dirección, la superficie y algunas características bastan. Sus datos de contacto solo se piden al final, para enviarle la valoración.",
     antiFriction:
       "Responda con la información de la que dispone hoy. Su asesor podrá completar o ajustar los elementos con usted si es necesario.",
-    contactDetails: "Sus datos de contacto",
+    contactDetails: "¿Dónde enviamos su valoración?",
     firstName: "Nombre *",
     lastName: "Apellidos *",
     email: "Email *",
@@ -277,21 +277,21 @@ export const SELLER_PROJECT_FORM_COPY: Record<AppLocale, SellerProjectFormCopy> 
     optionalNote:
       "Campos opcionales: su asesor podrá completarlos o ajustarlos con usted.",
     stepWord: "Paso",
-    step1Title: "Contacto y ubicación",
-    step2Title: "Características",
-    step3Title: "Fotos y validación",
+    step1Title: "Su inmueble",
+    step2Title: "Características y proyecto",
+    step3Title: "Recibir mi valoración",
     back: "Anterior",
     continueLabel: "Continuar",
     finalReassurance:
       "Sin compromiso. Su información se utiliza únicamente para analizar su expediente.",
   },
   ru: {
-    title: "Шаг 1 — Понять ваш объект и ваш проект",
+    title: "Оцените ваш объект за 2 минуты",
     intro:
-      "Нескольких данных достаточно, чтобы подготовить связную оценку и направить вас к нужному уровню сопровождения.",
+      "Начните с объекта: адреса, площади и нескольких характеристик достаточно. Контактные данные запрашиваются только в конце, чтобы отправить вам оценку.",
     antiFriction:
       "Укажите ту информацию, которая у вас есть сегодня. Ваш консультант сможет дополнить или уточнить детали вместе с вами при необходимости.",
-    contactDetails: "Ваши контактные данные",
+    contactDetails: "Куда отправить оценку?",
     firstName: "Имя *",
     lastName: "Фамилия *",
     email: "Email *",
@@ -370,9 +370,9 @@ export const SELLER_PROJECT_FORM_COPY: Record<AppLocale, SellerProjectFormCopy> 
     optionalNote:
       "Необязательные поля: ваш консультант сможет дополнить или уточнить их вместе с вами.",
     stepWord: "Шаг",
-    step1Title: "Контакты и адрес",
-    step2Title: "Характеристики",
-    step3Title: "Фото и подтверждение",
+    step1Title: "Ваш объект",
+    step2Title: "Характеристики и проект",
+    step3Title: "Получить оценку",
     back: "Назад",
     continueLabel: "Продолжить",
     finalReassurance:
