@@ -79,12 +79,7 @@ export function SellerProjectFormSection({
   // Gating par étape (affichage/UX uniquement : sous-ensembles du gate existant,
   // + ville/CP requis côté serveur pour éviter une 422 à l'envoi).
   const canLeaveStep1 =
-    Boolean(form.firstName) &&
-    Boolean(form.lastName) &&
-    Boolean(form.email) &&
-    Boolean(form.propertyAddress) &&
-    Boolean(form.city) &&
-    Boolean(form.postalCode);
+    Boolean(form.propertyAddress) && Boolean(form.city) && Boolean(form.postalCode);
   const canLeaveStep2 =
     Boolean(form.terrace) &&
     Boolean(form.balcony) &&
@@ -158,76 +153,8 @@ export function SellerProjectFormSection({
       ) : null}
 
       <div className="grid gap-3 sm:grid-cols-2 text-sm">
-        {/* ÉTAPE 1 — Contact + localisation (cœur de la lead, capturé en premier) */}
+        {/* ÉTAPE 1 — Le bien d'abord : adresse, type, dimensions (aucune identité demandée) */}
         <div className={groupClass(1)}>
-          <p className="sm:col-span-2 text-xs uppercase tracking-wide opacity-70">
-            {copy.contactDetails}
-          </p>
-          <label>
-            {copy.firstName}
-            <input
-              className={FIELD_CLASS}
-              value={form.firstName}
-              onChange={(event) => onUpdate("firstName", event.target.value)}
-              placeholder={copy.firstNamePlaceholder}
-              autoComplete="given-name"
-            />
-          </label>
-          <label>
-            {copy.lastName}
-            <input
-              className={FIELD_CLASS}
-              value={form.lastName}
-              onChange={(event) => onUpdate("lastName", event.target.value)}
-              placeholder={copy.lastNamePlaceholder}
-              autoComplete="family-name"
-            />
-          </label>
-          <label>
-            {copy.email}
-            <input
-              className={FIELD_CLASS}
-              type="email"
-              inputMode="email"
-              autoComplete="email"
-              value={form.email}
-              onChange={(event) => onUpdate("email", event.target.value)}
-              placeholder={copy.emailPlaceholder}
-            />
-          </label>
-          <label>
-            {copy.phone}
-            {optionalTag}
-            <input
-              className={FIELD_CLASS}
-              type="tel"
-              inputMode="tel"
-              autoComplete="tel"
-              value={form.phone}
-              onChange={(event) => onUpdate("phone", event.target.value)}
-              placeholder={copy.phonePlaceholder}
-            />
-          </label>
-
-          <p className="sm:col-span-2 text-xs uppercase tracking-wide opacity-70">
-            {copy.project}
-          </p>
-          <label className="sm:col-span-2">
-            {copy.projectTimeline}
-            <select
-              className={FIELD_CLASS}
-              value={form.timeline}
-              onChange={(event) => onUpdate("timeline", event.target.value as FlowForm["timeline"])}
-            >
-              <option value="already_listed">{copy.timelineAlreadyListed}</option>
-              <option value="list_now">{copy.timelineListNow}</option>
-              <option value="list_within_6_months">{copy.timelineListWithin6Months}</option>
-              <option value="self_sell_first">{copy.timelineSelfSellFirst}</option>
-              <option value="early_reflection">{copy.timelineEarlyReflection}</option>
-              <option value="personal_information_only">{copy.timelinePersonalInfoOnly}</option>
-            </select>
-          </label>
-
           <p className="sm:col-span-2 text-xs uppercase tracking-wide opacity-70">
             {copy.addressAndType}
           </p>
@@ -280,14 +207,6 @@ export function SellerProjectFormSection({
               placeholder={copy.postalCodePlaceholder}
             />
           </label>
-        </div>
-
-        {/* ÉTAPE 2 — Caractéristiques (majoritairement facultatives, ton rassurant) */}
-        <div className={groupClass(2)}>
-          <p className="sm:col-span-2 text-xs uppercase tracking-wide opacity-70">
-            {copy.characteristics}
-          </p>
-          <p className="sm:col-span-2 text-xs italic opacity-70 md:hidden">{copy.optionalNote}</p>
           <label>
             {copy.surface}
             {optionalTag}
@@ -332,6 +251,14 @@ export function SellerProjectFormSection({
               placeholder={copy.buildingTotalFloorsPlaceholder}
             />
           </label>
+        </div>
+
+        {/* ÉTAPE 2 — Caractéristiques, projet et informations libres */}
+        <div className={groupClass(2)}>
+          <p className="sm:col-span-2 text-xs uppercase tracking-wide opacity-70">
+            {copy.characteristics}
+          </p>
+          <p className="sm:col-span-2 text-xs italic opacity-70 md:hidden">{copy.optionalNote}</p>
           <label>
             {copy.terrace}
             <select
@@ -472,10 +399,25 @@ export function SellerProjectFormSection({
               </strong>
             </p>
           ) : null}
-        </div>
+          <p className="sm:col-span-2 text-xs uppercase tracking-wide opacity-70">
+            {copy.project}
+          </p>
+          <label className="sm:col-span-2">
+            {copy.projectTimeline}
+            <select
+              className={FIELD_CLASS}
+              value={form.timeline}
+              onChange={(event) => onUpdate("timeline", event.target.value as FlowForm["timeline"])}
+            >
+              <option value="already_listed">{copy.timelineAlreadyListed}</option>
+              <option value="list_now">{copy.timelineListNow}</option>
+              <option value="list_within_6_months">{copy.timelineListWithin6Months}</option>
+              <option value="self_sell_first">{copy.timelineSelfSellFirst}</option>
+              <option value="early_reflection">{copy.timelineEarlyReflection}</option>
+              <option value="personal_information_only">{copy.timelinePersonalInfoOnly}</option>
+            </select>
+          </label>
 
-        {/* ÉTAPE 3 — Médias (facultatif) + informations libres + validation finale */}
-        <div className={groupClass(3)}>
           <label className="sm:col-span-2">
             {copy.usefulInfo}
             <textarea
@@ -486,6 +428,59 @@ export function SellerProjectFormSection({
               placeholder={copy.usefulInfoPlaceholder}
             />
           </label>
+        </div>
+
+        {/* ÉTAPE 3 — Coordonnées pour recevoir l'estimation (+ photos facultatives) */}
+        <div className={groupClass(3)}>
+          <p className="sm:col-span-2 text-xs uppercase tracking-wide opacity-70">
+            {copy.contactDetails}
+          </p>
+          <label>
+            {copy.firstName}
+            <input
+              className={FIELD_CLASS}
+              value={form.firstName}
+              onChange={(event) => onUpdate("firstName", event.target.value)}
+              placeholder={copy.firstNamePlaceholder}
+              autoComplete="given-name"
+            />
+          </label>
+          <label>
+            {copy.lastName}
+            <input
+              className={FIELD_CLASS}
+              value={form.lastName}
+              onChange={(event) => onUpdate("lastName", event.target.value)}
+              placeholder={copy.lastNamePlaceholder}
+              autoComplete="family-name"
+            />
+          </label>
+          <label>
+            {copy.email}
+            <input
+              className={FIELD_CLASS}
+              type="email"
+              inputMode="email"
+              autoComplete="email"
+              value={form.email}
+              onChange={(event) => onUpdate("email", event.target.value)}
+              placeholder={copy.emailPlaceholder}
+            />
+          </label>
+          <label>
+            {copy.phone}
+            {optionalTag}
+            <input
+              className={FIELD_CLASS}
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              value={form.phone}
+              onChange={(event) => onUpdate("phone", event.target.value)}
+              placeholder={copy.phonePlaceholder}
+            />
+          </label>
+
           <SellerPropertyMediaUpload
             locale={locale}
             loading={loading}
