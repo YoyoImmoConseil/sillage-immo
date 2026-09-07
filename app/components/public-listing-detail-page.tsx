@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { AppLocale } from "@/lib/i18n/config";
 import { formatCurrency, formatLoiCarrezArea } from "@/lib/i18n/format";
 import { localizePath } from "@/lib/i18n/routing";
+import { humanizeListingTitle } from "@/lib/properties/listing-title";
 import {
   OG_LOCALES,
   SITE_NAME,
@@ -60,7 +61,7 @@ export const buildPublicListingMetadata = (
     };
   }
 
-  const title = `${listing.title ?? fallback.title} | Sillage Immo`;
+  const title = `${humanizeListingTitle(listing.title) ?? fallback.title} | Sillage Immo`;
   const description = toMetaDescription(listing.property.description) ?? fallback.description;
   return {
     ...buildPublicPageMetadata({
@@ -338,7 +339,7 @@ export async function PublicListingDetailPage({
   const hasLocationMap =
     typeof listing.property.address.latitude === "number" && typeof listing.property.address.longitude === "number";
 
-  const listingTitle = listing.title ?? copy.propertyFallback;
+  const listingTitle = humanizeListingTitle(listing.title) ?? copy.propertyFallback;
   const priceLabel = formatListingPrice({
     amountCents: getListingDisplayAmountCents(listing.property.price, listing.priceAmount),
     currency: listing.priceCurrency,

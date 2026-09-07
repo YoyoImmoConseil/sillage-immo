@@ -85,3 +85,35 @@ export function PropertyEnergyScale({
     </div>
   );
 }
+
+/**
+ * Version compacte pour les cartes : deux pastilles « DPE D · GES D ».
+ * L'échelle complète A→G reste affichée sur la fiche du bien.
+ */
+export function EnergyClassBadges({
+  dpeLabel,
+  gesLabel,
+}: {
+  dpeLabel: string | null;
+  gesLabel: string | null;
+}) {
+  if (!dpeLabel && !gesLabel) return null;
+  const items = [
+    { key: "DPE", label: dpeLabel },
+    { key: "GES", label: gesLabel },
+  ].filter((item) => item.label);
+  return (
+    <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-navy/70">
+      {items.map((item) => (
+        <span key={item.key} className="inline-flex items-center gap-1.5">
+          <span className="font-medium uppercase tracking-[0.12em]">{item.key}</span>
+          <span
+            className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-semibold text-white ${energyColor(item.label as string)}`}
+          >
+            {(item.label as string).toUpperCase()}
+          </span>
+        </span>
+      ))}
+    </p>
+  );
+}
