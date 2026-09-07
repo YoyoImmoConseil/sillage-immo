@@ -1,6 +1,7 @@
 import "server-only";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { collectBuyerLeadIds } from "@/lib/buyers/collect-buyer-lead-ids";
 import {
   sendSweepBrightGeneralLead,
   type SweepBrightGeneralLeadInput,
@@ -229,20 +230,9 @@ export const getBuyerLeadIdsForClientProfile = async (
     .eq("project_type", "buyer");
   if (error) throw error;
 
-  const rows = (data ?? []) as Array<{
-    id: string;
-    buyer_projects: Array<{ buyer_lead_id: string | null }> | null;
-  }>;
-
-  const ids = new Set<string>();
-  for (const row of rows) {
-    const projects = row.buyer_projects ?? [];
-    for (const bp of projects) {
-      if (bp.buyer_lead_id) ids.add(bp.buyer_lead_id);
-    }
-  }
-  return [...ids];
+  return collectBuyerLeadIds(data ?? []);
 };
+
 
 export const runBuyerPostVerificationTasks = async (clientProfileId: string) => {
   const buyerLeadIds = await getBuyerLeadIdsForClientProfile(clientProfileId);
