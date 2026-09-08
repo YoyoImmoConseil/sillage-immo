@@ -11,6 +11,8 @@ import type { AppLocale } from "@/lib/i18n/config";
 import { getSellerEventCopy } from "./seller-event-copy";
 import { sellerProjectCopy } from "./seller-project-copy";
 import { SellerProjectChat } from "./seller-project-chat";
+import { SellerJourneyTimeline } from "@/app/espace-client/_components/seller-journey-timeline";
+import { computeSellerJourney, filterClientFacingEvents } from "@/lib/client-space/seller-journey";
 
 export function SellerProjectDetailView({
   detail,
@@ -27,6 +29,13 @@ export function SellerProjectDetailView({
       ?.appointmentServiceUrl ??
     detail.properties.find((property) => property.appointmentServiceUrl)?.appointmentServiceUrl ??
     null;
+  const journeySteps = computeSellerJourney({
+    projectStatus: detail.project.projectStatus,
+    mandateStatus: detail.project.mandateStatus,
+    hasValuation: Boolean(detail.valuation),
+    milestones: detail.milestones,
+  });
+  const visibleEvents = filterClientFacingEvents(detail.events);
   const advisorDisplayName =
     detail.advisor?.fullName ??
     ([detail.advisor?.firstName, detail.advisor?.lastName].filter(Boolean).join(" ").trim() || null) ??
@@ -67,6 +76,8 @@ export function SellerProjectDetailView({
           </div>
         </div>
       </section>
+
+      <SellerJourneyTimeline steps={journeySteps} locale={locale} />
 
       <section className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
         <div className="space-y-6">
@@ -137,11 +148,11 @@ export function SellerProjectDetailView({
 
           <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-8">
             <h3 className="text-xl font-semibold text-navy">{copy.history}</h3>
-            {detail.events.length === 0 ? (
+            {visibleEvents.length === 0 ? (
               <p className="mt-4 text-sm text-navy/75">{copy.noEvents}</p>
             ) : (
               <div className="mt-4 space-y-3">
-                {detail.events.map((event) => (
+                {visibleEvents.map((event) => (
                   <div key={event.id} className="flex flex-col gap-1 rounded-2xl border border-[rgba(20,20,70,0.12)] bg-white p-4">
                     {(() => {
                       const eventCopy = getSellerEventCopy(event.eventName, event.eventCategory, locale);
