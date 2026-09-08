@@ -90,6 +90,10 @@ export default function MentionsLegalesPage() {
           Toute reproduction ou réutilisation sans autorisation écrite de Sillage Immo est
           interdite. Les photographies des biens restent la propriété de leurs auteurs.
         </p>
+        <p>
+          Photographies d’illustration de Nice (pages Acheter, Vendre, Louer, L’agence) : Constantin,
+          John Jason, Paul Rysz, Gabriel Tovar et Nick Karvounis, via Unsplash (licence Unsplash).
+        </p>
       </LegalSection>
 
       <LegalSection title="Données personnelles et cookies">

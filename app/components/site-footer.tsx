@@ -89,10 +89,13 @@ export function SiteFooter() {
   const year = new Date().getFullYear();
 
   const navLinks = [
+    { href: localizePath("/acheter", locale), label: nav.buy },
+    { href: localizePath("/vendre", locale), label: nav.sell },
+    { href: localizePath("/louer", locale), label: nav.rent },
+    { href: localizePath("/estimation", locale), label: nav.valuation },
+    { href: localizePath("/agence", locale), label: nav.agency },
     { href: localizePath("/vente", locale), label: nav.sale },
     { href: localizePath("/location", locale), label: nav.rental },
-    { href: localizePath("/estimation", locale), label: nav.valuation },
-    { href: localizePath("/recherche/nouvelle", locale), label: nav.buy },
     { href: localizePath("/espace-client/login", locale), label: nav.clientSpace },
   ];
 
