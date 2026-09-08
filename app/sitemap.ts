@@ -11,6 +11,7 @@ const STATIC_PATHS: Array<{ path: string; priority: number; changeFrequency: "da
   { path: "/acheter", priority: 0.9, changeFrequency: "monthly" },
   { path: "/vendre", priority: 0.9, changeFrequency: "monthly" },
   { path: "/louer", priority: 0.8, changeFrequency: "monthly" },
+  { path: "/gestion-locative", priority: 0.8, changeFrequency: "monthly" },
   { path: "/agence", priority: 0.7, changeFrequency: "monthly" },
   { path: "/vente", priority: 0.9, changeFrequency: "daily" },
   { path: "/location", priority: 0.8, changeFrequency: "daily" },

@@ -268,7 +268,7 @@ const fr: PagesCopy = {
         "Gestion locative : encaissement, régularisations, suivi technique",
       ],
       feesNote: "Honoraires de location affichés sur chaque annonce, conformes au plafond légal.",
-      cta: "Parler de mon bien",
+      cta: "Découvrir la gestion locative",
     },
     tenant: {
       eyebrow: "Locataires",
@@ -483,7 +483,7 @@ const en: PagesCopy = {
         "Property management: collection, adjustments, maintenance follow-up",
       ],
       feesNote: "Letting fees shown on every listing, within the legal cap.",
-      cta: "Talk about my property",
+      cta: "Discover property management",
     },
     tenant: {
       eyebrow: "Tenants",
@@ -697,7 +697,7 @@ const es: PagesCopy = {
         "Gestión del alquiler: cobro, regularizaciones, seguimiento técnico",
       ],
       feesNote: "Honorarios de alquiler indicados en cada anuncio, dentro del límite legal.",
-      cta: "Hablar de mi vivienda",
+      cta: "Descubrir la gestión de alquileres",
     },
     tenant: {
       eyebrow: "Inquilinos",
@@ -911,7 +911,7 @@ const ru: PagesCopy = {
         "Управление: сбор платежей, перерасчёты, технический контроль",
       ],
       feesNote: "Комиссия за аренду указана в каждом объявлении, в пределах законного максимума.",
-      cta: "Обсудить мой объект",
+      cta: "Узнать об управлении арендой",
     },
     tenant: {
       eyebrow: "Арендаторам",
