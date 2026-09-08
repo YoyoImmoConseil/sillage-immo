@@ -29,6 +29,7 @@ export type BuyerSearchMatchListItem = {
   propertyType: string | null;
   priceAmount: number | null;
   canonicalPath: string;
+  coverImageUrl: string | null;
   isNew: boolean;
 };
 
@@ -223,13 +224,13 @@ export const getClientBuyerSearchDetail = async (input: {
     string,
     Pick<
       PropertyListingRow,
-      "id" | "property_id" | "title" | "city" | "property_type" | "price_amount" | "canonical_path"
+      "id" | "property_id" | "title" | "city" | "property_type" | "price_amount" | "canonical_path" | "cover_image_url"
     >
   >();
   if (listingIds.length > 0) {
     const { data, error } = await supabaseAdmin
       .from("property_listings")
-      .select("id, property_id, title, city, property_type, price_amount, canonical_path")
+      .select("id, property_id, title, city, property_type, price_amount, canonical_path, cover_image_url")
       .in("id", listingIds);
     if (error) throw error;
     listingById = new Map(
@@ -237,7 +238,14 @@ export const getClientBuyerSearchDetail = async (input: {
         (data ?? []) as Array<
           Pick<
             PropertyListingRow,
-            "id" | "property_id" | "title" | "city" | "property_type" | "price_amount" | "canonical_path"
+            | "id"
+            | "property_id"
+            | "title"
+            | "city"
+            | "property_type"
+            | "price_amount"
+            | "canonical_path"
+            | "cover_image_url"
           >
         >
       ).map((row) => [row.id, row])
@@ -263,6 +271,7 @@ export const getClientBuyerSearchDetail = async (input: {
         propertyType: listing.property_type,
         priceAmount: listing.price_amount,
         canonicalPath: listing.canonical_path,
+        coverImageUrl: listing.cover_image_url,
         isNew: !row.read_at,
       },
     ];

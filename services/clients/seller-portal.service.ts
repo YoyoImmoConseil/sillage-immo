@@ -114,6 +114,13 @@ export type SellerPortalProjectDetail = {
   advisor: SellerPortalAdvisorSummary | null;
   properties: SellerPortalPropertySummary[];
   events: SellerPortalEventSummary[];
+  /** Jalons datés (mandat, offre, compromis, acte) — alimentent la frise des étapes. */
+  milestones: {
+    mandateSignedAt: string | null;
+    offerReceivedAt: string | null;
+    preliminarySaleSignedAt: string | null;
+    deedSignedAt: string | null;
+  };
 };
 
 export type SellerPortalPropertyDetail = {
@@ -418,7 +425,9 @@ export const getSellerPortalProjectDetail = async (input: {
 
   const { data: sellerProject } = await supabaseAdmin
     .from("seller_projects")
-    .select("id, seller_lead_id, assigned_admin_profile_id")
+    .select(
+      "id, seller_lead_id, assigned_admin_profile_id, mandate_signed_at, offer_received_at, preliminary_sale_signed_at, deed_signed_at"
+    )
     .eq("client_project_id", input.projectId)
     .maybeSingle();
 
@@ -524,6 +533,12 @@ export const getSellerPortalProjectDetail = async (input: {
       eventName: event.event_name,
       eventCategory: event.event_category,
     })),
+    milestones: {
+      mandateSignedAt: sellerProject?.mandate_signed_at ?? null,
+      offerReceivedAt: sellerProject?.offer_received_at ?? null,
+      preliminarySaleSignedAt: sellerProject?.preliminary_sale_signed_at ?? null,
+      deedSignedAt: sellerProject?.deed_signed_at ?? null,
+    },
   };
 };
 
