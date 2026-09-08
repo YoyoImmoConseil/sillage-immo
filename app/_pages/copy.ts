@@ -20,12 +20,32 @@ export type BuyPageCopy = {
   latest: { eyebrow: string; title: string; subtitle: string; cta: string };
 };
 
+export type MandateEngagement = { title: string; body: string };
+export type SellMethodStep = { title: string; body: string; timing: string; space: string };
+
 export type SellPageCopy = {
   seo: { title: string; description: string };
   hero: Hero;
   ctaEstimate: string;
   ctaMethod: string;
   manifesto: { title: string; paragraphs: string[] };
+  mandate: {
+    eyebrow: string;
+    title: string;
+    intro: string;
+    engagements: MandateEngagement[];
+    leave: { title: string; body: string };
+    refuse: { title: string; intro: string; items: string[] };
+    cta: string;
+  };
+  method: {
+    eyebrow: string;
+    title: string;
+    subtitle: string;
+    timingLabel: string;
+    spaceLabel: string;
+    steps: SellMethodStep[];
+  };
   fees: { eyebrow: string; title: string; body: string; cta: string };
 };
 
@@ -120,12 +140,97 @@ const fr: PagesCopy = {
       imageAlt: "La Promenade des Anglais et la baie des Anges vues depuis la colline du Château à Nice",
     },
     ctaEstimate: "Estimer mon bien",
-    ctaMethod: "Voir notre méthode",
+    ctaMethod: "Le Mandat Sillage",
     manifesto: {
       title: "Ce que vous ne devriez plus accepter",
       paragraphs: [
         "Un prix « à l'intuition », des photos prises au téléphone, des visites qui n'aboutissent pas et un conseiller qui ne rappelle pas : c'est ce que reprochent la plupart des vendeurs aux agences. Ce n'est pas une fatalité, c'est une question de méthode.",
         "Chez Sillage, chaque vente commence par une estimation que nous pouvons défendre devant un acquéreur, se poursuit avec une mise en valeur sérieuse et une qualification rigoureuse des candidats, et se termine par une négociation menée par un professionnel formé au droit. Entre les deux, vous savez toujours où en est votre vente.",
+      ],
+    },
+    mandate: {
+      eyebrow: "Le Mandat Sillage",
+      title: "Vous ne signez aucun engagement. Nous en prenons quatre.",
+      intro:
+        "Un mandat exclusif, sans durée imposée. L'exclusivité n'est pas un verrou : c'est la contrepartie de ce que nous investissons sur votre bien — reportage photo, visite virtuelle, budget de diffusion — et elle s'accompagne d'engagements écrits de notre côté.",
+      engagements: [
+        {
+          title: "Une estimation argumentée, comparables à l'appui",
+          body: "Pas un chiffre : le raisonnement et les biens vendus qui le fondent. Vous pouvez la contester, nous pouvons la défendre devant un acquéreur.",
+        },
+        {
+          title: "Aucun engagement de durée : quinze jours de préavis",
+          body: "Le minimum que la loi autorise. Vous restez libre de reprendre votre bien à tout moment, sans justification.",
+        },
+        {
+          title: "Douze mandats au maximum en même temps",
+          body: "Trois par conseiller actif. Chaque bien a le temps et l'attention d'un dossier, pas d'une ligne dans un fichier.",
+        },
+        {
+          title: "Des honoraires publics, connus avant le premier rendez-vous",
+          body: "Le barème est affiché sur le site et sur chaque annonce. Rien à négocier au moment de signer, rien à découvrir à l'acte.",
+        },
+      ],
+      leave: {
+        title: "Et si vous partez ?",
+        body: "Vous nous écrivez, le mandat prend fin quinze jours plus tard. Vous récupérez vos photos et votre visite virtuelle, et l'annonce est retirée de tous les supports. Pas de frais, pas de discussion.",
+      },
+      refuse: {
+        title: "Ce que nous refusons",
+        intro: "Une agence se définit aussi par ce qu'elle ne fait pas.",
+        items: [
+          "Le mandat simple : nous ne pouvons pas investir sur un bien qu'une autre agence peut vendre.",
+          "La surestimation pour obtenir le mandat, qui coûte au vendeur des mois de vente et une baisse de prix publique.",
+          "Le fichier commun entre agences, où votre bien devient une ligne parmi mille.",
+          "Plus de douze mandats à la fois.",
+        ],
+      },
+      cta: "Demander une estimation",
+    },
+    method: {
+      eyebrow: "Notre méthode",
+      title: "Six étapes, un calendrier, tout dans votre espace",
+      subtitle:
+        "Vendre au bon prix n'est pas une affaire de chance. Chaque étape a un objectif, un délai et une trace visible dans votre espace Sillage.",
+      timingLabel: "Délai",
+      spaceLabel: "Dans votre espace",
+      steps: [
+        {
+          title: "Estimation",
+          body: "Visite du bien, lecture du marché (ventes notariées récentes, biens en concurrence, dynamique du quartier), analyse des points forts et des points à traiter. Vous recevez une fourchette et un prix de mise en vente recommandé, avec le raisonnement.",
+          timing: "Sous 48 h après la visite",
+          space: "Le rapport d'estimation et les comparables retenus",
+        },
+        {
+          title: "Stratégie",
+          body: "Choix du prix d'affichage, de l'angle de présentation (résidence principale, pied-à-terre, investissement) et du calendrier. On décide ensemble ce qui sera fait avant la mise en vente : petits travaux, désencombrement, diagnostics, documents de copropriété.",
+          timing: "Au rendez-vous de signature",
+          space: "Le plan de vente et la liste des documents à réunir",
+        },
+        {
+          title: "Mise en valeur",
+          body: "Reportage photo professionnel, visite virtuelle Matterport, plans, descriptif rédigé pour votre bien et non recopié d'une fiche. Le dossier de vente complet est prêt avant la première visite.",
+          timing: "5 jours ouvrés après signature",
+          space: "Vos visuels, à valider avant publication",
+        },
+        {
+          title: "Diffusion",
+          body: "Annonce en ligne sur sillage-immo.com et les portails, envoi ciblé aux acquéreurs de notre base dont les critères correspondent, relais dans notre réseau d'agences partenaires. Un budget de diffusion engagé, pas une simple publication.",
+          timing: "48 h ouvrées après validation des visuels",
+          space: "Les chiffres de consultation de votre annonce",
+        },
+        {
+          title: "Qualification et visites",
+          body: "Chaque demande est qualifiée avant la visite : projet, financement, calendrier. Vous ne faites visiter qu'à des acquéreurs sérieux. Après chaque visite, un compte rendu écrit : qui est venu, ce qui s'est dit, notre lecture.",
+          timing: "Compte rendu sous 24 h ouvrées",
+          space: "Le journal des visites et des retours acquéreurs",
+        },
+        {
+          title: "Offre et signature",
+          body: "Analyse de chaque offre (prix, financement, conditions suspensives, délais), négociation, rédaction du compromis avec le notaire, suivi des conditions jusqu'à l'acte. Un juriste relit chaque document.",
+          timing: "Point écrit tous les 15 jours jusqu'à l'acte",
+          space: "Chaque étape datée, de l'offre acceptée à la remise des clés",
+        },
       ],
     },
     fees: {
@@ -294,12 +399,54 @@ const en: PagesCopy = {
       imageAlt: "The Promenade des Anglais and the Baie des Anges seen from Castle Hill in Nice",
     },
     ctaEstimate: "Value my property",
-    ctaMethod: "See our method",
+    ctaMethod: "The Sillage Mandate",
     manifesto: {
       title: "What you should no longer accept",
       paragraphs: [
         "A price set by gut feeling, photos taken on a phone, viewings that lead nowhere and an advisor who never calls back: that is what most sellers hold against agencies. It is not inevitable; it is a matter of method.",
         "At Sillage, every sale starts with a valuation we can defend in front of a buyer, continues with serious presentation and rigorous screening of candidates, and ends with a negotiation led by a legally trained professional. In between, you always know where your sale stands.",
+      ],
+    },
+    mandate: {
+      eyebrow: "The Sillage Mandate",
+      title: "You sign no commitment. We make four.",
+      intro:
+        "An exclusive mandate with no imposed duration. Exclusivity is not a lock: it is the counterpart of what we invest in your property — photo shoot, virtual tour, marketing budget — and it comes with written commitments on our side.",
+      engagements: [
+        { title: "A reasoned valuation, with comparables", body: "Not a number: the reasoning and the sold properties behind it. You can challenge it; we can defend it in front of a buyer." },
+        { title: "No duration: fifteen days' notice", body: "The minimum the law allows. You remain free to take your property back at any time, without justification." },
+        { title: "Twelve mandates at most at any one time", body: "Three per active advisor. Every property gets the time and attention of a file, not a line in a database." },
+        { title: "Public fees, known before the first meeting", body: "The scale is shown on the site and on every listing. Nothing to negotiate at signing, nothing to discover at completion." },
+      ],
+      leave: {
+        title: "And if you leave?",
+        body: "You write to us, the mandate ends fifteen days later. You keep your photos and your virtual tour, and the listing is removed from every channel. No fees, no discussion.",
+      },
+      refuse: {
+        title: "What we refuse",
+        intro: "An agency is also defined by what it does not do.",
+        items: [
+          "The non-exclusive mandate: we cannot invest in a property another agency can sell.",
+          "Overvaluing to win the mandate, which costs the seller months and a public price cut.",
+          "Shared inter-agency files, where your property becomes one line among a thousand.",
+          "More than twelve mandates at once.",
+        ],
+      },
+      cta: "Request a valuation",
+    },
+    method: {
+      eyebrow: "Our method",
+      title: "Six steps, a schedule, everything in your space",
+      subtitle: "Selling at the right price is not a matter of luck. Each step has a goal, a deadline and a visible trace in your Sillage space.",
+      timingLabel: "Timing",
+      spaceLabel: "In your space",
+      steps: [
+        { title: "Valuation", body: "Visit of the property, market reading (recent notarised sales, competing properties, neighbourhood dynamics), analysis of strengths and points to address. You receive a range and a recommended asking price, with the reasoning.", timing: "Within 48 h of the visit", space: "The valuation report and the comparables used" },
+        { title: "Strategy", body: "Choice of asking price, presentation angle (main home, pied-à-terre, investment) and calendar. We decide together what will be done before going to market: small works, decluttering, diagnostics, co-ownership documents.", timing: "At the signing meeting", space: "The sales plan and the list of documents to gather" },
+        { title: "Presentation", body: "Professional photo shoot, Matterport virtual tour, floor plans, a description written for your property rather than copied from a form. The full sales file is ready before the first viewing.", timing: "5 working days after signing", space: "Your visuals, to approve before publication" },
+        { title: "Marketing", body: "Listing online on sillage-immo.com and the portals, targeted send to buyers in our database whose criteria match, relay to our partner agencies. A committed marketing budget, not a mere publication.", timing: "48 working hours after visual approval", space: "Your listing's viewing figures" },
+        { title: "Screening and viewings", body: "Every enquiry is qualified before the viewing: project, financing, timing. You only show your home to serious buyers. After each viewing, a written report: who came, what was said, our reading.", timing: "Report within 24 working hours", space: "The viewing log and buyer feedback" },
+        { title: "Offer and signing", body: "Analysis of each offer (price, financing, conditions, deadlines), negotiation, drafting of the preliminary contract with the notary, follow-up of conditions until completion. A lawyer reviews every document.", timing: "Written update every 15 days until completion", space: "Every step dated, from accepted offer to handover of keys" },
       ],
     },
     fees: {
@@ -466,12 +613,54 @@ const es: PagesCopy = {
       imageAlt: "El Paseo de los Ingleses y la bahía de los Ángeles vistos desde la colina del Castillo en Niza",
     },
     ctaEstimate: "Valorar mi propiedad",
-    ctaMethod: "Ver nuestro método",
+    ctaMethod: "El Mandato Sillage",
     manifesto: {
       title: "Lo que ya no debería aceptar",
       paragraphs: [
         "Un precio « a ojo », fotos hechas con el móvil, visitas que no llevan a nada y un asesor que no devuelve las llamadas: eso es lo que la mayoría de los vendedores reprocha a las agencias. No es una fatalidad, es una cuestión de método.",
         "En Sillage, cada venta empieza con una valoración que podemos defender ante un comprador, continúa con una presentación seria y una selección rigurosa de candidatos, y termina con una negociación dirigida por un profesional con formación jurídica. Entre medias, siempre sabe en qué punto está su venta.",
+      ],
+    },
+    mandate: {
+      eyebrow: "El Mandato Sillage",
+      title: "Usted no firma ningún compromiso. Nosotros asumimos cuatro.",
+      intro:
+        "Un mandato exclusivo, sin duración impuesta. La exclusividad no es un cerrojo: es la contrapartida de lo que invertimos en su propiedad — reportaje fotográfico, visita virtual, presupuesto de difusión — y va acompañada de compromisos escritos por nuestra parte.",
+      engagements: [
+        { title: "Una valoración argumentada, con comparables", body: "No una cifra: el razonamiento y las propiedades vendidas que lo sustentan. Usted puede discutirla; nosotros podemos defenderla ante un comprador." },
+        { title: "Sin duración: quince días de preaviso", body: "El mínimo que permite la ley. Sigue siendo libre de retirar su propiedad en cualquier momento, sin justificación." },
+        { title: "Doce mandatos como máximo a la vez", body: "Tres por asesor activo. Cada propiedad recibe el tiempo y la atención de un expediente, no de una línea en un fichero." },
+        { title: "Honorarios públicos, conocidos antes de la primera cita", body: "El baremo aparece en el sitio y en cada anuncio. Nada que negociar al firmar, nada que descubrir en la escritura." },
+      ],
+      leave: {
+        title: "¿Y si se va?",
+        body: "Nos escribe y el mandato termina quince días después. Conserva sus fotos y su visita virtual, y el anuncio se retira de todos los soportes. Sin gastos, sin discusión.",
+      },
+      refuse: {
+        title: "Lo que rechazamos",
+        intro: "Una agencia también se define por lo que no hace.",
+        items: [
+          "El mandato simple: no podemos invertir en una propiedad que otra agencia puede vender.",
+          "Sobrevalorar para conseguir el mandato, lo que cuesta al vendedor meses y una bajada de precio pública.",
+          "El fichero compartido entre agencias, donde su propiedad es una línea entre mil.",
+          "Más de doce mandatos a la vez.",
+        ],
+      },
+      cta: "Solicitar una valoración",
+    },
+    method: {
+      eyebrow: "Nuestro método",
+      title: "Seis etapas, un calendario, todo en su espacio",
+      subtitle: "Vender al precio justo no es cuestión de suerte. Cada etapa tiene un objetivo, un plazo y una huella visible en su espacio Sillage.",
+      timingLabel: "Plazo",
+      spaceLabel: "En su espacio",
+      steps: [
+        { title: "Valoración", body: "Visita de la propiedad, lectura del mercado (ventas notariales recientes, propiedades en competencia, dinámica del barrio), análisis de los puntos fuertes y de los puntos a tratar. Recibe una horquilla y un precio de salida recomendado, con el razonamiento.", timing: "En 48 h tras la visita", space: "El informe de valoración y los comparables" },
+        { title: "Estrategia", body: "Elección del precio de salida, del ángulo de presentación (vivienda principal, segunda residencia, inversión) y del calendario. Decidimos juntos qué hacer antes de salir al mercado: pequeñas obras, orden, diagnósticos, documentos de la comunidad.", timing: "En la cita de firma", space: "El plan de venta y la lista de documentos" },
+        { title: "Presentación", body: "Reportaje fotográfico profesional, visita virtual Matterport, planos, descripción escrita para su propiedad y no copiada de una ficha. El expediente de venta completo está listo antes de la primera visita.", timing: "5 días laborables tras la firma", space: "Sus visuales, para validar antes de publicar" },
+        { title: "Difusión", body: "Anuncio en sillage-immo.com y en los portales, envío dirigido a los compradores de nuestra base cuyos criterios coinciden, relevo en nuestra red de agencias asociadas. Un presupuesto de difusión comprometido, no una simple publicación.", timing: "48 h laborables tras validar los visuales", space: "Las cifras de consulta de su anuncio" },
+        { title: "Selección y visitas", body: "Cada solicitud se cualifica antes de la visita: proyecto, financiación, calendario. Solo enseña su vivienda a compradores serios. Tras cada visita, un informe escrito: quién vino, qué se dijo, nuestra lectura.", timing: "Informe en 24 h laborables", space: "El registro de visitas y las opiniones de los compradores" },
+        { title: "Oferta y firma", body: "Análisis de cada oferta (precio, financiación, condiciones suspensivas, plazos), negociación, redacción del contrato de arras con el notario, seguimiento de las condiciones hasta la escritura. Un jurista revisa cada documento.", timing: "Punto escrito cada 15 días hasta la escritura", space: "Cada etapa fechada, de la oferta aceptada a la entrega de llaves" },
       ],
     },
     fees: {
@@ -638,12 +827,54 @@ const ru: PagesCopy = {
       imageAlt: "Английская набережная и бухта Ангелов с Замковой горы в Ницце",
     },
     ctaEstimate: "Оценить мою недвижимость",
-    ctaMethod: "Наш метод",
+    ctaMethod: "Мандат Sillage",
     manifesto: {
       title: "С чем больше не стоит мириться",
       paragraphs: [
         "Цена «на глаз», фотографии с телефона, просмотры без результата и консультант, который не перезванивает: именно это большинство продавцов ставят в упрёк агентствам. Это не неизбежность, а вопрос метода.",
         "В Sillage каждая продажа начинается с оценки, которую мы можем отстоять перед покупателем, продолжается серьёзной подготовкой объекта и строгим отбором кандидатов и завершается переговорами, которые ведёт профессионал с юридическим образованием. И на каждом этапе вы знаете, где находится ваша сделка.",
+      ],
+    },
+    mandate: {
+      eyebrow: "Мандат Sillage",
+      title: "Вы не подписываете никаких обязательств. Мы берём на себя четыре.",
+      intro:
+        "Эксклюзивный договор без обязательного срока. Эксклюзивность — не замок, а ответ на то, что мы вкладываем в ваш объект: фотосъёмка, виртуальный тур, бюджет продвижения. И она сопровождается письменными обязательствами с нашей стороны.",
+      engagements: [
+        { title: "Обоснованная оценка с аналогами", body: "Не цифра, а рассуждение и проданные объекты, на которых оно основано. Вы можете её оспорить, мы можем отстоять её перед покупателем." },
+        { title: "Без срока: пятнадцать дней уведомления", body: "Минимум, разрешённый законом. Вы вправе забрать объект в любой момент без объяснений." },
+        { title: "Не более двенадцати договоров одновременно", body: "Три на каждого активного консультанта. У каждого объекта — время и внимание, как у дела, а не у строки в базе." },
+        { title: "Публичные тарифы, известные до первой встречи", body: "Тарифы указаны на сайте и в каждом объявлении. Нечего обсуждать при подписании, нечего обнаруживать при сделке." },
+      ],
+      leave: {
+        title: "А если вы уйдёте?",
+        body: "Вы пишете нам — договор заканчивается через пятнадцать дней. Вы сохраняете фотографии и виртуальный тур, объявление снимается со всех площадок. Без расходов и споров.",
+      },
+      refuse: {
+        title: "От чего мы отказываемся",
+        intro: "Агентство определяется и тем, чего оно не делает.",
+        items: [
+          "Неэксклюзивный договор: мы не можем вкладываться в объект, который может продать другое агентство.",
+          "Завышенная оценка ради получения договора — она стоит продавцу месяцев и публичного снижения цены.",
+          "Общая база между агентствами, где ваш объект — одна строка из тысячи.",
+          "Больше двенадцати договоров одновременно.",
+        ],
+      },
+      cta: "Запросить оценку",
+    },
+    method: {
+      eyebrow: "Наш метод",
+      title: "Шесть шагов, график и всё в вашем кабинете",
+      subtitle: "Продажа по правильной цене — не вопрос удачи. У каждого шага есть цель, срок и видимый след в вашем кабинете Sillage.",
+      timingLabel: "Срок",
+      spaceLabel: "В вашем кабинете",
+      steps: [
+        { title: "Оценка", body: "Осмотр объекта, анализ рынка (недавние нотариальные сделки, конкурирующие объекты, динамика района), сильные стороны и что нужно доработать. Вы получаете диапазон и рекомендованную цену выставления с обоснованием.", timing: "В течение 48 ч после осмотра", space: "Отчёт об оценке и выбранные аналоги" },
+        { title: "Стратегия", body: "Выбор цены, угла подачи (основное жильё, пье-а-тер, инвестиция) и календаря. Вместе решаем, что сделать до выхода на рынок: мелкий ремонт, расчистка, диагностики, документы кондоминиума.", timing: "На встрече при подписании", space: "План продажи и список документов" },
+        { title: "Подготовка", body: "Профессиональная фотосъёмка, виртуальный тур Matterport, планы, описание, написанное для вашего объекта, а не скопированное из формы. Полное досье готово до первого показа.", timing: "5 рабочих дней после подписания", space: "Ваши визуалы на утверждение перед публикацией" },
+        { title: "Продвижение", body: "Объявление на sillage-immo.com и порталах, адресная рассылка покупателям из нашей базы с подходящими критериями, передача партнёрским агентствам. Выделенный бюджет продвижения, а не просто публикация.", timing: "48 рабочих часов после утверждения визуалов", space: "Статистика просмотров вашего объявления" },
+        { title: "Отбор и показы", body: "Каждый запрос квалифицируется до показа: проект, финансирование, сроки. Вы показываете жильё только серьёзным покупателям. После каждого показа — письменный отчёт: кто приходил, что обсуждалось, наше мнение.", timing: "Отчёт в течение 24 рабочих часов", space: "Журнал показов и отзывы покупателей" },
+        { title: "Предложение и сделка", body: "Анализ каждого предложения (цена, финансирование, отлагательные условия, сроки), переговоры, подготовка предварительного договора с нотариусом, контроль условий до акта. Каждый документ проверяет юрист.", timing: "Письменный отчёт каждые 15 дней до акта", space: "Каждый этап с датой — от принятого предложения до передачи ключей" },
       ],
     },
     fees: {

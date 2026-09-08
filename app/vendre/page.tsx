@@ -6,8 +6,8 @@ import { buildPublicPageMetadata } from "@/lib/seo/site";
 import { PageHero } from "@/app/components/page-hero";
 import { PAGES_COPY } from "@/app/_pages/copy";
 import { ManifestoSection } from "@/app/_pages/manifesto-section";
-import { SellerSection } from "@/app/_home/sections/seller-section";
-import { MethodSection } from "@/app/_home/sections/method-section";
+import { MandateSection } from "@/app/_pages/mandate-section";
+import { SellMethodSection } from "@/app/_pages/sell-method-section";
 import { RecentSalesSection } from "@/app/_home/sections/recent-sales-section";
 import { ComparisonSection } from "@/app/_home/sections/comparison-section";
 import { FinalCtaSection } from "@/app/_home/sections/final-cta-section";
@@ -34,11 +34,11 @@ export default async function VendrePage() {
         subtitle={copy.hero.subtitle}
         image={{ src: "/pages/nice-promenade-colline.jpg", alt: copy.hero.imageAlt }}
         primaryCta={{ href: localizePath("/estimation", locale), label: copy.ctaEstimate }}
-        secondaryCta={{ href: "#methode", label: copy.ctaMethod }}
+        secondaryCta={{ href: "#mandat-sillage", label: copy.ctaMethod }}
       />
       <ManifestoSection id="sell-manifesto" title={copy.manifesto.title} paragraphs={copy.manifesto.paragraphs} />
-      <SellerSection locale={locale} />
-      <MethodSection locale={locale} />
+      <MandateSection locale={locale} copy={copy.mandate} />
+      <SellMethodSection copy={copy.method} />
       <RecentSalesSection locale={locale} />
       <ComparisonSection locale={locale} />
       <section aria-labelledby="sell-fees-title" className="sillage-section-light">
