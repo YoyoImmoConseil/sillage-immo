@@ -173,7 +173,7 @@ const fr: PagesCopy = {
       ],
       leave: {
         title: "Et si vous partez ?",
-        body: "Vous nous écrivez, le mandat prend fin quinze jours plus tard. Vous récupérez vos photos et votre visite virtuelle, et l'annonce est retirée de tous les supports. Pas de frais, pas de discussion.",
+        body: "Vous nous écrivez, le mandat prend fin quinze jours plus tard. Vous récupérez vos photos, l'annonce est retirée de tous les supports et la visite virtuelle est désactivée. Pas de frais, pas de discussion.",
       },
       refuse: {
         title: "Ce que nous refusons",
@@ -420,7 +420,7 @@ const en: PagesCopy = {
       ],
       leave: {
         title: "And if you leave?",
-        body: "You write to us, the mandate ends fifteen days later. You keep your photos and your virtual tour, and the listing is removed from every channel. No fees, no discussion.",
+        body: "You write to us, the mandate ends fifteen days later. You keep your photos, the listing is removed from every channel and the virtual tour is switched off. No fees, no discussion.",
       },
       refuse: {
         title: "What we refuse",
@@ -634,7 +634,7 @@ const es: PagesCopy = {
       ],
       leave: {
         title: "¿Y si se va?",
-        body: "Nos escribe y el mandato termina quince días después. Conserva sus fotos y su visita virtual, y el anuncio se retira de todos los soportes. Sin gastos, sin discusión.",
+        body: "Nos escribe y el mandato termina quince días después. Conserva sus fotos, el anuncio se retira de todos los soportes y la visita virtual se desactiva. Sin gastos, sin discusión.",
       },
       refuse: {
         title: "Lo que rechazamos",
@@ -848,7 +848,7 @@ const ru: PagesCopy = {
       ],
       leave: {
         title: "А если вы уйдёте?",
-        body: "Вы пишете нам — договор заканчивается через пятнадцать дней. Вы сохраняете фотографии и виртуальный тур, объявление снимается со всех площадок. Без расходов и споров.",
+        body: "Вы пишете нам — договор заканчивается через пятнадцать дней. Вы сохраняете фотографии, объявление снимается со всех площадок, виртуальный тур отключается. Без расходов и споров.",
       },
       refuse: {
         title: "От чего мы отказываемся",
