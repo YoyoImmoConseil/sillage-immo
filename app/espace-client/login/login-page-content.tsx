@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import type { AppLocale } from "@/lib/i18n/config";
@@ -63,6 +64,12 @@ export function SellerLoginPageContent({ locale = "fr" }: { locale?: AppLocale }
         "L'espace client est créé après votre première interaction avec nous. Démarrez par une estimation vendeur ou par votre recherche acquéreur :",
       ctaSeller: "Estimer mon bien",
       ctaBuyer: "Lancer ma recherche",
+      asideTitle: "Votre projet, au même endroit",
+      asideItems: [
+        "Un lien sécurisé par email, aucun mot de passe à retenir",
+        "Vos recherches, vos alertes et les biens que nous vous présentons",
+        "Les étapes de votre vente et les documents partagés avec votre conseiller",
+      ],
     },
     en: {
       title: "Sign in to your client portal",
@@ -78,6 +85,12 @@ export function SellerLoginPageContent({ locale = "fr" }: { locale?: AppLocale }
         "Your portal is created after your first interaction with us. Start with a seller estimate or with your buyer search:",
       ctaSeller: "Estimate my property",
       ctaBuyer: "Start my search",
+      asideTitle: "Your project, in one place",
+      asideItems: [
+        "A secure link by email, no password to remember",
+        "Your searches, alerts and the properties we present to you",
+        "The steps of your sale and the documents shared with your advisor",
+      ],
     },
     es: {
       title: "Conéctese a su espacio cliente",
@@ -93,6 +106,12 @@ export function SellerLoginPageContent({ locale = "fr" }: { locale?: AppLocale }
         "Su espacio se crea tras su primera interacción con nosotros. Comience con una estimación vendedor o con su búsqueda comprador:",
       ctaSeller: "Estimar mi inmueble",
       ctaBuyer: "Iniciar mi búsqueda",
+      asideTitle: "Su proyecto, en un solo lugar",
+      asideItems: [
+        "Un enlace seguro por email, sin contraseña que recordar",
+        "Sus búsquedas, sus alertas y los inmuebles que le presentamos",
+        "Las etapas de su venta y los documentos compartidos con su asesor",
+      ],
     },
     ru: {
       title: "Вход в клиентское пространство",
@@ -108,13 +127,20 @@ export function SellerLoginPageContent({ locale = "fr" }: { locale?: AppLocale }
         "Кабинет создаётся после первого взаимодействия с нами. Начните с оценки квартиры или с поиска недвижимости:",
       ctaSeller: "Оценить мой объект",
       ctaBuyer: "Начать поиск",
+      asideTitle: "Ваш проект — в одном месте",
+      asideItems: [
+        "Защищённая ссылка по email, без пароля",
+        "Ваши поиски, оповещения и объекты, которые мы вам предлагаем",
+        "Этапы вашей продажи и документы, которыми делится консультант",
+      ],
     },
   }[locale];
 
   return (
-    <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-8">
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
+    <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-6 md:p-8">
       <div className="space-y-2">
-        <h2 className="text-2xl font-semibold text-navy">{copy.title}</h2>
+        <h2 className="sillage-section-title-font text-2xl font-semibold text-navy">{copy.title}</h2>
         <p className="text-sm text-navy/75">{copy.intro}</p>
       </div>
 
@@ -152,5 +178,27 @@ export function SellerLoginPageContent({ locale = "fr" }: { locale?: AppLocale }
         </div>
       </div>
     </section>
+
+    {/* Panneau de marque : ce que l'espace apporte, avant même de se connecter. */}
+    <aside className="relative overflow-hidden rounded-3xl bg-navy p-6 text-sand md:p-8">
+      <Image
+        src="/decor-sillage-beige.svg"
+        alt=""
+        width={320}
+        height={310}
+        aria-hidden
+        className="pointer-events-none absolute -right-10 -top-8 w-56 opacity-[0.12]"
+      />
+      <p className="sillage-section-title-font relative text-xl font-semibold">{copy.asideTitle}</p>
+      <ul className="relative mt-4 space-y-3 text-sm leading-relaxed text-sand/85">
+        {copy.asideItems.map((item) => (
+          <li key={item} className="flex gap-3">
+            <span aria-hidden className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-sand/70" />
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
+    </aside>
+    </div>
   );
 }

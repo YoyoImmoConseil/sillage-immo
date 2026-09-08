@@ -52,7 +52,7 @@ export default async function SellerPortalLayout({
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="space-y-1">
             <p className="text-xs uppercase tracking-[0.18em] text-navy/60">{copy.eyebrow}</p>
-            <h1 className="text-3xl font-semibold text-navy">{copy.title}</h1>
+            <h1 className="sillage-section-title text-navy">{copy.title}</h1>
             {context ? (
               <p className="text-sm text-navy/75">
                 {copy.connectedAs} {context.clientProfile.fullName ?? context.clientProfile.email}
