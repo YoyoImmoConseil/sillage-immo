@@ -34,7 +34,7 @@ export function AdminShell({ title, description, role, profileName, children }: 
     (role === "manager" || role === "administrateur");
 
   return (
-    <main className="min-h-screen bg-sand">
+    <main className="min-h-screen bg-sand" data-surface="admin">
       <section className="bg-navy text-sand">
         <div className="w-full space-y-4 px-6 py-8 md:px-10 xl:px-14 2xl:px-20">
           <div className="flex flex-wrap items-start justify-between gap-4">

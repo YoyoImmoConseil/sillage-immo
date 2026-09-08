@@ -229,3 +229,26 @@ textarea:focus {
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+/* Grands écrans (≥ 1760px) : les fonds restent pleine largeur, mais les
+   conteneurs de contenu (tous porteurs de `2xl:px-20`) sont limités à
+   1 600px et centrés, et la taille de base monte légèrement pour que les
+   textes ne paraissent pas minuscules sur 27". L'admin garde sa pleine
+   largeur (tableaux). */
+@media (min-width: 1760px) {
+  html {
+    font-size: 17px;
+  }
+  main:not([data-surface="admin"]) [class~="2xl:px-20"],
+  header [class~="2xl:px-20"],
+  footer [class~="2xl:px-20"] {
+    max-width: 1600px;
+    margin-inline: auto;
+  }
+}
+
+@media (min-width: 2200px) {
+  html {
+    font-size: 18px;
+  }
+}
