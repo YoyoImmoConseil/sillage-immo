@@ -6,6 +6,8 @@ import { sendClientPortalAccessEmail } from "@/lib/email/smtp";
 import { serverEnv } from "@/lib/env/server";
 import { getInvitationByToken } from "./client-project-invitation.service";
 import { prepareClientPortalLogin } from "./client-portal-login.service";
+import { getClientPortalWelcomeContext } from "./client-portal-welcome-context.service";
+import { buildPortalWelcomeSummaryLines } from "@/lib/client-space/portal-welcome-summary";
 
 type SendClientPortalMagicLinkInput = {
   email: string;
@@ -215,10 +217,16 @@ export const sendClientPortalMagicLink = async (input: SendClientPortalMagicLink
     return resolved;
   }
 
+  // Personnalisation (prénom + rappel du projet) : best-effort, jamais bloquante.
+  const welcome = await getClientPortalWelcomeContext(resolved.data.email);
+
   const sent = await sendClientPortalAccessEmail({
     email: resolved.data.email,
     accessLink: resolved.data.link,
     context: resolved.data.context,
+    firstName: welcome.firstName,
+    summaryLines:
+      resolved.data.context === "invite" ? buildPortalWelcomeSummaryLines(welcome) : [],
   });
 
   if (!sent.sent) {

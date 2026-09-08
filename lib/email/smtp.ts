@@ -100,12 +100,46 @@ const buildOtpEmailPayload = (email: string, code: string): EmailPayload => {
   };
 };
 
+type PortalAccessPersonalization = {
+  /** Prénom pour « Bonjour Laura, » (sinon « Bonjour, »). */
+  firstName?: string | null;
+  /** Rappel du projet (critères de recherche, bien à vendre) — texte brut. */
+  summaryLines?: string[];
+};
+
 const buildPortalAccessEmailPayload = (
   email: string,
   accessLink: string,
-  context: "invite" | "login"
+  context: "invite" | "login",
+  personalization: PortalAccessPersonalization = {}
 ): EmailPayload => {
   const isInvite = context === "invite";
+  const firstName = personalization.firstName?.trim() || null;
+  const greeting = firstName ? `Bonjour ${escapeHtml(firstName)},` : "Bonjour,";
+  const greetingText = firstName ? `Bonjour ${firstName},` : "Bonjour,";
+  const summaryLines = (personalization.summaryLines ?? [])
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const summaryHtml =
+    summaryLines.length > 0
+      ? `
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:18px 0 20px;">
+        <tr>
+          <td style="background:#f4ece4;border-radius:12px;padding:14px 18px;">
+            <p style="margin:0 0 6px;font-size:12px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#5b5b78;">
+              Votre projet
+            </p>
+            ${summaryLines
+              .map(
+                (line, index) =>
+                  `<p style="margin:0;font-size:15px;line-height:1.5;color:#141446;${index === 0 ? "font-weight:600;" : ""}">${escapeHtml(line)}</p>`
+              )
+              .join("")}
+          </td>
+        </tr>
+      </table>
+    `
+      : "";
 
   const subject = isInvite
     ? "Votre espace Sillage est prêt"
@@ -123,16 +157,17 @@ const buildPortalAccessEmailPayload = (
 
   const bodyHtml = isInvite
     ? `
-      <p style="margin:0 0 14px;">Bonjour,</p>
+      <p style="margin:0 0 14px;">${greeting}</p>
       <p style="margin:0 0 14px;">
         Votre espace Sillage est prêt. Vous y retrouverez votre projet, les échanges avec votre conseiller, vos documents et l'avancée de chaque étape.
       </p>
+      ${summaryHtml}
       <p style="margin:0 0 6px;">
         Pas de mot de passe à retenir : un simple clic sur le bouton ci-dessous active votre accès.
       </p>
     `
     : `
-      <p style="margin:0 0 14px;">Bonjour,</p>
+      <p style="margin:0 0 14px;">${greeting}</p>
       <p style="margin:0 0 14px;">
         Voici votre lien sécurisé pour accéder à votre espace Sillage.
       </p>
@@ -171,11 +206,15 @@ const buildPortalAccessEmailPayload = (
     ? "Votre espace Sillage est prêt. Vous y retrouverez votre projet, les échanges avec votre conseiller, vos documents et l'avancée de chaque étape. Pas de mot de passe à retenir : un simple clic active votre accès."
     : "Voici votre lien sécurisé pour accéder à votre espace Sillage. Vous y retrouvez vos projets, vos recherches et les biens suivis par votre conseiller, sans mot de passe à retenir.";
 
+  const summaryText =
+    isInvite && summaryLines.length > 0 ? ["Votre projet :", ...summaryLines.map((line) => `  ${line}`), ""] : [];
+
   const text = [
-    "Bonjour,",
+    greetingText,
     "",
     introText,
     "",
+    ...summaryText,
     `${ctaLabel} :`,
     accessLink,
     "",
@@ -267,8 +306,13 @@ export const sendClientPortalAccessEmail = async (input: {
   email: string;
   accessLink: string;
   context: "invite" | "login";
+  firstName?: string | null;
+  summaryLines?: string[];
 }) => {
-  const payload = buildPortalAccessEmailPayload(input.email, input.accessLink, input.context);
+  const payload = buildPortalAccessEmailPayload(input.email, input.accessLink, input.context, {
+    firstName: input.firstName,
+    summaryLines: input.summaryLines,
+  });
 
   if (isResendConfigured()) {
     return sendWithResend(payload);
