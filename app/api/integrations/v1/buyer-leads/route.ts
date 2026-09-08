@@ -1,3 +1,4 @@
+import { correctEmailDomainTypo } from "@/lib/contacts/email-typos";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { authenticateIntegrationRequest } from "@/lib/integrations/auth";
@@ -155,7 +156,7 @@ export const POST = async (request: Request) => {
     ) {
       try {
         const sent = await sendClientPortalMagicLink({
-          email: b.email.trim().toLowerCase(),
+          email: correctEmailDomainTypo(b.email).toLowerCase(),
           nextPath: `/espace-client/recherches/${result.clientProjectId}`,
           inviteToken: result.invitationToken,
           origin: new URL(request.url).origin,

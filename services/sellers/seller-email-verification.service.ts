@@ -1,3 +1,4 @@
+import { correctEmailDomainTypo } from "@/lib/contacts/email-typos";
 import { randomInt, timingSafeEqual } from "crypto";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { hashValue } from "@/lib/audit/hash";
@@ -10,7 +11,7 @@ type SellerEmailVerificationRow = Database["public"]["Tables"]["seller_email_ver
 
 const generateOtp = () => String(randomInt(100000, 999999));
 
-const normalizeEmail = (email: string) => email.trim().toLowerCase();
+const normalizeEmail = (email: string) => correctEmailDomainTypo(email).toLowerCase();
 
 const hashesMatch = (expectedHash: string, providedHash: string) => {
   const expectedBuffer = Buffer.from(expectedHash, "utf8");

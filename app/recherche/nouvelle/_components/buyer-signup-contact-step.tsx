@@ -1,6 +1,7 @@
 "use client";
 
 import type { BuyerSignupCopy } from "./buyer-signup-copy";
+import { correctEmailDomainTypo } from "@/lib/contacts/email-typos";
 import type { FormState, UiStatus } from "./buyer-signup-helpers";
 
 // CRO : hauteur tactile >= 48px et corps >= 16px sur mobile ; desktop inchangé.
@@ -59,6 +60,7 @@ export function BuyerSignupContactStep({
             className={FIELD_CLASS}
             value={form.email}
             onChange={(event) => updateField("email", event.target.value)}
+            onBlur={(event) => updateField("email", correctEmailDomainTypo(event.target.value))}
             autoComplete="email"
             required
           />

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { correctEmailDomainTypo } from "@/lib/contacts/email-typos";
 
 type FormState = {
   firstName: string;
@@ -129,6 +130,7 @@ export function SellerEstimationForm() {
             required
             value={form.email}
             onChange={(event) => update("email", event.target.value)}
+            onBlur={(event) => update("email", correctEmailDomainTypo(event.target.value))}
           />
         </label>
         <label className="text-sm">

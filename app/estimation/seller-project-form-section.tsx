@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import type { AppLocale } from "@/lib/i18n/config";
+import { correctEmailDomainTypo } from "@/lib/contacts/email-typos";
 import { AddressAutocompleteInput } from "./address-autocomplete-input";
 import { SellerPropertyMediaUpload } from "./seller-property-media-upload";
 import { SELLER_PROJECT_FORM_COPY } from "./_copy/form-copy";
@@ -464,6 +465,7 @@ export function SellerProjectFormSection({
               autoComplete="email"
               value={form.email}
               onChange={(event) => onUpdate("email", event.target.value)}
+              onBlur={(event) => onUpdate("email", correctEmailDomainTypo(event.target.value))}
               placeholder={copy.emailPlaceholder}
             />
           </label>

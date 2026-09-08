@@ -1,3 +1,4 @@
+import { correctEmailDomainTypo } from "@/lib/contacts/email-typos";
 import "server-only";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -9,7 +10,7 @@ import {
 } from "./buyer-project.service";
 import { ensureSellerPortalAccessFromLead } from "./seller-project.service";
 
-const normalizeEmail = (email: string) => email.trim().toLowerCase();
+const normalizeEmail = (email: string) => correctEmailDomainTypo(email).toLowerCase();
 
 type PreparedPortalAccess =
   | {
