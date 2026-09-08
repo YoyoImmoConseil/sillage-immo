@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { track } from "@/lib/analytics/data-layer";
+import { correctEmailDomainTypo } from "@/lib/contacts/email-typos";
 import type { AppLocale } from "@/lib/i18n/config";
 
 const COPY = {
@@ -131,6 +132,7 @@ export function BuyerSearchForm({ locale = "fr" }: { locale?: AppLocale }) {
             type="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
+            onBlur={(event) => setEmail(correctEmailDomainTypo(event.target.value))}
           />
         </label>
         <label>

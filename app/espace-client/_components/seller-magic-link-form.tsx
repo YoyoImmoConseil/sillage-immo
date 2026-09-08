@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { track } from "@/lib/analytics/data-layer";
+import { correctEmailDomainTypo } from "@/lib/contacts/email-typos";
 import type { AppLocale } from "@/lib/i18n/config";
 
 type SellerMagicLinkFormProps = {
@@ -109,6 +110,7 @@ export function SellerMagicLinkForm({
           autoComplete="email"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
+          onBlur={(event) => setEmail(correctEmailDomainTypo(event.target.value))}
           disabled={lockedEmail || isPending}
           required
         />

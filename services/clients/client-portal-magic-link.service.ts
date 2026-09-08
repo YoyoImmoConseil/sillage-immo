@@ -1,3 +1,4 @@
+import { correctEmailDomainTypo } from "@/lib/contacts/email-typos";
 import "server-only";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -34,7 +35,7 @@ type ClientPortalLinkResult =
       message: string;
     };
 
-const normalizeEmail = (email: string) => email.trim().toLowerCase();
+const normalizeEmail = (email: string) => correctEmailDomainTypo(email).toLowerCase();
 
 const getSafeNextPath = (value?: string | null) => {
   if (!value || !value.startsWith("/")) {

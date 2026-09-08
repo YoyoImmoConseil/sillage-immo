@@ -1,6 +1,7 @@
 import "server-only";
 
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { correctEmailDomainTypo } from "@/lib/contacts/email-typos";
 
 export type ContactIdentityRow = {
   id: string;
@@ -15,7 +16,7 @@ export type ContactIdentityRow = {
 };
 
 export const normalizeEmail = (email?: string | null) => {
-  const normalized = email?.trim().toLowerCase() ?? "";
+  const normalized = correctEmailDomainTypo(email ?? "").toLowerCase();
   return normalized.length > 0 ? normalized : null;
 };
 
