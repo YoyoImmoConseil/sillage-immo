@@ -61,7 +61,7 @@ export function PageHero({
       {/* Voile : plus dense à gauche (texte) et en bas (transition vers la page). */}
       <div
         aria-hidden="true"
-        className="absolute inset-0 bg-gradient-to-r from-navy/85 via-navy/60 to-navy/25"
+        className="absolute inset-0 bg-gradient-to-r from-navy/90 via-navy/65 to-navy/30"
       />
       <div
         aria-hidden="true"
@@ -73,7 +73,7 @@ export function PageHero({
           <h1 className="sillage-section-title-font text-[30px] leading-[1.1] md:text-5xl xl:text-[54px] font-semibold md:leading-[1.06] tracking-tight">
             {title}
           </h1>
-          <p className="max-w-2xl text-base md:text-lg leading-relaxed text-sand/90">{subtitle}</p>
+          <p className="max-w-2xl text-base md:text-lg leading-relaxed text-sand">{subtitle}</p>
           {primaryCta || secondaryCta ? (
             <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center">
               {primaryCta ? renderCta(primaryCta, "primary") : null}

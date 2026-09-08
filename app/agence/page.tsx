@@ -18,6 +18,12 @@ import { CAROUSEL_ITEM } from "@/app/_home/shared/carousel-item";
 import { HCarousel } from "@/app/_home/shared/mobile-carousel";
 import { FinalCtaSection } from "@/app/_home/sections/final-cta-section";
 
+/** « 0609951284 » → « 06 09 95 12 84 » pour l'affichage. */
+const formatPhone = (raw: string) => {
+  const digits = raw.replace(/\D/g, "");
+  return digits.length === 10 ? digits.replace(/(\d{2})(?=\d)/g, "$1 ").trim() : raw;
+};
+
 /** 35 rue Arson, 06300 Nice (OpenStreetMap). */
 const AGENCY_LAT = 43.70322;
 const AGENCY_LNG = 7.28817;
@@ -150,7 +156,7 @@ export default async function AgencePage() {
                         href={`tel:${member.phone.replace(/\s+/g, "")}`}
                         className="inline-flex items-center justify-center rounded-full bg-navy px-6 py-3 text-sm font-semibold text-sand transition hover:opacity-95"
                       >
-                        {member.phone}
+                        {formatPhone(member.phone)}
                       </a>
                     ) : null}
                     <a
