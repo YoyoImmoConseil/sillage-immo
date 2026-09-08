@@ -38,18 +38,15 @@ export function SiteHeaderClient() {
   const copy = SITE_HEADER_COPY[locale];
 
   const navItems = [
-    { href: localizePath("/vente", locale), label: copy.sale, ctaId: "header_nav_sale" },
-    { href: localizePath("/location", locale), label: copy.rental, ctaId: "header_nav_rental" },
+    { href: localizePath("/acheter", locale), label: copy.buy, ctaId: "header_nav_buy" },
+    { href: localizePath("/vendre", locale), label: copy.sell, ctaId: "header_nav_sell" },
+    { href: localizePath("/louer", locale), label: copy.rent, ctaId: "header_nav_rent" },
     {
       href: localizePath("/estimation", locale),
       label: copy.valuation,
       ctaId: "header_nav_valuation",
     },
-    {
-      href: localizePath("/recherche/nouvelle", locale),
-      label: copy.buy,
-      ctaId: "header_nav_buy",
-    },
+    { href: localizePath("/agence", locale), label: copy.agency, ctaId: "header_nav_agency" },
   ] as const;
 
   const clientSpaceItem = {
