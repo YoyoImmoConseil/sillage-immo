@@ -7,6 +7,7 @@ import { SocialProofSection } from "./_home/sections/social-proof-section";
 import { AssistantSection } from "./_home/sections/assistant-section";
 import { PositioningSection } from "./_home/sections/positioning-section";
 import { SellerSection } from "./_home/sections/seller-section";
+import { RecentSalesSection } from "./_home/sections/recent-sales-section";
 import { BuyerSection } from "./_home/sections/buyer-section";
 import { ClientSpaceSection } from "./_home/sections/client-space-section";
 import { MethodSection } from "./_home/sections/method-section";
@@ -37,6 +38,7 @@ export default async function Home() {
       <AssistantSection locale={locale} />
       <PositioningSection locale={locale} />
       <SellerSection locale={locale} />
+      <RecentSalesSection locale={locale} />
       <BuyerSection locale={locale} />
       <ClientSpaceSection locale={locale} />
       <MethodSection locale={locale} />
