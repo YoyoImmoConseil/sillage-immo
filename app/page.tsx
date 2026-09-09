@@ -4,6 +4,7 @@ import { buildPublicPageMetadata } from "@/lib/seo/site";
 import { PAGE_SEO } from "@/lib/seo/page-copy";
 import { HeroSection } from "./_home/sections/hero-section";
 import { SocialProofSection } from "./_home/sections/social-proof-section";
+import { DoorsSection } from "./_home/sections/doors-section";
 import { AssistantSection } from "./_home/sections/assistant-section";
 import { PositioningSection } from "./_home/sections/positioning-section";
 import { SellerSection } from "./_home/sections/seller-section";
@@ -12,7 +13,6 @@ import { BuyerSection } from "./_home/sections/buyer-section";
 import { ClientSpaceSection } from "./_home/sections/client-space-section";
 import { MethodSection } from "./_home/sections/method-section";
 import { ComparisonSection } from "./_home/sections/comparison-section";
-import { CatalogSection } from "./_home/sections/catalog-section";
 import { NeighborhoodsSection } from "./_home/sections/neighborhoods-section";
 import { InternationalSection } from "./_home/sections/international-section";
 import { FinalCtaSection } from "./_home/sections/final-cta-section";
@@ -35,6 +35,7 @@ export default async function Home() {
     <main className="min-h-screen touch:pb-24">
       <HeroSection locale={locale} />
       <SocialProofSection locale={locale} />
+      <DoorsSection locale={locale} />
       <AssistantSection locale={locale} />
       <PositioningSection locale={locale} />
       <SellerSection locale={locale} />
@@ -43,7 +44,6 @@ export default async function Home() {
       <ClientSpaceSection locale={locale} />
       <MethodSection locale={locale} />
       <ComparisonSection locale={locale} />
-      <CatalogSection locale={locale} />
       <NeighborhoodsSection locale={locale} />
       <InternationalSection locale={locale} />
       {SHOW_HOME_TEAM_SECTION ? <HomeTeamSection locale={locale} /> : null}
