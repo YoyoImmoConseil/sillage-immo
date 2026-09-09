@@ -63,7 +63,7 @@ const fr: GestionPageCopy = {
         title: "Gestion courante",
         body: "Le quotidien du bailleur, sans que vous ayez à le vivre.",
         items: [
-          "Appel et encaissement des loyers, reversement le 15 ou le 30",
+          "Appel et encaissement des loyers, reversement les 10, 20 et 30 : jamais plus de dix jours entre le paiement du locataire et votre virement",
           "Compte rendu de gestion chaque mois, relevé annuel pour vos revenus fonciers",
           "Régularisation des charges, révision annuelle du loyer",
           "Relation avec le locataire, le syndic et les artisans ; devis et suivi des travaux",
@@ -163,7 +163,7 @@ const en: GestionPageCopy = {
     title: "Everything we take care of",
     blocks: [
       { title: "Letting", body: "Find the right tenant quickly, without underpricing the rent or taking risks on the file.", items: ["Rent set on the real market and current regulations", "Photos, listing and marketing on sillage-immo.com and the portals", "Viewings, file selection, guarantee checks", "Compliant lease, annexes and diagnostics, detailed check-in inventory"] },
-      { title: "Day-to-day management", body: "The landlord's routine, without you having to live it.", items: ["Rent calls and collection, payout on the 15th or 30th", "Management statement every month, annual summary for your tax return", "Service charge adjustments, annual rent revision", "Relations with tenant, building manager and contractors; quotes and works follow-up"] },
+      { title: "Day-to-day management", body: "The landlord's routine, without you having to live it.", items: ["Rent calls and collection, payout on the 10th, 20th and 30th: never more than ten days between the tenant's payment and your transfer", "Management statement every month, annual summary for your tax return", "Service charge adjustments, annual rent revision", "Relations with tenant, building manager and contractors; quotes and works follow-up"] },
       { title: "Security", body: "What protects you when something does not go as planned.", items: ["Optional rent guarantee insurance with legal protection", "Reminders and recovery procedure handled by us", "Claims and insurance declarations", "Financial guarantee and professional liability insurance"] },
     ],
   },
@@ -234,7 +234,7 @@ const es: GestionPageCopy = {
     title: "Todo lo que asumimos",
     blocks: [
       { title: "Puesta en alquiler", body: "Encontrar al inquilino adecuado rápido, sin malvender la renta ni arriesgar con el expediente.", items: ["Renta fijada según el mercado real y la normativa vigente", "Fotos, anuncio y difusión en sillage-immo.com y los portales", "Visitas, selección de expedientes, verificación de garantías", "Contrato, anexos y certificados conformes, inventario de entrada detallado"] },
-      { title: "Gestión corriente", body: "El día a día del propietario, sin que tenga que vivirlo.", items: ["Reclamación y cobro de rentas, abono el 15 o el 30", "Informe de gestión cada mes, resumen anual para su declaración", "Regularización de gastos, revisión anual de la renta", "Relación con el inquilino, la comunidad y los profesionales; presupuestos y seguimiento de obras"] },
+      { title: "Gestión corriente", body: "El día a día del propietario, sin que tenga que vivirlo.", items: ["Reclamación y cobro de rentas, abono los días 10, 20 y 30: nunca más de diez días entre el pago del inquilino y su transferencia", "Informe de gestión cada mes, resumen anual para su declaración", "Regularización de gastos, revisión anual de la renta", "Relación con el inquilino, la comunidad y los profesionales; presupuestos y seguimiento de obras"] },
       { title: "Seguridad", body: "Lo que le protege cuando algo no sale como estaba previsto.", items: ["Seguro de impago opcional con protección jurídica", "Recordatorios y procedimiento de recobro a nuestro cargo", "Gestión de siniestros y declaraciones al seguro", "Garantía financiera y seguro de responsabilidad civil profesional"] },
     ],
   },
@@ -305,7 +305,7 @@ const ru: GestionPageCopy = {
     title: "Всё, что мы берём на себя",
     blocks: [
       { title: "Сдача в аренду", body: "Быстро найти правильного арендатора, не занижая плату и не рискуя с досье.", items: ["Плата по реальному рынку и действующим правилам", "Фото, объявление и продвижение на sillage-immo.com и порталах", "Показы, отбор досье, проверка гарантий", "Договор, приложения и диагностики по закону, подробная опись при въезде"] },
-      { title: "Текущее управление", body: "Будни собственника — без вашего участия.", items: ["Выставление и сбор платы, перечисление 15-го или 30-го", "Отчёт об управлении каждый месяц, годовая сводка для декларации", "Перерасчёт расходов, ежегодная индексация", "Связь с арендатором, управляющим домом и подрядчиками; сметы и контроль работ"] },
+      { title: "Текущее управление", body: "Будни собственника — без вашего участия.", items: ["Выставление и сбор платы, перечисление 10-го, 20-го и 30-го: не более десяти дней между оплатой арендатора и вашим переводом", "Отчёт об управлении каждый месяц, годовая сводка для декларации", "Перерасчёт расходов, ежегодная индексация", "Связь с арендатором, управляющим домом и подрядчиками; сметы и контроль работ"] },
       { title: "Защита", body: "То, что защищает вас, когда что-то идёт не по плану.", items: ["Страховка от неплатежей по желанию, с юридической защитой", "Напоминания и процедура взыскания силами агентства", "Страховые случаи и заявления", "Финансовая гарантия и страхование профессиональной ответственности"] },
     ],
   },
