@@ -91,6 +91,26 @@ export default async function GestionLocativePage() {
               </div>
             ))}
           </dl>
+          <div className="grid gap-6 md:grid-cols-2">
+            <div className="space-y-4 rounded-[24px] bg-sand p-6 text-navy md:p-8">
+              <h3 className="font-serif text-xl font-semibold md:text-2xl">{copy.pricing.included.title}</h3>
+              <p className="text-sm leading-relaxed text-navy/75">{copy.pricing.included.intro}</p>
+              <ul className="space-y-2">
+                {copy.pricing.included.items.map((item) => (
+                  <li key={item} className="flex items-start gap-3 text-sm text-navy/85">
+                    <span className="mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-full bg-navy text-sand">
+                      <CheckIcon className="h-3 w-3" />
+                    </span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="space-y-3 rounded-[24px] border border-sand/15 p-6 md:p-8">
+              <h3 className="font-serif text-xl font-semibold md:text-2xl">{copy.pricing.twoMissions.title}</h3>
+              <p className="text-sm leading-relaxed text-sand/85 md:text-base">{copy.pricing.twoMissions.body}</p>
+            </div>
+          </div>
           <p className="max-w-3xl text-sm text-sand/70">{copy.pricing.footnote}</p>
         </div>
       </section>

@@ -16,6 +16,8 @@ export type GestionPageCopy = {
     eyebrow: string;
     title: string;
     lines: { label: string; value: string; note: string }[];
+    included: { title: string; intro: string; items: string[] };
+    twoMissions: { title: string; body: string };
     footnote: string;
   };
   steps: { eyebrow: string; title: string; items: { title: string; body: string }[] };
@@ -83,14 +85,32 @@ const fr: GestionPageCopy = {
   },
   pricing: {
     eyebrow: "Honoraires",
-    title: "Des honoraires publics, sans ligne cachée",
+    title: "Un seul tarif, qui couvre tout",
     lines: [
-      { label: "Gestion courante", value: "7,5 % HT", note: "du loyer encaissé, charges comprises. Rien n'est facturé quand le bien est vacant." },
+      { label: "Gestion locative", value: "7,5 % HT", note: "du loyer encaissé, charges comprises. Tout compris, sans ligne supplémentaire. Rien n'est facturé quand le bien est vacant." },
       { label: "Garantie loyers impayés", value: "2,8 %", note: "du loyer, en option. Couvre les impayés, les dégradations et les frais de procédure." },
-      { label: "Mise en location", value: "Plafond légal", note: "Part bailleur affichée sur devis, part locataire limitée à 10 € / m² + 3 € / m² pour l'état des lieux." },
+      { label: "Mise en location", value: "Mission distincte", note: "Facturée une fois, à la signature du bail, dans la limite du plafond légal. Ce n'est pas de la gestion." },
     ],
+    included: {
+      title: "Inclus dans les 7,5 %, sans supplément",
+      intro: "Un taux plus bas ailleurs cache souvent une grille de frais à l'acte. Chez nous, ces prestations font partie de la mission :",
+      items: [
+        "Représentation à l'assemblée générale de copropriété",
+        "Déplacements sur place : suivi de travaux, sinistre, visite annuelle",
+        "Relances, mise en demeure et suivi de la procédure en cas d'impayé",
+        "Régularisation des charges et révision annuelle du loyer",
+        "Déclaration et suivi des sinistres auprès des assureurs",
+        "Relevé annuel pour vos revenus fonciers, attestations et courriers",
+        "État des lieux de sortie et restitution du dépôt de garantie",
+      ],
+    },
+    twoMissions: {
+      title: "Deux missions, pas une",
+      body:
+        "Mettre en location et gérer sont deux métiers, facturés séparément et à des moments différents. La mise en location est ponctuelle : trouver, sélectionner, contractualiser ; ses honoraires sont plafonnés par la loi et payés une fois. La gestion est continue : encaisser, suivre, protéger, chaque mois, pour 7,5 % HT et rien d'autre. Un devis qui mélange les deux n'est pas comparable à un autre.",
+    },
     footnote:
-      "Honoraires de gestion déductibles de vos revenus fonciers. Aucun frais d'entrée, aucun frais de sortie.",
+      "Honoraires de gestion déductibles de vos revenus fonciers au régime réel. Aucun frais d'entrée, aucun frais de sortie.",
   },
   steps: {
     eyebrow: "Comment ça commence",
@@ -169,13 +189,31 @@ const en: GestionPageCopy = {
   },
   pricing: {
     eyebrow: "Fees",
-    title: "Public fees, no hidden line",
+    title: "One rate that covers everything",
     lines: [
-      { label: "Day-to-day management", value: "7.5% excl. VAT", note: "of rent collected, charges included. Nothing is billed while the property is vacant." },
+      { label: "Property management", value: "7.5% excl. VAT", note: "of rent collected, charges included. All-inclusive, no extra lines. Nothing is billed while the property is vacant." },
       { label: "Rent guarantee insurance", value: "2.8%", note: "of the rent, optional. Covers unpaid rent, damage and legal costs." },
-      { label: "Letting", value: "Legal cap", note: "Landlord share on quote; tenant share capped at €10/sqm + €3/sqm for the inventory." },
+      { label: "Letting", value: "Separate service", note: "Billed once, at lease signing, within the legal cap. It is not management." },
     ],
-    footnote: "Management fees are deductible from rental income. No entry fee, no exit fee.",
+    included: {
+      title: "Included in the 7.5%, no surcharge",
+      intro: "A lower rate elsewhere often hides a menu of per-task fees. With us, these tasks are part of the job:",
+      items: [
+        "Representation at the co-ownership general meeting",
+        "On-site visits: works follow-up, claims, annual inspection",
+        "Reminders, formal notice and procedure follow-up in case of arrears",
+        "Service charge adjustments and annual rent revision",
+        "Claims declaration and follow-up with insurers",
+        "Annual statement for your tax return, certificates and letters",
+        "Check-out inventory and deposit refund",
+      ],
+    },
+    twoMissions: {
+      title: "Two services, not one",
+      body:
+        "Letting and managing are two trades, billed separately and at different times. Letting is one-off: find, select, contract; its fees are capped by law and paid once. Management is continuous: collect, follow, protect, every month, for 7.5% excl. VAT and nothing else. A quote that blends the two cannot be compared with another.",
+    },
+    footnote: "Management fees are deductible from rental income under the actual-expenses regime. No entry fee, no exit fee.",
   },
   steps: {
     eyebrow: "How it starts",
@@ -240,13 +278,31 @@ const es: GestionPageCopy = {
   },
   pricing: {
     eyebrow: "Honorarios",
-    title: "Honorarios públicos, sin líneas ocultas",
+    title: "Una sola tarifa que lo cubre todo",
     lines: [
-      { label: "Gestión corriente", value: "7,5 % sin IVA", note: "de la renta cobrada, gastos incluidos. No se factura nada mientras la vivienda está vacía." },
+      { label: "Gestión de alquileres", value: "7,5 % sin IVA", note: "de la renta cobrada, gastos incluidos. Todo incluido, sin líneas adicionales. No se factura nada mientras la vivienda está vacía." },
       { label: "Seguro de impago", value: "2,8 %", note: "de la renta, opcional. Cubre impagos, daños y gastos de procedimiento." },
-      { label: "Puesta en alquiler", value: "Límite legal", note: "Parte del propietario según presupuesto; parte del inquilino limitada a 10 €/m² + 3 €/m² por el inventario." },
+      { label: "Puesta en alquiler", value: "Misión aparte", note: "Facturada una vez, a la firma del contrato, dentro del límite legal. No es gestión." },
     ],
-    footnote: "Honorarios de gestión deducibles de sus ingresos por alquiler. Sin gastos de entrada ni de salida.",
+    included: {
+      title: "Incluido en el 7,5 %, sin suplemento",
+      intro: "Una tarifa más baja en otro sitio suele esconder una lista de cargos por acto. Con nosotros, estas prestaciones forman parte de la misión:",
+      items: [
+        "Representación en la junta de propietarios",
+        "Desplazamientos: seguimiento de obras, siniestro, visita anual",
+        "Recordatorios, requerimiento y seguimiento del procedimiento en caso de impago",
+        "Regularización de gastos y revisión anual de la renta",
+        "Declaración y seguimiento de siniestros ante las aseguradoras",
+        "Resumen anual para su declaración, certificados y cartas",
+        "Inventario de salida y devolución de la fianza",
+      ],
+    },
+    twoMissions: {
+      title: "Dos misiones, no una",
+      body:
+        "Alquilar y gestionar son dos oficios, facturados por separado y en momentos distintos. La puesta en alquiler es puntual: encontrar, seleccionar, contratar; sus honorarios están limitados por ley y se pagan una vez. La gestión es continua: cobrar, seguir, proteger, cada mes, por un 7,5 % sin IVA y nada más. Un presupuesto que mezcla ambas no es comparable con otro.",
+    },
+    footnote: "Honorarios de gestión deducibles de sus ingresos por alquiler en el régimen real. Sin gastos de entrada ni de salida.",
   },
   steps: {
     eyebrow: "Cómo empieza",
@@ -311,13 +367,31 @@ const ru: GestionPageCopy = {
   },
   pricing: {
     eyebrow: "Тарифы",
-    title: "Публичные тарифы, без скрытых строк",
+    title: "Один тариф, который покрывает всё",
     lines: [
-      { label: "Текущее управление", value: "7,5 % без НДС", note: "от полученной платы, включая расходы. Пока объект пустует, ничего не начисляется." },
+      { label: "Управление арендой", value: "7,5 % без НДС", note: "от полученной платы, включая расходы. Всё включено, без дополнительных строк. Пока объект пустует, ничего не начисляется." },
       { label: "Страховка от неплатежей", value: "2,8 %", note: "от платы, по желанию. Покрывает неплатежи, ущерб и судебные расходы." },
-      { label: "Сдача в аренду", value: "Законный максимум", note: "Доля собственника по смете; доля арендатора не более 10 €/м² + 3 €/м² за опись." },
+      { label: "Сдача в аренду", value: "Отдельная услуга", note: "Оплачивается один раз при подписании договора, в пределах законного максимума. Это не управление." },
     ],
-    footnote: "Расходы на управление вычитаются из дохода от аренды. Без платы за вход и выход.",
+    included: {
+      title: "Входит в 7,5 %, без доплат",
+      intro: "Более низкая ставка в другом месте часто скрывает прейскурант за каждое действие. У нас эти услуги — часть работы:",
+      items: [
+        "Представительство на общем собрании собственников",
+        "Выезды на объект: контроль работ, страховой случай, ежегодный осмотр",
+        "Напоминания, требование и сопровождение процедуры при неплатеже",
+        "Перерасчёт расходов и ежегодная индексация платы",
+        "Заявление и сопровождение страховых случаев",
+        "Годовая сводка для декларации, справки и письма",
+        "Опись при выезде и возврат залога",
+      ],
+    },
+    twoMissions: {
+      title: "Две услуги, а не одна",
+      body:
+        "Сдать и управлять — два разных ремесла, которые оплачиваются отдельно и в разное время. Сдача — разовая: найти, отобрать, оформить; её стоимость ограничена законом и платится один раз. Управление — непрерывное: получать, контролировать, защищать, каждый месяц, за 7,5 % без НДС и ничего больше. Смета, в которой смешаны обе, несопоставима с другой.",
+    },
+    footnote: "Расходы на управление вычитаются из дохода от аренды при реальном режиме. Без платы за вход и выход.",
   },
   steps: {
     eyebrow: "С чего начать",
