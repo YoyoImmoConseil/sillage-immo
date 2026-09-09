@@ -120,7 +120,7 @@ const fr: GestionPageCopy = {
     intro:
       "La gestion s'inscrit dans la durée : un locataire reste en moyenne plusieurs années, et un bien bien géré ne change pas de mains tous les six mois. Le mandat est donc conclu par périodes de trois ans, avec une sortie possible à chaque échéance. En contrepartie, voici ce à quoi nous nous tenons, mois après mois, et que vous pouvez vérifier.",
     items: [
-      { title: "Votre loyer sous dix jours", body: "Reversé les 10, 20 et 30 de chaque mois selon la date de paiement du locataire, avec le compte rendu de gestion le même jour. Jamais plus de dix jours entre son virement et le vôtre." },
+      { title: "Votre loyer sous dix jours", body: "Reversé les 10, 20 et 30 de chaque mois selon la date de paiement du locataire : jamais plus de dix jours entre son virement et le vôtre. Le compte rendu de gestion, lui, arrive en fin de mois, une fois toutes les opérations du mois passées." },
       { title: "Une réponse sous un jour ouvré", body: "À vous, par email, sous un jour ouvré ; à votre locataire sous deux. Une question sans réponse est une relation qui s'abîme, des deux côtés." },
       { title: "La relocation démarre le jour du congé", body: "Dès réception du préavis du locataire, nous préparons la remise en location : annonce en ligne sous cinq jours ouvrés, visites organisées avant son départ quand c'est possible." },
       { title: "L'impayé traité dans les délais de la loi", body: "Relance sous dix jours après l'échéance, commandement de payer par commissaire de justice sous trente-deux jours — la loi exige deux termes impayés avant d'agir, nous n'en attendons pas un troisième." },
@@ -245,7 +245,7 @@ const en: GestionPageCopy = {
     intro:
       "Management is a long game: a tenant stays several years on average, and a well-managed property does not change hands every six months. The mandate therefore runs in three-year periods, with an exit at each term. In return, here is what we hold ourselves to, month after month, and what you can check.",
     items: [
-      { title: "Your rent within ten days", body: "Paid out on the 10th, 20th and 30th of each month according to the tenant's payment date, with the management statement the same day. Never more than ten days between their transfer and yours." },
+      { title: "Your rent within ten days", body: "Paid out on the 10th, 20th and 30th of each month according to the tenant's payment date: never more than ten days between their transfer and yours. The management statement comes at month end, once every operation of the month is booked." },
       { title: "An answer within one working day", body: "To you, by email, within one working day; to your tenant within two. An unanswered question is a relationship that deteriorates, on both sides." },
       { title: "Re-letting starts the day notice is received", body: "As soon as the tenant gives notice, we prepare the re-letting: listing online within five working days, viewings organised before they leave when possible." },
       { title: "Arrears handled within the legal timeframe", body: "Reminder within ten days of the due date, formal demand for payment served by a bailiff within thirty-two days — the law requires two unpaid terms before acting; we do not wait for a third." },
@@ -356,7 +356,7 @@ const es: GestionPageCopy = {
     intro:
       "La gestión se inscribe en el tiempo: un inquilino se queda varios años de media y una vivienda bien gestionada no cambia de manos cada seis meses. Por eso el mandato se concluye por periodos de tres años, con salida posible en cada vencimiento. A cambio, esto es a lo que nos atenemos, mes tras mes, y que usted puede comprobar.",
     items: [
-      { title: "Su renta en diez días", body: "Abonada los días 10, 20 y 30 de cada mes según la fecha de pago del inquilino, con el informe de gestión el mismo día. Nunca más de diez días entre su transferencia y la suya." },
+      { title: "Su renta en diez días", body: "Abonada los días 10, 20 y 30 de cada mes según la fecha de pago del inquilino: nunca más de diez días entre su transferencia y la suya. El informe de gestión llega a fin de mes, una vez contabilizadas todas las operaciones del mes." },
       { title: "Una respuesta en un día laborable", body: "A usted, por email, en un día laborable; a su inquilino en dos. Una pregunta sin respuesta es una relación que se deteriora, por ambos lados." },
       { title: "El realquiler empieza el día del preaviso", body: "En cuanto recibimos el preaviso del inquilino, preparamos la nueva puesta en alquiler: anuncio en línea en cinco días laborables, visitas organizadas antes de su salida cuando es posible." },
       { title: "El impago tratado en los plazos de la ley", body: "Recordatorio en diez días tras el vencimiento, requerimiento de pago por agente judicial en treinta y dos días: la ley exige dos mensualidades impagadas antes de actuar; no esperamos una tercera." },
@@ -467,7 +467,7 @@ const ru: GestionPageCopy = {
     intro:
       "Управление — это надолго: арендатор в среднем остаётся несколько лет, а хорошо управляемый объект не меняет руки каждые полгода. Поэтому договор заключается на периоды по три года с возможностью выхода в конце каждого. Взамен — то, чего мы придерживаемся месяц за месяцем и что вы можете проверить.",
     items: [
-      { title: "Ваша плата в течение десяти дней", body: "Перечисляется 10-го, 20-го и 30-го числа в зависимости от даты оплаты арендатора, с отчётом в тот же день. Не более десяти дней между его переводом и вашим." },
+      { title: "Ваша плата в течение десяти дней", body: "Перечисляется 10-го, 20-го и 30-го числа в зависимости от даты оплаты арендатора: не более десяти дней между его переводом и вашим. Отчёт об управлении приходит в конце месяца, когда учтены все операции месяца." },
       { title: "Ответ в течение рабочего дня", body: "Вам — по email в течение одного рабочего дня; вашему арендатору — в течение двух. Вопрос без ответа портит отношения с обеих сторон." },
       { title: "Повторная сдача начинается в день уведомления", body: "Как только арендатор уведомляет о выезде, мы готовим новую сдачу: объявление онлайн в течение пяти рабочих дней, показы по возможности до его выезда." },
       { title: "Неплатёж — в сроки, установленные законом", body: "Напоминание в течение десяти дней после срока, требование об оплате через судебного исполнителя в течение тридцати двух дней: закон требует двух неоплаченных сроков, третьего мы не ждём." },
