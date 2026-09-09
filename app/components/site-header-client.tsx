@@ -42,6 +42,11 @@ export function SiteHeaderClient() {
     { href: localizePath("/vendre", locale), label: copy.sell, ctaId: "header_nav_sell" },
     { href: localizePath("/louer", locale), label: copy.rent, ctaId: "header_nav_rent" },
     {
+      href: localizePath("/gestion-locative", locale),
+      label: copy.managementShort,
+      ctaId: "header_nav_management",
+    },
+    {
       href: localizePath("/estimation", locale),
       label: copy.valuation,
       ctaId: "header_nav_valuation",

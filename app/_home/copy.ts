@@ -29,6 +29,11 @@ export type HomeCopy = {
     items: SocialProofItem[];
     bridge: string;
   };
+  doors: {
+    eyebrow: string;
+    title: string;
+    items: { key: "buy" | "sell" | "rent" | "manage"; title: string; body: string; cta: string; highlight?: string }[];
+  };
   assistant: {
     eyebrow: string;
     title: string;
@@ -152,7 +157,7 @@ const fr: HomeCopy = {
     eyebrow: "Agence immobilière premium à Nice et sur la Côte d'Azur",
     title: "L'immobilier à Nice, piloté par la data et l'humain",
     subtitle:
-      "Vente, achat, location : Sillage Immo associe expertise locale, accompagnement sur-mesure et outils intelligents pour vous offrir une expérience immobilière plus claire, plus fluide et plus efficace.",
+      "Vente, achat, location, gestion locative : Sillage Immo associe expertise locale, accompagnement sur-mesure et outils intelligents pour vous offrir une expérience immobilière plus claire, plus fluide et plus efficace.",
     tagline:
       "Une boutique immobilière premium à Nice et sur la Côte d'Azur, avec un interlocuteur unique et un espace client pour suivre chaque étape de votre projet.",
     microcopy:
@@ -161,13 +166,23 @@ const fr: HomeCopy = {
   },
   socialProof: {
     items: [
-      { figure: "4,9/5", label: "avis Google" },
+      { figure: "10 j max", label: "entre le loyer payé et votre virement" },
       { figure: "350+", label: "vendeurs accompagnés" },
       { figure: "10+ ans", label: "d'expérience locale" },
       { figure: "7j/7", label: "conseil et suivi digital" },
     ],
     bridge:
       "Une expertise locale renforcée par des outils conçus pour mieux vendre, mieux acheter et mieux suivre chaque projet.",
+  },
+  doors: {
+    eyebrow: "Par où commencer",
+    title: "Quatre portes, un même niveau d'exigence",
+    items: [
+      { key: "buy", title: "Acheter", body: "Une recherche dessinée sur la carte, des alertes, et un conseiller qui cherche aussi hors catalogue.", cta: "Acheter à Nice" },
+      { key: "sell", title: "Vendre", body: "Estimation argumentée, Mandat Sillage sans engagement de durée, acquéreurs qualifiés.", cta: "Vendre avec Sillage" },
+      { key: "rent", title: "Louer", body: "Des biens vérifiés et une réponse rapide, pour les locataires comme pour les propriétaires.", cta: "Louer à Nice" },
+      { key: "manage", title: "Faire gérer", body: "Loyer reversé sous dix jours, compte rendu chaque mois, un juriste sur chaque bail.", cta: "Confier mon bien", highlight: "7,5 % HT, tout compris" },
+    ],
   },
   assistant: {
     eyebrow: "Assistant Sillage",
@@ -455,7 +470,7 @@ const en: HomeCopy = {
     eyebrow: "Premium real estate agency in Nice and on the French Riviera",
     title: "Real estate in Nice, guided by data and by people",
     subtitle:
-      "Sell, buy, rent: Sillage Immo combines local expertise, bespoke support and smart tools to give you a clearer, smoother and more effective real estate experience.",
+      "Sell, buy, rent, property management: Sillage Immo combines local expertise, bespoke support and smart tools to give you a clearer, smoother and more effective real estate experience.",
     tagline:
       "A premium boutique agency in Nice and on the French Riviera, with a single point of contact and a client space to follow every step of your project.",
     microcopy:
@@ -464,13 +479,23 @@ const en: HomeCopy = {
   },
   socialProof: {
     items: [
-      { figure: "4.9/5", label: "Google reviews" },
+      { figure: "10 days", label: "at most between rent paid and your transfer" },
       { figure: "350+", label: "sellers supported" },
       { figure: "10+ years", label: "of local expertise" },
       { figure: "7/7", label: "advisory and digital follow-up" },
     ],
     bridge:
       "Local expertise reinforced by tools designed to sell better, buy better and follow every project more closely.",
+  },
+  doors: {
+    eyebrow: "Where to start",
+    title: "Four doors, the same standard behind each",
+    items: [
+      { key: "buy", title: "Buy", body: "A search drawn on the map, alerts, and an advisor who also looks beyond our listings.", cta: "Buy in Nice" },
+      { key: "sell", title: "Sell", body: "Reasoned valuation, Sillage Mandate with no lock-in, qualified buyers.", cta: "Sell with Sillage" },
+      { key: "rent", title: "Rent", body: "Verified properties and quick answers, for tenants and owners alike.", cta: "Rent in Nice" },
+      { key: "manage", title: "Have it managed", body: "Rent paid out within ten days, a statement every month, a lawyer on every lease.", cta: "Entrust my property", highlight: "7.5% excl. VAT, all-inclusive" },
+    ],
   },
   assistant: {
     eyebrow: "Sillage assistant",
@@ -757,7 +782,7 @@ const es: HomeCopy = {
     eyebrow: "Agencia inmobiliaria premium en Niza y la Costa Azul",
     title: "Inmobiliaria en Niza, guiada por los datos y las personas",
     subtitle:
-      "Vender, comprar, alquilar: Sillage Immo combina experiencia local, acompañamiento a medida y herramientas inteligentes para ofrecerle una experiencia inmobiliaria más clara, fluida y eficaz.",
+      "Vender, comprar, alquilar, gestionar: Sillage Immo combina experiencia local, acompañamiento a medida y herramientas inteligentes para ofrecerle una experiencia inmobiliaria más clara, fluida y eficaz.",
     tagline:
       "Una boutique inmobiliaria premium en Niza y la Costa Azul, con un único interlocutor y un espacio cliente para seguir cada etapa de su proyecto.",
     microcopy:
@@ -766,13 +791,23 @@ const es: HomeCopy = {
   },
   socialProof: {
     items: [
-      { figure: "4,9/5", label: "opiniones Google" },
+      { figure: "10 días", label: "como máximo entre la renta pagada y su transferencia" },
       { figure: "350+", label: "vendedores acompañados" },
       { figure: "10+ años", label: "de experiencia local" },
       { figure: "7/7", label: "asesoramiento y seguimiento digital" },
     ],
     bridge:
       "Una experiencia local reforzada por herramientas pensadas para vender mejor, comprar mejor y seguir cada proyecto con más cercanía.",
+  },
+  doors: {
+    eyebrow: "Por dónde empezar",
+    title: "Cuatro puertas, la misma exigencia detrás",
+    items: [
+      { key: "buy", title: "Comprar", body: "Una búsqueda dibujada en el mapa, alertas y un asesor que también busca fuera del catálogo.", cta: "Comprar en Niza" },
+      { key: "sell", title: "Vender", body: "Valoración argumentada, Mandato Sillage sin permanencia, compradores cualificados.", cta: "Vender con Sillage" },
+      { key: "rent", title: "Alquilar", body: "Viviendas verificadas y respuesta rápida, para inquilinos y propietarios.", cta: "Alquilar en Niza" },
+      { key: "manage", title: "Delegar la gestión", body: "Renta abonada en diez días, informe cada mes, un jurista en cada contrato.", cta: "Confiar mi vivienda", highlight: "7,5 % sin IVA, todo incluido" },
+    ],
   },
   assistant: {
     eyebrow: "Asistente Sillage",
@@ -1059,7 +1094,7 @@ const ru: HomeCopy = {
     eyebrow: "Премиальное агентство недвижимости в Ницце и на Лазурном Берегу",
     title: "Недвижимость в Ницце: данные и человеческий подход",
     subtitle:
-      "Продажа, покупка, аренда: Sillage Immo объединяет локальную экспертизу, индивидуальное сопровождение и умные инструменты, чтобы сделать ваш опыт в недвижимости яснее, проще и эффективнее.",
+      "Продажа, покупка, аренда, управление: Sillage Immo объединяет локальную экспертизу, индивидуальное сопровождение и умные инструменты, чтобы сделать ваш опыт в недвижимости яснее, проще и эффективнее.",
     tagline:
       "Премиальный бутик-агентство в Ницце и на Лазурном Берегу, единый консультант и личный кабинет клиента на каждом этапе вашего проекта.",
     microcopy:
@@ -1068,13 +1103,23 @@ const ru: HomeCopy = {
   },
   socialProof: {
     items: [
-      { figure: "4,9/5", label: "отзывов Google" },
+      { figure: "10 дней", label: "максимум между оплатой аренды и вашим переводом" },
       { figure: "350+", label: "сопровождённых продавцов" },
       { figure: "10+ лет", label: "локальной экспертизы" },
       { figure: "7/7", label: "консультации и цифровое сопровождение" },
     ],
     bridge:
       "Локальная экспертиза, усиленная инструментами, чтобы продавать, покупать и сопровождать каждый проект ещё внимательнее.",
+  },
+  doors: {
+    eyebrow: "С чего начать",
+    title: "Четыре двери, один уровень требований",
+    items: [
+      { key: "buy", title: "Купить", body: "Зона поиска на карте, уведомления и консультант, который ищет и вне каталога.", cta: "Купить в Ницце" },
+      { key: "sell", title: "Продать", body: "Обоснованная оценка, Мандат Sillage без срока, проверенные покупатели.", cta: "Продать с Sillage" },
+      { key: "rent", title: "Арендовать", body: "Проверенные объекты и быстрый ответ — для арендаторов и собственников.", cta: "Аренда в Ницце" },
+      { key: "manage", title: "Доверить управление", body: "Плата в течение десяти дней, отчёт каждый месяц, юрист на каждом договоре.", cta: "Доверить объект", highlight: "7,5 % без НДС, всё включено" },
+    ],
   },
   assistant: {
     eyebrow: "Ассистент Sillage",
