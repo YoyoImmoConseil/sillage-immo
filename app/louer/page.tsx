@@ -3,7 +3,6 @@ import Link from "next/link";
 import { getRequestLocale } from "@/lib/i18n/request";
 import { localizePath } from "@/lib/i18n/routing";
 import { buildPublicPageMetadata } from "@/lib/seo/site";
-import { SILLAGE_PHONE_RAW } from "@/lib/brand/company";
 import { PageHero } from "@/app/components/page-hero";
 import { PAGES_COPY } from "@/app/_pages/copy";
 import { LatestListingsSection } from "@/app/_pages/latest-listings-section";
@@ -50,7 +49,7 @@ export default async function LouerPage() {
         subtitle={copy.hero.subtitle}
         image={{ src: "/pages/nice-vieux-nice-rue.jpg", alt: copy.hero.imageAlt }}
         primaryCta={{ href: localizePath("/location", locale), label: copy.ctaCatalog }}
-        secondaryCta={{ href: "#proprietaires", label: copy.ctaOwner }}
+        secondaryCta={{ href: localizePath("/gestion-locative", locale), label: copy.ctaOwner }}
       />
 
       <section id="proprietaires" aria-labelledby="rent-owner-title" className="bg-white scroll-mt-24">
@@ -67,9 +66,9 @@ export default async function LouerPage() {
               {renderPoints(copy.owner.points)}
               <p className="text-xs text-navy/55">{copy.owner.feesNote}</p>
               <div className="mt-auto pt-2">
-                <a href={`tel:${SILLAGE_PHONE_RAW}`} className={PRIMARY}>
+                <Link href={localizePath("/gestion-locative", locale)} className={PRIMARY}>
                   {copy.owner.cta}
-                </a>
+                </Link>
               </div>
             </article>
 

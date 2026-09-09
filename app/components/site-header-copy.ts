@@ -9,6 +9,7 @@ type SiteHeaderCopy = {
   sell: string;
   rent: string;
   agency: string;
+  management: string;
   clientSpace: string;
   openMenu: string;
   closeMenu: string;
@@ -24,6 +25,7 @@ export const SITE_HEADER_COPY: Record<AppLocale, SiteHeaderCopy> = {
     sell: "Vendre",
     rent: "Louer",
     agency: "L'agence",
+    management: "Gestion locative",
     clientSpace: "Mon Espace Sillage",
     openMenu: "Ouvrir le menu",
     closeMenu: "Fermer le menu",
@@ -37,6 +39,7 @@ export const SITE_HEADER_COPY: Record<AppLocale, SiteHeaderCopy> = {
     sell: "Sell",
     rent: "Rent",
     agency: "The agency",
+    management: "Property management",
     clientSpace: "My Sillage Space",
     openMenu: "Open menu",
     closeMenu: "Close menu",
@@ -50,6 +53,7 @@ export const SITE_HEADER_COPY: Record<AppLocale, SiteHeaderCopy> = {
     sell: "Vender",
     rent: "Alquilar",
     agency: "La agencia",
+    management: "Gestión de alquileres",
     clientSpace: "Mi Espacio Sillage",
     openMenu: "Abrir el menú",
     closeMenu: "Cerrar el menú",
@@ -63,6 +67,7 @@ export const SITE_HEADER_COPY: Record<AppLocale, SiteHeaderCopy> = {
     sell: "Продать",
     rent: "Аренда",
     agency: "Агентство",
+    management: "Управление арендой",
     clientSpace: "Моё пространство Sillage",
     openMenu: "Открыть меню",
     closeMenu: "Закрыть меню",

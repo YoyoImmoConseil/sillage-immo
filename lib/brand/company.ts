@@ -1,6 +1,9 @@
 /** Identité publique de l'agence — une seule source de vérité. */
 
 export const SILLAGE_PHONE_RAW = "+33423450485";
+/** Ligne dédiée gestion locative (propriétaires et locataires). */
+export const SILLAGE_GESTION_PHONE_RAW = "+33423450501";
+export const SILLAGE_GESTION_PHONE_DISPLAY = "+33 4 23 45 05 01";
 export const SILLAGE_PHONE_DISPLAY = "+33 4 23 45 04 85";
 
 export const SILLAGE_ADDRESS_STREET = "35 rue Arson";
@@ -63,6 +66,6 @@ export const SILLAGE_FEES = {
   rentalTenant:
     "Honoraires à la charge du locataire (visite, constitution du dossier, rédaction du bail) : 10 € TTC / m² de surface habitable (zone tendue, plafond légal), auxquels s'ajoutent 3 € TTC / m² pour l'état des lieux d'entrée.",
   rentalLandlord:
-    "Honoraires à la charge du bailleur (mise en location, gestion locative) : communiqués sur devis avant toute signature de mandat.",
+    "Honoraires à la charge du bailleur : mise en location sur devis avant toute signature de mandat ; gestion locative 7,5 % HT du loyer encaissé (charges comprises) ; garantie loyers impayés en option, 2,8 % du loyer.",
   updatedAt: "5 septembre 2026",
 } as const;

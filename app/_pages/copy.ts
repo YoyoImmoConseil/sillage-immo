@@ -267,8 +267,8 @@ const fr: PagesCopy = {
         "Bail, annexes et état des lieux conformes",
         "Gestion locative : encaissement, régularisations, suivi technique",
       ],
-      feesNote: "Honoraires de location affichés sur chaque annonce, conformes au plafond légal.",
-      cta: "Parler de mon bien",
+      feesNote: "Honoraires de mise en location sur devis ; la part du locataire, affichée sur chaque annonce, est plafonnée par la loi.",
+      cta: "Découvrir la gestion locative",
     },
     tenant: {
       eyebrow: "Locataires",
@@ -482,8 +482,8 @@ const en: PagesCopy = {
         "Compliant lease, annexes and inventory",
         "Property management: collection, adjustments, maintenance follow-up",
       ],
-      feesNote: "Letting fees shown on every listing, within the legal cap.",
-      cta: "Talk about my property",
+      feesNote: "Letting fees on quote; the tenant's share, shown on every listing, is capped by law.",
+      cta: "Discover property management",
     },
     tenant: {
       eyebrow: "Tenants",
@@ -696,8 +696,8 @@ const es: PagesCopy = {
         "Contrato, anexos e inventario conformes",
         "Gestión del alquiler: cobro, regularizaciones, seguimiento técnico",
       ],
-      feesNote: "Honorarios de alquiler indicados en cada anuncio, dentro del límite legal.",
-      cta: "Hablar de mi vivienda",
+      feesNote: "Honorarios de puesta en alquiler según presupuesto; la parte del inquilino, indicada en cada anuncio, está limitada por ley.",
+      cta: "Descubrir la gestión de alquileres",
     },
     tenant: {
       eyebrow: "Inquilinos",
@@ -910,8 +910,8 @@ const ru: PagesCopy = {
         "Договор, приложения и опись в соответствии с законом",
         "Управление: сбор платежей, перерасчёты, технический контроль",
       ],
-      feesNote: "Комиссия за аренду указана в каждом объявлении, в пределах законного максимума.",
-      cta: "Обсудить мой объект",
+      feesNote: "Стоимость сдачи по смете; доля арендатора, указанная в каждом объявлении, ограничена законом.",
+      cta: "Узнать об управлении арендой",
     },
     tenant: {
       eyebrow: "Арендаторам",
