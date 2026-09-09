@@ -91,8 +91,8 @@ export default async function GestionLocativePage() {
               </div>
             ))}
           </dl>
-          <div className="grid gap-6 md:grid-cols-2">
-            <div className="space-y-4 rounded-[24px] bg-sand p-6 text-navy md:p-8">
+          <div className="grid gap-6">
+            <div className="max-w-3xl space-y-4 rounded-[24px] bg-sand p-6 text-navy md:p-8">
               <h3 className="font-serif text-xl font-semibold md:text-2xl">{copy.pricing.included.title}</h3>
               <p className="text-sm leading-relaxed text-navy/75">{copy.pricing.included.intro}</p>
               <ul className="space-y-2">
@@ -106,12 +106,54 @@ export default async function GestionLocativePage() {
                 ))}
               </ul>
             </div>
-            <div className="space-y-3 rounded-[24px] border border-sand/15 p-6 md:p-8">
-              <h3 className="font-serif text-xl font-semibold md:text-2xl">{copy.pricing.twoMissions.title}</h3>
-              <p className="text-sm leading-relaxed text-sand/85 md:text-base">{copy.pricing.twoMissions.body}</p>
-            </div>
           </div>
           <p className="max-w-3xl text-sm text-sand/70">{copy.pricing.footnote}</p>
+        </div>
+      </section>
+
+      {/* Le mandat de gestion Sillage : engagements, durée, refus */}
+      <section id="mandat-gestion" aria-labelledby="gestion-engagements-title" className="bg-white scroll-mt-24">
+        <div className="w-full px-4 py-16 md:px-10 md:py-24 xl:px-14 2xl:px-20 space-y-12">
+          <div className="max-w-3xl space-y-5">
+            <p className="text-xs uppercase tracking-[0.22em] text-navy/65">{copy.engagements.eyebrow}</p>
+            <h2
+              id="gestion-engagements-title"
+              className="sillage-section-title-font text-[28px] leading-[1.12] font-semibold text-navy md:text-4xl"
+            >
+              {copy.engagements.title}
+            </h2>
+            <p className="sillage-editorial-text text-navy/80">{copy.engagements.intro}</p>
+          </div>
+
+          <ol className="grid gap-4 md:grid-cols-2 md:gap-6 xl:grid-cols-3">
+            {copy.engagements.items.map((item, index) => (
+              <li key={item.title} className="flex gap-5 rounded-[24px] bg-sand/40 p-6 ring-1 ring-navy/10 md:p-8">
+                <span className="font-serif text-3xl font-semibold leading-none text-navy/35 md:text-4xl">{index + 1}</span>
+                <div className="space-y-2">
+                  <h3 className="font-serif text-lg font-semibold leading-snug text-navy md:text-xl">{item.title}</h3>
+                  <p className="text-sm leading-relaxed text-navy/80">{item.body}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+
+          <div className="grid gap-6 md:grid-cols-2">
+            <article className="space-y-3 rounded-[24px] bg-navy p-6 text-sand md:p-8">
+              <h3 className="font-serif text-xl font-semibold md:text-2xl">{copy.engagements.duration.title}</h3>
+              <p className="text-sm leading-relaxed text-sand/85 md:text-base">{copy.engagements.duration.body}</p>
+            </article>
+            <article className="space-y-4 rounded-[24px] border border-navy/10 p-6 md:p-8">
+              <h3 className="font-serif text-xl font-semibold text-navy md:text-2xl">{copy.engagements.refuse.title}</h3>
+              <ul className="space-y-2">
+                {copy.engagements.refuse.items.map((item) => (
+                  <li key={item} className="flex items-start gap-3 text-sm leading-relaxed text-navy/80 md:text-base">
+                    <span aria-hidden="true" className="mt-[0.7em] h-px w-4 flex-none bg-navy/50" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </article>
+          </div>
         </div>
       </section>
 

@@ -17,8 +17,15 @@ export type GestionPageCopy = {
     title: string;
     lines: { label: string; value: string; note: string }[];
     included: { title: string; intro: string; items: string[] };
-    twoMissions: { title: string; body: string };
     footnote: string;
+  };
+  engagements: {
+    eyebrow: string;
+    title: string;
+    intro: string;
+    items: { title: string; body: string }[];
+    duration: { title: string; body: string };
+    refuse: { title: string; items: string[] };
   };
   steps: { eyebrow: string; title: string; items: { title: string; body: string }[] };
   faq: { eyebrow: string; title: string; items: { question: string; answer: string }[] };
@@ -75,7 +82,7 @@ const fr: GestionPageCopy = {
         title: "Sécurité",
         body: "Ce qui vous protège quand quelque chose ne se passe pas comme prévu.",
         items: [
-          "Garantie loyers impayés en option, avec protection juridique",
+          "Garantie loyers impayés GarantMe en option, avec protection juridique",
           "Relances et procédure de recouvrement menées par nos soins",
           "Gestion des sinistres et des déclarations d'assurance",
           "Garantie financière et assurance responsabilité civile professionnelle",
@@ -89,14 +96,14 @@ const fr: GestionPageCopy = {
     lines: [
       { label: "Gestion locative", value: "7,5 % HT", note: "du loyer encaissé, charges comprises. Tout compris, sans ligne supplémentaire. Rien n'est facturé quand le bien est vacant." },
       { label: "Garantie loyers impayés", value: "2,8 %", note: "du loyer, en option. Couvre les impayés, les dégradations et les frais de procédure." },
-      { label: "Mise en location", value: "Mission distincte", note: "Facturée une fois, à la signature du bail, dans la limite du plafond légal. Ce n'est pas de la gestion." },
+      { label: "Mise en location", value: "Sur devis", note: "Facturée une seule fois, à la signature du bail, quand nous trouvons votre locataire. La part du locataire est plafonnée par la loi : 10 € / m² + 3 € / m² pour l'état des lieux." },
     ],
     included: {
       title: "Inclus dans les 7,5 %, sans supplément",
-      intro: "Un taux plus bas ailleurs cache souvent une grille de frais à l'acte. Chez nous, ces prestations font partie de la mission :",
+      intro: "Un taux plus bas ailleurs cache souvent une grille de frais à l'acte. Chez nous, une fois le locataire en place, tout ce qui relève de la gestion est dans les 7,5 % :",
       items: [
         "Représentation à l'assemblée générale de copropriété",
-        "Déplacements sur place : suivi de travaux, sinistre, visite annuelle",
+        "Déplacements sur place : suivi de travaux, sinistre, état des lieux",
         "Relances, mise en demeure et suivi de la procédure en cas d'impayé",
         "Régularisation des charges et révision annuelle du loyer",
         "Déclaration et suivi des sinistres auprès des assureurs",
@@ -104,13 +111,35 @@ const fr: GestionPageCopy = {
         "État des lieux de sortie et restitution du dépôt de garantie",
       ],
     },
-    twoMissions: {
-      title: "Deux missions, pas une",
-      body:
-        "Mettre en location et gérer sont deux métiers, facturés séparément et à des moments différents. La mise en location est ponctuelle : trouver, sélectionner, contractualiser ; ses honoraires sont plafonnés par la loi et payés une fois. La gestion est continue : encaisser, suivre, protéger, chaque mois, pour 7,5 % HT et rien d'autre. Un devis qui mélange les deux n'est pas comparable à un autre.",
-    },
     footnote:
       "Honoraires de gestion déductibles de vos revenus fonciers au régime réel. Aucun frais d'entrée, aucun frais de sortie.",
+  },
+  engagements: {
+    eyebrow: "Le mandat de gestion Sillage",
+    title: "Vous nous confiez votre bien pour trois ans. Nous nous engageons chaque mois.",
+    intro:
+      "La gestion s'inscrit dans la durée : un locataire reste en moyenne plusieurs années, et un bien bien géré ne change pas de mains tous les six mois. Le mandat est donc conclu par périodes de trois ans, avec une sortie possible à chaque échéance. En contrepartie, voici ce à quoi nous nous tenons, mois après mois, et que vous pouvez vérifier.",
+    items: [
+      { title: "Votre loyer sous dix jours", body: "Reversé les 10, 20 et 30 de chaque mois selon la date de paiement du locataire, avec le compte rendu de gestion le même jour. Jamais plus de dix jours entre son virement et le vôtre." },
+      { title: "Une réponse sous un jour ouvré", body: "À vous, par email, sous un jour ouvré ; à votre locataire sous deux. Une question sans réponse est une relation qui s'abîme, des deux côtés." },
+      { title: "La relocation démarre le jour du congé", body: "Dès réception du préavis du locataire, nous préparons la remise en location : annonce en ligne sous cinq jours ouvrés, visites organisées avant son départ quand c'est possible." },
+      { title: "L'impayé traité dans les délais de la loi", body: "Relance sous dix jours après l'échéance, commandement de payer par commissaire de justice sous trente-deux jours — la loi exige deux termes impayés avant d'agir, nous n'en attendons pas un troisième." },
+      { title: "Tout est consigné dans votre espace Sillage", body: "Loyers, relances, interventions, sinistres, congés : chaque événement est daté et visible dans votre espace, sans avoir à nous le demander." },
+    ],
+    duration: {
+      title: "La durée, en clair",
+      body:
+        "Le mandat est signé pour une première période de trois ans, puis se renouvelle par périodes de trois ans. Vous pouvez y mettre fin à chaque échéance avec trois mois de préavis, sans frais de sortie ni justification. Cette durée n'est pas un piège : elle évite de vous faire resigner un mandat tous les trois ans, et elle correspond au temps réel d'une gestion sérieuse.",
+    },
+    refuse: {
+      title: "Ce que nous refusons",
+      items: [
+        "Les frais à l'acte : une assemblée générale, un déplacement, un suivi de procédure ne se facturent pas en plus.",
+        "La commission sur les travaux : nous obtenons les devis, vous les validez, nous ne prenons rien dessus.",
+        "La garantie loyers impayés « maison », qui juge et paie en même temps : la nôtre est un contrat d'assureur externe.",
+        "Les visites de contrôle imposées au locataire : nous intervenons quand il y a une raison, pas pour le surveiller.",
+      ],
+    },
   },
   steps: {
     eyebrow: "Comment ça commence",
@@ -129,7 +158,7 @@ const fr: GestionPageCopy = {
       {
         question: "Que se passe-t-il si le locataire ne paie pas ?",
         answer:
-          "Nous relançons dès le premier retard, mettons en demeure et engageons la procédure si nécessaire. Avec la garantie loyers impayés, vous continuez à percevoir votre loyer pendant la procédure.",
+          "Nous relançons sous dix jours, puis faisons délivrer un commandement de payer sous trente-deux jours, dès que la loi le permet. Avec la garantie loyers impayés GarantMe, vous continuez à percevoir votre loyer pendant la procédure.",
       },
       {
         question: "Qui décide des travaux ?",
@@ -142,7 +171,7 @@ const fr: GestionPageCopy = {
       },
       {
         question: "Puis-je arrêter la gestion ?",
-        answer: "Le mandat est résiliable avec un préavis, sans frais de sortie. Vous récupérez votre dossier complet et le dépôt de garantie est transféré selon la loi.",
+        answer: "Le mandat court par périodes de trois ans ; vous pouvez y mettre fin à chaque échéance avec trois mois de préavis, sans frais de sortie. Vous récupérez votre dossier complet et le dépôt de garantie est transféré selon la loi.",
       },
     ],
   },
@@ -184,7 +213,7 @@ const en: GestionPageCopy = {
     blocks: [
       { title: "Letting", body: "Find the right tenant quickly, without underpricing the rent or taking risks on the file.", items: ["Rent set on the real market and current regulations", "Photos, listing and marketing on sillage-immo.com and the portals", "Viewings, file selection, guarantee checks", "Compliant lease, annexes and diagnostics, detailed check-in inventory"] },
       { title: "Day-to-day management", body: "The landlord's routine, without you having to live it.", items: ["Rent calls and collection, payout on the 10th, 20th and 30th: never more than ten days between the tenant's payment and your transfer", "Management statement every month, annual summary for your tax return", "Service charge adjustments, annual rent revision", "Relations with tenant, building manager and contractors; quotes and works follow-up"] },
-      { title: "Security", body: "What protects you when something does not go as planned.", items: ["Optional rent guarantee insurance with legal protection", "Reminders and recovery procedure handled by us", "Claims and insurance declarations", "Financial guarantee and professional liability insurance"] },
+      { title: "Security", body: "What protects you when something does not go as planned.", items: ["Optional GarantMe rent guarantee insurance with legal protection", "Reminders and recovery procedure handled by us", "Claims and insurance declarations", "Financial guarantee and professional liability insurance"] },
     ],
   },
   pricing: {
@@ -193,14 +222,14 @@ const en: GestionPageCopy = {
     lines: [
       { label: "Property management", value: "7.5% excl. VAT", note: "of rent collected, charges included. All-inclusive, no extra lines. Nothing is billed while the property is vacant." },
       { label: "Rent guarantee insurance", value: "2.8%", note: "of the rent, optional. Covers unpaid rent, damage and legal costs." },
-      { label: "Letting", value: "Separate service", note: "Billed once, at lease signing, within the legal cap. It is not management." },
+      { label: "Letting", value: "On quote", note: "Billed once, at lease signing, when we find your tenant. The tenant's share is capped by law: €10/sqm + €3/sqm for the inventory." },
     ],
     included: {
       title: "Included in the 7.5%, no surcharge",
-      intro: "A lower rate elsewhere often hides a menu of per-task fees. With us, these tasks are part of the job:",
+      intro: "A lower rate elsewhere often hides a menu of per-task fees. With us, once the tenant is in place, everything that is management is in the 7.5%:",
       items: [
         "Representation at the co-ownership general meeting",
-        "On-site visits: works follow-up, claims, annual inspection",
+        "On-site visits: works follow-up, claims, inventories",
         "Reminders, formal notice and procedure follow-up in case of arrears",
         "Service charge adjustments and annual rent revision",
         "Claims declaration and follow-up with insurers",
@@ -208,12 +237,34 @@ const en: GestionPageCopy = {
         "Check-out inventory and deposit refund",
       ],
     },
-    twoMissions: {
-      title: "Two services, not one",
-      body:
-        "Letting and managing are two trades, billed separately and at different times. Letting is one-off: find, select, contract; its fees are capped by law and paid once. Management is continuous: collect, follow, protect, every month, for 7.5% excl. VAT and nothing else. A quote that blends the two cannot be compared with another.",
-    },
     footnote: "Management fees are deductible from rental income under the actual-expenses regime. No entry fee, no exit fee.",
+  },
+  engagements: {
+    eyebrow: "The Sillage management mandate",
+    title: "You entrust us with your property for three years. We commit every month.",
+    intro:
+      "Management is a long game: a tenant stays several years on average, and a well-managed property does not change hands every six months. The mandate therefore runs in three-year periods, with an exit at each term. In return, here is what we hold ourselves to, month after month, and what you can check.",
+    items: [
+      { title: "Your rent within ten days", body: "Paid out on the 10th, 20th and 30th of each month according to the tenant's payment date, with the management statement the same day. Never more than ten days between their transfer and yours." },
+      { title: "An answer within one working day", body: "To you, by email, within one working day; to your tenant within two. An unanswered question is a relationship that deteriorates, on both sides." },
+      { title: "Re-letting starts the day notice is received", body: "As soon as the tenant gives notice, we prepare the re-letting: listing online within five working days, viewings organised before they leave when possible." },
+      { title: "Arrears handled within the legal timeframe", body: "Reminder within ten days of the due date, formal demand for payment served by a bailiff within thirty-two days — the law requires two unpaid terms before acting; we do not wait for a third." },
+      { title: "Everything logged in your Sillage space", body: "Rent, reminders, interventions, claims, notices: every event is dated and visible in your space, without having to ask us." },
+    ],
+    duration: {
+      title: "The term, in plain words",
+      body:
+        "The mandate is signed for a first period of three years, then renews in three-year periods. You can end it at each term with three months' notice, with no exit fee and no justification. This term is not a trap: it spares you re-signing a mandate every three years, and it matches the real timescale of serious management.",
+    },
+    refuse: {
+      title: "What we refuse",
+      items: [
+        "Per-task fees: a general meeting, a site visit, a procedure follow-up are not billed on top.",
+        "Commission on works: we obtain quotes, you approve them, we take nothing on them.",
+        "In-house rent guarantee that judges and pays at the same time: ours is an external insurer's contract.",
+        "Inspection visits imposed on the tenant: we step in when there is a reason, not to watch them.",
+      ],
+    },
   },
   steps: {
     eyebrow: "How it starts",
@@ -229,10 +280,10 @@ const en: GestionPageCopy = {
     eyebrow: "Frequently asked",
     title: "What owners ask us",
     items: [
-      { question: "What happens if the tenant does not pay?", answer: "We chase from the first delay, serve formal notice and start proceedings if needed. With rent guarantee insurance, you keep receiving your rent during the procedure." },
+      { question: "What happens if the tenant does not pay?", answer: "We send a reminder within ten days, then have a formal demand served within thirty-two days, as soon as the law allows. With GarantMe rent guarantee insurance, you keep receiving your rent during the procedure." },
       { question: "Who decides on works?", answer: "You do. We obtain quotes, you approve them, we follow the job. Only emergencies (leak, heating failure) are handled without delay, within the limit agreed in the mandate." },
       { question: "My property is already let — can you take over?", answer: "Yes. We take over the current lease, inform the tenant of the new contact and check that the file is complete." },
-      { question: "Can I stop the management?", answer: "The mandate can be terminated with notice, with no exit fee. You get your complete file back and the deposit is transferred as the law provides." },
+      { question: "Can I stop the management?", answer: "The mandate runs in three-year periods; you can end it at each term with three months' notice and no exit fee. You get your complete file back and the deposit is transferred as the law provides." },
     ],
   },
   contact: {
@@ -273,7 +324,7 @@ const es: GestionPageCopy = {
     blocks: [
       { title: "Puesta en alquiler", body: "Encontrar al inquilino adecuado rápido, sin malvender la renta ni arriesgar con el expediente.", items: ["Renta fijada según el mercado real y la normativa vigente", "Fotos, anuncio y difusión en sillage-immo.com y los portales", "Visitas, selección de expedientes, verificación de garantías", "Contrato, anexos y certificados conformes, inventario de entrada detallado"] },
       { title: "Gestión corriente", body: "El día a día del propietario, sin que tenga que vivirlo.", items: ["Reclamación y cobro de rentas, abono los días 10, 20 y 30: nunca más de diez días entre el pago del inquilino y su transferencia", "Informe de gestión cada mes, resumen anual para su declaración", "Regularización de gastos, revisión anual de la renta", "Relación con el inquilino, la comunidad y los profesionales; presupuestos y seguimiento de obras"] },
-      { title: "Seguridad", body: "Lo que le protege cuando algo no sale como estaba previsto.", items: ["Seguro de impago opcional con protección jurídica", "Recordatorios y procedimiento de recobro a nuestro cargo", "Gestión de siniestros y declaraciones al seguro", "Garantía financiera y seguro de responsabilidad civil profesional"] },
+      { title: "Seguridad", body: "Lo que le protege cuando algo no sale como estaba previsto.", items: ["Seguro de impago GarantMe opcional con protección jurídica", "Recordatorios y procedimiento de recobro a nuestro cargo", "Gestión de siniestros y declaraciones al seguro", "Garantía financiera y seguro de responsabilidad civil profesional"] },
     ],
   },
   pricing: {
@@ -282,14 +333,14 @@ const es: GestionPageCopy = {
     lines: [
       { label: "Gestión de alquileres", value: "7,5 % sin IVA", note: "de la renta cobrada, gastos incluidos. Todo incluido, sin líneas adicionales. No se factura nada mientras la vivienda está vacía." },
       { label: "Seguro de impago", value: "2,8 %", note: "de la renta, opcional. Cubre impagos, daños y gastos de procedimiento." },
-      { label: "Puesta en alquiler", value: "Misión aparte", note: "Facturada una vez, a la firma del contrato, dentro del límite legal. No es gestión." },
+      { label: "Puesta en alquiler", value: "Según presupuesto", note: "Facturada una sola vez, a la firma del contrato, cuando encontramos a su inquilino. La parte del inquilino está limitada por ley: 10 €/m² + 3 €/m² por el inventario." },
     ],
     included: {
       title: "Incluido en el 7,5 %, sin suplemento",
-      intro: "Una tarifa más baja en otro sitio suele esconder una lista de cargos por acto. Con nosotros, estas prestaciones forman parte de la misión:",
+      intro: "Una tarifa más baja en otro sitio suele esconder una lista de cargos por acto. Con nosotros, una vez el inquilino instalado, todo lo que es gestión está en el 7,5 %:",
       items: [
         "Representación en la junta de propietarios",
-        "Desplazamientos: seguimiento de obras, siniestro, visita anual",
+        "Desplazamientos: seguimiento de obras, siniestro, inventarios",
         "Recordatorios, requerimiento y seguimiento del procedimiento en caso de impago",
         "Regularización de gastos y revisión anual de la renta",
         "Declaración y seguimiento de siniestros ante las aseguradoras",
@@ -297,12 +348,34 @@ const es: GestionPageCopy = {
         "Inventario de salida y devolución de la fianza",
       ],
     },
-    twoMissions: {
-      title: "Dos misiones, no una",
-      body:
-        "Alquilar y gestionar son dos oficios, facturados por separado y en momentos distintos. La puesta en alquiler es puntual: encontrar, seleccionar, contratar; sus honorarios están limitados por ley y se pagan una vez. La gestión es continua: cobrar, seguir, proteger, cada mes, por un 7,5 % sin IVA y nada más. Un presupuesto que mezcla ambas no es comparable con otro.",
-    },
     footnote: "Honorarios de gestión deducibles de sus ingresos por alquiler en el régimen real. Sin gastos de entrada ni de salida.",
+  },
+  engagements: {
+    eyebrow: "El mandato de gestión Sillage",
+    title: "Usted nos confía su vivienda por tres años. Nosotros nos comprometemos cada mes.",
+    intro:
+      "La gestión se inscribe en el tiempo: un inquilino se queda varios años de media y una vivienda bien gestionada no cambia de manos cada seis meses. Por eso el mandato se concluye por periodos de tres años, con salida posible en cada vencimiento. A cambio, esto es a lo que nos atenemos, mes tras mes, y que usted puede comprobar.",
+    items: [
+      { title: "Su renta en diez días", body: "Abonada los días 10, 20 y 30 de cada mes según la fecha de pago del inquilino, con el informe de gestión el mismo día. Nunca más de diez días entre su transferencia y la suya." },
+      { title: "Una respuesta en un día laborable", body: "A usted, por email, en un día laborable; a su inquilino en dos. Una pregunta sin respuesta es una relación que se deteriora, por ambos lados." },
+      { title: "El realquiler empieza el día del preaviso", body: "En cuanto recibimos el preaviso del inquilino, preparamos la nueva puesta en alquiler: anuncio en línea en cinco días laborables, visitas organizadas antes de su salida cuando es posible." },
+      { title: "El impago tratado en los plazos de la ley", body: "Recordatorio en diez días tras el vencimiento, requerimiento de pago por agente judicial en treinta y dos días: la ley exige dos mensualidades impagadas antes de actuar; no esperamos una tercera." },
+      { title: "Todo queda registrado en su espacio Sillage", body: "Rentas, recordatorios, intervenciones, siniestros, preavisos: cada evento está fechado y visible en su espacio, sin tener que pedírnoslo." },
+    ],
+    duration: {
+      title: "La duración, en claro",
+      body:
+        "El mandato se firma por un primer periodo de tres años y se renueva por periodos de tres años. Puede ponerle fin en cada vencimiento con tres meses de preaviso, sin gastos de salida ni justificación. Esta duración no es una trampa: evita hacerle firmar de nuevo cada tres años y corresponde al tiempo real de una gestión seria.",
+    },
+    refuse: {
+      title: "Lo que rechazamos",
+      items: [
+        "Los cargos por acto: una junta, un desplazamiento, un seguimiento de procedimiento no se facturan aparte.",
+        "La comisión sobre las obras: obtenemos los presupuestos, usted los valida, no cobramos nada sobre ellos.",
+        "El seguro de impago « de la casa », que juzga y paga a la vez: el nuestro es un contrato de una aseguradora externa.",
+        "Las visitas de control impuestas al inquilino: intervenimos cuando hay un motivo, no para vigilarle.",
+      ],
+    },
   },
   steps: {
     eyebrow: "Cómo empieza",
@@ -318,10 +391,10 @@ const es: GestionPageCopy = {
     eyebrow: "Preguntas frecuentes",
     title: "Lo que nos preguntan los propietarios",
     items: [
-      { question: "¿Qué pasa si el inquilino no paga?", answer: "Reclamamos desde el primer retraso, enviamos requerimiento e iniciamos el procedimiento si hace falta. Con el seguro de impago, sigue cobrando su renta durante el procedimiento." },
+      { question: "¿Qué pasa si el inquilino no paga?", answer: "Reclamamos en diez días y hacemos notificar un requerimiento de pago en treinta y dos días, en cuanto la ley lo permite. Con el seguro de impago GarantMe, sigue cobrando su renta durante el procedimiento." },
       { question: "¿Quién decide las obras?", answer: "Usted. Obtenemos los presupuestos, usted los valida y nosotros seguimos la intervención. Solo las urgencias (fuga, avería de calefacción) se tratan sin esperar, dentro del límite acordado en el mandato." },
       { question: "Mi vivienda ya está alquilada, ¿pueden asumir la gestión?", answer: "Sí. Continuamos el contrato en curso, informamos al inquilino del cambio de interlocutor y comprobamos que el expediente esté completo." },
-      { question: "¿Puedo dejar la gestión?", answer: "El mandato se puede rescindir con preaviso, sin gastos de salida. Recupera su expediente completo y la fianza se transfiere según la ley." },
+      { question: "¿Puedo dejar la gestión?", answer: "El mandato corre por periodos de tres años; puede ponerle fin en cada vencimiento con tres meses de preaviso, sin gastos de salida. Recupera su expediente completo y la fianza se transfiere según la ley." },
     ],
   },
   contact: {
@@ -362,7 +435,7 @@ const ru: GestionPageCopy = {
     blocks: [
       { title: "Сдача в аренду", body: "Быстро найти правильного арендатора, не занижая плату и не рискуя с досье.", items: ["Плата по реальному рынку и действующим правилам", "Фото, объявление и продвижение на sillage-immo.com и порталах", "Показы, отбор досье, проверка гарантий", "Договор, приложения и диагностики по закону, подробная опись при въезде"] },
       { title: "Текущее управление", body: "Будни собственника — без вашего участия.", items: ["Выставление и сбор платы, перечисление 10-го, 20-го и 30-го: не более десяти дней между оплатой арендатора и вашим переводом", "Отчёт об управлении каждый месяц, годовая сводка для декларации", "Перерасчёт расходов, ежегодная индексация", "Связь с арендатором, управляющим домом и подрядчиками; сметы и контроль работ"] },
-      { title: "Защита", body: "То, что защищает вас, когда что-то идёт не по плану.", items: ["Страховка от неплатежей по желанию, с юридической защитой", "Напоминания и процедура взыскания силами агентства", "Страховые случаи и заявления", "Финансовая гарантия и страхование профессиональной ответственности"] },
+      { title: "Защита", body: "То, что защищает вас, когда что-то идёт не по плану.", items: ["Страховка от неплатежей GarantMe по желанию, с юридической защитой", "Напоминания и процедура взыскания силами агентства", "Страховые случаи и заявления", "Финансовая гарантия и страхование профессиональной ответственности"] },
     ],
   },
   pricing: {
@@ -371,14 +444,14 @@ const ru: GestionPageCopy = {
     lines: [
       { label: "Управление арендой", value: "7,5 % без НДС", note: "от полученной платы, включая расходы. Всё включено, без дополнительных строк. Пока объект пустует, ничего не начисляется." },
       { label: "Страховка от неплатежей", value: "2,8 %", note: "от платы, по желанию. Покрывает неплатежи, ущерб и судебные расходы." },
-      { label: "Сдача в аренду", value: "Отдельная услуга", note: "Оплачивается один раз при подписании договора, в пределах законного максимума. Это не управление." },
+      { label: "Сдача в аренду", value: "По смете", note: "Оплачивается один раз при подписании договора, когда мы находим вашего арендатора. Доля арендатора ограничена законом: 10 €/м² + 3 €/м² за опись." },
     ],
     included: {
       title: "Входит в 7,5 %, без доплат",
-      intro: "Более низкая ставка в другом месте часто скрывает прейскурант за каждое действие. У нас эти услуги — часть работы:",
+      intro: "Более низкая ставка в другом месте часто скрывает прейскурант за каждое действие. У нас, как только арендатор заселился, всё, что относится к управлению, входит в 7,5 %:",
       items: [
         "Представительство на общем собрании собственников",
-        "Выезды на объект: контроль работ, страховой случай, ежегодный осмотр",
+        "Выезды на объект: контроль работ, страховой случай, описи",
         "Напоминания, требование и сопровождение процедуры при неплатеже",
         "Перерасчёт расходов и ежегодная индексация платы",
         "Заявление и сопровождение страховых случаев",
@@ -386,12 +459,34 @@ const ru: GestionPageCopy = {
         "Опись при выезде и возврат залога",
       ],
     },
-    twoMissions: {
-      title: "Две услуги, а не одна",
-      body:
-        "Сдать и управлять — два разных ремесла, которые оплачиваются отдельно и в разное время. Сдача — разовая: найти, отобрать, оформить; её стоимость ограничена законом и платится один раз. Управление — непрерывное: получать, контролировать, защищать, каждый месяц, за 7,5 % без НДС и ничего больше. Смета, в которой смешаны обе, несопоставима с другой.",
-    },
     footnote: "Расходы на управление вычитаются из дохода от аренды при реальном режиме. Без платы за вход и выход.",
+  },
+  engagements: {
+    eyebrow: "Договор управления Sillage",
+    title: "Вы доверяете нам объект на три года. Мы отвечаем перед вами каждый месяц.",
+    intro:
+      "Управление — это надолго: арендатор в среднем остаётся несколько лет, а хорошо управляемый объект не меняет руки каждые полгода. Поэтому договор заключается на периоды по три года с возможностью выхода в конце каждого. Взамен — то, чего мы придерживаемся месяц за месяцем и что вы можете проверить.",
+    items: [
+      { title: "Ваша плата в течение десяти дней", body: "Перечисляется 10-го, 20-го и 30-го числа в зависимости от даты оплаты арендатора, с отчётом в тот же день. Не более десяти дней между его переводом и вашим." },
+      { title: "Ответ в течение рабочего дня", body: "Вам — по email в течение одного рабочего дня; вашему арендатору — в течение двух. Вопрос без ответа портит отношения с обеих сторон." },
+      { title: "Повторная сдача начинается в день уведомления", body: "Как только арендатор уведомляет о выезде, мы готовим новую сдачу: объявление онлайн в течение пяти рабочих дней, показы по возможности до его выезда." },
+      { title: "Неплатёж — в сроки, установленные законом", body: "Напоминание в течение десяти дней после срока, требование об оплате через судебного исполнителя в течение тридцати двух дней: закон требует двух неоплаченных сроков, третьего мы не ждём." },
+      { title: "Всё фиксируется в вашем кабинете Sillage", body: "Платежи, напоминания, работы, страховые случаи, уведомления: каждое событие с датой видно в вашем кабинете без запроса." },
+    ],
+    duration: {
+      title: "Срок — прямо",
+      body:
+        "Договор подписывается на первый период в три года и продлевается на трёхлетние периоды. Вы можете завершить его в конце каждого периода, уведомив за три месяца, без платы за выход и объяснений. Этот срок — не ловушка: он избавляет вас от переподписания каждые три года и соответствует реальному горизонту серьёзного управления.",
+    },
+    refuse: {
+      title: "От чего мы отказываемся",
+      items: [
+        "Плата за каждое действие: собрание, выезд, сопровождение процедуры не оплачиваются отдельно.",
+        "Комиссия с работ: мы получаем сметы, вы их утверждаете, мы с них ничего не берём.",
+        "«Внутренняя» гарантия от неплатежей, которая одновременно судит и платит: наша — договор внешнего страховщика.",
+        "Контрольные визиты, навязанные арендатору: мы приходим, когда есть причина, а не чтобы следить.",
+      ],
+    },
   },
   steps: {
     eyebrow: "С чего начать",
@@ -407,10 +502,10 @@ const ru: GestionPageCopy = {
     eyebrow: "Частые вопросы",
     title: "О чём спрашивают собственники",
     items: [
-      { question: "Что, если арендатор не платит?", answer: "Мы напоминаем с первой задержки, направляем требование и при необходимости начинаем процедуру. Со страховкой от неплатежей вы продолжаете получать плату во время процедуры." },
+      { question: "Что, если арендатор не платит?", answer: "Напоминаем в течение десяти дней, затем вручаем требование об оплате в течение тридцати двух дней, как только позволяет закон. Со страховкой GarantMe вы продолжаете получать плату во время процедуры." },
       { question: "Кто решает по ремонту?", answer: "Вы. Мы получаем сметы, вы их утверждаете, мы контролируем работы. Без ожидания решаются только аварии (протечка, отказ отопления) в пределах, согласованных в договоре." },
       { question: "Объект уже сдан — вы возьмёте управление?", answer: "Да. Мы продолжаем текущий договор, уведомляем арендатора о смене контакта и проверяем полноту досье." },
-      { question: "Могу ли я прекратить управление?", answer: "Договор расторгается с уведомлением, без платы за выход. Вы получаете полное досье, залог передаётся по закону." },
+      { question: "Могу ли я прекратить управление?", answer: "Договор действует трёхлетними периодами; вы можете завершить его в конце каждого периода, уведомив за три месяца, без платы за выход. Вы получаете полное досье, залог передаётся по закону." },
     ],
   },
   contact: {
