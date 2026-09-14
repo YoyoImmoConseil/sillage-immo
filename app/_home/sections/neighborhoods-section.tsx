@@ -6,6 +6,9 @@ import {
 } from "../copy";
 import { PhoneIcon } from "../shared/cta-button";
 import { HCarousel } from "../shared/mobile-carousel";
+import Link from "next/link";
+import { localizePath } from "@/lib/i18n/routing";
+import { QUARTIERS } from "@/lib/quartiers/data";
 
 type Props = { locale: AppLocale };
 
@@ -37,18 +40,22 @@ export function NeighborhoodsSection({ locale }: Props) {
           indicator="bar"
           ariaLabel={copy.title}
         >
-          {copy.items.map((item) => (
-            <article
-              key={item.name}
-              className="flex shrink-0 basis-[72%] snap-start flex-col gap-2 rounded-[20px] bg-white p-5 ring-1 ring-navy/5 transition hover:ring-navy/15 sm:basis-[46%] md:basis-auto"
+          {QUARTIERS.map((quartier) => (
+            <Link
+              key={quartier.slug}
+              href={localizePath(`/quartiers/${quartier.slug}`, locale)}
+              data-track-cta={`home_quartier_${quartier.slug}`}
+              data-track-location="home_neighborhoods"
+              className="group flex shrink-0 basis-[72%] snap-start flex-col gap-2 rounded-[20px] bg-white p-5 ring-1 ring-navy/5 transition hover:-translate-y-[2px] hover:ring-navy/20 sm:basis-[46%] md:basis-auto"
             >
               <h3 className="font-serif text-base font-semibold text-navy">
-                {item.name}
+                {quartier.name}
+                <span aria-hidden="true" className="ml-1 inline-block transition group-hover:translate-x-0.5">→</span>
               </h3>
               <p className="text-sm leading-relaxed text-navy/75">
-                {item.body}
+                {quartier.tagline[locale]}
               </p>
-            </article>
+            </Link>
           ))}
         </HCarousel>
 
