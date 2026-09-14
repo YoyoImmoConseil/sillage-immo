@@ -1,0 +1,308 @@
+{
+ "source": "DVF (Demandes de valeurs foncières), Etalab / DGFiP, fichiers géolocalisés, commune de Nice",
+ "years": [
+  "2024",
+  "2025"
+ ],
+ "mainYear": "2025",
+ "computedAt": "2026-09-14",
+ "method": "Ventes uniquement, appartements et maisons, une seule unité d'habitation par mutation (dépendances seules, lots multiples et immeubles exclus), prix au m² entre 1 500 et 30 000 €. Rattachement au quartier par contours IRIS (INSEE), Cap de Nice par rue. Maisons : prix médian (le prix au m² DVF ignore le terrain).",
+ "zones": {
+  "riquier": {
+   "sales": {
+    "mainYear": 385,
+    "period": 707
+   },
+   "apartments": {
+    "n": 704,
+    "nMainYear": 382,
+    "medianPpmMainYear": 4917,
+    "medianPpm": 4855,
+    "q1Ppm": 3984,
+    "q3Ppm": 5667,
+    "p90Ppm": 6429,
+    "medianSurface": 48,
+    "medianPrice": 213724
+   },
+   "houses": {
+    "n": 3,
+    "medianPrice": null,
+    "medianSurface": null
+   }
+  },
+  "saint-roch": {
+   "sales": {
+    "mainYear": 254,
+    "period": 446
+   },
+   "apartments": {
+    "n": 443,
+    "nMainYear": 251,
+    "medianPpmMainYear": 3647,
+    "medianPpm": 3745,
+    "q1Ppm": 3088,
+    "q3Ppm": 4469,
+    "p90Ppm": 5238,
+    "medianSurface": 47,
+    "medianPrice": 165000
+   },
+   "houses": {
+    "n": 3,
+    "medianPrice": null,
+    "medianSurface": null
+   }
+  },
+  "le-port": {
+   "sales": {
+    "mainYear": 315,
+    "period": 591
+   },
+   "apartments": {
+    "n": 589,
+    "nMainYear": 314,
+    "medianPpmMainYear": 5993,
+    "medianPpm": 5925,
+    "q1Ppm": 4833,
+    "q3Ppm": 7424,
+    "p90Ppm": 8864,
+    "medianSurface": 50,
+    "medianPrice": 276000
+   },
+   "houses": {
+    "n": 2,
+    "medianPrice": null,
+    "medianSurface": null
+   }
+  },
+  "carre-dor": {
+   "sales": {
+    "mainYear": 363,
+    "period": 698
+   },
+   "apartments": {
+    "n": 697,
+    "nMainYear": 363,
+    "medianPpmMainYear": 6889,
+    "medianPpm": 6857,
+    "q1Ppm": 5522,
+    "q3Ppm": 8271,
+    "p90Ppm": 9897,
+    "medianSurface": 56,
+    "medianPrice": 354580
+   },
+   "houses": {
+    "n": 1,
+    "medianPrice": null,
+    "medianSurface": null
+   }
+  },
+  "mont-boron": {
+   "sales": {
+    "mainYear": 119,
+    "period": 218
+   },
+   "apartments": {
+    "n": 197,
+    "nMainYear": 108,
+    "medianPpmMainYear": 7414,
+    "medianPpm": 7576,
+    "q1Ppm": 5738,
+    "q3Ppm": 11063,
+    "p90Ppm": 13380,
+    "medianSurface": 74,
+    "medianPrice": 524895
+   },
+   "houses": {
+    "n": 21,
+    "medianPrice": 1980000,
+    "medianSurface": 175
+   }
+  },
+  "cimiez": {
+   "sales": {
+    "mainYear": 423,
+    "period": 808
+   },
+   "apartments": {
+    "n": 771,
+    "nMainYear": 403,
+    "medianPpmMainYear": 5333,
+    "medianPpm": 5352,
+    "q1Ppm": 4391,
+    "q3Ppm": 6333,
+    "p90Ppm": 7504,
+    "medianSurface": 63,
+    "medianPrice": 310000
+   },
+   "houses": {
+    "n": 37,
+    "medianPrice": 1040000,
+    "medianSurface": 127
+   }
+  },
+  "wilson": {
+   "sales": {
+    "mainYear": 295,
+    "period": 511
+   },
+   "apartments": {
+    "n": 510,
+    "nMainYear": 295,
+    "medianPpmMainYear": 5521,
+    "medianPpm": 5462,
+    "q1Ppm": 4312,
+    "q3Ppm": 7033,
+    "p90Ppm": 8676,
+    "medianSurface": 50,
+    "medianPrice": 260000
+   },
+   "houses": {
+    "n": 1,
+    "medianPrice": null,
+    "medianSurface": null
+   }
+  },
+  "liberation": {
+   "sales": {
+    "mainYear": 349,
+    "period": 629
+   },
+   "apartments": {
+    "n": 622,
+    "nMainYear": 344,
+    "medianPpmMainYear": 4535,
+    "medianPpm": 4492,
+    "q1Ppm": 3810,
+    "q3Ppm": 5405,
+    "p90Ppm": 6216,
+    "medianSurface": 51,
+    "medianPrice": 217750
+   },
+   "houses": {
+    "n": 7,
+    "medianPrice": null,
+    "medianSurface": null
+   }
+  },
+  "fabron": {
+   "sales": {
+    "mainYear": 342,
+    "period": 662
+   },
+   "apartments": {
+    "n": 634,
+    "nMainYear": 333,
+    "medianPpmMainYear": 5267,
+    "medianPpm": 5290,
+    "q1Ppm": 4313,
+    "q3Ppm": 6141,
+    "p90Ppm": 6988,
+    "medianSurface": 54,
+    "medianPrice": 260000
+   },
+   "houses": {
+    "n": 28,
+    "medianPrice": 669750,
+    "medianSurface": 98
+   }
+  },
+  "gairaut": {
+   "sales": {
+    "mainYear": 45,
+    "period": 78
+   },
+   "apartments": {
+    "n": 33,
+    "nMainYear": 22,
+    "medianPpmMainYear": 5119,
+    "medianPpm": 4808,
+    "q1Ppm": 4254,
+    "q3Ppm": 5956,
+    "p90Ppm": 8000,
+    "medianSurface": 56,
+    "medianPrice": 271000
+   },
+   "houses": {
+    "n": 45,
+    "medianPrice": 812000,
+    "medianSurface": 122
+   }
+  },
+  "promenade-des-anglais": {
+   "sales": {
+    "mainYear": 450,
+    "period": 872
+   },
+   "apartments": {
+    "n": 868,
+    "nMainYear": 448,
+    "medianPpmMainYear": 5754,
+    "medianPpm": 5733,
+    "q1Ppm": 4302,
+    "q3Ppm": 7654,
+    "p90Ppm": 9524,
+    "medianSurface": 46,
+    "medianPrice": 240000
+   },
+   "houses": {
+    "n": 4,
+    "medianPrice": null,
+    "medianSurface": null
+   },
+   "seafront": {
+    "n": 215,
+    "medianPpm": 7708,
+    "p90Ppm": 11559,
+    "centre": {
+     "n": 41,
+     "medianPpm": 8889,
+     "p90Ppm": 13548
+    }
+   }
+  },
+  "cap-de-nice": {
+   "sales": {
+    "mainYear": 42,
+    "period": 97
+   },
+   "apartments": {
+    "n": 93,
+    "nMainYear": 40,
+    "medianPpmMainYear": 8029,
+    "medianPpm": 7933,
+    "q1Ppm": 6318,
+    "q3Ppm": 11833,
+    "p90Ppm": 15714,
+    "medianSurface": 63,
+    "medianPrice": 536000
+   },
+   "houses": {
+    "n": 4,
+    "medianPrice": null,
+    "medianSurface": null
+   }
+  },
+  "nice": {
+   "sales": {
+    "mainYear": 7539,
+    "period": 14051
+   },
+   "apartments": {
+    "n": 13521,
+    "nMainYear": 7256,
+    "medianPpmMainYear": 4872,
+    "medianPpm": 4833,
+    "q1Ppm": 3810,
+    "q3Ppm": 6067,
+    "p90Ppm": 7639,
+    "medianSurface": 53,
+    "medianPrice": 230000
+   },
+   "houses": {
+    "n": 530,
+    "medianPrice": 640000,
+    "medianSurface": 104
+   }
+  }
+ }
+}

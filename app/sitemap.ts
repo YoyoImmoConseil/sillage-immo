@@ -3,6 +3,7 @@ import { SUPPORTED_LOCALES } from "@/lib/i18n/config";
 import { localizePath } from "@/lib/i18n/routing";
 import { SITE_URL } from "@/lib/seo/site";
 import { listPublicPropertyListings } from "@/services/properties/property-listing.service";
+import { QUARTIERS } from "@/lib/quartiers/data";
 
 export const revalidate = 3600;
 
@@ -13,6 +14,8 @@ const STATIC_PATHS: Array<{ path: string; priority: number; changeFrequency: "da
   { path: "/louer", priority: 0.8, changeFrequency: "monthly" },
   { path: "/gestion-locative", priority: 0.8, changeFrequency: "monthly" },
   { path: "/agence", priority: 0.7, changeFrequency: "monthly" },
+  { path: "/quartiers", priority: 0.8, changeFrequency: "monthly" },
+  ...QUARTIERS.map((quartier) => ({ path: `/quartiers/${quartier.slug}`, priority: 0.7, changeFrequency: "monthly" as const })),
   { path: "/vente", priority: 0.9, changeFrequency: "daily" },
   { path: "/location", priority: 0.8, changeFrequency: "daily" },
   { path: "/estimation", priority: 0.9, changeFrequency: "monthly" },

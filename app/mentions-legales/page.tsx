@@ -92,7 +92,7 @@ export default function MentionsLegalesPage() {
         </p>
         <p>
           Photographies d’illustration de Nice (pages Acheter, Vendre, Louer, L’agence) : Constantin,
-          John Jason, Paul Rysz, Gabriel Tovar et Nick Karvounis, via Unsplash (licence Unsplash).
+          John Jason, Paul Rysz, Gabriel Tovar et Nick Karvounis, via Unsplash (licence Unsplash). Pages quartiers : Ilona Bellotto, 35MM North, Arno Smit, Dejox, Patryk Kuleta, Steffen Rehfuß, Maxence Werp, Matthew DeBlieux, Yash Shah, Jamie Street et Danilo Pantalena, via Unsplash.
         </p>
       </LegalSection>
 

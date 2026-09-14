@@ -95,6 +95,7 @@ export function SiteFooter() {
     { href: localizePath("/gestion-locative", locale), label: nav.management },
     { href: localizePath("/estimation", locale), label: nav.valuation },
     { href: localizePath("/agence", locale), label: nav.agency },
+    { href: localizePath("/quartiers", locale), label: nav.quartiers },
     { href: localizePath("/vente", locale), label: nav.sale },
     { href: localizePath("/location", locale), label: nav.rental },
     { href: localizePath("/espace-client/login", locale), label: nav.clientSpace },
