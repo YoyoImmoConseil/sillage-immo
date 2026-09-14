@@ -51,6 +51,7 @@ export default async function QuartierPage({ params }: Params) {
   const apt = stats?.apartments;
   const houses = stats?.houses;
   const mainYear = DVF_META.mainYear;
+  const displayName = locale === "fr" ? quartier.locative : quartier.name;
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -131,7 +132,7 @@ export default async function QuartierPage({ params }: Params) {
             <div className="max-w-3xl space-y-4">
               <p className="text-xs uppercase tracking-[0.22em] text-navy/65">{ui.marketEyebrow}</p>
               <h2 id="quartier-market-title" className="sillage-section-title">
-                {ui.marketTitle(quartier.name)}
+                {ui.marketTitle(displayName)}
               </h2>
               <p className="text-sm text-navy/65">
                 {ui.salesCount(stats.sales.mainYear, mainYear)} · {ui.niceMedian} : {formatPpm(nice.apartments.medianPpmMainYear ?? nice.apartments.medianPpm ?? 0, locale)}
@@ -231,7 +232,7 @@ export default async function QuartierPage({ params }: Params) {
       <section aria-labelledby="quartier-listings-title" className="sillage-section-light">
         <div className="w-full px-4 py-16 md:px-10 md:py-24 xl:px-14 2xl:px-20 space-y-8">
           <h2 id="quartier-listings-title" className="sillage-section-title">
-            {ui.listingsTitle(quartier.name)}
+            {ui.listingsTitle(displayName)}
           </h2>
           {listings.length > 0 ? (
             <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
@@ -240,7 +241,7 @@ export default async function QuartierPage({ params }: Params) {
               ))}
             </div>
           ) : (
-            <p className="max-w-2xl text-sm leading-relaxed text-navy/75 md:text-base">{ui.listingsEmpty(quartier.name)}</p>
+            <p className="max-w-2xl text-sm leading-relaxed text-navy/75 md:text-base">{ui.listingsEmpty(displayName)}</p>
           )}
           <div className="flex flex-col gap-3 sm:flex-row">
             <Link href={`${localizePath("/recherche/nouvelle", locale)}?city=Nice`} className={PRIMARY}>

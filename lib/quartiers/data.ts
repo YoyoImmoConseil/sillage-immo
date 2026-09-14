@@ -32,6 +32,8 @@ export type QuartierPlace = {
 export type Quartier = {
   slug: string;
   name: string;
+  /** Forme avec préposition, pour les titres français (« au Port », « sur la Promenade »). */
+  locative: string;
   /** Sous-titre court, sous le nom (FR + traductions). */
   tagline: Record<AppLocale, string>;
   postalCodes: string[];
@@ -57,6 +59,7 @@ export const QUARTIERS: Quartier[] = [
   {
     slug: "riquier",
     name: "Riquier",
+    locative: "à Riquier",
     tagline: {
       fr: "Le quartier de l'agence : entre le port et la gare, un vrai quartier de vie",
       en: "Our home district: between the port and the station, a real neighbourhood",
@@ -98,6 +101,7 @@ export const QUARTIERS: Quartier[] = [
   {
     slug: "saint-roch",
     name: "Saint-Roch",
+    locative: "à Saint-Roch",
     tagline: {
       fr: "Le grand boulevard, le tram, et les prix les plus accessibles de l'est niçois",
       en: "The wide boulevard, the tram, and the most affordable prices in eastern Nice",
@@ -138,6 +142,7 @@ export const QUARTIERS: Quartier[] = [
   {
     slug: "le-port",
     name: "Le Port",
+    locative: "au Port",
     tagline: {
       fr: "Façades ligures, place Garibaldi et le Petit Marais : le quartier qui a la cote",
       en: "Ligurian facades, Place Garibaldi and the 'Petit Marais': the district in demand",
@@ -178,6 +183,7 @@ export const QUARTIERS: Quartier[] = [
   {
     slug: "carre-dor",
     name: "Carré d'Or",
+    locative: "au Carré d'Or",
     tagline: {
       fr: "Belle Époque, Musiciens et Promenade : l'adresse centrale de Nice",
       en: "Belle Époque, the Musiciens and the Promenade: Nice's central address",
@@ -216,6 +222,7 @@ export const QUARTIERS: Quartier[] = [
   {
     slug: "wilson",
     name: "Wilson",
+    locative: "à Wilson",
     tagline: {
       fr: "La place, ses rues serrées et le centre à pied : Nice sans la carte postale",
       en: "The square, its tight streets and the centre on foot: Nice without the postcard",
@@ -256,6 +263,7 @@ export const QUARTIERS: Quartier[] = [
   {
     slug: "liberation",
     name: "Libération",
+    locative: "à Libération",
     tagline: {
       fr: "Le marché, la Gare du Sud et le tram : le quartier le plus niçois de Nice",
       en: "The market, the Gare du Sud and the tram: the most Niçois district of Nice",
@@ -297,6 +305,7 @@ export const QUARTIERS: Quartier[] = [
   {
     slug: "mont-boron",
     name: "Mont Boron",
+    locative: "au Mont Boron",
     tagline: {
       fr: "La colline boisée, les deux baies et le silence : le prestige résidentiel de Nice",
       en: "The wooded hill, the two bays and the silence: Nice's residential prestige",
@@ -337,6 +346,7 @@ export const QUARTIERS: Quartier[] = [
   {
     slug: "cap-de-nice",
     name: "Cap de Nice",
+    locative: "au Cap de Nice",
     tagline: {
       fr: "Maeterlinck, Franck-Pilatte, la Réserve : les pieds dans l'eau, côté Villefranche",
       en: "Maeterlinck, Franck-Pilatte, La Réserve: at the water's edge, on the Villefranche side",
@@ -376,6 +386,7 @@ export const QUARTIERS: Quartier[] = [
   {
     slug: "cimiez",
     name: "Cimiez",
+    locative: "à Cimiez",
     tagline: {
       fr: "Les arènes, le monastère, Matisse et le Régina : la colline patrimoniale",
       en: "The arena, the monastery, Matisse and the Régina: the heritage hill",
@@ -416,6 +427,7 @@ export const QUARTIERS: Quartier[] = [
   {
     slug: "fabron",
     name: "Fabron",
+    locative: "à Fabron",
     tagline: {
       fr: "Les collines de l'ouest, la vue mer et le tram : le résidentiel familial de Nice",
       en: "The western hills, the sea view and the tram: Nice's family residential district",
@@ -455,6 +467,7 @@ export const QUARTIERS: Quartier[] = [
   {
     slug: "gairaut",
     name: "Gairaut",
+    locative: "à Gairaut",
     tagline: {
       fr: "Villas, oliviers et la cascade : la campagne à un quart d'heure du centre",
       en: "Villas, olive trees and the waterfall: countryside fifteen minutes from the centre",
@@ -494,6 +507,7 @@ export const QUARTIERS: Quartier[] = [
   {
     slug: "promenade-des-anglais",
     name: "Promenade des Anglais",
+    locative: "sur la Promenade des Anglais",
     tagline: {
       fr: "Du Negresco à Magnan : le front de mer, ses palais et ses quartiers de vie",
       en: "From the Negresco to Magnan: the seafront, its palaces and its residential districts",
