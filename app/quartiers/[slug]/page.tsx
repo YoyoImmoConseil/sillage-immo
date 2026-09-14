@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { getRequestLocale } from "@/lib/i18n/request";
 import { localizePath } from "@/lib/i18n/routing";
 import { SITE_URL, buildPublicPageMetadata } from "@/lib/seo/site";
-import { QUARTIERS, getQuartier } from "@/lib/quartiers/data";
+import { QUARTIERS, getQuartier, getQuartierContent } from "@/lib/quartiers/data";
 import { QUARTIERS_UI } from "@/lib/quartiers/copy";
 import { DVF_META, formatEur, formatInt, formatPpm, getNiceStats, getZoneStats } from "@/lib/quartiers/stats";
 import { listQuartierListings } from "@/lib/quartiers/listings";
@@ -52,12 +52,13 @@ export default async function QuartierPage({ params }: Params) {
   const houses = stats?.houses;
   const mainYear = DVF_META.mainYear;
   const displayName = locale === "fr" ? quartier.locative : quartier.name;
+  const content = getQuartierContent(quartier, locale);
 
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Place",
     name: `${quartier.name}, Nice`,
-    description: locale === "fr" ? quartier.paragraphs[0] : quartier.summary[locale],
+    description: content.paragraphs[0],
     url: `${SITE_URL}${localizePath(`/quartiers/${quartier.slug}`, locale)}`,
     image: `${SITE_URL}${quartier.image.src}`,
     geo: { "@type": "GeoCoordinates", latitude: quartier.center.lat, longitude: quartier.center.lng },
@@ -99,13 +100,7 @@ export default async function QuartierPage({ params }: Params) {
         <div className="w-full px-4 py-16 md:px-10 md:py-24 xl:px-14 2xl:px-20">
           <div className="grid gap-10 md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] md:gap-16">
             <div className="space-y-5">
-              {locale !== "fr" ? (
-                <>
-                  <p className="sillage-editorial-text text-navy">{quartier.summary[locale]}</p>
-                  <p className="text-xs text-navy/55">{ui.frenchOnlyNote}</p>
-                </>
-              ) : null}
-              {quartier.paragraphs.map((paragraph) => (
+              {content.paragraphs.map((paragraph) => (
                 <p key={paragraph.slice(0, 40)} className="sillage-editorial-text text-navy/85">
                   {paragraph}
                 </p>
@@ -114,11 +109,11 @@ export default async function QuartierPage({ params }: Params) {
             <aside className="space-y-6">
               <div className="rounded-[24px] bg-sand/40 p-6 ring-1 ring-navy/10">
                 <h2 className="font-serif text-xl font-semibold text-navy">{ui.whoTitle}</h2>
-                <p className="mt-3 text-sm leading-relaxed text-navy/80">{quartier.who}</p>
+                <p className="mt-3 text-sm leading-relaxed text-navy/80">{content.who}</p>
               </div>
               <div className="rounded-[24px] bg-sand/40 p-6 ring-1 ring-navy/10">
                 <h2 className="font-serif text-xl font-semibold text-navy">{ui.transportTitle}</h2>
-                <p className="mt-3 text-sm leading-relaxed text-navy/80">{quartier.transport}</p>
+                <p className="mt-3 text-sm leading-relaxed text-navy/80">{content.transport}</p>
               </div>
             </aside>
           </div>
@@ -191,7 +186,7 @@ export default async function QuartierPage({ params }: Params) {
             <div className="grid gap-6 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] md:items-start">
               <div className="rounded-[24px] bg-navy p-6 text-sand md:p-8">
                 <p className="text-xs uppercase tracking-[0.22em] text-sand/70">{ui.adviceEyebrow}</p>
-                <p className="mt-3 font-serif text-lg leading-relaxed md:text-xl">{quartier.advice}</p>
+                <p className="mt-3 font-serif text-lg leading-relaxed md:text-xl">{content.advice}</p>
                 <Link href={localizePath("/estimation", locale)} className="mt-6 inline-flex items-center justify-center rounded-full bg-sand px-6 py-3 text-sm font-semibold text-navy transition hover:opacity-95">
                   {ui.estimateCta}
                 </Link>
@@ -216,12 +211,23 @@ export default async function QuartierPage({ params }: Params) {
             <p className="sillage-editorial-text text-navy/80">{ui.placesIntro}</p>
           </div>
           <ul className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {quartier.places.map((place) => (
-              <li key={`${place.kind}-${place.name}`} className="flex flex-col gap-2 rounded-[20px] bg-sand/40 p-5 ring-1 ring-navy/10">
-                <span className="text-[11px] uppercase tracking-[0.18em] text-navy/55">{ui.kinds[place.kind]}</span>
-                <h3 className="font-serif text-lg font-semibold text-navy">{place.name}</h3>
-                <p className="text-xs text-navy/60">{place.address}</p>
-                <p className="text-sm leading-relaxed text-navy/80">{place.note}</p>
+            {content.places.map((place) => (
+              <li key={`${place.kind}-${place.name}`}>
+                <a
+                  href={place.mapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group flex h-full flex-col gap-2 rounded-[20px] bg-sand/40 p-5 ring-1 ring-navy/10 transition hover:-translate-y-[2px] hover:ring-navy/25"
+                >
+                  <span className="text-[11px] uppercase tracking-[0.18em] text-navy/55">{ui.kinds[place.kind]}</span>
+                  <h3 className="font-serif text-lg font-semibold text-navy">
+                    {place.name}
+                    <span aria-hidden="true" className="ml-1 inline-block text-navy/50 transition group-hover:translate-x-0.5">↗</span>
+                  </h3>
+                  <p className="text-xs text-navy/60">{place.address}</p>
+                  <p className="text-sm leading-relaxed text-navy/80">{place.note}</p>
+                  <span className="mt-auto pt-2 text-xs font-semibold text-navy/70">{ui.openInMaps}</span>
+                </a>
               </li>
             ))}
           </ul>

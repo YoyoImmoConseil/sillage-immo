@@ -38,7 +38,7 @@ export type QuartiersUiCopy = {
   listingsCta: string;
   alertCta: string;
   otherQuartiers: string;
-  frenchOnlyNote: string;
+  openInMaps: string;
   kinds: Record<QuartierPlaceKind, string>;
 };
 
@@ -81,7 +81,7 @@ export const QUARTIERS_UI: Record<AppLocale, QuartiersUiCopy> = {
     listingsCta: "Voir tout le catalogue",
     alertCta: "Créer une alerte sur ce quartier",
     otherQuartiers: "Les autres quartiers",
-    frenchOnlyNote: "",
+    openInMaps: "Voir sur Google Maps",
     kinds: {
       bouche: "Commerce de bouche",
       restaurant: "Restaurant",
@@ -131,7 +131,7 @@ export const QUARTIERS_UI: Record<AppLocale, QuartiersUiCopy> = {
     listingsCta: "See the full catalogue",
     alertCta: "Create an alert for this district",
     otherQuartiers: "Other neighbourhoods",
-    frenchOnlyNote: "The detailed guide below is in French; the summary and the figures are for everyone.",
+    openInMaps: "Open in Google Maps",
     kinds: {
       bouche: "Food shop",
       restaurant: "Restaurant",
@@ -181,7 +181,7 @@ export const QUARTIERS_UI: Record<AppLocale, QuartiersUiCopy> = {
     listingsCta: "Ver todo el catálogo",
     alertCta: "Crear una alerta para este barrio",
     otherQuartiers: "Los demás barrios",
-    frenchOnlyNote: "La guía detallada está en francés; el resumen y las cifras son para todos.",
+    openInMaps: "Ver en Google Maps",
     kinds: {
       bouche: "Comercio de alimentación",
       restaurant: "Restaurante",
@@ -231,7 +231,7 @@ export const QUARTIERS_UI: Record<AppLocale, QuartiersUiCopy> = {
     listingsCta: "Весь каталог",
     alertCta: "Создать уведомление по району",
     otherQuartiers: "Другие районы",
-    frenchOnlyNote: "Подробный гид ниже — на французском; резюме и цифры — для всех.",
+    openInMaps: "Открыть в Google Maps",
     kinds: {
       bouche: "Продукты",
       restaurant: "Ресторан",

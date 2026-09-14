@@ -548,3 +548,33 @@ export const QUARTIERS: Quartier[] = [
 ];
 
 export const getQuartier = (slug: string) => QUARTIERS.find((q) => q.slug === slug) ?? null;
+
+import { QUARTIER_TRANSLATIONS } from "./translations";
+
+export type QuartierContent = {
+  paragraphs: string[];
+  who: string;
+  transport: string;
+  advice: string;
+  places: (QuartierPlace & { mapsUrl: string })[];
+};
+
+/** Lien Google Maps de l'établissement (recherche nom + adresse, sans clé API). */
+export const buildMapsUrl = (place: QuartierPlace) =>
+  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${place.name}, ${place.address}, Nice`)}`;
+
+/** Contenu éditorial dans la langue demandée, avec repli sur le français. */
+export const getQuartierContent = (quartier: Quartier, locale: AppLocale): QuartierContent => {
+  const translated = locale === "fr" ? null : QUARTIER_TRANSLATIONS[locale]?.[quartier.slug] ?? null;
+  return {
+    paragraphs: translated?.paragraphs ?? quartier.paragraphs,
+    who: translated?.who ?? quartier.who,
+    transport: translated?.transport ?? quartier.transport,
+    advice: translated?.advice ?? quartier.advice,
+    places: quartier.places.map((place) => ({
+      ...place,
+      note: translated?.notes[place.name] ?? place.note,
+      mapsUrl: buildMapsUrl(place),
+    })),
+  };
+};
