@@ -31,7 +31,7 @@ export function HeroSection({ locale }: Props) {
       className="grid bg-navy text-sand lg:grid-cols-[minmax(0,46%)_minmax(0,54%)]"
     >
       <div className="flex flex-col justify-center px-4 py-10 md:px-10 md:py-12 xl:px-14 xl:py-14 2xl:px-20">
-        <div className="mx-auto w-full max-w-[220px] md:mx-0 md:max-w-[300px] xl:max-w-[340px]">
+        <div className="mx-auto w-full max-w-[220px] md:mx-0 md:max-w-[460px] xl:max-w-[560px]">
           <SillageLogo priority className="h-auto w-full" />
         </div>
 
