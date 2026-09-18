@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import { SillageLogo } from "@/app/components/sillage-logo";
 import type { AppLocale } from "@/lib/i18n/config";
 import { localizePath } from "@/lib/i18n/routing";
 import {
@@ -31,8 +30,17 @@ export function HeroSection({ locale }: Props) {
       className="grid bg-navy text-sand lg:grid-cols-[minmax(0,46%)_minmax(0,54%)]"
     >
       <div className="flex flex-col justify-center px-4 py-10 md:px-10 md:py-12 xl:px-14 xl:py-14 2xl:px-20">
-        <div className="mx-auto w-full max-w-[220px] md:mx-0 md:max-w-[460px] xl:max-w-[560px]">
-          <SillageLogo priority className="h-auto w-full" />
+        {/* Version recadrée du logo (sans les marges vides du fichier print) :
+            à largeur égale, le logo s'affiche presque deux fois plus grand. */}
+        <div className="mx-auto w-full max-w-[240px] md:mx-0 md:max-w-[440px] xl:max-w-[520px]">
+          <Image
+            src="/logo-sillage-hero.svg"
+            alt="Logo Sillage Immo"
+            width={700}
+            height={636}
+            priority
+            className="h-auto w-full"
+          />
         </div>
 
         <div className="mt-8 space-y-4 md:mt-10 md:space-y-5">
