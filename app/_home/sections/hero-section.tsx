@@ -25,27 +25,26 @@ export function HeroSection({ locale }: Props) {
       className="relative isolate overflow-hidden bg-navy text-sand"
     >
       <Image
-        src="/home-hero-windows-nice.png"
+        src="/home-hero-windows-nice.webp"
         alt={copy.imageAlt}
         fill
         priority
         sizes="100vw"
         className="object-cover object-center"
       />
+      {/* Un seul voile, léger et plus dense côté texte : la photo doit se voir
+          telle qu'elle est (couleurs des façades), le contraste du titre est
+          assuré par le dégradé à droite et une ombre portée sur le texte. */}
       <div
         aria-hidden="true"
-        className="absolute inset-0 bg-navy/60"
-      />
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 bg-gradient-to-br from-navy/85 via-navy/55 to-navy/30"
+        className="absolute inset-0 bg-gradient-to-r from-navy/35 via-navy/30 to-navy/65"
       />
       <div className="relative w-full px-4 py-12 md:px-10 md:py-20 xl:px-14 xl:py-24 2xl:px-20">
         <div className="grid gap-8 md:gap-10 lg:grid-cols-[50%_50%] lg:items-center">
           <div className="max-w-[1092px]">
             <SillageLogo priority className="h-auto w-full" />
           </div>
-          <div className="space-y-4 md:space-y-5 max-w-3xl xl:max-w-4xl lg:pl-8 xl:pl-12">
+          <div className="space-y-4 md:space-y-5 max-w-3xl xl:max-w-4xl lg:pl-8 xl:pl-12 [text-shadow:0_1px_14px_rgba(11,27,51,0.55)]">
             <p className="text-[11px] md:text-xs uppercase tracking-[0.24em] text-sand/75">
               {copy.eyebrow}
             </p>

@@ -2,18 +2,15 @@ import type { Metadata } from "next";
 import { getRequestLocale } from "@/lib/i18n/request";
 import { buildPublicPageMetadata } from "@/lib/seo/site";
 import { PAGE_SEO } from "@/lib/seo/page-copy";
+import { buildOrganizationJsonLd } from "@/lib/seo/organization-jsonld";
 import { HeroSection } from "./_home/sections/hero-section";
-import { SocialProofSection } from "./_home/sections/social-proof-section";
-import { DoorsSection } from "./_home/sections/doors-section";
-import { AssistantSection } from "./_home/sections/assistant-section";
-import { PositioningSection } from "./_home/sections/positioning-section";
-import { SellerSection } from "./_home/sections/seller-section";
+import { HomeListingsSection } from "./_home/sections/home-listings-section";
+import { ProofSection } from "./_home/sections/proof-section";
 import { RecentSalesSection } from "./_home/sections/recent-sales-section";
-import { BuyerSection } from "./_home/sections/buyer-section";
-import { ClientSpaceSection } from "./_home/sections/client-space-section";
-import { MethodSection } from "./_home/sections/method-section";
-import { ComparisonSection } from "./_home/sections/comparison-section";
+import { DoorsSection } from "./_home/sections/doors-section";
+import { ApproachSection } from "./_home/sections/approach-section";
 import { NeighborhoodsSection } from "./_home/sections/neighborhoods-section";
+import { ToolsSection } from "./_home/sections/tools-section";
 import { InternationalSection } from "./_home/sections/international-section";
 import { FinalCtaSection } from "./_home/sections/final-cta-section";
 import { HomeTeamSection } from "./components/home-team-section";
@@ -33,18 +30,21 @@ export default async function Home() {
     // de page. Même condition que la barre elle-même, sinon trou ou contenu
     // masqué (cf. HomeMobileCtaBar).
     <main className="min-h-screen touch:pb-24">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(buildOrganizationJsonLd()) }}
+      />
+      {/* Accueil resserré (sept. 2026) : chaque écran a une fonction distincte.
+          Hero → biens en vente → preuve (chiffres + ventes) → portes → approche
+          → quartiers → outils (espace client + assistant) → international → CTA. */}
       <HeroSection locale={locale} />
-      <SocialProofSection locale={locale} />
-      <DoorsSection locale={locale} />
-      <AssistantSection locale={locale} />
-      <PositioningSection locale={locale} />
-      <SellerSection locale={locale} />
+      <HomeListingsSection locale={locale} />
+      <ProofSection locale={locale} />
       <RecentSalesSection locale={locale} />
-      <BuyerSection locale={locale} />
-      <ClientSpaceSection locale={locale} />
-      <MethodSection locale={locale} />
-      <ComparisonSection locale={locale} />
+      <DoorsSection locale={locale} />
+      <ApproachSection locale={locale} />
       <NeighborhoodsSection locale={locale} />
+      <ToolsSection locale={locale} />
       <InternationalSection locale={locale} />
       {SHOW_HOME_TEAM_SECTION ? <HomeTeamSection locale={locale} /> : null}
       <FinalCtaSection locale={locale} />
