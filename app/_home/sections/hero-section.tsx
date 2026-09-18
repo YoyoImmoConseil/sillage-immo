@@ -30,12 +30,12 @@ export function HeroSection({ locale }: Props) {
       aria-labelledby="hero-title"
       className="grid bg-navy text-sand lg:grid-cols-[minmax(0,46%)_minmax(0,54%)]"
     >
-      <div className="flex flex-col justify-center px-4 py-10 md:px-10 md:py-16 xl:px-14 xl:py-20 2xl:px-20">
-        <div className="mx-auto w-full max-w-[220px] md:mx-0 md:max-w-[420px] xl:max-w-[480px]">
+      <div className="flex flex-col justify-center px-4 py-10 md:px-10 md:py-12 xl:px-14 xl:py-14 2xl:px-20">
+        <div className="mx-auto w-full max-w-[220px] md:mx-0 md:max-w-[300px] xl:max-w-[340px]">
           <SillageLogo priority className="h-auto w-full" />
         </div>
 
-        <div className="mt-8 space-y-4 md:mt-12 md:space-y-5">
+        <div className="mt-8 space-y-4 md:mt-10 md:space-y-5">
           <p className="text-[11px] md:text-xs uppercase tracking-[0.24em] text-sand/75">
             {copy.eyebrow}
           </p>
