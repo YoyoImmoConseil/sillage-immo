@@ -106,6 +106,7 @@ export function HeroSection({ locale }: Props) {
           alt={copy.imageAlt}
           fill
           priority
+          quality={85}
           sizes="(min-width: 1024px) 54vw, 100vw"
           className="object-cover object-center"
         />
