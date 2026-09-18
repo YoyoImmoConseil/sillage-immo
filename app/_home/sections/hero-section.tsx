@@ -39,8 +39,10 @@ export function HeroSection({ locale }: Props) {
       <div aria-hidden="true" className="absolute inset-0 bg-navy/25" />
       <div className="relative w-full px-4 py-12 md:px-10 md:py-20 xl:px-14 xl:py-24 2xl:px-20">
         <div className="grid gap-8 md:gap-10 lg:grid-cols-[50%_50%] lg:items-center">
-          <div className="mx-auto w-full max-w-[220px] md:mx-0 md:max-w-[1092px]">
-            <SillageLogo priority className="h-auto w-full drop-shadow-[0_2px_22px_rgba(11,27,51,0.85)]" />
+          {/* Logo sur un fond bleu marine (panneau), même logique que la colonne
+              texte : la photo reste vive autour, le logo reste lisible dessus. */}
+          <div className="w-full max-w-[1092px] rounded-[28px] bg-navy/90 p-6 ring-1 ring-sand/10 md:p-10 xl:p-14">
+            <SillageLogo priority className="mx-auto h-auto w-full max-w-[240px] md:max-w-none" />
           </div>
           <div className="space-y-4 md:space-y-5 max-w-3xl xl:max-w-4xl rounded-[28px] bg-navy/60 p-6 ring-1 ring-sand/10 backdrop-blur-md md:p-8 lg:ml-8 xl:ml-12">
             <p className="text-[11px] md:text-xs uppercase tracking-[0.24em] text-sand/75">
