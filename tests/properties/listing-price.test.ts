@@ -58,7 +58,7 @@ const makeProperty = (overrides: Partial<PropertyRow> = {}): PropertyRow => ({
 });
 
 describe("buildPropertyPriceSnapshot", () => {
-  it("location complète (Mont-Boron) : loyer CC, charges, honoraires locataire + EDL, dépôt", () => {
+  it("location complète (Mont-Boron) : prix demandé = loyer CC, HC = CC − charges, honoraires locataire + EDL, dépôt", () => {
     const price = buildPropertyPriceSnapshot(
       makeProperty({
         raw_payload: {
@@ -78,9 +78,9 @@ describe("buildPropertyPriceSnapshot", () => {
 
     expect(price).toEqual({
       kind: "rental",
-      rentExcludingChargesCents: 80000,
+      rentExcludingChargesCents: 75000,
       chargesProvisionCents: 5000,
-      rentIncludingChargesCents: 85000,
+      rentIncludingChargesCents: 80000,
       tenantAgencyFeesCents: 46222,
       inventoryReportFeesCents: 13880,
       totalTenantFeesCents: 60102,
@@ -95,10 +95,10 @@ describe("buildPropertyPriceSnapshot", () => {
     expect(blob).toMatch(/138,80\s€/);
     expect(blob).toContain("Dépôt de garantie");
     expect(blob).not.toMatch(/Incluant|acquéreur|buyer|comprador|покупателя/i);
-    expect(getListingDisplayAmountCents(price, 800)).toBe(85000);
+    expect(getListingDisplayAmountCents(price, 800)).toBe(80000);
     expect(
-      formatListingPrice({ amountCents: 85000, currency: "EUR", locale: "fr", periodSuffix: "/mois" })
-    ).toMatch(/^850\s?€\/mois$/);
+      formatListingPrice({ amountCents: 80000, currency: "EUR", locale: "fr", periodSuffix: "/mois" })
+    ).toMatch(/^800\s?€\/mois$/);
   });
 
   it("aucune addition flottante : une somme qui dérive en number reste exacte en centimes", () => {
@@ -125,7 +125,7 @@ describe("buildPropertyPriceSnapshot", () => {
     expect(fees.text).toMatch(/10,13\s€/);
   });
 
-  it("loyer de base à zéro : bascule sur price au lieu de publier 0 €", () => {
+  it("prix demandé = loyer CC ; loyer de base à zéro ignoré", () => {
     const price = buildPropertyPriceSnapshot(
       makeProperty({
         source_ref: "d527b2ae-9664-4cb7-93cd-28375ee771d1",
@@ -153,7 +153,7 @@ describe("buildPropertyPriceSnapshot", () => {
     ).toMatch(/^880\s?€\/mois$/);
   });
 
-  it("location sans charges connues : affiche le HC, omet la ligne provision", () => {
+  it("location sans charges connues : CC = HC = prix demandé, omet la ligne provision", () => {
     const price = buildPropertyPriceSnapshot(
       makeProperty({
         raw_payload: {
@@ -176,6 +176,49 @@ describe("buildPropertyPriceSnapshot", () => {
 
     const lines = buildListingPriceSublines({ price, currency: "EUR", locale: "fr" });
     expect(lines.some((line) => line.key === "charges")).toBe(false);
+  });
+
+  it("prix demandé 1 370 € et charges 170 € : HC 1 200 €, CC 1 370 € (payload SweepBright réel)", () => {
+    const price = buildPropertyPriceSnapshot(
+      makeProperty({
+        raw_payload: {
+          price: { amount: 1370, hidden: false, currency: "EUR" },
+          price_base_rent: { amount: null, currency: "EUR" },
+          price_recurring_costs: { amount: 170, currency: "EUR" },
+          price_guarantee: { amount: 1200, currency: "EUR" },
+          buyer_fixed_fee: 820,
+          price_inventory_report_cost: { amount: 189.38, currency: "EUR" },
+        },
+      }),
+      1370
+    );
+    expect(price.kind).toBe("rental");
+    if (price.kind !== "rental") return;
+    expect(price.rentIncludingChargesCents).toBe(137000);
+    expect(price.chargesProvisionCents).toBe(17000);
+    expect(price.rentExcludingChargesCents).toBe(120000);
+    expect(getListingDisplayAmountCents(price, 1370)).toBe(137000);
+    const blob = buildListingPriceSublines({ price, currency: "EUR", locale: "fr" })
+      .map((line) => line.text)
+      .join(" | ");
+    expect(blob).toMatch(/dont 170,00\s€ de provision sur charges/);
+  });
+
+  it("charges supérieures ou égales au prix demandé : erreur de saisie, on publie le CC seul", () => {
+    const price = buildPropertyPriceSnapshot(
+      makeProperty({
+        raw_payload: {
+          price: { amount: 100, currency: "EUR" },
+          price_recurring_costs: { amount: 150, currency: "EUR" },
+        },
+      }),
+      100
+    );
+    expect(price.kind).toBe("rental");
+    if (price.kind !== "rental") return;
+    expect(price.rentIncludingChargesCents).toBe(10000);
+    expect(price.rentExcludingChargesCents).toBe(10000);
+    expect(price.chargesProvisionCents).toBeNull();
   });
 
   it("location avec complément de loyer : le complément n'apparaît que s'il est > 0", () => {
