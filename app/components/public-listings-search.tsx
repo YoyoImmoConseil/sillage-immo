@@ -10,7 +10,7 @@ import type { PropertyBusinessType, PublicPropertyListingSummary } from "@/types
 
 // CRO : hauteur tactile >= 48px et corps >= 16px sur mobile (évite le zoom iOS au focus) ;
 // desktop inchangé (text-sm, hauteur auto).
-const FILTER_FIELD = "mt-1 w-full rounded border px-3 py-2 text-base md:text-sm max-md:min-h-[48px]";
+const FILTER_FIELD = "mt-1 w-full rounded border px-3 py-2 text-base md:text-sm max-md:min-h-[48px] placeholder:text-navy/35";
 
 type ListingFilters = {
   city: string;
@@ -321,7 +321,7 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
             value={filters.minPrice}
             onChange={(event) => onFilterChange("minPrice", event.target.value)}
             inputMode="numeric"
-            placeholder="300000"
+            placeholder="Min €"
           />
         </label>
         <label className="text-sm">
@@ -331,7 +331,7 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
             value={filters.maxPrice}
             onChange={(event) => onFilterChange("maxPrice", event.target.value)}
             inputMode="numeric"
-            placeholder="1200000"
+            placeholder="Max €"
           />
         </label>
 
@@ -342,7 +342,7 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
             value={filters.minRooms}
             onChange={(event) => onFilterChange("minRooms", event.target.value)}
             inputMode="numeric"
-            placeholder="2"
+            placeholder="Min"
           />
         </label>
         <label className="text-sm">
@@ -352,7 +352,7 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
             value={filters.maxRooms}
             onChange={(event) => onFilterChange("maxRooms", event.target.value)}
             inputMode="numeric"
-            placeholder="6"
+            placeholder="Max"
           />
         </label>
         <label className="text-sm">
@@ -362,7 +362,7 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
             value={filters.minSurface}
             onChange={(event) => onFilterChange("minSurface", event.target.value)}
             inputMode="numeric"
-            placeholder="50"
+            placeholder="Min m²"
           />
         </label>
         <label className="text-sm">
@@ -372,7 +372,7 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
             value={filters.maxSurface}
             onChange={(event) => onFilterChange("maxSurface", event.target.value)}
             inputMode="numeric"
-            placeholder="180"
+            placeholder="Max m²"
           />
         </label>
 
@@ -383,7 +383,7 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
             value={filters.minFloor}
             onChange={(event) => onFilterChange("minFloor", event.target.value)}
             inputMode="numeric"
-            placeholder="0"
+            placeholder="Min"
           />
         </label>
         <label className="text-sm">
@@ -393,7 +393,7 @@ export function PublicListingsSearch(props: PublicListingsSearchProps) {
             value={filters.maxFloor}
             onChange={(event) => onFilterChange("maxFloor", event.target.value)}
             inputMode="numeric"
-            placeholder="10"
+            placeholder="Max"
           />
         </label>
         <label className="text-sm">

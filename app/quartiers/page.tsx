@@ -1,12 +1,10 @@
 import type { Metadata } from "next";
-import Image from "next/image";
-import Link from "next/link";
 import { getRequestLocale } from "@/lib/i18n/request";
-import { localizePath } from "@/lib/i18n/routing";
 import { buildPublicPageMetadata } from "@/lib/seo/site";
 import { QUARTIERS } from "@/lib/quartiers/data";
 import { QUARTIERS_UI } from "@/lib/quartiers/copy";
-import { DVF_META, formatPpm, getZoneStats } from "@/lib/quartiers/stats";
+import { DVF_META } from "@/lib/quartiers/stats";
+import { QuartierCard } from "@/app/components/quartier-card";
 import { FinalCtaSection } from "@/app/_home/sections/final-cta-section";
 
 const SEO = {
@@ -49,38 +47,11 @@ export default async function QuartiersIndexPage() {
           </div>
 
           <ul className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-            {QUARTIERS.map((quartier) => {
-              const stats = getZoneStats(quartier.statsKey);
-              const median = stats?.apartments.medianPpmMainYear ?? stats?.apartments.medianPpm ?? null;
-              return (
-                <li key={quartier.slug}>
-                  <Link
-                    href={localizePath(`/quartiers/${quartier.slug}`, locale)}
-                    className="group flex h-full flex-col overflow-hidden rounded-[24px] bg-white ring-1 ring-navy/10 transition hover:-translate-y-[2px] hover:ring-navy/25"
-                  >
-                    <div className="relative aspect-[16/10] w-full overflow-hidden bg-navy/5">
-                      <Image
-                        src={quartier.image.src}
-                        alt={quartier.image.alt}
-                        fill
-                        sizes="(min-width: 1280px) 33vw, (min-width: 768px) 50vw, 100vw"
-                        className="object-cover transition duration-500 group-hover:scale-[1.03]"
-                      />
-                    </div>
-                    <div className="flex flex-1 flex-col gap-2 p-6">
-                      <h2 className="font-serif text-2xl font-semibold text-navy">{quartier.name}</h2>
-                      <p className="text-sm leading-relaxed text-navy/75">{quartier.tagline[locale]}</p>
-                      {median ? (
-                        <p className="mt-auto pt-3 text-sm text-navy/65">
-                          {ui.medianLabel} · <span className="font-semibold text-navy">{formatPpm(median, locale)}</span>
-                        </p>
-                      ) : null}
-                      <span className="text-sm font-semibold text-navy">{ui.seeQuartier} →</span>
-                    </div>
-                  </Link>
-                </li>
-              );
-            })}
+            {QUARTIERS.map((quartier) => (
+              <li key={quartier.slug}>
+                <QuartierCard quartier={quartier} locale={locale} headingLevel="h2" trackLocation="quartiers_index" />
+              </li>
+            ))}
           </ul>
           <p className="max-w-3xl text-xs leading-relaxed text-navy/55">
             {ui.sourceLabel} : {DVF_META.source}, {DVF_META.years.join("–")}. {DVF_META.method}
