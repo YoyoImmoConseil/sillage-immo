@@ -5,7 +5,7 @@ import { unstable_cache } from "next/cache";
 import type { AppLocale } from "@/lib/i18n/config";
 import { resolveLocalizedText } from "@/lib/i18n/localized-content";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { CACHE_TAG_TEAM_PUBLIC } from "@/lib/cache/tags";
+import { CACHE_TAG_TEAM_PUBLIC, DEPLOYMENT_CACHE_KEY } from "@/lib/cache/tags";
 import { parseAdminProfileMetadata } from "@/services/admin/admin-profile-metadata";
 import { ADMIN_ROLE_LABELS, type AdminRole, type AdminTeamTitle } from "@/types/domain/admin";
 
@@ -123,7 +123,7 @@ const listPublicTeamMembersUncached = async (
 
 export const listPublicTeamMembers = unstable_cache(
   listPublicTeamMembersUncached,
-  ["listPublicTeamMembers"],
+  ["listPublicTeamMembers", DEPLOYMENT_CACHE_KEY],
   {
     tags: [CACHE_TAG_TEAM_PUBLIC],
     revalidate: 600,
@@ -179,7 +179,7 @@ export const getPublicTeamMemberByEmail = cache(
   async (email: string, locale: AppLocale = "fr") => {
     const cached = unstable_cache(
       getPublicTeamMemberByEmailUncached,
-      ["getPublicTeamMemberByEmail"],
+      ["getPublicTeamMemberByEmail", DEPLOYMENT_CACHE_KEY],
       {
         tags: [CACHE_TAG_TEAM_PUBLIC],
         revalidate: 600,

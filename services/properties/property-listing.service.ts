@@ -15,6 +15,7 @@ import {
   CACHE_TAG_LISTINGS_PUBLIC,
   cacheTagListingByExternalRef,
   cacheTagListingBySlug,
+  DEPLOYMENT_CACHE_KEY,
 } from "@/lib/cache/tags";
 import { isPublicAvailabilityStatus } from "@/lib/properties/canonical-types";
 import { normalizeListingDescriptionFees } from "@/lib/properties/listing-description";
@@ -380,7 +381,7 @@ const listPublicPropertyListingsUncached = async (
  */
 export const listPublicPropertyListings = unstable_cache(
   listPublicPropertyListingsUncached,
-  ["listPublicPropertyListings"],
+  ["listPublicPropertyListings", DEPLOYMENT_CACHE_KEY],
   {
     tags: [CACHE_TAG_LISTINGS_PUBLIC],
     revalidate: 300,
@@ -423,7 +424,7 @@ export const getPublicPropertyListingBySlug = cache(
   async (slug: string, locale: AppLocale = "fr") => {
     const cached = unstable_cache(
       getPublicPropertyListingBySlugUncached,
-      ["getPublicPropertyListingBySlug"],
+      ["getPublicPropertyListingBySlug", DEPLOYMENT_CACHE_KEY],
       {
         tags: [CACHE_TAG_LISTINGS_PUBLIC, cacheTagListingBySlug(slug)],
         revalidate: 600,
@@ -511,7 +512,7 @@ export const getPublicPropertyListingByExternalId = cache(
   }) => {
     const cached = unstable_cache(
       getPublicPropertyListingByExternalIdUncached,
-      ["getPublicPropertyListingByExternalId"],
+      ["getPublicPropertyListingByExternalId", DEPLOYMENT_CACHE_KEY],
       {
         tags: [
           CACHE_TAG_LISTINGS_PUBLIC,
@@ -553,7 +554,7 @@ const listPropertyTypesForBusinessTypeUncached = async (
 
 export const listPropertyTypesForBusinessType = unstable_cache(
   listPropertyTypesForBusinessTypeUncached,
-  ["listPropertyTypesForBusinessType"],
+  ["listPropertyTypesForBusinessType", DEPLOYMENT_CACHE_KEY],
   {
     tags: [CACHE_TAG_LISTINGS_PUBLIC],
     revalidate: 300,

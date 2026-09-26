@@ -29,3 +29,15 @@ export const cacheTagListingByExternalRef = (
   postalCode: string,
   sourceRef: string
 ) => `listing:external:${postalCode.trim()}:${sourceRef.trim()}`;
+
+/**
+ * Segment de clé propre à chaque déploiement, à ajouter aux `keyParts` de tout
+ * `unstable_cache` public. Le Data Cache Vercel survit aux déploiements : sans
+ * ce segment, un merge qui change le calcul d'un prix continue d'afficher les
+ * anciennes valeurs jusqu'à expiration (5 à 10 min). Avec lui, chaque
+ * déploiement repart d'un cache vide, et le cache reste actif à l'exécution.
+ */
+export const DEPLOYMENT_CACHE_KEY =
+  process.env.VERCEL_DEPLOYMENT_ID ??
+  process.env.VERCEL_GIT_COMMIT_SHA ??
+  "local";
