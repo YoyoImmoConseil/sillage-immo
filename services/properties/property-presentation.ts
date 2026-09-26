@@ -164,13 +164,29 @@ export const buildPropertyRentalPriceSnapshot = (
   priceAmount: number | null
 ): PropertyRentalPriceSnapshot => {
   const rawPayload = asRecord(property.raw_payload);
+  // Règle Sillage (Yoann, 26/09/2026) : dans SweepBright, le « prix demandé »
+  // d'une location est saisi charges comprises. Le loyer hors charges se déduit
+  // donc : prix demandé − provision sur charges. `price_base_rent` n'est plus
+  // qu'un dernier recours quand le prix demandé est vide.
   // A zero amount means "left empty in SweepBright", not "free": `readMoneyCents`
   // drops it so the next candidate is probed instead of publishing 0 €/month.
-  const rentExcludingChargesCents =
-    readMoneyCents(rawPayload, "price_base_rent") ??
+  const rentIncludingChargesCents =
     readMoneyCents(rawPayload, "price") ??
-    positiveCents(toCents(priceAmount));
-  const chargesProvisionCents = readMoneyCents(rawPayload, "price_recurring_costs");
+    positiveCents(toCents(priceAmount)) ??
+    readMoneyCents(rawPayload, "price_base_rent");
+  const rawChargesCents = readMoneyCents(rawPayload, "price_recurring_costs");
+  // Des charges supérieures ou égales au loyer CC sont une erreur de saisie :
+  // on publie le loyer CC seul plutôt qu'un hors charges nul ou négatif.
+  const chargesProvisionCents =
+    rentIncludingChargesCents !== null &&
+    rawChargesCents !== null &&
+    rawChargesCents >= rentIncludingChargesCents
+      ? null
+      : rawChargesCents;
+  const rentExcludingChargesCents =
+    rentIncludingChargesCents === null
+      ? null
+      : rentIncludingChargesCents - (chargesProvisionCents ?? 0);
   const tenantAgencyFeesCents = readMoneyCents(rawPayload, "buyer_fixed_fee");
   const inventoryReportFeesCents = readMoneyCents(rawPayload, "price_inventory_report_cost");
 
@@ -178,10 +194,7 @@ export const buildPropertyRentalPriceSnapshot = (
     kind: "rental",
     rentExcludingChargesCents,
     chargesProvisionCents,
-    rentIncludingChargesCents:
-      rentExcludingChargesCents === null
-        ? null
-        : rentExcludingChargesCents + (chargesProvisionCents ?? 0),
+    rentIncludingChargesCents,
     tenantAgencyFeesCents,
     inventoryReportFeesCents,
     totalTenantFeesCents: sumCents([tenantAgencyFeesCents, inventoryReportFeesCents]),
