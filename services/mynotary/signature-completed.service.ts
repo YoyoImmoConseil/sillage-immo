@@ -183,7 +183,9 @@ export const processSignatureCompleted = async (
         signed_at: signedAt,
         signers,
         files,
-        mynotary_register_type: registerType ?? null,
+        // Registre connu seulement via le backfill des registres : un rejeu
+        // par la boîte de réception ne doit pas effacer une valeur déjà posée.
+        ...(registerType ? { mynotary_register_type: registerType } : {}),
         // Structured facts (Phase 1 reconciliation socle). Persisted as
         // dedicated columns so the reconciliation engine + golden record
         // can match on price / surface / seller identity.

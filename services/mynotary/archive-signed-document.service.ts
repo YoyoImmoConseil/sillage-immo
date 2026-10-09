@@ -190,17 +190,13 @@ export const archiveSignedDocument = async (
       result.errors.push({ name: file.name ?? `file_${i + 1}`, reason: upsertError.message });
     }
 
-    // Un seul « signé » et une seule « preuve » référencés sur le document.
-    if ((isProof && result.signatureProofPath) || (!isProof && result.signedDocumentPath)) {
-      result.skipped += 1;
-      continue;
-    }
-
-    // 2. Copie immédiate.
+    // 2. Copie immédiate de chaque fichier (contrat, annexes, preuve). Le
+    //    document ne référence qu'un « signé » et une « preuve » (premier
+    //    de chaque) ; les autres restent accessibles via `mynotary_files`.
     try {
       await copyMyNotaryFileToBucket({ fileId: file.signedFileId, objectPath });
-      if (isProof) result.signatureProofPath = objectPath;
-      else result.signedDocumentPath = objectPath;
+      if (isProof && !result.signatureProofPath) result.signatureProofPath = objectPath;
+      else if (!isProof && !result.signedDocumentPath) result.signedDocumentPath = objectPath;
       result.archived += 1;
     } catch (err) {
       result.errors.push({
