@@ -93,10 +93,10 @@ vi.mock("@/services/mynotary/operation-enrichment.service", () => ({
 }));
 
 const processSignatureCompletedMock = vi.fn();
-const softDeleteMock = vi.fn(async () => ({ softDeleted: 1 }));
+const softDeleteMock = vi.fn(async (_input: unknown) => ({ softDeleted: 1 }));
 vi.mock("@/services/mynotary/signature-completed.service", () => ({
-  processSignatureCompleted: (...args: unknown[]) => processSignatureCompletedMock(...args),
-  softDeleteByContractOrOperation: (...args: unknown[]) => softDeleteMock(...args),
+  processSignatureCompleted: (input: unknown) => processSignatureCompletedMock(input),
+  softDeleteByContractOrOperation: (input: unknown) => softDeleteMock(input),
 }));
 
 const { recordMyNotaryEvent, processPendingMyNotaryEvents } = await import(
