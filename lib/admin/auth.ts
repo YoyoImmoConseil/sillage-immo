@@ -197,12 +197,21 @@ export const requireAdminPagePermission = async (permission?: AdminPermission) =
 export const isInternalRequest = async (request: Request) => {
   if (await isAdminRequest(request)) return true;
 
-  const internalSecret = serverEnv.DOMAIN_EVENTS_CRON_SECRET;
-  if (!internalSecret) return false;
+  // Deux secrets acceptés : DOMAIN_EVENTS_CRON_SECRET (appels internes et
+  // manuels) et CRON_SECRET, la variable que Vercel lit pour signer ses
+  // appels de cron (`Authorization: Bearer <CRON_SECRET>`). Sans CRON_SECRET
+  // défini dans Vercel, les crons arrivent sans en-tête et sont refusés :
+  // c'est ce qui bloquait toutes les tâches planifiées (constat 09/10/2026).
+  const secrets = [serverEnv.DOMAIN_EVENTS_CRON_SECRET, serverEnv.CRON_SECRET].filter(
+    (value): value is string => typeof value === "string" && value.length > 0
+  );
+  if (secrets.length === 0) return false;
 
-  return (
-    hasExpectedValue(request.headers.get("x-internal-key"), internalSecret) ||
-    hasExpectedValue(request.headers.get("x-cron-secret"), internalSecret) ||
-    hasExpectedValue(parseBearer(request.headers.get("authorization")), internalSecret)
+  const bearer = parseBearer(request.headers.get("authorization"));
+  return secrets.some(
+    (secret) =>
+      hasExpectedValue(request.headers.get("x-internal-key"), secret) ||
+      hasExpectedValue(request.headers.get("x-cron-secret"), secret) ||
+      hasExpectedValue(bearer, secret)
   );
 };

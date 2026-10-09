@@ -14,6 +14,8 @@ export const serverEnv = {
   SUPABASE_SERVICE_ROLE_KEY: requireServerEnv("SUPABASE_SERVICE_ROLE_KEY"),
   ADMIN_API_KEY: requireServerEnv("ADMIN_API_KEY"),
   DOMAIN_EVENTS_CRON_SECRET: process.env.DOMAIN_EVENTS_CRON_SECRET ?? "",
+  /** Secret lu par Vercel pour signer les appels de cron (Bearer). */
+  CRON_SECRET: process.env.CRON_SECRET ?? "",
   SWEEPBRIGHT_API_BASE_URL:
     process.env.SWEEPBRIGHT_API_BASE_URL ?? "https://website.sweepbright.com/api",
   SWEEPBRIGHT_API_VERSION: process.env.SWEEPBRIGHT_API_VERSION ?? "20241030",
