@@ -129,8 +129,9 @@ create table if not exists public.mynotary_files (
 
   signed_at timestamptz not null,
   -- Rétention MyNotary : 10 ans. On archive chez Sillage à 9 ans 6 mois
-  -- pour n'archiver que ce qui approche de l'échéance.
-  archive_due_at timestamptz generated always as (signed_at + interval '9 years 6 months') stored,
+  -- pour n'archiver que ce qui approche de l'échéance. Calculée par trigger
+  -- (timestamptz + interval n'est pas immuable, donc pas de colonne générée).
+  archive_due_at timestamptz not null,
   archived_at timestamptz,
   storage_bucket text,
   storage_path text,
@@ -156,9 +157,16 @@ language plpgsql
 as $$
 begin
   new.updated_at := now();
+  new.archive_due_at := new.signed_at + interval '9 years 6 months';
   return new;
 end;
 $$;
+
+drop trigger if exists trg_mynotary_files_archive_due on public.mynotary_files;
+create trigger trg_mynotary_files_archive_due
+  before insert on public.mynotary_files
+  for each row
+  execute function public.set_mynotary_files_updated_at();
 
 drop trigger if exists trg_mynotary_files_updated_at on public.mynotary_files;
 create trigger trg_mynotary_files_updated_at
