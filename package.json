@@ -12,7 +12,8 @@
     "test:watch": "vitest",
     "mcp:server": "tsx scripts/mcp-server.ts",
     "mynotary:link-organization": "tsx scripts/mynotary-link-organization.ts",
-    "mynotary:backfill": "tsx scripts/mynotary-backfill.ts"
+    "mynotary:backfill": "tsx scripts/mynotary-backfill.ts",
+    "mynotary:export-files": "node --env-file=.env.local scripts/mynotary-export-files.mjs"
   },
   "bin": {
     "sillage-mcp-server": "./scripts/mcp-server.ts"

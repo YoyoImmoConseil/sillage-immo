@@ -16,6 +16,14 @@
     {
       "path": "/api/internal/cron/mynotary-sync",
       "schedule": "15 4 * * *"
+    },
+    {
+      "path": "/api/internal/cron/mynotary-events?limit=20",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/internal/cron/mynotary-archive?limit=50",
+      "schedule": "30 3 1 * *"
     }
   ]
 }

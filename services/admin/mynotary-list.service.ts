@@ -27,7 +27,7 @@ export type SignedDocumentRow = {
     email?: string | null;
     phone?: string | null;
   }> | null;
-  files: Array<{ name: string; url: string }>;
+  files: Array<{ name: string; signedFileId: string }>;
   matched_seller_project_id: string | null;
   matched_property_id: string | null;
   match_confidence: number | null;

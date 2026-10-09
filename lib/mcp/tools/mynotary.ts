@@ -92,7 +92,9 @@ export const mynotaryTools: ToolDefinition<unknown, unknown>[] = [
           mynotaryOperationId: row.mynotary_operation_id,
           signedAt: row.signed_at,
           signers: row.signers,
-          fileUrls: (row.files ?? []).map((f) => f.url),
+          // Identifiants permanents (jamais d'URL signée) : le PDF se télécharge
+          // via l'admin (/api/admin/mynotary/{id}/download).
+          fileIds: (row.files ?? []).map((f) => f.signedFileId),
           matched: row.matched_seller_project_id !== null,
           matchConfidence: row.match_confidence,
           matchMethod: row.match_method,

@@ -22,7 +22,8 @@ import type {
 //     writing.
 //   - The OpenAPI surface we use is tiny (≤ 5 endpoints) and we
 //     want fine-grained control over the headers
-//     (`x-api-date-version: 2`) and the retry policy.
+//     (`x-api-date-version: 2`, `x-api-documents-version: 2`) and the
+//     retry policy.
 //
 // Base URL is resolved at call-time via env so the same code can hit
 // preprod (`api-preprod.mynotary.fr/api/v1`) or production
@@ -36,6 +37,8 @@ type FetchOptions = {
   method: "GET" | "POST" | "PUT" | "DELETE";
   path: string;
   body?: unknown;
+  /** Corps multipart (POST /files) : envoyé tel quel, sans Content-Type JSON. */
+  formData?: FormData;
   query?: Record<string, string | number | boolean | undefined | null>;
   // Some calls (POST /clients) use a one-time organization token in
   // place of (or in addition to) the application token. We expose
@@ -112,12 +115,19 @@ const callMyNotary = async <TResponse>(
         method: options.method,
         signal: ctrl.signal,
         headers: {
-          "Content-Type": "application/json",
+          ...(options.formData ? {} : { "Content-Type": "application/json" }),
           "x-api-key": apiKey,
           "x-api-date-version": "2",
+          // `documents` en identifiants de fichiers (format par défaut à
+          // partir du 1er décembre 2026 ; l'en-tête devient alors inerte).
+          "x-api-documents-version": "2",
           ...(options.extraHeaders ?? {}),
         },
-        body: options.body === undefined ? undefined : JSON.stringify(options.body),
+        body: options.formData
+          ? options.formData
+          : options.body === undefined
+            ? undefined
+            : JSON.stringify(options.body),
         cache: "no-store",
       });
     } catch (err) {
@@ -389,4 +399,90 @@ export const getRegisterEntries = async (
     hasMore,
     total,
   };
+};
+
+// ---------------------------------------------------------------------
+// Fichiers (identifiants permanents — jamais d'URL signée en base)
+// ---------------------------------------------------------------------
+
+export type MyNotaryFileDownload = { downloadUrl: string };
+
+// GET /files/{fileId} — lien de téléchargement frais (valable 7 jours)
+// pour un identifiant de fichier (signedFileId d'un webhook, fileId d'un
+// drive-file, dernier segment des anciennes URLs `documents`). C'est la
+// seule façon de lire un fichier une fois `files[].url` retiré
+// (1er décembre 2026).
+export const getFileDownloadUrl = async (fileId: string): Promise<string> => {
+  const response = await callMyNotary<MyNotaryFileDownload>({
+    method: "GET",
+    path: `/files/${encodeURIComponent(fileId)}`,
+  });
+  if (!response?.downloadUrl) {
+    throw new Error(`MyNotary GET /files/${fileId}: no downloadUrl in response`);
+  }
+  return response.downloadUrl;
+};
+
+export type MyNotaryUploadedFile = { id: string; status?: "SUCCESS" | "UPLOADING" };
+
+// POST /files en multipart/form-data (le flux `fileName` + PUT sur
+// `uploadUrl` est retiré le 1er décembre 2026). PDF uniquement, 200 Mo
+// max ; `name` doit précéder la part `file`.
+export const uploadFile = async (input: {
+  name: string;
+  bytes: Uint8Array | ArrayBuffer | Buffer;
+  contentType?: string;
+}): Promise<MyNotaryUploadedFile> => {
+  const form = new FormData();
+  const fileName = input.name.toLowerCase().endsWith(".pdf") ? input.name : `${input.name}.pdf`;
+  form.append("name", fileName);
+  form.append(
+    "file",
+    new Blob([input.bytes as BlobPart], { type: input.contentType ?? "application/pdf" }),
+    fileName
+  );
+  const response = await callMyNotary<MyNotaryUploadedFile>({
+    method: "POST",
+    path: "/files",
+    formData: form,
+  });
+  if (!response?.id) {
+    throw new Error("MyNotary POST /files: no id in response");
+  }
+  return response;
+};
+
+// ---------------------------------------------------------------------
+// Configuration (lecture)
+// ---------------------------------------------------------------------
+
+export type MyNotaryWebhookConfig = {
+  id: number;
+  url: string;
+  authType: "NONE" | "BASIC" | "BEARER" | "APIKEY";
+};
+
+// GET /webhooks — webhooks déclarés pour l'application (les secrets ne
+// sont jamais renvoyés). Sert au contrôle « l'endpoint n'est pas public ».
+export const listWebhooks = async (): Promise<MyNotaryWebhookConfig[]> => {
+  return callMyNotary<MyNotaryWebhookConfig[]>({ method: "GET", path: "/webhooks" });
+};
+
+export type MyNotaryOperationTypeConfig = {
+  id: string;
+  label: string;
+  contracts: Array<{ modelId: string; label: string }>;
+};
+
+// GET /organizations/operations — types de dossiers configurés pour
+// l'organisation et contrats disponibles pour chacun. Remplace la route
+// « liste des types d'opérations » retirée le 1er novembre 2026.
+export const listOrganizationOperationTypes = async (
+  organizationId: string
+): Promise<MyNotaryOperationTypeConfig[]> => {
+  return callMyNotary<MyNotaryOperationTypeConfig[]>({
+    method: "GET",
+    path: "/organizations/operations",
+    query: { organizationId },
+  });
 };

@@ -44,7 +44,9 @@ export type MyNotaryEventType =
   | "signature_created"
   | "operation_created"
   | "operation_deleted"
+  | "operation_merged"
   | "contract_created"
+  | "contract_validated"
   | "contract_deleted"
   | "register_letter_created"
   | "register_letter_cancel"
@@ -68,11 +70,14 @@ export type MyNotaryWebhookEnvelope<TPayload = Record<string, unknown>> = {
 } & Partial<TPayload>;
 
 export type MyNotaryFile = {
-  // From WebhookSignatureCompletedFile (spec): { name, url } both
-  // required. We treat `url` as a short-lived signed link and download
-  // immediately on receipt (see archive-signed-document.service.ts).
+  // From WebhookSignatureCompletedFile (spec): { name, signedFileId, url }.
+  // `signedFileId` is permanent and is the ONLY thing we persist; `url`
+  // is a signed link removed by MyNotary on 1 December 2026 — it is read
+  // on receipt only to derive the file id when `signedFileId` is missing
+  // (its last path segment is the file id) and never stored.
   name: string;
-  url: string;
+  signedFileId: string;
+  url?: string;
   contentType?: string;
 };
 

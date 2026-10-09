@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { getAdminPageContext, hasAdminPermission } from "@/lib/admin/auth";
+import { getFileDownloadUrl } from "@/lib/mynotary/client";
 import { getSignedDocumentByKey } from "@/services/admin/mynotary-list.service";
-import { createArchiveDownloadUrl } from "@/services/mynotary/archive-signed-document.service";
+import {
+  createArchiveDownloadUrl,
+  looksLikeProofFile,
+} from "@/services/mynotary/archive-signed-document.service";
 
 export const dynamic = "force-dynamic";
 
@@ -10,45 +14,33 @@ export const dynamic = "force-dynamic";
 // Resolution order:
 //   1. If we archived the PDF in Supabase Storage → mint a 5 min
 //      signed URL and 302 to it.
-//   2. Else, fall back to proxying the MyNotary file URL on the
-//      server side: their CDN requires the `x-api-key` header that
-//      a browser cannot send directly, so we have to stream the
-//      bytes through our route. Per MyNotary (Q3 2026) these URLs
-//      do **not** expire.
+//   2. Else, ask MyNotary for a fresh download link from the permanent
+//      file id (`GET /files/{fileId}`) and stream the bytes through our
+//      route. We never store nor expose a signed URL.
 //
 // Query string : ?kind=signed | proof  (defaults to signed)
 
-const matchProofFile = (name: string | null | undefined): boolean => {
-  if (!name) return false;
-  const lower = name.toLowerCase();
-  return (
-    lower.includes("preuve") ||
-    lower.includes("proof") ||
-    lower.includes("certificat") ||
-    lower.includes("certificate") ||
-    lower.includes("audit") ||
-    lower.includes("eidas")
-  );
-};
+const matchProofFile = (name: string | null | undefined): boolean =>
+  looksLikeProofFile(name ?? "");
 
 const proxyFromMyNotary = async (
-  fileUrl: string,
+  fileId: string,
   fallbackName: string
 ): Promise<Response> => {
-  const apiKey = process.env.MYNOTARY_API_KEY ?? "";
-  if (!apiKey) {
+  let fileUrl: string;
+  try {
+    fileUrl = await getFileDownloadUrl(fileId);
+  } catch (error) {
     return NextResponse.json(
       {
         ok: false,
-        code: "mynotary_api_key_missing",
-        message: "MYNOTARY_API_KEY non configurée sur le serveur.",
+        code: "mynotary_upstream_error",
+        message: error instanceof Error ? error.message : String(error),
       },
-      { status: 500 }
+      { status: 502 }
     );
   }
-  const upstream = await fetch(fileUrl, {
-    headers: { "x-api-key": apiKey },
-  });
+  const upstream = await fetch(fileUrl, { redirect: "follow" });
   if (!upstream.ok) {
     return NextResponse.json(
       {
@@ -69,7 +61,7 @@ const proxyFromMyNotary = async (
     "Content-Disposition",
     `inline; filename="${sanitized || "document.pdf"}"`
   );
-  // Don't cache: tokens may rotate, and the document is sensitive.
+  // Don't cache: the document is sensitive.
   headers.set("Cache-Control", "private, no-store");
   return new Response(upstream.body, { status: 200, headers });
 };
@@ -120,7 +112,7 @@ export const GET = async (
   const signedFile =
     files.find((f) => !matchProofFile(f.name)) ?? files[0] ?? null;
   const file = kind === "proof" ? proofFile : signedFile;
-  if (!file?.url) {
+  if (!file?.signedFileId) {
     return NextResponse.json(
       {
         ok: false,
@@ -135,7 +127,7 @@ export const GET = async (
   }
 
   return proxyFromMyNotary(
-    file.url,
+    file.signedFileId,
     file.name ? `${file.name}.pdf` : `mynotary_${doc.id}.pdf`
   );
 };
