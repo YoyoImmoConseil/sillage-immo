@@ -2,20 +2,29 @@ import "server-only";
 import { Buffer } from "node:buffer";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { serverEnv } from "@/lib/env/server";
+import { getFileDownloadUrl } from "@/lib/mynotary/client";
 import type { MyNotaryFile } from "@/lib/mynotary/types";
+import type { MyNotaryFileKind } from "@/types/db/supabase";
 
-// Downloads the signed PDF(s) delivered in the
-// `signature_completed` webhook (`files[].url`) and pushes them into
-// our private Supabase Storage bucket so we keep a copy even if the
-// MyNotary signed URL expires.
-//
-// The function is best-effort: any failure is logged in the document
-// row (`raw_payload.archive_errors`) but does not break the webhook
-// pipeline, so an outage on MyNotary's CDN cannot block the rest of
-// the ingestion.
-//
-// Per-file size cap: 20 MB (bucket policy, cf. migration 038). Files
-// larger than that are skipped and reported.
+/**
+ * Archivage des fichiers signés MyNotary.
+ *
+ * Règles (validées le 09/10/2026) :
+ *  - on ne persiste que l'identifiant permanent du fichier (`signedFileId`),
+ *    jamais une URL signée ; le lien de téléchargement est régénéré à la
+ *    demande par `GET /files/{fileId}` ;
+ *  - chaque fichier a une ligne dans `mynotary_files` avec son échéance
+ *    d'archivage (`signed_at` + 9 ans 6 mois, rétention MyNotary = 10 ans) ;
+ *  - une copie est faite dès réception dans le bucket privé
+ *    `mynotary-archives` (coût négligeable, sécurité en cas de résiliation) ;
+ *    si elle échoue, la ligne reste sans `archived_at` et la tâche mensuelle
+ *    (`archiveDueMyNotaryFiles`) la reprend à l'échéance.
+ *
+ * Tout est best-effort : un échec est consigné sur la ligne du fichier et ne
+ * bloque jamais la projection du document.
+ *
+ * Taille max par fichier : 20 Mo (politique du bucket, migration 038).
+ */
 
 const MAX_BYTES = 20 * 1024 * 1024;
 const TIMEOUT_MS = 30_000;
@@ -35,7 +44,7 @@ const sanitizePathSegment = (input: string): string =>
     .replace(/^_+|_+$/g, "")
     .slice(0, 120) || "document";
 
-const looksLikeProofFile = (name: string): boolean => {
+export const looksLikeProofFile = (name: string): boolean => {
   const lower = name.toLowerCase();
   return (
     lower.includes("preuve") ||
@@ -47,21 +56,19 @@ const looksLikeProofFile = (name: string): boolean => {
   );
 };
 
-// MyNotary's signed-document URLs are **not** time-limited (confirmed
-// by their dev team, Q3 2026) but they DO require our application
-// `x-api-key` header to authorize the download — without it the CDN
-// returns 401/403. We therefore re-use the same key as the rest of
-// the MyNotary client (`MYNOTARY_API_KEY`).
-const downloadFile = async (
-  url: string
+/**
+ * Télécharge un fichier par son identifiant : lien frais via l'API, puis
+ * GET direct sur le stockage MyNotary (le lien signé n'a pas besoin de la
+ * clé d'API).
+ */
+export const downloadMyNotaryFile = async (
+  fileId: string
 ): Promise<{ bytes: Buffer; contentType: string }> => {
+  const url = await getFileDownloadUrl(fileId);
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
-  const apiKey = process.env.MYNOTARY_API_KEY ?? "";
   try {
-    const headers: Record<string, string> = {};
-    if (apiKey) headers["x-api-key"] = apiKey;
-    const response = await fetch(url, { signal: ctrl.signal, headers });
+    const response = await fetch(url, { signal: ctrl.signal, redirect: "follow" });
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
     }
@@ -75,24 +82,76 @@ const downloadFile = async (
     }
     return {
       bytes: Buffer.from(arrayBuf),
-      contentType:
-        response.headers.get("content-type") ?? "application/pdf",
+      contentType: response.headers.get("content-type") ?? "application/pdf",
     };
   } finally {
     clearTimeout(timer);
   }
 };
 
+const buildObjectPath = (contractId: string, kind: MyNotaryFileKind, name: string, index: number) => {
+  const safeName = sanitizePathSegment(
+    name ? `${name}.pdf`.replace(/\.pdf\.pdf$/i, ".pdf") : `document_${index + 1}.pdf`
+  );
+  const prefix = kind === "proof" ? "proof_" : kind === "validated" ? "validated_" : "signed_";
+  return [contractId, `${prefix}${safeName}`].join("/");
+};
+
+/** Copie un fichier dans le bucket et met à jour sa ligne `mynotary_files`. */
+export const copyMyNotaryFileToBucket = async (input: {
+  fileId: string;
+  objectPath: string;
+}): Promise<void> => {
+  const bucket = serverEnv.MYNOTARY_ARCHIVE_BUCKET;
+  const now = new Date().toISOString();
+  try {
+    const { bytes, contentType } = await downloadMyNotaryFile(input.fileId);
+    const upload = await supabaseAdmin.storage
+      .from(bucket)
+      .upload(input.objectPath, bytes, { contentType, cacheControl: "31536000", upsert: true });
+    if (upload.error) {
+      throw new Error(upload.error.message);
+    }
+    await supabaseAdmin
+      .from("mynotary_files")
+      .update({
+        archived_at: now,
+        storage_bucket: bucket,
+        storage_path: input.objectPath,
+        last_error: null,
+        last_attempt_at: now,
+      })
+      .eq("file_id", input.fileId);
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err);
+    const { data: current } = await supabaseAdmin
+      .from("mynotary_files")
+      .select("archive_attempts")
+      .eq("file_id", input.fileId)
+      .maybeSingle();
+    await supabaseAdmin
+      .from("mynotary_files")
+      .update({
+        archive_attempts: (current?.archive_attempts ?? 0) + 1,
+        last_error: reason.slice(0, 1000),
+        last_attempt_at: now,
+      })
+      .eq("file_id", input.fileId);
+    throw err;
+  }
+};
+
 export type ArchiveSignedDocumentInput = {
   documentId: string;
   mynotaryContractId: string;
+  mynotaryOperationId?: string | null;
+  signedAt: string;
   files: MyNotaryFile[];
 };
 
 export const archiveSignedDocument = async (
   input: ArchiveSignedDocumentInput
 ): Promise<ArchiveResult> => {
-  const bucket = serverEnv.MYNOTARY_ARCHIVE_BUCKET;
   const result: ArchiveResult = {
     signedDocumentPath: null,
     signatureProofPath: null,
@@ -100,57 +159,48 @@ export const archiveSignedDocument = async (
     skipped: 0,
     errors: [],
   };
-
   if (!Array.isArray(input.files) || input.files.length === 0) {
     return result;
   }
 
-  // Partition between "main signed document" and "signature proof":
-  // we treat the first file as the main signed document by default,
-  // and any file whose name looks like an audit/proof file goes to
-  // `signature_proof_path`. Both columns stay nullable when MyNotary
-  // does not deliver the corresponding artifact.
   for (let i = 0; i < input.files.length; i += 1) {
     const file = input.files[i];
-    if (!file?.url || typeof file.url !== "string") {
+    if (!file?.signedFileId) {
       result.skipped += 1;
       continue;
     }
     const isProof = looksLikeProofFile(file.name ?? "");
-    if (isProof && result.signatureProofPath) {
-      result.skipped += 1;
-      continue;
-    }
-    if (!isProof && result.signedDocumentPath) {
-      result.skipped += 1;
-      continue;
-    }
+    const kind: MyNotaryFileKind = isProof ? "proof" : "signed";
+    const objectPath = buildObjectPath(input.mynotaryContractId, kind, file.name ?? "", i);
 
-    const safeName = sanitizePathSegment(
-      file.name ? `${file.name}.pdf`.replace(/\.pdf\.pdf$/i, ".pdf") : `document_${i + 1}.pdf`
+    // 1. Registre du fichier (idempotent sur file_id) — même si la copie échoue.
+    const { error: upsertError } = await supabaseAdmin.from("mynotary_files").upsert(
+      {
+        file_id: file.signedFileId,
+        signed_document_id: input.documentId,
+        mynotary_contract_id: input.mynotaryContractId,
+        mynotary_operation_id: input.mynotaryOperationId ?? null,
+        name: file.name ?? null,
+        kind,
+        signed_at: input.signedAt,
+      },
+      { onConflict: "file_id", ignoreDuplicates: false }
     );
-    const objectPath = [
-      input.mynotaryContractId,
-      isProof ? `proof_${safeName}` : `signed_${safeName}`,
-    ].join("/");
+    if (upsertError) {
+      result.errors.push({ name: file.name ?? `file_${i + 1}`, reason: upsertError.message });
+    }
 
+    // Un seul « signé » et une seule « preuve » référencés sur le document.
+    if ((isProof && result.signatureProofPath) || (!isProof && result.signedDocumentPath)) {
+      result.skipped += 1;
+      continue;
+    }
+
+    // 2. Copie immédiate.
     try {
-      const { bytes, contentType } = await downloadFile(file.url);
-      const upload = await supabaseAdmin.storage
-        .from(bucket)
-        .upload(objectPath, bytes, {
-          contentType,
-          cacheControl: "31536000",
-          upsert: true,
-        });
-      if (upload.error) {
-        throw new Error(upload.error.message);
-      }
-      if (isProof) {
-        result.signatureProofPath = objectPath;
-      } else {
-        result.signedDocumentPath = objectPath;
-      }
+      await copyMyNotaryFileToBucket({ fileId: file.signedFileId, objectPath });
+      if (isProof) result.signatureProofPath = objectPath;
+      else result.signedDocumentPath = objectPath;
       result.archived += 1;
     } catch (err) {
       result.errors.push({
@@ -161,6 +211,58 @@ export const archiveSignedDocument = async (
   }
 
   return result;
+};
+
+/**
+ * Tâche mensuelle : copie les fichiers dont l'échéance d'archivage est
+ * atteinte (ou dépassée) et qui n'ont pas encore de copie locale. Un échec
+ * reste en attente (ligne sans archived_at, last_error renseigné) et sera
+ * repris le mois suivant ; il remonte dans la vue « Aujourd'hui ».
+ */
+export const archiveDueMyNotaryFiles = async (
+  input: { limit?: number; horizonDays?: number } = {}
+) => {
+  const limit = Math.max(1, Math.min(input.limit ?? 50, 200));
+  const horizon = new Date();
+  horizon.setDate(horizon.getDate() + (input.horizonDays ?? 0));
+
+  const { data: due, error } = await supabaseAdmin
+    .from("mynotary_files")
+    .select("file_id, mynotary_contract_id, name, kind")
+    .is("archived_at", null)
+    .lte("archive_due_at", horizon.toISOString())
+    .order("archive_due_at", { ascending: true })
+    .limit(limit);
+  if (error) throw new Error(`mynotary_files due query failed: ${error.message}`);
+
+  const summary = { due: due?.length ?? 0, archived: 0, failed: 0, errors: [] as string[] };
+  for (const [index, file] of (due ?? []).entries()) {
+    const objectPath = buildObjectPath(
+      file.mynotary_contract_id ?? "sans-contrat",
+      file.kind,
+      file.name ?? "",
+      index
+    );
+    try {
+      await copyMyNotaryFileToBucket({ fileId: file.file_id, objectPath });
+      summary.archived += 1;
+    } catch (err) {
+      summary.failed += 1;
+      summary.errors.push(`${file.file_id}: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+  return summary;
+};
+
+/** Fichiers en attente (échéance atteinte sans copie) — vue « Aujourd'hui ». */
+export const listOverdueMyNotaryFiles = async () => {
+  const { data } = await supabaseAdmin
+    .from("mynotary_files")
+    .select("file_id, name, mynotary_contract_id, archive_due_at, last_error, archive_attempts")
+    .is("archived_at", null)
+    .lte("archive_due_at", new Date().toISOString())
+    .order("archive_due_at", { ascending: true });
+  return data ?? [];
 };
 
 // Mints a short-lived signed URL the admin UI can hand to a browser

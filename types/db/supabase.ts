@@ -1,3 +1,12 @@
+export type MyNotaryEventStatus =
+  | "pending"
+  | "processing"
+  | "processed"
+  | "ignored"
+  | "error";
+
+export type MyNotaryFileKind = "signed" | "proof" | "validated" | "other";
+
 export type Database = {
   public: {
     Tables: {
@@ -2941,6 +2950,10 @@ export type Database = {
           event_type: string;
           signature: string | null;
           raw_payload: Record<string, unknown>;
+          event_created_at: string | null;
+          status: MyNotaryEventStatus;
+          attempts: number;
+          locked_at: string | null;
         };
         Insert: {
           id?: string;
@@ -2951,6 +2964,10 @@ export type Database = {
           event_type: string;
           signature?: string | null;
           raw_payload?: Record<string, unknown>;
+          event_created_at?: string | null;
+          status?: MyNotaryEventStatus;
+          attempts?: number;
+          locked_at?: string | null;
         };
         Update: {
           id?: string;
@@ -2961,6 +2978,68 @@ export type Database = {
           event_type?: string;
           signature?: string | null;
           raw_payload?: Record<string, unknown>;
+          event_created_at?: string | null;
+          status?: MyNotaryEventStatus;
+          attempts?: number;
+          locked_at?: string | null;
+        };
+        Relationships: [];
+      };
+      mynotary_files: {
+        Row: {
+          id: string;
+          created_at: string;
+          updated_at: string;
+          file_id: string;
+          signed_document_id: string | null;
+          mynotary_contract_id: string | null;
+          mynotary_operation_id: string | null;
+          name: string | null;
+          kind: MyNotaryFileKind;
+          signed_at: string;
+          archive_due_at: string;
+          archived_at: string | null;
+          storage_bucket: string | null;
+          storage_path: string | null;
+          archive_attempts: number;
+          last_error: string | null;
+          last_attempt_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          file_id: string;
+          signed_document_id?: string | null;
+          mynotary_contract_id?: string | null;
+          mynotary_operation_id?: string | null;
+          name?: string | null;
+          kind?: MyNotaryFileKind;
+          signed_at: string;
+          archived_at?: string | null;
+          storage_bucket?: string | null;
+          storage_path?: string | null;
+          archive_attempts?: number;
+          last_error?: string | null;
+          last_attempt_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          file_id?: string;
+          signed_document_id?: string | null;
+          mynotary_contract_id?: string | null;
+          mynotary_operation_id?: string | null;
+          name?: string | null;
+          kind?: MyNotaryFileKind;
+          signed_at?: string;
+          archived_at?: string | null;
+          storage_bucket?: string | null;
+          storage_path?: string | null;
+          archive_attempts?: number;
+          last_error?: string | null;
+          last_attempt_at?: string | null;
         };
         Relationships: [];
       };
@@ -3120,6 +3199,14 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      claim_mynotary_events: {
+        Args: {
+          p_limit?: number;
+          p_max_attempts?: number;
+          p_stale_lock_minutes?: number;
+        };
+        Returns: Array<Database["public"]["Tables"]["mynotary_events"]["Row"]>;
+      };
       mynotary_match_address: {
         Args: {
           p_query: string;

@@ -84,15 +84,36 @@ const sanitizeSigners = (signers: MyNotarySigner[] | undefined): MyNotarySigner[
   }));
 };
 
-const sanitizeFiles = (files: MyNotaryFile[] | undefined): MyNotaryFile[] => {
+/**
+ * Ne conserve que l'identifiant permanent du fichier (`signedFileId`).
+ * Tant que MyNotary envoie encore `url` (jusqu'au 1er décembre 2026), son
+ * dernier segment sert de repli pour retrouver l'identifiant ; l'URL
+ * elle-même n'est jamais persistée (lien signé = secret).
+ */
+export const sanitizeFiles = (
+  files: Array<Partial<MyNotaryFile>> | undefined
+): MyNotaryFile[] => {
   if (!Array.isArray(files)) return [];
-  return files
-    .filter((f) => typeof f?.url === "string" && f.url.length > 0)
-    .map((f) => ({
-      name: typeof f.name === "string" ? f.name : "document",
-      url: f.url,
-      contentType: typeof f.contentType === "string" ? f.contentType : undefined,
-    }));
+  const out: MyNotaryFile[] = [];
+  for (const f of files) {
+    if (!f) continue;
+    const fromField = typeof f.signedFileId === "string" ? f.signedFileId.trim() : "";
+    let fileId = fromField;
+    if (!fileId && typeof f.url === "string" && f.url.length > 0) {
+      try {
+        const segments = new URL(f.url).pathname.split("/").filter(Boolean);
+        fileId = segments[segments.length - 1] ?? "";
+      } catch {
+        fileId = "";
+      }
+    }
+    if (!fileId) continue;
+    out.push({
+      name: typeof f.name === "string" && f.name.length > 0 ? f.name : "document",
+      signedFileId: fileId,
+    });
+  }
+  return out;
 };
 
 const resolveSignedAt = (
@@ -268,16 +289,18 @@ export const processSignatureCompleted = async (
     })
     .eq("id", documentId);
 
-  // Best-effort archive of the signed PDF (and the eIDAS proof when
-  // delivered). MyNotary's `files[].url` are short-lived signed
-  // links, so we download them right after the upsert. Failures here
-  // are non-blocking — the document row still exists and the link
-  // remains usable until it expires.
+  // Copie immédiate du PDF signé (et de la preuve eIDAS quand livrée)
+  // dans le bucket privé, à partir de l'identifiant de fichier (lien
+  // frais via GET /files/{id}). Chaque fichier est aussi enregistré dans
+  // `mynotary_files` avec son échéance d'archivage. Non bloquant : la
+  // ligne existe déjà, et la tâche mensuelle rattrape une copie manquée.
   if (files.length > 0) {
     try {
       const archive = await archiveSignedDocument({
         documentId,
         mynotaryContractId,
+        mynotaryOperationId,
+        signedAt,
         files,
       });
       const archiveUpdate: Record<string, unknown> = {};

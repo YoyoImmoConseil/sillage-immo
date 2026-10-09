@@ -58,25 +58,92 @@ sale mandates (`Mandat de vente Exclusif`) reserving a future
 transaction slot; actual offers, compromis, and actes will appear in
 this register once a contract is launched against the operation.
 
-We also receive 3 webhook event types:
+## Boîte de réception des webhooks (octobre 2026)
 
-- `signature_completed` — the only event that actually ingests rows.
-  Payload ships `files[].url`. MyNotary's dev team confirmed (Q3 2026)
-  that these URLs **do not expire**, but they require the same
-  `x-api-key` header as the rest of the API. We therefore:
-  - mirror the PDFs into our private Supabase Storage bucket on
-    receipt (best-effort, fault tolerant), so a browser link can be
-    minted later without exposing the API key, AND
-  - keep a server-side proxy (`/api/admin/mynotary/[id]/download`)
-    that streams the file from MyNotary with the key when no archive
-    exists.
-- `signature_cancel`    — soft-deletes a previously stored document.
-- `operation_deleted`   — soft-deletes any document tied to the operation.
+Le webhook `POST /api/webhooks/mynotary` est une **boîte de réception**,
+rien d'autre (`services/mynotary/event-inbox.service.ts`) :
 
-Every payload is appended verbatim to `mynotary_events` (idempotent on
-`event_id`). Signed PDFs land in the `mynotary-archives` Supabase
-Storage bucket (path: `<mynotary_contract_id>/signed_<name>.pdf` and
-`<mynotary_contract_id>/proof_<name>.pdf` when delivered).
+1. authentification par l'en-tête dédié configuré chez MyNotary
+   (`MYNOTARY_WEBHOOK_AUTH_HEADER` / `MYNOTARY_WEBHOOK_AUTH_VALUE`, type
+   `APIKEY` côté MyNotary — l'endpoint n'est jamais public) ;
+2. lecture des deux en-têtes MyNotary : `x-mynotary-event-id` (identifiant
+   unique → `mynotary_events.event_id`, UNIQUE : **la base déduplique**, un
+   doublon renvoie 2xx sans retraitement) et
+   `x-mynotary-event-creation-time` (→ `event_created_at`, qui fixe l'ordre
+   de traitement : les événements n'arrivent pas dans l'ordre) ;
+3. insertion du payload brut, réponse `202` en quelques dizaines de ms
+   (MyNotary exige un 2xx en moins de 60 s et abandonne après 12 échecs).
+
+Le format réel du corps est **à plat** : `eventId` y contient le *type*
+d'événement (`signature_completed`, …), jamais un identifiant
+(`lib/mynotary/webhook-envelope.ts`). L'ancien handler attendait
+`{ event, data }` et répondait 400 à tout webhook réel — aucun événement
+n'avait été enregistré en production entre mai et octobre 2026.
+
+Le traitement métier (classification, enrichissement par l'API,
+rattachement, archivage) tourne **hors requête** : `after()` juste après la
+réponse, puis le cron `/api/internal/cron/mynotary-events` toutes les
+5 minutes. Il réserve un lot via la fonction SQL `claim_mynotary_events`
+(FOR UPDATE SKIP LOCKED, ordre `event_created_at`), applique la projection
+vers `mynotary_signed_documents` et marque chaque ligne
+`processed` / `ignored` (type non projeté, raison dans `error`) / `error`
+(repris jusqu'à 5 tentatives, puis visible pour la vue « Aujourd'hui »).
+
+Événements projetés aujourd'hui : `signature_completed` (ingestion),
+`signature_cancel` et `operation_deleted` (soft-delete). Tous les autres
+types sont conservés en base et marqués `ignored` — l'étape 3 (modèle
+« dossier ») changera la cible de `handleMyNotaryEvent`, pas la réception.
+
+## Fichiers signés : identifiants, jamais d'URL
+
+- `files[].signedFileId` est le seul identifiant persisté (`files` jsonb de
+  `mynotary_signed_documents` = `[{ name, signedFileId }]`). L'URL signée
+  livrée dans le webhook est un secret à durée limitée ; elle n'est jamais
+  stockée et disparaît des payloads le 1er décembre 2026. En repli
+  (anciens payloads), le dernier segment de l'URL donne l'identifiant.
+- Un lien de téléchargement frais s'obtient à la demande par
+  `GET /files/{fileId}` (`getFileDownloadUrl`), valable 7 jours.
+- Le client envoie `x-api-documents-version: 2` sur tous les appels (format
+  par défaut au 1er décembre 2026). L'upload se fait par `POST /files` en
+  multipart (`uploadFile`) ; le flux `fileName` + `PUT uploadUrl` n'est pas
+  utilisé.
+- La route « liste des types d'opérations » (retirée le 1er novembre 2026)
+  n'était pas appelée ; `listOrganizationOperationTypes` utilise
+  `GET /organizations/operations`.
+
+## Archivage et procédure de sortie
+
+Chaque fichier a une ligne dans `mynotary_files` (`file_id` UNIQUE,
+`kind` signed / proof, `signed_at`, `archive_due_at` = `signed_at`
++ 9 ans 6 mois, `archived_at`, `storage_path`, `last_error`).
+
+- **Copie immédiate** : à réception, le PDF est copié dans le bucket privé
+  `mynotary-archives` (`<contractId>/signed_<nom>.pdf`, `proof_<nom>.pdf`).
+  Décision Yoann du 09/10/2026 : coût négligeable, sécurité en cas de
+  résiliation. Un échec laisse la ligne sans `archived_at`.
+- **Tâche mensuelle** `/api/internal/cron/mynotary-archive` (le 1er du mois) :
+  copie ce qui arrive à échéance (horizon 31 jours) sans copie locale. Un
+  échec reste en attente (`last_error`, `archive_attempts`) et remonte via
+  `listOverdueMyNotaryFiles` (vue « Aujourd'hui »). Première échéance
+  réelle : 2035.
+- **Procédure de sortie** (à lancer avant toute résiliation) :
+
+  ```bash
+  MYNOTARY_API_KEY=<clé prod> npm run mynotary:export-files -- --out ~/Desktop/mynotary-export
+  ```
+
+  `scripts/mynotary-export-files.mjs` télécharge tous les `file_id`
+  connus (table `mynotary_files` + `files[]` des documents) dans le dossier
+  indiqué et écrit un `manifest.json` (chemin, taille, SHA-256, erreurs).
+  Idempotent, reprenable (`--force` pour retélécharger).
+
+### Questions ouvertes à poser à MyNotary (dev@mynotary.fr)
+
+1. Point de départ exact des 10 ans de conservation : date de signature,
+   date de validation, ou fin du dossier ? (Notre échéance d'archivage est
+   calée sur `signatureTime` + 9 ans 6 mois ; à ajuster selon la réponse.)
+2. L'accès à l'API et aux fichiers (`GET /files/{fileId}`) survit-il à une
+   résiliation de l'abonnement, et pendant combien de temps ?
 
 ## Setup checklist
 
@@ -136,9 +203,9 @@ Redeploy.
 
 Email `dev@mynotary.fr` with:
 
-- **Pré-prod URL**: `https://preprod.sillage-immobilier.com/api/webhooks/mynotary`
-- **Production URL**: `https://sillage-immobilier.com/api/webhooks/mynotary`
-- **Authentication method**: Custom Header
+- **Production URL**: `https://sillage-immo.com/api/webhooks/mynotary`
+  (déclarée : webhook id 19, type APIKEY — gérable par `GET/PUT /webhooks`)
+- **Authentication method**: Custom Header (`APIKEY`)
 - **Header name**: the value of `MYNOTARY_WEBHOOK_AUTH_HEADER`
 - **Header value**: the matching `MYNOTARY_WEBHOOK_AUTH_VALUE` (one
   secret per environment, transmitted out-of-band)
@@ -180,43 +247,22 @@ and `properties` after the row is stored. The matching score lives in
 A manager can manually attach an unmatched document via
 `POST /api/admin/mynotary/match`.
 
-## How the signed PDF is archived
+## Download endpoint
 
-`services/mynotary/archive-signed-document.service.ts` downloads each
-file in `signature_completed.files[]` (max 20 MB / file) **with the
-`x-api-key` header set to `MYNOTARY_API_KEY`** (their CDN rejects
-unauthenticated requests) and pushes it to the **private**
-`mynotary-archives` Supabase Storage bucket.
-
-- Files whose name hints at an eIDAS audit trail (`preuve`,
-  `proof`, `certificat`, `audit`, `eidas`) are stored as
-  `signature_proof_path`. As of Q3 2026 MyNotary does not yet ship a
-  dedicated eIDAS proof file — they re-evaluate at T4. The column
-  stays nullable until then.
-- Every other file is stored as `signed_document_path`.
-
-### Download endpoint
-
-`GET /api/admin/mynotary/<id>/download?kind=signed|proof` has two
-fallbacks:
-
-1. If an archive object exists in Supabase Storage, mint a 5 min
-   signed URL and 302 the browser to it. The bucket RLS is
-   service-role-only so the underlying object never leaves the
-   bucket directly.
-2. Otherwise (archive failed, or pre-existing document delivered
-   before the archive service was wired), proxy the bytes from
-   MyNotary on the server side, injecting `x-api-key` so the
-   browser doesn't need to know it.
-
-This guarantees a working download link for every row without ever
-exposing the API key to the client.
+`GET /api/admin/mynotary/<id>/download?kind=signed|proof` : si une copie
+existe dans le bucket, lien signé Supabase de 5 min (302) ; sinon lien
+frais MyNotary via `GET /files/{fileId}` et flux proxifié côté serveur.
+Aucune URL signée n'est jamais exposée au navigateur ni stockée.
 
 ## Operations runbook
 
-- Webhook delivery failures: MyNotary retries with backoff. Replays
-  hit the `mynotary_events.event_id UNIQUE` constraint and return
-  `200 OK` without re-processing.
+- Webhook : un doublon (même `x-mynotary-event-id`) renvoie 202 sans
+  retraitement. Un événement en `error` est repris par le cron toutes les
+  5 minutes jusqu'à 5 tentatives ; au-delà il reste visible en base
+  (`status = 'error'`) et doit être corrigé puis remis en `pending`.
+- Vérifier la configuration : `GET /webhooks` avec la clé d'API (le secret
+  n'est jamais renvoyé ; s'il est perdu, `PUT /webhooks/19` avec un nouveau
+  `apikeyValue` ET la même valeur dans `MYNOTARY_WEBHOOK_AUTH_VALUE`).
 - A mandate that never makes it to "signed" on the dashboard usually
   means the auto-match scored 0 — open `/admin/mynotary?matched=false`
   and rattach manually, or use the inline "Étapes du projet" form on
@@ -225,6 +271,5 @@ exposing the API key to the client.
   `update mynotary_signed_documents set deleted_at = now()` — the
   dashboard and MCP tools both filter on `deleted_at is null`.
 - Archive failures are non-blocking: the document row still exists,
-  and the list UI link continues to work because the download
-  endpoint transparently falls back to a server-side proxy fetch
-  from MyNotary.
+  the `mynotary_files` row keeps `last_error`, and the download endpoint
+  falls back to a fresh MyNotary link from the file id.

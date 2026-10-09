@@ -1,10 +1,13 @@
 import "server-only";
 import type { SyncWebhookSource } from "@/lib/ingestion/webhook-handler";
-import { myNotaryWebhookSource } from "@/services/ingestion/sources/mynotary.source";
 import { sweepBrightZapierWebhookSource } from "@/services/ingestion/sources/sweepbright-zapier.source";
 
 /**
  * Sources "sync" rejouées par le cron /api/internal/cron/webhook-deliveries.
+ *
+ * MyNotary n'est plus une source du rail : son webhook a sa propre boîte
+ * de réception (`mynotary_events`, cf. services/mynotary/event-inbox.service.ts)
+ * avec déduplication par en-tête et traitement ordonné par date d'événement.
  *
  * SweepBright (mode async) n'apparaît pas ici : ses livraisons sont
  * rejouées par son cron dédié /api/internal/cron/sweepbright-sync, dont le
@@ -16,5 +19,4 @@ import { sweepBrightZapierWebhookSource } from "@/services/ingestion/sources/swe
  */
 export const syncWebhookSources: SyncWebhookSource[] = [
   sweepBrightZapierWebhookSource,
-  myNotaryWebhookSource,
 ];

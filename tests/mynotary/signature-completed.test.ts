@@ -110,7 +110,7 @@ const baseMandatePayload = {
   operationId: 17,
   signedAt: "2026-05-20T10:00:00.000Z",
   signers: [{ email: "alice@example.com", role: "seller" }],
-  files: [{ name: "mandat.pdf", url: "https://docs.mynotary.fr/42.pdf" }],
+  files: [{ name: "mandat.pdf", signedFileId: "file-42", url: "https://docs.mynotary.fr/files/file-42" }],
 };
 
 describe("processSignatureCompleted", () => {
@@ -258,7 +258,7 @@ describe("processSignatureCompleted", () => {
     expect(upsertArgs.mynotary_register_type).toBe("MANAGEMENT");
   });
 
-  it("invokes the archive service with the webhook files when present", async () => {
+  it("invokes the archive service with the file ids only (never the signed URL)", async () => {
     matchSignedDocumentMock.mockResolvedValue({
       sellerProjectId: null,
       propertyId: null,
@@ -275,8 +275,30 @@ describe("processSignatureCompleted", () => {
     expect(archiveSignedDocumentMock).toHaveBeenCalledTimes(1);
     expect(archiveSignedDocumentMock.mock.calls[0][0]).toMatchObject({
       mynotaryContractId: "42",
-      files: baseMandatePayload.files,
+      signedAt: "2026-05-20T10:00:00.000Z",
+      files: [{ name: "mandat.pdf", signedFileId: "file-42" }],
     });
+    expect(JSON.stringify(archiveSignedDocumentMock.mock.calls[0][0])).not.toContain("https://");
+    // The stored row carries the id only as well.
+    const upsertCall = mockState.calls.find((c) =>
+      c.ops.some((o) => o.kind === "upsert" && (o.args[0] as Record<string, unknown>).mynotary_contract_id)
+    );
+    const upsertArgs = upsertCall!.ops.find((o) => o.kind === "upsert")!.args[0] as { files: unknown };
+    expect(upsertArgs.files).toEqual([{ name: "mandat.pdf", signedFileId: "file-42" }]);
+  });
+
+  it("derives the file id from the legacy url when signedFileId is missing", async () => {
+    matchSignedDocumentMock.mockResolvedValue({
+      sellerProjectId: null,
+      propertyId: null,
+      confidence: 0,
+      method: "none",
+    });
+    const { sanitizeFiles } = await import("@/services/mynotary/signature-completed.service");
+    expect(sanitizeFiles([{ name: "x", url: "https://docs.mynotary.fr/download/abc-123" }])).toEqual([
+      { name: "x", signedFileId: "abc-123" },
+    ]);
+    expect(sanitizeFiles([{ name: "no-id" }])).toEqual([]);
   });
 
   it("emits mynotary.offer_signed for a purchase offer", async () => {
