@@ -82,15 +82,43 @@ export const validateVitrineQuartier = (quartier: string | null): string[] => {
     : [];
 };
 
-// Titres SweepBright : « NICE – Église Russe – Appartement 3 pièces… »,
-// « Nice - Cimiez - … », « Mont Boron – Villa… ». Le quartier est le premier
-// segment une fois la ville retirée.
+// Titres SweepBright réels : « NICE – EGLISE RUSSE 2 PIÈCES AVEC BALCON – … »,
+// « NICE SAINT-AUGUSTIN – 2 PIÈCES VUE MER – … », « Nice – Palais des
+// Expositions | 3 pièces… », « NICE – AVENUE PAUL ARÈNE – Studio… ». Le
+// quartier est ce qui reste du premier segment une fois la ville retirée et la
+// désignation du bien (« 2 PIÈCES », « Studio », « Villa »…) coupée.
 const TITLE_SEPARATOR = /\s*[–—]\s*|\s+-\s+|\s*\|\s*/;
-const LEADING_CITY = /^(nice|villefranche(?:-sur-mer)?|beaulieu(?:-sur-mer)?|saint-jean-cap-ferrat|cap d'ail|èze|eze|cagnes(?:-sur-mer)?|saint-laurent-du-var)\b[\s,:–—-]*/i;
+const LEADING_CITY =
+  /^(nice|villefranche(?:-sur-mer)?|beaulieu(?:-sur-mer)?|saint-jean-cap-ferrat|cap d'ail|èze|eze|cagnes(?:-sur-mer)?|saint-laurent-du-var)\b[\s,:–—-]*/i;
+const DESIGNATION_START =
+  /\b(\d|superbe|magnifique|bel|belle|beau|grand|grande|joli|jolie|appartement|villa|maison|studio|duplex|triplex|penthouse|loft|terrain|local|parking|garage|cave|bureau|immeuble|t\d|f\d)\b/i;
+const SMALL_WORDS = new Set(["de", "des", "du", "la", "le", "les", "l'", "d'", "et", "au", "aux", "sur"]);
+
+const capitalizeWord = (word: string) =>
+  word
+    .split("-")
+    .map((part) => (part.length > 0 ? part[0].toUpperCase() + part.slice(1).toLowerCase() : part))
+    .join("-");
+
+const toTitleCase = (value: string) =>
+  value
+    .split(" ")
+    .map((word, index) => {
+      const lower = word.toLowerCase();
+      if (index > 0 && SMALL_WORDS.has(lower)) return lower;
+      if (lower.startsWith("l'") || lower.startsWith("d'")) {
+        return lower.slice(0, 2) + capitalizeWord(word.slice(2));
+      }
+      return capitalizeWord(word);
+    })
+    .join(" ");
 
 /**
- * Pré-remplissage du quartier à partir du titre : segment avant le premier
- * tiret, débarrassé d'une ville en tête. Renvoie null si rien d'exploitable.
+ * Pré-remplissage du quartier à partir du titre : premier segment avant le
+ * premier tiret, débarrassé de la ville en tête et de la désignation du bien.
+ * Un titre tout en capitales est remis en casse de titre (« EGLISE RUSSE » →
+ * « Eglise Russe »). Renvoie null si rien d'exploitable : le collaborateur
+ * saisit alors le quartier à la main.
  */
 export const deriveVitrineQuartierFromTitle = (title: string | null | undefined): string | null => {
   if (!title) return null;
@@ -103,16 +131,18 @@ export const deriveVitrineQuartierFromTitle = (title: string | null | undefined)
   let candidate = segments[0];
   if (LEADING_CITY.test(candidate)) {
     const stripped = collapseWhitespace(candidate.replace(LEADING_CITY, ""));
-    // « NICE – Cimiez » : la ville occupait tout le premier segment, on prend
-    // le suivant.
+    // « NICE – EGLISE RUSSE… » : la ville occupait tout le premier segment,
+    // le quartier est dans le suivant.
     candidate = stripped.length > 0 ? stripped : (segments[1] ?? "");
   }
-  candidate = collapseWhitespace(candidate);
+  const designation = candidate.search(DESIGNATION_START);
+  if (designation >= 0) {
+    candidate = candidate.slice(0, designation);
+  }
+  candidate = collapseWhitespace(candidate.replace(/[\s,:;–—-]+$/, ""));
   if (candidate.length === 0) return null;
   if (Array.from(candidate).length > VITRINE_QUARTIER_MAX_LENGTH) return null;
-  // Un segment qui ressemble à une désignation de bien n'est pas un quartier.
-  if (/\b(appartement|villa|maison|studio|pi[èe]ces?|m²|duplex|penthouse|loft|terrain|local|parking|cave|t\d|f\d)\b/i.test(candidate)) {
-    return null;
-  }
-  return candidate;
+  if (/\b(pi[èe]ces?|m²)\b/i.test(candidate)) return null;
+
+  return candidate === candidate.toUpperCase() ? toTitleCase(candidate) : candidate;
 };

@@ -57,16 +57,21 @@ describe("quartier", () => {
     expect(validateVitrineQuartier(null)).toHaveLength(0);
   });
 
-  it("pré-remplit le quartier depuis le titre en retirant la ville", () => {
-    expect(deriveVitrineQuartierFromTitle("NICE – Église Russe – Appartement 3 pièces")).toBe("Église Russe");
-    expect(deriveVitrineQuartierFromTitle("Nice Cimiez – Villa avec piscine")).toBe("Cimiez");
+  it("pré-remplit le quartier depuis les titres SweepBright réels", () => {
+    expect(deriveVitrineQuartierFromTitle("NICE – EGLISE RUSSE 2 PIÈCES AVEC BALCON – 4e ÉTAGE – ASCENSEUR – CAVE")).toBe("Eglise Russe");
+    expect(deriveVitrineQuartierFromTitle("NICE SAINT-AUGUSTIN – 2 PIÈCES VUE MER – AVANT-DERNIER ÉTAGE")).toBe("Saint-Augustin");
+    expect(deriveVitrineQuartierFromTitle("NICE MUSICIENS – SUPERBE 5 PIÈCES BELLE ÉPOQUE – PARKING")).toBe("Musiciens");
+    expect(deriveVitrineQuartierFromTitle("Nice – Palais des Expositions | 3 pièces vendu loué – Investissement locatif")).toBe("Palais des Expositions");
+    expect(deriveVitrineQuartierFromTitle("NICE – AVENUE PAUL ARÈNE – Studio lumineux de 21,40 m²")).toBe("Avenue Paul Arène");
+    expect(deriveVitrineQuartierFromTitle("NICE MONT-ALBAN – 3 PIÈCES 89 M² – VUE MER")).toBe("Mont-Alban");
+    expect(deriveVitrineQuartierFromTitle("NICE CENTRE – 3 PIÈCES À RÉNOVER")).toBe("Centre");
     expect(deriveVitrineQuartierFromTitle("Mont Boron - Appartement vue mer")).toBe("Mont Boron");
-    expect(deriveVitrineQuartierFromTitle("Palais des Expositions — Studio")).toBe("Palais des Expositions");
   });
 
-  it("ne propose rien quand le premier segment n'est pas un quartier", () => {
+  it("ne propose rien quand le titre ne contient pas de quartier", () => {
     expect(deriveVitrineQuartierFromTitle("Appartement 3 pièces vue mer")).toBeNull();
-    expect(deriveVitrineQuartierFromTitle("NICE – Appartement 2 pièces")).toBeNull();
+    expect(deriveVitrineQuartierFromTitle("NICE – 2 PIÈCES RÉNOVÉ – BALCON")).toBeNull();
+    expect(deriveVitrineQuartierFromTitle("NICE – Studio lumineux")).toBeNull();
     expect(deriveVitrineQuartierFromTitle(null)).toBeNull();
     expect(deriveVitrineQuartierFromTitle("")).toBeNull();
   });
