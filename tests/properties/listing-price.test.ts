@@ -54,6 +54,10 @@ const makeProperty = (overrides: Partial<PropertyRow> = {}): PropertyRow => ({
   legal: {},
   raw_payload: {},
   metadata: {},
+  vitrine_highlights: [],
+  vitrine_quartier: null,
+  vitrine_updated_at: null,
+  vitrine_updated_by: null,
   ...overrides,
 });
 

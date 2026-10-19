@@ -889,6 +889,10 @@ export type Database = {
           legal: Record<string, unknown>;
           raw_payload: Record<string, unknown>;
           metadata: Record<string, unknown>;
+          vitrine_highlights: string[];
+          vitrine_quartier: string | null;
+          vitrine_updated_at: string | null;
+          vitrine_updated_by: string | null;
         };
         Insert: {
           id?: string;
@@ -931,6 +935,10 @@ export type Database = {
           legal?: Record<string, unknown>;
           raw_payload?: Record<string, unknown>;
           metadata?: Record<string, unknown>;
+          vitrine_highlights?: string[];
+          vitrine_quartier?: string | null;
+          vitrine_updated_at?: string | null;
+          vitrine_updated_by?: string | null;
         };
         Update: {
           id?: string;
@@ -973,6 +981,10 @@ export type Database = {
           legal?: Record<string, unknown>;
           raw_payload?: Record<string, unknown>;
           metadata?: Record<string, unknown>;
+          vitrine_highlights?: string[];
+          vitrine_quartier?: string | null;
+          vitrine_updated_at?: string | null;
+          vitrine_updated_by?: string | null;
         };
         Relationships: [];
       };

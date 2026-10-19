@@ -230,7 +230,9 @@ const buildSweepBrightCanonicalPath = (estate: SweepBrightEstateData) => {
   return `/${encodeURIComponent(postalCode)}/${encodeURIComponent(estate.id)}`;
 };
 
-const mapEstateToPropertyInsert = (estate: SweepBrightEstateData) => {
+// Exporté pour le test de contrat « la synchronisation n'écrit jamais les colonnes
+// éditoriales (vitrine_*) » — voir tests/properties/vitrine-sync-contract.test.ts.
+export const mapEstateToPropertyInsert = (estate: SweepBrightEstateData) => {
   const liveableArea = estate.sizes?.liveable_area?.size;
   const plotArea = estate.sizes?.plot_area?.size;
   const floor = inferFloor(estate);

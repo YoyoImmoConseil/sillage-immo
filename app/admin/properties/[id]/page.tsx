@@ -11,6 +11,8 @@ import { AttachPropertyToProjectModal } from "./attach-property-to-project-modal
 import { PropertyDocumentsAdminPanel } from "./property-documents-admin-panel";
 import { PropertyVisitsAdminPanel } from "./property-visits-admin-panel";
 import { PropertyStatusPanel } from "./property-status-panel";
+import { PropertyVitrinePanel } from "./property-vitrine-panel";
+import { deriveVitrineQuartierFromTitle } from "@/lib/properties/vitrine-editorial";
 import { PropertyLocationMap } from "@/app/components/property-location-map";
 
 export const dynamic = "force-dynamic";
@@ -170,6 +172,16 @@ export default async function AdminPropertyDetailPage({ params }: AdminPropertyD
               detail.property.has_elevator === null ? "" : detail.property.has_elevator ? "true" : "false",
             coverImageUrl: detail.listing?.cover_image_url ?? "",
           }}
+        />
+
+        <PropertyVitrinePanel
+          propertyId={detail.property.id}
+          canEdit={hasAdminPermission(context, "properties.manage")}
+          initialHighlights={detail.property.vitrine_highlights ?? []}
+          initialQuartier={detail.property.vitrine_quartier ?? null}
+          suggestedQuartier={deriveVitrineQuartierFromTitle(detail.property.title)}
+          initialUpdatedAt={detail.property.vitrine_updated_at ?? null}
+          initialUpdatedBy={detail.property.vitrine_updated_by ?? null}
         />
 
         {hasLocationMap ? (
