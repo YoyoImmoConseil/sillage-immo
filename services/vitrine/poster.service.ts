@@ -2,7 +2,7 @@ import "server-only";
 import { renderToBuffer, type DocumentProps } from "@react-pdf/renderer";
 import { createElement, type ReactElement } from "react";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { serverEnv } from "@/lib/env/server";
+import { SITE_URL } from "@/lib/seo/site";
 import { buildVitrinePosterContent, type VitrinePosterContent } from "@/lib/vitrine/poster-content";
 import { buildQrModules } from "@/lib/vitrine/qr";
 import type { Database } from "@/types/db/supabase";
@@ -76,7 +76,9 @@ export const buildVitrinePoster = async (input: {
     listing: listing
       ? { price_amount: listing.price_amount, canonical_path: listing.canonical_path, business_type: listing.business_type }
       : null,
-    siteUrl: serverEnv.PUBLIC_SITE_URL,
+    // Même URL canonique que le SEO : le QR d'une affiche imprimée depuis une
+    // preview doit pointer vers le site public, jamais vers la preview.
+    siteUrl: SITE_URL,
   });
   const errors = [...built.errors];
   const warnings = [...built.warnings];
