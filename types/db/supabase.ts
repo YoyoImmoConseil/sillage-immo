@@ -893,6 +893,8 @@ export type Database = {
           vitrine_quartier: string | null;
           vitrine_updated_at: string | null;
           vitrine_updated_by: string | null;
+          vitrine_main_media_ref: string | null;
+          vitrine_card_media_ref: string | null;
         };
         Insert: {
           id?: string;
@@ -939,6 +941,8 @@ export type Database = {
           vitrine_quartier?: string | null;
           vitrine_updated_at?: string | null;
           vitrine_updated_by?: string | null;
+          vitrine_main_media_ref?: string | null;
+          vitrine_card_media_ref?: string | null;
         };
         Update: {
           id?: string;
@@ -985,6 +989,8 @@ export type Database = {
           vitrine_quartier?: string | null;
           vitrine_updated_at?: string | null;
           vitrine_updated_by?: string | null;
+          vitrine_main_media_ref?: string | null;
+          vitrine_card_media_ref?: string | null;
         };
         Relationships: [];
       };

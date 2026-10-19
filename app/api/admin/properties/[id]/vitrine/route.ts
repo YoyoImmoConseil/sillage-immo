@@ -9,6 +9,8 @@ import {
 type SaveVitrineBody = {
   highlights?: unknown;
   quartier?: unknown;
+  mainMediaRef?: unknown;
+  cardMediaRef?: unknown;
 };
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -52,6 +54,8 @@ export async function PATCH(request: Request, { params }: RouteContext) {
       propertyId: id,
       highlights: body?.highlights,
       quartier: body?.quartier,
+      mainMediaRef: body?.mainMediaRef,
+      cardMediaRef: body?.cardMediaRef,
       updatedBy: context.profile?.email ?? null,
     });
     return NextResponse.json({ ok: true, ...editorial });

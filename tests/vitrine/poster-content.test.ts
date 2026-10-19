@@ -89,6 +89,8 @@ const makeProperty = (overrides: Partial<PropertyRow> = {}): PropertyRow => ({
   vitrine_quartier: "Église Russe",
   vitrine_updated_at: null,
   vitrine_updated_by: null,
+  vitrine_main_media_ref: null,
+  vitrine_card_media_ref: null,
   ...overrides,
 });
 
@@ -116,10 +118,11 @@ describe("buildVitrinePosterContent — Église Russe (V2)", () => {
     );
     expect(content.reference).toBe("177");
     expect(content.energy).toEqual({ kind: "scales", energyClass: "D", energyValue: 168, climateClass: "D", climateValue: 33 });
-    expect(content.dpeParagraph.replace(/ /g, " ")).toBe(
-      "Montant estimé des dépenses annuelles d’énergie pour un usage standard : entre 610 € et 880 € par an. " +
+    expect(content.dpeParagraph.replace(/\u00a0/g, " ")).toBe(
+      "CLASSE ÉNERGIE : D · CLASSE CLIMAT : D. " +
+        "Montant estimé des dépenses annuelles d’énergie pour un usage standard : entre 610 € et 880 € par an. " +
         "Prix moyens des énergies indexés au 1er janvier 2023 (abonnements compris). " +
-        "Informations sur les risques auxquels ce bien est exposé : www.georisques.gouv.fr"
+        "Les informations sur les risques auxquels ce bien est exposé sont disponibles sur le site Géorisques : www.georisques.gouv.fr"
     );
     expect(content.qrUrl).toBe("https://sillage-immo.com/06000/dfb5c26e");
     expect(content.footer).toContain("SARL au capital de 8 003,57 €");
@@ -187,7 +190,7 @@ describe("buildVitrinePosterContent — Église Russe (V2)", () => {
 
   it("DPE F ou G : phrase « consommation excessive » en tête", () => {
     const { content } = build({ legal: { ...egliseRusseLegal, energy: { ...egliseRusseLegal.energy, dpe: "G" } } });
-    expect(content.dpeParagraph.startsWith("Logement à consommation énergétique excessive.")).toBe(true);
+    expect(content.dpeParagraph).toContain("CLASSE ÉNERGIE : G · CLASSE CLIMAT : D. Logement à consommation énergétique excessive : classe G.");
     expect(content.energy).toMatchObject({ kind: "scales", energyClass: "G" });
   });
 
@@ -197,7 +200,7 @@ describe("buildVitrinePosterContent — Église Russe (V2)", () => {
     expect(blank.content.energy).toEqual({ kind: "text" });
     expect(blank.content.dpeParagraph).toMatch(/vierge/);
     const exempt = build({ legal: { ...egliseRusseLegal, energy: { dpe: "NS" } } });
-    expect(exempt.content.dpeParagraph).toMatch(/non soumis/);
+    expect(exempt.content.dpeParagraph).toMatch(/non soumis/i);
     const missing = build({ legal: { ...egliseRusseLegal, energy: {} } });
     expect(missing.errors).toContainEqual(expect.stringMatching(/DPE/));
   });

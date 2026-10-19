@@ -364,10 +364,10 @@ const Scale = ({ x, selected, value, unit, colors, lightLetters }: ScaleProps) =
         <AbsText
           key={`letter-${dpeClass}`}
           font={FONTS.sans}
-          size={11}
+          size={10}
           weight={700}
           color={lightLetters[dpeClass] ? COLORS.white : COLORS.navy}
-          top={firstBarTop + index * pitch + 1.4}
+          top={firstBarTop + index * pitch + 1.2}
           left={x + letterInset}
         >
           {dpeClass}
@@ -379,7 +379,7 @@ const Scale = ({ x, selected, value, unit, colors, lightLetters }: ScaleProps) =
           size={13.5}
           weight={700}
           color={COLORS.navy}
-          top={firstBarTop + DPE_CLASSES.indexOf(selected) * pitch - 1.3}
+          top={firstBarTop + DPE_CLASSES.indexOf(selected) * pitch - 2}
           left={x + DPE_BAR_WIDTHS[selected] + selectedOutline + valueGap}
         >
           {`${new Intl.NumberFormat("fr-FR").format(value)} ${unit}`}
@@ -433,12 +433,12 @@ const DpeBlock = ({ content }: { content: VitrinePosterContent }) => (
     ) : null}
     <AbsText
       font={FONTS.text}
-      size={content.energy.kind === "scales" ? 9 : 12}
+      size={DPE_TEXT.size}
       color={COLORS.navy}
       top={content.energy.kind === "scales" ? DPE_TEXT.top : DPE_SCALE_LABEL_TOP + 14}
       left={DPE_TEXT.x}
       width={DPE_TEXT.width}
-      lineHeight={content.energy.kind === "scales" ? 12.2 / 9 : 1.45}
+      lineHeight={DPE_TEXT.lineHeight / DPE_TEXT.size}
     >
       {content.dpeParagraph}
     </AbsText>

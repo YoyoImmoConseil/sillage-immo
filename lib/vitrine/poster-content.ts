@@ -7,9 +7,10 @@ import {
 } from "@/services/properties/property-presentation";
 import {
   DPE_BLANK_SENTENCE,
-  DPE_EXCESSIVE_SENTENCE,
   DPE_EXEMPT_SENTENCE,
   GEORISQUES_SENTENCE,
+  dpeClassesSentence,
+  dpeExcessiveSentence,
   resolveDpeStatus,
   type DpeClass,
 } from "./dpe";
@@ -357,7 +358,12 @@ export const buildVitrinePosterContent = (input: {
     } else {
       errors.push("DPE : fourchette des dépenses annuelles d’énergie absente dans SweepBright.");
     }
-    dpeParagraph = sentence([excessive ? DPE_EXCESSIVE_SENTENCE : null, costSentence, GEORISQUES_SENTENCE]);
+    dpeParagraph = sentence([
+      dpeClassesSentence(dpeStatus.energyClass, dpeStatus.climateClass),
+      excessive ? dpeExcessiveSentence(dpeStatus.energyClass) : null,
+      costSentence,
+      GEORISQUES_SENTENCE,
+    ]);
     if (energySnapshot.dpeValue === null || energySnapshot.gesValue === null) {
       warnings.push("DPE : consommation (kWh/m²/an) ou émissions (kg CO₂/m²/an) absentes : la valeur n'est pas affichée à côté de la flèche.");
     }

@@ -16,9 +16,32 @@ type PropertyRow = Database["public"]["Tables"]["properties"]["Row"];
 export type VitrineEditorial = {
   highlights: string[];
   quartier: string | null;
+  /** remote_media_id SweepBright de la grande photo (null = 1re photo). */
+  mainMediaRef: string | null;
+  /** remote_media_id SweepBright de la photo de la carte (null = 2e photo). */
+  cardMediaRef: string | null;
   updatedAt: string | null;
   updatedBy: string | null;
 };
+
+export type VitrineMediaOption = {
+  remoteMediaId: string;
+  ordinal: number;
+  url: string | null;
+};
+
+const VITRINE_EDITORIAL_COLUMNS =
+  "vitrine_highlights, vitrine_quartier, vitrine_main_media_ref, vitrine_card_media_ref, vitrine_updated_at, vitrine_updated_by";
+
+type VitrineEditorialRow = Pick<
+  PropertyRow,
+  | "vitrine_highlights"
+  | "vitrine_quartier"
+  | "vitrine_main_media_ref"
+  | "vitrine_card_media_ref"
+  | "vitrine_updated_at"
+  | "vitrine_updated_by"
+>;
 
 export class VitrineValidationError extends Error {
   readonly errors: string[];
@@ -29,24 +52,44 @@ export class VitrineValidationError extends Error {
   }
 }
 
-const toEditorial = (
-  row: Pick<PropertyRow, "vitrine_highlights" | "vitrine_quartier" | "vitrine_updated_at" | "vitrine_updated_by">
-): VitrineEditorial => ({
+const toEditorial = (row: VitrineEditorialRow): VitrineEditorial => ({
   highlights: Array.isArray(row.vitrine_highlights) ? row.vitrine_highlights : [],
   quartier: row.vitrine_quartier ?? null,
+  mainMediaRef: row.vitrine_main_media_ref ?? null,
+  cardMediaRef: row.vitrine_card_media_ref ?? null,
   updatedAt: row.vitrine_updated_at ?? null,
   updatedBy: row.vitrine_updated_by ?? null,
 });
 
+/** Photos du bien proposées au choix (images seulement, ordre du carrousel). */
+export const listVitrineMediaOptions = async (propertyId: string): Promise<VitrineMediaOption[]> => {
+  const { data, error } = await supabaseAdmin
+    .from("property_media")
+    .select("remote_media_id, ordinal, cached_url, remote_url")
+    .eq("property_id", propertyId)
+    .eq("kind", "image")
+    .order("ordinal", { ascending: true });
+  if (error) throw new Error(error.message);
+  return ((data ?? []) as Array<{ remote_media_id: string; ordinal: number; cached_url: string | null; remote_url: string | null }>).map(
+    (row) => ({ remoteMediaId: row.remote_media_id, ordinal: row.ordinal, url: row.cached_url ?? row.remote_url ?? null })
+  );
+};
+
+const normalizeMediaRef = (input: unknown): string | null => {
+  if (typeof input !== "string") return null;
+  const value = input.trim();
+  return value.length > 0 && value.length <= 128 ? value : null;
+};
+
 export const getVitrineEditorial = async (propertyId: string): Promise<VitrineEditorial | null> => {
   const { data, error } = await supabaseAdmin
     .from("properties")
-    .select("vitrine_highlights, vitrine_quartier, vitrine_updated_at, vitrine_updated_by")
+    .select(VITRINE_EDITORIAL_COLUMNS)
     .eq("id", propertyId)
     .maybeSingle();
   if (error) throw new Error(error.message);
   if (!data) return null;
-  return toEditorial(data as Pick<PropertyRow, "vitrine_highlights" | "vitrine_quartier" | "vitrine_updated_at" | "vitrine_updated_by">);
+  return toEditorial(data as VitrineEditorialRow);
 };
 
 /**
@@ -59,14 +102,23 @@ export const saveVitrineEditorial = async (input: {
   propertyId: string;
   highlights: unknown;
   quartier: unknown;
+  mainMediaRef?: unknown;
+  cardMediaRef?: unknown;
   updatedBy: string | null;
 }): Promise<VitrineEditorial> => {
   const highlights = normalizeVitrineHighlights(input.highlights);
   const quartier = normalizeVitrineQuartier(input.quartier);
+  const mainMediaRef = normalizeMediaRef(input.mainMediaRef);
+  const cardMediaRef = normalizeMediaRef(input.cardMediaRef);
   const errors = [
     ...validateVitrineHighlights(highlights, { allowEmpty: true }).errors,
     ...validateVitrineQuartier(quartier),
   ];
+  if (mainMediaRef || cardMediaRef) {
+    const known = new Set((await listVitrineMediaOptions(input.propertyId)).map((option) => option.remoteMediaId));
+    if (mainMediaRef && !known.has(mainMediaRef)) errors.push("Grande photo : média inconnu pour ce bien.");
+    if (cardMediaRef && !known.has(cardMediaRef)) errors.push("Photo de la carte : média inconnu pour ce bien.");
+  }
   if (errors.length > 0) {
     throw new VitrineValidationError(errors);
   }
@@ -77,16 +129,18 @@ export const saveVitrineEditorial = async (input: {
     .update({
       vitrine_highlights: highlights,
       vitrine_quartier: quartier,
+      vitrine_main_media_ref: mainMediaRef,
+      vitrine_card_media_ref: cardMediaRef,
       vitrine_updated_at: now,
       vitrine_updated_by: input.updatedBy,
     })
     .eq("id", input.propertyId)
-    .select("vitrine_highlights, vitrine_quartier, vitrine_updated_at, vitrine_updated_by")
+    .select(VITRINE_EDITORIAL_COLUMNS)
     .maybeSingle();
 
   if (error) throw new Error(error.message);
   if (!data) throw new Error("Bien introuvable.");
-  return toEditorial(data as Pick<PropertyRow, "vitrine_highlights" | "vitrine_quartier" | "vitrine_updated_at" | "vitrine_updated_by">);
+  return toEditorial(data as VitrineEditorialRow);
 };
 
 // --- Suggestion LLM ---------------------------------------------------------

@@ -88,9 +88,19 @@ export const resolveDpeStatus = (energyLabel: unknown, climateLabel: unknown): D
   return { kind: "missing" };
 };
 
-export const DPE_EXCESSIVE_SENTENCE = "Logement à consommation énergétique excessive.";
+/**
+ * Mentions réglementaires des annonces (CCH art. R126-21 à R126-24 ; arrêté
+ * du 22 décembre 2021 pour les classes F et G ; code de l'environnement
+ * art. L125-5 pour Géorisques). Libellés repris mot pour mot : la DGCCRF les
+ * contrôle, et leur taille doit être au moins celle du texte courant de
+ * l'annonce.
+ */
+export const dpeClassesSentence = (energyClass: DpeClass, climateClass: DpeClass) =>
+  `CLASSE ÉNERGIE : ${energyClass} · CLASSE CLIMAT : ${climateClass}.`;
+export const dpeExcessiveSentence = (energyClass: DpeClass) =>
+  `Logement à consommation énergétique excessive : classe ${energyClass}.`;
 export const GEORISQUES_SENTENCE =
-  "Informations sur les risques auxquels ce bien est exposé : www.georisques.gouv.fr";
+  "Les informations sur les risques auxquels ce bien est exposé sont disponibles sur le site Géorisques : www.georisques.gouv.fr";
 export const DPE_BLANK_SENTENCE =
-  "Diagnostic de performance énergétique vierge : consommations non exploitables.";
-export const DPE_EXEMPT_SENTENCE = "Bien non soumis au diagnostic de performance énergétique.";
+  "DPE vierge : diagnostic de performance énergétique réalisé sans estimation des consommations.";
+export const DPE_EXEMPT_SENTENCE = "Non soumis au DPE.";

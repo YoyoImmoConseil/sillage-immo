@@ -29,26 +29,30 @@ export const MAIN_PHOTO = { x: 408.75, y: 30, w: 751.5, h: 534 } as const;
 export const REFERENCE_TOP = 566;
 
 /** Bloc DPE (sable) et bloc QR (marine). */
-export const DPE_BLOCK = { x: 409.5, y: 579, w: 576, h: 206 } as const;
-export const QR_BLOCK = { x: 997.5, y: 579, w: 163, h: 206 } as const;
+// Blocs allongés de 5 pt par rapport à la V2 (206 → 211) : les mentions
+// réglementaires passent en 12 pt (taille du texte courant), les flèches DPE
+// sont légèrement resserrées.
+export const DPE_BLOCK = { x: 409.5, y: 579, w: 576, h: 211 } as const;
+export const QR_BLOCK = { x: 997.5, y: 579, w: 163, h: 211 } as const;
 export const QR_FRAME = { size: 99, padding: 7.5, top: 588 } as const;
 export const QR_CAPTION_TOP = 694;
 export const LOGO = { width: 80, top: 708 } as const;
 
-export const DPE_TITLE_TOP = 588;
-export const DPE_SCALE_LABEL_TOP = 605.5;
+export const DPE_TITLE_TOP = 586;
+export const DPE_SCALE_LABEL_TOP = 601;
 export const DPE_SCALE = {
   energyX: 427.5,
   climateX: 709.5,
-  firstBarTop: 621,
-  pitch: 17.33,
-  barHeight: 15,
-  tip: 10,
+  firstBarTop: 613,
+  pitch: 15,
+  barHeight: 13,
+  tip: 9,
   letterInset: 4.5,
   valueGap: 11,
-  selectedOutline: 3,
+  selectedOutline: 2.5,
 } as const;
-export const DPE_TEXT = { x: 427.5, top: 746, width: 546 } as const;
+/** Mentions réglementaires : 12 pt, comme le texte courant de la carte. */
+export const DPE_TEXT = { x: 427.5, top: 720, width: 546, size: 12, lineHeight: 13.2 } as const;
 
 export const FOOTER = { x: 35, top: 797, width: 1120 } as const;
 

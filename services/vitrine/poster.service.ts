@@ -11,7 +11,10 @@ import { loadPosterLogo, preparePosterPhoto } from "./poster-images.service";
 
 type PropertyRow = Database["public"]["Tables"]["properties"]["Row"];
 type ListingRow = Database["public"]["Tables"]["property_listings"]["Row"];
-type MediaRow = Pick<Database["public"]["Tables"]["property_media"]["Row"], "kind" | "ordinal" | "cached_url" | "remote_url">;
+type MediaRow = Pick<
+  Database["public"]["Tables"]["property_media"]["Row"],
+  "remote_media_id" | "kind" | "ordinal" | "cached_url" | "remote_url"
+>;
 
 export type VitrinePosterDiagnostics = {
   errors: string[];
@@ -39,7 +42,7 @@ const loadPropertyBundle = async (propertyId: string) => {
       supabaseAdmin.from("property_listings").select("*").eq("property_id", propertyId).maybeSingle(),
       supabaseAdmin
         .from("property_media")
-        .select("kind, ordinal, cached_url, remote_url")
+        .select("remote_media_id, kind, ordinal, cached_url, remote_url")
         .eq("property_id", propertyId)
         .eq("kind", "image")
         .order("ordinal", { ascending: true }),
@@ -95,7 +98,19 @@ export const buildVitrinePoster = async (input: {
     return { content: built.content, pdf: null, fileName, errors, warnings };
   }
 
-  const [mainMedia, cardMedia] = [media[0] ?? null, media[1] ?? media[0] ?? null];
+  // Photos choisies dans l'admin (par identifiant SweepBright, stable entre
+  // deux synchronisations) ; sinon 1re et 2e photo du carrousel.
+  const pickMedia = (ref: string | null, fallback: MediaRow | null, label: string) => {
+    if (!ref) return fallback;
+    const chosen = media.find((row) => row.remote_media_id === ref) ?? null;
+    if (!chosen) {
+      warnings.push(`${label} : la photo choisie n'existe plus dans SweepBright, photo par défaut utilisée.`);
+      return fallback;
+    }
+    return chosen;
+  };
+  const mainMedia = pickMedia(property.vitrine_main_media_ref, media[0] ?? null, "Grande photo");
+  const cardMedia = pickMedia(property.vitrine_card_media_ref, media[1] ?? media[0] ?? null, "Photo de la carte");
   const photoUrl = (row: MediaRow | null) => row?.cached_url ?? row?.remote_url ?? null;
 
   let mainPhoto: VitrinePosterImage | null = null;
