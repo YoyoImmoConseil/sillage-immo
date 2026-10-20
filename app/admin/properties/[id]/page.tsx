@@ -14,6 +14,7 @@ import { PropertyStatusPanel } from "./property-status-panel";
 import { PropertyVitrinePanel } from "./property-vitrine-panel";
 import { deriveVitrineQuartierFromTitle } from "@/lib/properties/vitrine-editorial";
 import { listVitrineMediaOptions } from "@/services/properties/vitrine.service";
+import { listVitrinePosters } from "@/services/vitrine/poster-generation.service";
 import { PropertyLocationMap } from "@/app/components/property-location-map";
 
 export const dynamic = "force-dynamic";
@@ -30,7 +31,11 @@ export default async function AdminPropertyDetailPage({ params }: AdminPropertyD
   const detail = await getAdminPropertyDetail(id);
   if (!detail) notFound();
 
-  const [matches, vitrineMedia] = await Promise.all([listMatchesForProperty(id), listVitrineMediaOptions(id)]);
+  const [matches, vitrineMedia, vitrineHistory] = await Promise.all([
+    listMatchesForProperty(id),
+    listVitrineMediaOptions(id),
+    listVitrinePosters(id).catch(() => []),
+  ]);
 
   const { data: projectProps } = await supabaseAdmin
     .from("project_properties")
@@ -182,6 +187,7 @@ export default async function AdminPropertyDetailPage({ params }: AdminPropertyD
           initialQuartier={detail.property.vitrine_quartier ?? null}
           suggestedQuartier={deriveVitrineQuartierFromTitle(detail.property.title)}
           media={vitrineMedia}
+          history={vitrineHistory}
           initialMainMediaRef={detail.property.vitrine_main_media_ref ?? null}
           initialCardMediaRef={detail.property.vitrine_card_media_ref ?? null}
           initialUpdatedAt={detail.property.vitrine_updated_at ?? null}

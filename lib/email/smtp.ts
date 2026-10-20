@@ -3,11 +3,19 @@ import nodemailer from "nodemailer";
 import { Resend } from "resend";
 import { escapeHtml, renderEmailLayout } from "./layout";
 
+export type EmailAttachment = {
+  filename: string;
+  content: Buffer;
+  contentType: string;
+};
+
 type EmailPayload = {
   to: string;
   subject: string;
   text: string;
   html: string;
+  /** Pièces jointes (même forme pour Resend et Nodemailer). */
+  attachments?: EmailAttachment[];
 };
 
 const isSmtpConfigured = () => {
