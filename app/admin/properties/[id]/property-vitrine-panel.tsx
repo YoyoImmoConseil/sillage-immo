@@ -252,7 +252,16 @@ export function PropertyVitrinePanel({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ sendEmail: true }),
         });
-        const payload = (await response.json()) as GenerationResult;
+        const raw = await response.text();
+        let payload: GenerationResult;
+        try {
+          payload = JSON.parse(raw) as GenerationResult;
+        } catch {
+          // Réponse non JSON (délai dépassé, fonction en erreur) : on montre
+          // le statut et le début du corps plutôt qu'un échec muet.
+          setError(`Erreur ${response.status} : ${raw.slice(0, 200) || response.statusText}`);
+          return;
+        }
         setGeneration(payload);
         if (payload.ok) {
           router.refresh();
@@ -491,7 +500,7 @@ export function PropertyVitrinePanel({
               rel="noreferrer"
               className="rounded-full bg-navy px-4 py-2 text-sm font-medium text-sand"
             >
-              {diagnostics.errors.length > 0 ? "Ouvrir l'aperçu PDF (filigrané)" : "Ouvrir l'aperçu PDF"}
+              {diagnostics.errors.length > 0 ? "Aperçu PDF (filigrané, non archivé)" : "Aperçu PDF (non archivé)"}
             </a>
           ) : null}
           {isDirty ? <span className="text-xs text-navy/60">Enregistrez avant de vérifier.</span> : null}
@@ -539,7 +548,8 @@ export function PropertyVitrinePanel({
             </button>
           ) : null}
           <span className="text-xs text-navy/60">
-            Génère le PDF A3, l&apos;archive et vous l&apos;envoie par e-mail (pièce jointe + lien valable 7 jours).
+            Même PDF que l&apos;aperçu, mais archivé (preuve de ce qui est affiché en vitrine) et envoyé par e-mail
+            (pièce jointe + lien valable 7 jours).
           </span>
         </div>
         {generation ? (

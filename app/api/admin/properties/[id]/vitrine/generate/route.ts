@@ -5,7 +5,10 @@ import { generateVitrinePoster } from "@/services/vitrine/poster-generation.serv
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-type GenerateBody = { sendEmail?: boolean };
+type GenerateBody = { sendEmail?: boolean; requesterEmail?: string };
+
+const isEmail = (value: unknown): value is string =>
+  typeof value === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 
 /**
  * « Imprimer la fiche vitrine » : génère le PDF A3, l'archive et l'envoie par
@@ -17,20 +20,24 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (!context || !hasAdminPermission(context, "properties.manage")) {
     return NextResponse.json({ ok: false, message: "Acces refuse." }, { status: 403 });
   }
-  const email = context.profile?.email?.trim().toLowerCase() ?? null;
-  if (!email) {
-    return NextResponse.json(
-      { ok: false, message: "Aucune adresse e-mail associée à votre session : connectez-vous avec votre compte Sillage." },
-      { status: 400 }
-    );
-  }
-
   let body: GenerateBody = {};
   try {
     const text = await request.text();
     body = text ? (JSON.parse(text) as GenerateBody) : {};
   } catch {
     return NextResponse.json({ ok: false, message: "Corps JSON invalide." }, { status: 400 });
+  }
+
+  // Destinataire = le collaborateur connecté. Seule la clé d'administration
+  // (scripts, outils internes) peut désigner explicitement un destinataire.
+  const sessionEmail = context.profile?.email?.trim().toLowerCase() ?? null;
+  const email =
+    sessionEmail ?? (context.mode === "secret" && isEmail(body.requesterEmail) ? body.requesterEmail.trim().toLowerCase() : null);
+  if (!email) {
+    return NextResponse.json(
+      { ok: false, message: "Aucune adresse e-mail associée à votre session : connectez-vous avec votre compte Sillage." },
+      { status: 400 }
+    );
   }
 
   const { id } = await params;

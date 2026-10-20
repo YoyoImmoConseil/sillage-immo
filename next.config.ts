@@ -18,6 +18,7 @@ const nextConfig: NextConfig = {
   // dans la fonction Vercel qui les utilise.
   outputFileTracingIncludes: {
     "/api/admin/properties/[id]/vitrine/preview": ["./assets/vitrine/**/*"],
+    "/api/admin/properties/[id]/vitrine/generate": ["./assets/vitrine/**/*"],
   },
   images: {
     remotePatterns: [
