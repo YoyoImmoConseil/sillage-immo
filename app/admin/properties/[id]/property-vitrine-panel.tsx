@@ -9,12 +9,17 @@ import {
   validateVitrineHighlights,
 } from "@/lib/properties/vitrine-editorial";
 
+type VitrineMediaOption = { remoteMediaId: string; ordinal: number; url: string | null };
+
 type PropertyVitrinePanelProps = {
   propertyId: string;
   canEdit: boolean;
   initialHighlights: string[];
   initialQuartier: string | null;
   suggestedQuartier: string | null;
+  media: VitrineMediaOption[];
+  initialMainMediaRef: string | null;
+  initialCardMediaRef: string | null;
   initialUpdatedAt: string | null;
   initialUpdatedBy: string | null;
 };
@@ -25,6 +30,8 @@ type ApiResponse = {
   errors?: string[];
   highlights?: string[];
   quartier?: string | null;
+  mainMediaRef?: string | null;
+  cardMediaRef?: string | null;
   updatedAt?: string | null;
   updatedBy?: string | null;
 };
@@ -52,14 +59,24 @@ export function PropertyVitrinePanel({
   initialHighlights,
   initialQuartier,
   suggestedQuartier,
+  media,
+  initialMainMediaRef,
+  initialCardMediaRef,
   initialUpdatedAt,
   initialUpdatedBy,
 }: PropertyVitrinePanelProps) {
   const [lines, setLines] = useState<string[]>(() => padLines(initialHighlights));
   const [quartier, setQuartier] = useState<string>(initialQuartier ?? suggestedQuartier ?? "");
+  // Photos : la valeur vide = défaut (1re photo en grand, 2e dans la carte).
+  const defaultMainRef = media[0]?.remoteMediaId ?? "";
+  const defaultCardRef = media[1]?.remoteMediaId ?? media[0]?.remoteMediaId ?? "";
+  const [mainMediaRef, setMainMediaRef] = useState<string>(initialMainMediaRef ?? "");
+  const [cardMediaRef, setCardMediaRef] = useState<string>(initialCardMediaRef ?? "");
   const [saved, setSaved] = useState({
     highlights: initialHighlights,
     quartier: initialQuartier ?? "",
+    mainMediaRef: initialMainMediaRef ?? "",
+    cardMediaRef: initialCardMediaRef ?? "",
     updatedAt: initialUpdatedAt,
     updatedBy: initialUpdatedBy,
   });
@@ -67,6 +84,8 @@ export function PropertyVitrinePanel({
   const [message, setMessage] = useState<string | null>(null);
   const [isSaving, startSave] = useTransition();
   const [isSuggesting, startSuggest] = useTransition();
+  const [isChecking, startCheck] = useTransition();
+  const [diagnostics, setDiagnostics] = useState<{ errors: string[]; warnings: string[] } | null>(null);
 
   const filledLines = useMemo(() => lines.map((line) => line.trim()).filter(Boolean), [lines]);
   const validation = useMemo(
@@ -74,7 +93,10 @@ export function PropertyVitrinePanel({
     [filledLines]
   );
   const isDirty =
-    filledLines.join("\n") !== saved.highlights.join("\n") || quartier.trim() !== saved.quartier;
+    filledLines.join("\n") !== saved.highlights.join("\n") ||
+    quartier.trim() !== saved.quartier ||
+    mainMediaRef !== saved.mainMediaRef ||
+    cardMediaRef !== saved.cardMediaRef;
   const canSave = canEdit && isDirty && validation.errors.length === 0 && !isSaving;
 
   const setLine = (index: number, value: string) => {
@@ -106,7 +128,12 @@ export function PropertyVitrinePanel({
         const response = await fetch(`/api/admin/properties/${propertyId}/vitrine`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ highlights: filledLines, quartier }),
+          body: JSON.stringify({
+            highlights: filledLines,
+            quartier,
+            mainMediaRef: mainMediaRef || null,
+            cardMediaRef: cardMediaRef || null,
+          }),
         });
         const payload = (await response.json()) as ApiResponse;
         if (!response.ok || !payload.ok) {
@@ -116,9 +143,13 @@ export function PropertyVitrinePanel({
         const highlights = payload.highlights ?? filledLines;
         setLines(padLines(highlights));
         setQuartier(payload.quartier ?? "");
+        setMainMediaRef(payload.mainMediaRef ?? "");
+        setCardMediaRef(payload.cardMediaRef ?? "");
         setSaved({
           highlights,
           quartier: payload.quartier ?? "",
+          mainMediaRef: payload.mainMediaRef ?? "",
+          cardMediaRef: payload.cardMediaRef ?? "",
           updatedAt: payload.updatedAt ?? null,
           updatedBy: payload.updatedBy ?? null,
         });
@@ -152,6 +183,26 @@ export function PropertyVitrinePanel({
         );
       } catch (caught) {
         setError(caught instanceof Error ? caught.message : "Suggestion impossible.");
+      }
+    });
+  };
+
+  const previewUrl = `/api/admin/properties/${propertyId}/vitrine/preview`;
+  const check = () => {
+    setError(null);
+    setMessage(null);
+    setDiagnostics(null);
+    startCheck(async () => {
+      try {
+        const response = await fetch(`${previewUrl}?diag=1`, { cache: "no-store" });
+        const payload = (await response.json()) as ApiResponse & { errors?: string[]; warnings?: string[] };
+        if (!response.ok && !payload.errors) {
+          setError(payload.message ?? "Vérification impossible.");
+          return;
+        }
+        setDiagnostics({ errors: payload.errors ?? [], warnings: payload.warnings ?? [] });
+      } catch (caught) {
+        setError(caught instanceof Error ? caught.message : "Vérification impossible.");
       }
     });
   };
@@ -281,6 +332,65 @@ export function PropertyVitrinePanel({
         </div>
       </div>
 
+      {media.length > 0 ? (
+        <div className="space-y-3">
+          <p className="text-xs font-medium uppercase tracking-wide text-navy/60">Photos de l&apos;affiche</p>
+          <p className="text-sm text-navy/70">
+            Par défaut : 1<sup>re</sup> photo en grand, 2<sup>e</sup> dans la carte. Cliquez sur « G » pour la grande photo, sur « C »
+            pour la photo de la carte.
+          </p>
+          <ul className="flex flex-wrap gap-3">
+            {media.map((item) => {
+              const isMain = (mainMediaRef || defaultMainRef) === item.remoteMediaId;
+              const isCard = (cardMediaRef || defaultCardRef) === item.remoteMediaId;
+              return (
+                <li key={item.remoteMediaId} className="w-[140px] space-y-1">
+                  <div
+                    className={`relative aspect-[4/3] overflow-hidden rounded-xl border-2 bg-navy/5 ${
+                      isMain || isCard ? "border-navy" : "border-transparent"
+                    }`}
+                  >
+                    {item.url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={item.url} alt={`Photo ${item.ordinal}`} className="h-full w-full object-cover" loading="lazy" />
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-xs text-navy/50">Photo {item.ordinal}</div>
+                    )}
+                    <span className="absolute left-1 top-1 rounded bg-white/90 px-1.5 text-[11px] font-medium text-navy">
+                      {item.ordinal}
+                    </span>
+                  </div>
+                  <div className="flex gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setMainMediaRef(item.remoteMediaId === defaultMainRef ? "" : item.remoteMediaId)}
+                      disabled={!canEdit || isSaving}
+                      title="Grande photo"
+                      className={`flex-1 rounded border px-2 py-1 text-xs font-medium ${
+                        isMain ? "bg-navy text-sand" : "text-navy"
+                      } disabled:opacity-50`}
+                    >
+                      G{isMain ? " ✓" : ""}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCardMediaRef(item.remoteMediaId === defaultCardRef ? "" : item.remoteMediaId)}
+                      disabled={!canEdit || isSaving}
+                      title="Photo de la carte"
+                      className={`flex-1 rounded border px-2 py-1 text-xs font-medium ${
+                        isCard ? "bg-navy text-sand" : "text-navy"
+                      } disabled:opacity-50`}
+                    >
+                      C{isCard ? " ✓" : ""}
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ) : null}
+
       {validation.errors.length > 0 ? (
         <ul className="space-y-1 text-sm text-red-600">
           {validation.errors.map((item) => (
@@ -306,6 +416,58 @@ export function PropertyVitrinePanel({
       ) : stamp ? (
         <p className="text-xs text-navy/60">Dernière modification : {stamp}</p>
       ) : null}
+
+      <div className="space-y-3 border-t border-[rgba(20,20,70,0.12)] pt-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={check}
+            disabled={isChecking || isDirty}
+            title={isDirty ? "Enregistrez d'abord vos modifications." : undefined}
+            className="rounded-full border border-navy/30 px-4 py-2 text-sm font-medium text-navy transition hover:bg-navy/5 disabled:opacity-50"
+          >
+            {isChecking ? "Vérification…" : "Vérifier les données de l'affiche"}
+          </button>
+          {diagnostics ? (
+            <a
+              href={diagnostics.errors.length > 0 ? `${previewUrl}?force=1` : previewUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-full bg-navy px-4 py-2 text-sm font-medium text-sand"
+            >
+              {diagnostics.errors.length > 0 ? "Ouvrir l'aperçu PDF (filigrané)" : "Ouvrir l'aperçu PDF"}
+            </a>
+          ) : null}
+          {isDirty ? <span className="text-xs text-navy/60">Enregistrez avant de vérifier.</span> : null}
+        </div>
+        {diagnostics ? (
+          <div className="space-y-2 text-sm">
+            {diagnostics.errors.length === 0 && diagnostics.warnings.length === 0 ? (
+              <p className="text-emerald-700">Toutes les données nécessaires à l&apos;affiche sont présentes.</p>
+            ) : null}
+            {diagnostics.errors.length > 0 ? (
+              <div>
+                <p className="font-medium text-red-700">Bloquant — à corriger dans SweepBright ou ci-dessus :</p>
+                <ul className="mt-1 list-disc space-y-1 pl-5 text-red-700">
+                  {diagnostics.errors.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+            {diagnostics.warnings.length > 0 ? (
+              <div>
+                <p className="font-medium text-amber-700">À vérifier :</p>
+                <ul className="mt-1 list-disc space-y-1 pl-5 text-amber-700">
+                  {diagnostics.warnings.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
     </section>
   );
 }

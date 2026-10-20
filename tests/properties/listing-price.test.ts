@@ -58,6 +58,8 @@ const makeProperty = (overrides: Partial<PropertyRow> = {}): PropertyRow => ({
   vitrine_quartier: null,
   vitrine_updated_at: null,
   vitrine_updated_by: null,
+  vitrine_main_media_ref: null,
+  vitrine_card_media_ref: null,
   ...overrides,
 });
 

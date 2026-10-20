@@ -12,6 +12,13 @@ const supabaseHostname = (() => {
 })();
 
 const nextConfig: NextConfig = {
+  // react-pdf (fiche vitrine) doit rester un module Node natif, non bundlé.
+  serverExternalPackages: ["@react-pdf/renderer"],
+  // Polices et logo lus sur le disque à la génération du PDF : à embarquer
+  // dans la fonction Vercel qui les utilise.
+  outputFileTracingIncludes: {
+    "/api/admin/properties/[id]/vitrine/preview": ["./assets/vitrine/**/*"],
+  },
   images: {
     remotePatterns: [
       ...(supabaseHostname

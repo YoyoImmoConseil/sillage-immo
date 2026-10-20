@@ -90,7 +90,9 @@ describe("contrat fiche vitrine ↔ synchronisation SweepBright", () => {
     expect(db.updates).toHaveLength(1);
     expect(db.updates[0].table).toBe("properties");
     expect(Object.keys(db.updates[0].patch).sort()).toEqual([
+      "vitrine_card_media_ref",
       "vitrine_highlights",
+      "vitrine_main_media_ref",
       "vitrine_quartier",
       "vitrine_updated_at",
       "vitrine_updated_by",
