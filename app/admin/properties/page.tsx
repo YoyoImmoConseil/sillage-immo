@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { AdminShell } from "@/app/components/admin-shell";
 import { requireAdminPagePermission } from "@/lib/admin/auth";
-import { formatPropertyTypeLabel } from "@/lib/properties/property-type-label";
+import { ADMIN_PROPERTY_SECTIONS } from "@/lib/properties/admin-sections";
 import { listAdminProperties } from "@/services/properties/manual-property.service";
 import type { PropertyBusinessType } from "@/types/domain/properties";
+import { PropertiesTable } from "./properties-table";
 
 export const dynamic = "force-dynamic";
 
@@ -55,48 +56,25 @@ export default async function AdminPropertiesPage({ searchParams }: AdminPropert
         </Link>
       </div>
 
-      <section className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-2">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-[rgba(20,20,70,0.14)] text-left">
-              <th className="p-3">Titre</th>
-              <th className="p-3">Source</th>
-              <th className="p-3">Ville</th>
-              <th className="p-3">Type</th>
-              <th className="p-3">Publication</th>
-              <th className="p-3">Prix</th>
-              <th className="p-3">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {properties.length === 0 ? (
-              <tr>
-                <td className="p-3 opacity-70" colSpan={7}>
-                  Aucun bien.
-                </td>
-              </tr>
-            ) : (
-              properties.map((property) => (
-                <tr key={property.id} className="border-b border-[rgba(20,20,70,0.1)] last:border-0">
-                  <td className="p-3">{property.title ?? "Bien sans titre"}</td>
-                  <td className="p-3">{property.source}</td>
-                  <td className="p-3">{property.city ?? "-"}</td>
-                  <td className="p-3">
-                    {property.businessType} · {formatPropertyTypeLabel(property.propertyType) ?? "-"}
-                  </td>
-                  <td className="p-3">{property.isPublished ? "Publie" : "Brouillon"}</td>
-                  <td className="p-3">{property.priceAmount ?? "-"}</td>
-                  <td className="p-3">
-                    <Link href={`/admin/properties/${property.id}`} className="underline">
-                      Ouvrir
-                    </Link>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </section>
+      <div className="space-y-6">
+        {ADMIN_PROPERTY_SECTIONS.map((section) => {
+          const items = properties.filter((property) => property.section === section.key);
+          return (
+            <section key={section.key} className="rounded-3xl border border-[rgba(20,20,70,0.16)] bg-white/70 p-2">
+              <header className="flex flex-wrap items-baseline justify-between gap-2 px-3 pb-2 pt-3">
+                <h2 className="text-lg font-semibold text-navy">
+                  {section.title}
+                  <span className="ml-2 text-sm font-normal text-navy/60">
+                    {items.length} bien{items.length > 1 ? "s" : ""}
+                  </span>
+                </h2>
+                <p className="text-xs text-navy/60">{section.description}</p>
+              </header>
+              <PropertiesTable items={items} emptyLabel="Aucun bien dans cette section." />
+            </section>
+          );
+        })}
+      </div>
     </AdminShell>
   );
 }
