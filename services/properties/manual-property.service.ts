@@ -11,13 +11,20 @@ import {
 } from "@/lib/properties/canonical-types";
 import type { Database } from "@/types/db/supabase";
 import type { PropertyBusinessType } from "@/types/domain/properties";
+import { inferListingTransactionKind } from "@/lib/properties/listing-price";
+import {
+  formatAdminAvailabilityLabel,
+  resolveAdminPropertySection,
+  type AdminPropertySection,
+} from "@/lib/properties/admin-sections";
 
 type PropertyRow = Database["public"]["Tables"]["properties"]["Row"];
 type PropertyListingRow = Database["public"]["Tables"]["property_listings"]["Row"];
 
 export type AdminPropertyListItem = {
   id: string;
-  listingId: string;
+  /** Null pour un bien sans annonce (ex. estimation vendeur en cours). */
+  listingId: string | null;
   source: string;
   title: string | null;
   city: string | null;
@@ -26,6 +33,9 @@ export type AdminPropertyListItem = {
   publicationStatus: string;
   isPublished: boolean;
   priceAmount: number | null;
+  availabilityStatus: string | null;
+  availabilityLabel: string;
+  section: AdminPropertySection;
   updatedAt: string;
 };
 
@@ -59,73 +69,78 @@ export const listAdminProperties = async (input: {
   search?: string;
   source?: string;
   businessType?: PropertyBusinessType;
-}) => {
-  let query = supabaseAdmin
-    .from("property_listings")
-    .select("id, property_id, business_type, publication_status, is_published, title, city, property_type, price_amount, updated_at")
-    .order("updated_at", { ascending: false })
-    .limit(150);
+}): Promise<AdminPropertyListItem[]> => {
+  // Un bien par ligne, annonce ou pas : les estimations vendeur n'ont pas
+  // d'annonce mais doivent apparaître dans « En préparation ».
+  const [{ data: propertiesData, error: propertiesError }, { data: listingsData, error: listingsError }] =
+    await Promise.all([
+      supabaseAdmin
+        .from("properties")
+        .select("id, source, title, city, property_type, negotiation, availability_status, updated_at")
+        .order("updated_at", { ascending: false })
+        .limit(400),
+      supabaseAdmin
+        .from("property_listings")
+        .select("id, property_id, business_type, publication_status, is_published, title, city, property_type, price_amount, updated_at"),
+    ]);
+  if (propertiesError) throw new Error(propertiesError.message);
+  if (listingsError) throw new Error(listingsError.message);
 
-  if (input.search?.trim()) {
-    const term = input.search.trim();
-    query = query.or(`title.ilike.%${term}%,city.ilike.%${term}%,property_type.ilike.%${term}%`);
-  }
-  if (input.businessType?.trim()) {
-    query = query.eq("business_type", input.businessType);
-  }
-
-  const { data: listingsData, error: listingsError } = await query;
-  if (listingsError) {
-    throw new Error(listingsError.message);
-  }
-
-  const listings = (listingsData ?? []) as Array<
-    Pick<
-      PropertyListingRow,
-      | "id"
-      | "property_id"
-      | "business_type"
-      | "publication_status"
-      | "is_published"
-      | "title"
-      | "city"
-      | "property_type"
-      | "price_amount"
-      | "updated_at"
-    >
+  type ListingPick = Pick<
+    PropertyListingRow,
+    | "id"
+    | "property_id"
+    | "business_type"
+    | "publication_status"
+    | "is_published"
+    | "title"
+    | "city"
+    | "property_type"
+    | "price_amount"
+    | "updated_at"
   >;
-  const propertyIds = listings.map((item) => item.property_id);
+  const listingByPropertyId = new Map(((listingsData ?? []) as ListingPick[]).map((item) => [item.property_id, item]));
 
-  const { data: propertiesData, error: propertiesError } = propertyIds.length
-    ? await supabaseAdmin.from("properties").select("id, source").in("id", propertyIds)
-    : { data: [], error: null };
+  const term = input.search?.trim().toLowerCase() ?? "";
+  const source = input.source?.trim() ?? "";
 
-  if (propertiesError) {
-    throw new Error(propertiesError.message);
-  }
-
-  const sourceByPropertyId = new Map(
-    ((propertiesData ?? []) as Array<Pick<PropertyRow, "id" | "source">>).map((item) => [item.id, item.source])
-  );
-
-  return listings
-    .map((listing) => ({
-      id: listing.property_id,
-      listingId: listing.id,
-      source: sourceByPropertyId.get(listing.property_id) ?? "unknown",
-      title: listing.title,
-      city: listing.city,
-      propertyType: listing.property_type,
-      businessType: listing.business_type,
-      publicationStatus: listing.publication_status,
-      isPublished: listing.is_published,
-      priceAmount: listing.price_amount,
-      updatedAt: listing.updated_at,
-    }))
+  return (
+    (propertiesData ?? []) as Array<
+      Pick<PropertyRow, "id" | "source" | "title" | "city" | "property_type" | "negotiation" | "availability_status" | "updated_at">
+    >
+  )
+    .map((property): AdminPropertyListItem => {
+      const listing = listingByPropertyId.get(property.id) ?? null;
+      const businessType = listing?.business_type ?? inferListingTransactionKind(property.negotiation);
+      const updatedAt =
+        listing && listing.updated_at > property.updated_at ? listing.updated_at : property.updated_at;
+      return {
+        id: property.id,
+        listingId: listing?.id ?? null,
+        source: property.source,
+        title: listing?.title ?? property.title,
+        city: listing?.city ?? property.city,
+        propertyType: listing?.property_type ?? property.property_type,
+        businessType,
+        publicationStatus: listing?.publication_status ?? "none",
+        isPublished: listing?.is_published ?? false,
+        priceAmount: listing?.price_amount ?? null,
+        availabilityStatus: property.availability_status,
+        availabilityLabel: formatAdminAvailabilityLabel(property.availability_status),
+        section: resolveAdminPropertySection(property.availability_status),
+        updatedAt,
+      };
+    })
     .filter((item) => {
-      if (!input.source?.trim()) return true;
-      return item.source === input.source.trim();
-    }) satisfies AdminPropertyListItem[];
+      if (source && item.source !== source) return false;
+      if (input.businessType && item.businessType !== input.businessType) return false;
+      if (term) {
+        const haystack = [item.title, item.city, item.propertyType].filter(Boolean).join(" ").toLowerCase();
+        if (!haystack.includes(term)) return false;
+      }
+      return true;
+    })
+    .sort((left, right) => (left.updatedAt < right.updatedAt ? 1 : left.updatedAt > right.updatedAt ? -1 : 0));
 };
 
 export const getPropertyDetailById = async (propertyId: string): Promise<AdminPropertyDetail | null> => {
