@@ -3003,6 +3003,51 @@ export type Database = {
         };
         Relationships: [];
       };
+      vitrine_posters: {
+        Row: {
+          id: string;
+          created_at: string;
+          property_id: string;
+          storage_bucket: string;
+          storage_path: string;
+          file_name: string;
+          file_size: number;
+          content: Record<string, unknown>;
+          warnings: string[];
+          generated_by: string | null;
+          email_sent_to: string | null;
+          email_error: string | null;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          property_id: string;
+          storage_bucket?: string;
+          storage_path: string;
+          file_name: string;
+          file_size: number;
+          content?: Record<string, unknown>;
+          warnings?: string[];
+          generated_by?: string | null;
+          email_sent_to?: string | null;
+          email_error?: string | null;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          property_id?: string;
+          storage_bucket?: string;
+          storage_path?: string;
+          file_name?: string;
+          file_size?: number;
+          content?: Record<string, unknown>;
+          warnings?: string[];
+          generated_by?: string | null;
+          email_sent_to?: string | null;
+          email_error?: string | null;
+        };
+        Relationships: [];
+      };
       mynotary_files: {
         Row: {
           id: string;

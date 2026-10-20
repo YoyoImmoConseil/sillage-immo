@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import {
   VITRINE_HIGHLIGHT_MAX_LENGTH,
   VITRINE_HIGHLIGHTS_MAX,
@@ -11,6 +12,31 @@ import {
 
 type VitrineMediaOption = { remoteMediaId: string; ordinal: number; url: string | null };
 
+type VitrinePosterHistoryItem = {
+  id: string;
+  createdAt: string;
+  fileName: string;
+  fileSize: number;
+  generatedBy: string | null;
+  emailSentTo: string | null;
+  emailError: string | null;
+  warnings: string[];
+  priceLine: string | null;
+  downloadUrl: string | null;
+};
+
+type GenerationResult =
+  | { ok: false; message?: string; errors?: string[]; warnings?: string[] }
+  | {
+      ok: true;
+      fileName: string;
+      fileSize: number;
+      downloadUrl: string;
+      expiresAt: string;
+      warnings: string[];
+      email: { sent: true; to: string; attached: boolean } | { sent: false; to: string; reason: string };
+    };
+
 type PropertyVitrinePanelProps = {
   propertyId: string;
   canEdit: boolean;
@@ -18,6 +44,7 @@ type PropertyVitrinePanelProps = {
   initialQuartier: string | null;
   suggestedQuartier: string | null;
   media: VitrineMediaOption[];
+  history: VitrinePosterHistoryItem[];
   initialMainMediaRef: string | null;
   initialCardMediaRef: string | null;
   initialUpdatedAt: string | null;
@@ -44,6 +71,9 @@ const padLines = (lines: string[]) => {
   return next;
 };
 
+const formatSize = (bytes: number) =>
+  bytes >= 1024 * 1024 ? `${(bytes / (1024 * 1024)).toFixed(1).replace(".", ",")} Mo` : `${Math.round(bytes / 1024)} Ko`;
+
 const formatStamp = (iso: string | null, by: string | null) => {
   if (!iso) return null;
   const date = new Date(iso);
@@ -60,11 +90,13 @@ export function PropertyVitrinePanel({
   initialQuartier,
   suggestedQuartier,
   media,
+  history,
   initialMainMediaRef,
   initialCardMediaRef,
   initialUpdatedAt,
   initialUpdatedBy,
 }: PropertyVitrinePanelProps) {
+  const router = useRouter();
   const [lines, setLines] = useState<string[]>(() => padLines(initialHighlights));
   const [quartier, setQuartier] = useState<string>(initialQuartier ?? suggestedQuartier ?? "");
   // Photos : la valeur vide = défaut (1re photo en grand, 2e dans la carte).
@@ -86,6 +118,8 @@ export function PropertyVitrinePanel({
   const [isSuggesting, startSuggest] = useTransition();
   const [isChecking, startCheck] = useTransition();
   const [diagnostics, setDiagnostics] = useState<{ errors: string[]; warnings: string[] } | null>(null);
+  const [isGenerating, startGenerate] = useTransition();
+  const [generation, setGeneration] = useState<GenerationResult | null>(null);
 
   const filledLines = useMemo(() => lines.map((line) => line.trim()).filter(Boolean), [lines]);
   const validation = useMemo(
@@ -203,6 +237,28 @@ export function PropertyVitrinePanel({
         setDiagnostics({ errors: payload.errors ?? [], warnings: payload.warnings ?? [] });
       } catch (caught) {
         setError(caught instanceof Error ? caught.message : "Vérification impossible.");
+      }
+    });
+  };
+
+  const generate = () => {
+    setError(null);
+    setMessage(null);
+    setGeneration(null);
+    startGenerate(async () => {
+      try {
+        const response = await fetch(`${previewUrl.replace(/\/preview$/, "")}/generate`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sendEmail: true }),
+        });
+        const payload = (await response.json()) as GenerationResult;
+        setGeneration(payload);
+        if (payload.ok) {
+          router.refresh();
+        }
+      } catch (caught) {
+        setError(caught instanceof Error ? caught.message : "Génération impossible.");
       }
     });
   };
@@ -465,6 +521,85 @@ export function PropertyVitrinePanel({
                 </ul>
               </div>
             ) : null}
+          </div>
+        ) : null}
+      </div>
+
+      <div className="space-y-3 border-t border-[rgba(20,20,70,0.12)] pt-4">
+        <div className="flex flex-wrap items-center gap-3">
+          {canEdit ? (
+            <button
+              type="button"
+              onClick={generate}
+              disabled={isGenerating || isDirty}
+              title={isDirty ? "Enregistrez d'abord vos modifications." : undefined}
+              className="rounded-full bg-navy px-5 py-2 text-sm font-medium text-sand transition disabled:opacity-50"
+            >
+              {isGenerating ? "Génération en cours…" : "Imprimer la fiche vitrine"}
+            </button>
+          ) : null}
+          <span className="text-xs text-navy/60">
+            Génère le PDF A3, l&apos;archive et vous l&apos;envoie par e-mail (pièce jointe + lien valable 7 jours).
+          </span>
+        </div>
+        {generation ? (
+          generation.ok ? (
+            <div className="space-y-2 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-navy">
+              <p className="font-medium text-emerald-800">
+                Fiche vitrine générée ({formatSize(generation.fileSize)}).{" "}
+                {generation.email.sent
+                  ? `Envoyée à ${generation.email.to}${generation.email.attached ? " avec le PDF en pièce jointe" : " (lien seul, fichier trop volumineux pour une pièce jointe)"}.`
+                  : `E-mail non envoyé à ${generation.email.to} (${generation.email.reason}).`}
+              </p>
+              <a
+                href={generation.downloadUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-block rounded-full border border-navy/30 px-4 py-2 text-sm font-medium text-navy hover:bg-navy/5"
+              >
+                Télécharger {generation.fileName}
+              </a>
+              {generation.warnings.length > 0 ? (
+                <ul className="list-disc space-y-1 pl-5 text-amber-700">
+                  {generation.warnings.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+          ) : (
+            <div className="space-y-2 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm">
+              <p className="font-medium text-red-700">{generation.message ?? "Génération impossible."}</p>
+              {generation.errors && generation.errors.length > 0 ? (
+                <ul className="list-disc space-y-1 pl-5 text-red-700">
+                  {generation.errors.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+          )
+        ) : null}
+        {history.length > 0 ? (
+          <div className="space-y-1">
+            <p className="text-xs font-medium uppercase tracking-wide text-navy/60">Dernières affiches générées</p>
+            <ul className="divide-y divide-[rgba(20,20,70,0.08)] text-sm">
+              {history.map((item) => (
+                <li key={item.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+                  <span className="text-navy">
+                    {formatStamp(item.createdAt, item.generatedBy)}
+                    {item.priceLine ? ` · ${item.priceLine}` : ""}
+                    {item.emailSentTo ? ` · envoyée à ${item.emailSentTo}` : ""}
+                    {item.emailError ? ` · e-mail en échec` : ""}
+                  </span>
+                  {item.downloadUrl ? (
+                    <a href={item.downloadUrl} target="_blank" rel="noreferrer" className="text-sm underline">
+                      Télécharger ({formatSize(item.fileSize)})
+                    </a>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
           </div>
         ) : null}
       </div>
