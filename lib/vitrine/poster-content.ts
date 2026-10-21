@@ -161,15 +161,14 @@ export const buildVitrinePosterContent = (input: {
   }
   const typeLine = typeParts.join(" · ");
 
+  // Ville · quartier, sans code postal (décision du 21/10 : il allongeait la
+  // ligne jusqu'à la faire passer sur deux lignes avec les quartiers composés).
   const city = (property.city ?? "Nice").trim();
   const quartier = (property.vitrine_quartier ?? "").trim();
-  const postalCode = (property.postal_code ?? "").trim();
   if (!quartier) {
     warnings.push("Quartier non renseigné sur la fiche vitrine : la ligne de localisation n'affiche que la ville.");
   }
-  const locationLine = `${city.toUpperCase()}${quartier ? ` · ${quartier.toUpperCase()}` : ""}${
-    postalCode ? ` (${postalCode})` : ""
-  }`;
+  const locationLine = `${city.toUpperCase()}${quartier ? ` · ${quartier.toUpperCase()}` : ""}`;
 
   // --- Prix et mentions légales ---------------------------------------------
   const legalLines: string[] = [];

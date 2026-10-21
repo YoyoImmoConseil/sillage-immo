@@ -60,7 +60,7 @@ vi.mock("@/lib/email/vitrine-poster", () => ({
 
 import { generateVitrinePoster, VITRINE_EMAIL_LINK_TTL_SECONDS } from "@/services/vitrine/poster-generation.service";
 
-const content = { locationLine: "NICE · ÉGLISE RUSSE (06000)", priceLine: "195 000 €" };
+const content = { locationLine: "NICE · ÉGLISE RUSSE", priceLine: "195 000 €" };
 const requester = { email: "yu@sillage-immo.com", firstName: "Yoann" };
 
 beforeEach(() => {
@@ -116,7 +116,7 @@ describe("generateVitrinePoster", () => {
     expect(state.emails[0]).toMatchObject({
       to: "yu@sillage-immo.com",
       firstName: "Yoann",
-      propertyLabel: "NICE · ÉGLISE RUSSE (06000)",
+      propertyLabel: "NICE · ÉGLISE RUSSE",
       priceLine: "195 000 €",
       downloadUrl: result.downloadUrl,
     });

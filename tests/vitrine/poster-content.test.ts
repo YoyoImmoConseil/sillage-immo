@@ -105,7 +105,7 @@ describe("buildVitrinePosterContent — Église Russe (V2)", () => {
     expect(warnings).toEqual([]);
     expect(content.headline).toBe("Bien à vendre");
     expect(content.typeLine).toBe(`APPARTEMENT 2${NBSP}PIÈCES · 32,18${NBSP}m²`);
-    expect(content.locationLine).toBe("NICE · ÉGLISE RUSSE (06000)");
+    expect(content.locationLine).toBe("NICE · ÉGLISE RUSSE");
     expect(content.priceLine).toBe(`195${NBSP}000${NBSP}€`);
     expect(content.legalLines).toEqual([
       "Honoraires à la charge du vendeur",
@@ -207,7 +207,7 @@ describe("buildVitrinePosterContent — Église Russe (V2)", () => {
 
   it("quartier absent : ligne réduite à la ville, avertissement", () => {
     const { content, warnings, errors } = build({ vitrine_quartier: null });
-    expect(content.locationLine).toBe("NICE (06000)");
+    expect(content.locationLine).toBe("NICE");
     expect(warnings).toContainEqual(expect.stringMatching(/Quartier/));
     expect(errors).toEqual([]);
   });

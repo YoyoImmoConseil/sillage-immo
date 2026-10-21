@@ -29,7 +29,7 @@ import {
   CARD_RHYTHM,
   CARD_TEXT_WIDTH,
   COLORS,
-  DOTS,
+  SEPARATOR,
   DPE_BLOCK,
   DPE_SCALE,
   DPE_SCALE_LABEL_TOP,
@@ -155,29 +155,29 @@ const AbsText = ({
   </Text>
 );
 
-const Dots = ({ top }: { top: number }) => {
-  const total = DOTS.count * DOTS.size + (DOTS.count - 1) * (DOTS.gap - DOTS.size);
-  const startX = CARD_CENTER_X - total / 2;
-  return (
-    <Svg
-      style={{ position: "absolute", top, left: 0 }}
-      width={PAGE.width}
-      height={DOTS.size}
-      viewBox={`0 0 ${PAGE.width} ${DOTS.size}`}
-    >
-      {Array.from({ length: DOTS.count }, (_, index) => (
-        <Rect
-          key={index}
-          x={startX + index * DOTS.gap}
-          y={0}
-          width={DOTS.size}
-          height={DOTS.size}
-          rx={DOTS.size / 2}
-          fill={COLORS.sand}
-        />
-      ))}
-    </Svg>
-  );
+const Separator = ({ top }: { top: number }) => (
+  <View
+    style={{
+      position: "absolute",
+      top,
+      left: CARD_CENTER_X - SEPARATOR.width / 2,
+      width: SEPARATOR.width,
+      height: SEPARATOR.thickness,
+      backgroundColor: COLORS.sand,
+    }}
+  />
+);
+
+/**
+ * Taille de la ligne « VILLE · QUARTIER » : 16,5 pt comme la V2 tant qu'elle
+ * tient sur une ligne, réduite au-delà (Montserrat Bold ≈ 9,5 pt par
+ * caractère) pour ne jamais passer sur deux lignes.
+ */
+const locationFontSize = (text: string) => {
+  const estimatedWidth = Array.from(text).length * 9.5;
+  if (estimatedWidth <= CARD_TEXT_WIDTH + 20) return 16.5;
+  if (estimatedWidth * (14.5 / 16.5) <= CARD_TEXT_WIDTH + 20) return 14.5;
+  return 12.5;
 };
 
 // --- Carte marine -----------------------------------------------------------------
@@ -256,14 +256,22 @@ const Card = ({ content, photo }: { content: VitrinePosterContent; photo: Vitrin
       <AbsText font={FONTS.serif} size={34.5} top={CARD_RHYTHM.headlineTop} left={cardTextLeft} width={CARD_TEXT_WIDTH} align="center">
         {content.headline}
       </AbsText>
-      <Dots top={CARD_RHYTHM.dots1Top} />
+      <Separator top={CARD_RHYTHM.dots1Top} />
       <AbsText font={FONTS.sans} size={12.7} top={CARD_RHYTHM.typeTop} left={cardTextLeft} width={CARD_TEXT_WIDTH} align="center">
         {content.typeLine}
       </AbsText>
-      <AbsText font={FONTS.sans} size={16.5} weight={700} top={CARD_RHYTHM.locationTop} left={cardTextLeft - 10} width={CARD_TEXT_WIDTH + 20} align="center">
+      <AbsText
+        font={FONTS.sans}
+        size={locationFontSize(content.locationLine)}
+        weight={700}
+        top={CARD_RHYTHM.locationTop}
+        left={cardTextLeft - 10}
+        width={CARD_TEXT_WIDTH + 20}
+        align="center"
+      >
         {content.locationLine}
       </AbsText>
-      <Dots top={CARD_RHYTHM.dots2Top} />
+      <Separator top={CARD_RHYTHM.dots2Top} />
       <AbsText font={FONTS.serif} size={52.5} weight={700} top={CARD_RHYTHM.priceTop} left={cardTextLeft - 10} width={CARD_TEXT_WIDTH + 20} align="center">
         {/* Playfair Display rend l'espace insécable par un glyphe parasite : espace simple sur cette ligne unique. */}
         {content.priceLine.replace(/\u00a0/g, " ")}
@@ -281,7 +289,7 @@ const Card = ({ content, photo }: { content: VitrinePosterContent; photo: Vitrin
           {line}
         </AbsText>
       ))}
-      <Dots top={rhythm.dots3Top} />
+      <Separator top={rhythm.dots3Top} />
       {content.highlights.map((line, index) => (
         <AbsText
           key={`highlight-${index}`}
