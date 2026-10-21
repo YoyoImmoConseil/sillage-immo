@@ -73,4 +73,5 @@ export const CARD_RHYTHM = {
   characteristicsPitch: 18,
 } as const;
 
-export const DOTS = { count: 15, size: 2.4, gap: 6, width: 86 } as const;
+/** Séparateurs de la carte : trait plein, même longueur que les pointillés de la V2. */
+export const SEPARATOR = { width: 86, thickness: 1.5 } as const;
