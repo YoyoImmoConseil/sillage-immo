@@ -94,9 +94,19 @@ const makeProperty = (overrides: Partial<PropertyRow> = {}): PropertyRow => ({
   ...overrides,
 });
 
-const listing = { price_amount: 195000, canonical_path: "/06000/dfb5c26e", business_type: "sale" as const };
-const build = (overrides: Partial<PropertyRow> = {}) =>
-  buildVitrinePosterContent({ property: makeProperty(overrides), listing, siteUrl: "https://sillage-immo.com/" });
+const listing = {
+  price_amount: 195000,
+  canonical_path: "/06000/dfb5c26e",
+  business_type: "sale" as const,
+  is_published: true,
+  publication_status: "active" as "active" | "inactive" | "deleted",
+};
+const build = (overrides: Partial<PropertyRow> = {}, listingOverrides: Partial<typeof listing> = {}) =>
+  buildVitrinePosterContent({
+    property: makeProperty(overrides),
+    listing: { ...listing, ...listingOverrides },
+    siteUrl: "https://sillage-immo.com/",
+  });
 
 describe("buildVitrinePosterContent — Église Russe (V2)", () => {
   it("reproduit les textes de la V2 sans erreur bloquante", () => {
@@ -219,8 +229,106 @@ describe("buildVitrinePosterContent — Église Russe (V2)", () => {
     });
     expect(errors).toEqual([]);
     expect(content.headline).toBe("Bien à louer");
+    expect(content.model).toBe("rental");
+    expect(content.ribbon).toBeNull();
     expect(content.priceLine).toBe(`1${NBSP}200${NBSP}€${NBSP}/ mois`);
     expect(content.legalLines[0]).toBe(`Loyer charges comprises, dont 120${NBSP}€ de provisions sur charges`);
+  });
+});
+
+describe("buildVitrinePosterContent — modèles selon le statut", () => {
+  it("à vendre : modèle « sale », pas de ruban", () => {
+    const { content, errors } = build();
+    expect(errors).toEqual([]);
+    expect(content.model).toBe("sale");
+    expect(content.modelLabel).toBe("À vendre");
+    expect(content.ribbon).toBeNull();
+  });
+
+  it("option → Sous offre, agreement → Sous compromis : titre et prix de présentation inchangés", () => {
+    const offer = build({ availability_status: "option" });
+    expect(offer.errors).toEqual([]);
+    expect(offer.content.model).toBe("under_offer");
+    expect(offer.content.ribbon?.text).toBe("SOUS OFFRE");
+    expect(offer.content.headline).toBe("Bien à vendre");
+    expect(offer.content.priceLine).toBe(`195${NBSP}000${NBSP}€`);
+
+    const contract = build({ availability_status: "agreement" });
+    expect(contract.errors).toEqual([]);
+    expect(contract.content.model).toBe("under_contract");
+    expect(contract.content.ribbon?.text).toBe("SOUS COMPROMIS");
+    expect(contract.content.headline).toBe("Bien à vendre");
+    expect(contract.content.priceLine).toBe(`195${NBSP}000${NBSP}€`);
+  });
+
+  it("vendu : ruban VENDU, titre « Bien vendu », prix de présentation conservé", () => {
+    const { content, errors } = build({ availability_status: "sold" });
+    expect(errors).toEqual([]);
+    expect(content.model).toBe("sold");
+    expect(content.ribbon?.text).toBe("VENDU");
+    expect(content.headline).toBe("Bien vendu");
+    expect(content.priceLine).toBe(`195${NBSP}000${NBSP}€`);
+    expect(content.legalLines[0]).toBe("Honoraires à la charge du vendeur");
+  });
+
+  it("loué : ruban LOUÉ, titre « Bien loué », loyer de présentation conservé", () => {
+    const { content, errors } = build({
+      negotiation: "let",
+      availability_status: "rented",
+      raw_payload: { ...egliseRusseRaw, price: { amount: 1200 }, price_recurring_costs: { amount: 120 } },
+    });
+    expect(errors).toEqual([]);
+    expect(content.model).toBe("rented");
+    expect(content.ribbon?.text).toBe("LOUÉ");
+    expect(content.ribbon?.fontSize).toBe(40.5);
+    expect(content.ribbon?.letterSpacing).toBe(6);
+    expect(content.headline).toBe("Bien loué");
+    expect(content.priceLine).toBe(`1${NBSP}200${NBSP}€${NBSP}/ mois`);
+  });
+
+  it("« Bien vendu » / « Bien loué » uniquement pour sold / rented", () => {
+    for (const status of ["available", "option", "agreement"]) {
+      expect(build({ availability_status: status }).content.headline).toBe("Bien à vendre");
+    }
+    expect(build({ negotiation: "let", availability_status: "available" }).content.headline).toBe("Bien à louer");
+  });
+
+  it("statut inconnu, absent, prospect ou deleted : bloquant, sans ruban", () => {
+    for (const status of [null, "", "prospect", "deleted", "withdrawn", "on_hold"]) {
+      const { content, errors } = build({ availability_status: status });
+      expect(errors.length, `statut ${status}`).toBeGreaterThan(0);
+      expect(content.model).toBeNull();
+      expect(content.ribbon).toBeNull();
+      expect(content.headline).toBe("Bien à vendre");
+    }
+  });
+
+  it("location sous compromis ou sous offre : bloquant (arbitrage du 22/10/2026)", () => {
+    for (const status of ["under_contract", "option", "agreement"]) {
+      const { errors } = build({ negotiation: "let", availability_status: status });
+      expect(errors.some((e) => e.includes("non prévu")), `statut ${status}`).toBe(true);
+    }
+  });
+
+  it("vendu / loué : page servie même dépubliée par la synchro (is_published=false, inactive), bloquant si deleted", () => {
+    // La synchro SweepBright dépublie l'annonce d'un bien vendu : la page reste en ligne.
+    const sold = build({ availability_status: "sold" }, { is_published: false, publication_status: "inactive" });
+    expect(sold.errors).toEqual([]);
+    expect(sold.content.model).toBe("sold");
+    const offline = build({ availability_status: "sold" }, { is_published: false, publication_status: "deleted" });
+    expect(offline.errors).toEqual(["La page publique de ce bien n'est plus en ligne : le QR mènerait à une page morte."]);
+    expect(offline.content.model).toBe("sold");
+    // Un bien encore en vente n'est pas concerné par ce garde-fou.
+    expect(build({ availability_status: "option" }, { is_published: false }).errors).toEqual([]);
+    // « let » n'est pas servi par la page de détail : bloquant aussi.
+    const let_ = build({ negotiation: "let", availability_status: "let", raw_payload: { ...egliseRusseRaw, price: { amount: 1200 } } });
+    expect(let_.content.model).toBe("rented");
+    expect(let_.errors.some((e) => e.includes("plus en ligne"))).toBe(true);
+  });
+
+  it("vente au statut loué, location au statut vendu : incohérence bloquante", () => {
+    expect(build({ availability_status: "rented" }).errors.some((e) => e.includes("incohérent"))).toBe(true);
+    expect(build({ negotiation: "let", availability_status: "sold" }).errors.some((e) => e.includes("incohérent"))).toBe(true);
   });
 });
 

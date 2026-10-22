@@ -3017,6 +3017,8 @@ export type Database = {
           generated_by: string | null;
           email_sent_to: string | null;
           email_error: string | null;
+          poster_model: string | null;
+          availability_status: string | null;
         };
         Insert: {
           id?: string;
@@ -3031,6 +3033,8 @@ export type Database = {
           generated_by?: string | null;
           email_sent_to?: string | null;
           email_error?: string | null;
+          poster_model?: string | null;
+          availability_status?: string | null;
         };
         Update: {
           id?: string;
@@ -3045,6 +3049,8 @@ export type Database = {
           generated_by?: string | null;
           email_sent_to?: string | null;
           email_error?: string | null;
+          poster_model?: string | null;
+          availability_status?: string | null;
         };
         Relationships: [];
       };

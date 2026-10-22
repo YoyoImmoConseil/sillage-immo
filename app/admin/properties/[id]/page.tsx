@@ -15,6 +15,8 @@ import { PropertyVitrinePanel } from "./property-vitrine-panel";
 import { deriveVitrineQuartierFromTitle } from "@/lib/properties/vitrine-editorial";
 import { listVitrineMediaOptions } from "@/services/properties/vitrine.service";
 import { listVitrinePosters } from "@/services/vitrine/poster-generation.service";
+import { resolveVitrinePosterModel } from "@/lib/vitrine/poster-status";
+import { inferListingTransactionKind } from "@/lib/properties/listing-price";
 import { PropertyLocationMap } from "@/app/components/property-location-map";
 
 export const dynamic = "force-dynamic";
@@ -188,6 +190,10 @@ export default async function AdminPropertyDetailPage({ params }: AdminPropertyD
           suggestedQuartier={deriveVitrineQuartierFromTitle(detail.property.title)}
           media={vitrineMedia}
           history={vitrineHistory}
+          posterModel={resolveVitrinePosterModel({
+            availabilityStatus: detail.property.availability_status,
+            transaction: inferListingTransactionKind(detail.property.negotiation),
+          })}
           initialMainMediaRef={detail.property.vitrine_main_media_ref ?? null}
           initialCardMediaRef={detail.property.vitrine_card_media_ref ?? null}
           initialUpdatedAt={detail.property.vitrine_updated_at ?? null}

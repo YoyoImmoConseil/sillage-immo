@@ -20,12 +20,21 @@ import {
   VITRINE_HEADLINE,
   VITRINE_PROPERTY_TYPE_LABELS,
 } from "./poster-copy";
+import {
+  CLOSED_POSTER_MODELS,
+  VITRINE_POSTER_HEADLINES,
+  VITRINE_RIBBONS,
+  resolveVitrinePosterModel,
+  type VitrinePosterModel,
+  type VitrineRibbonSpec,
+} from "./poster-status";
+import { isDetailPageServed } from "@/lib/properties/canonical-types";
 import { VITRINE_HIGHLIGHTS_MIN } from "@/lib/properties/vitrine-editorial";
 
 type PropertyRow = Database["public"]["Tables"]["properties"]["Row"];
 type ListingRow = Pick<
   Database["public"]["Tables"]["property_listings"]["Row"],
-  "price_amount" | "canonical_path" | "business_type"
+  "price_amount" | "canonical_path" | "business_type" | "is_published" | "publication_status"
 >;
 
 export type VitrineEnergyBlock =
@@ -44,6 +53,11 @@ export type VitrineEnergyBlock =
  * sans base ni PDF.
  */
 export type VitrinePosterContent = {
+  /** Modèle d'affiche selon le statut (null si le statut est bloquant). */
+  model: VitrinePosterModel | null;
+  modelLabel: string | null;
+  /** Ruban d'angle à dessiner (null pour À vendre / À louer). */
+  ribbon: VitrineRibbonSpec | null;
   headline: string;
   typeLine: string;
   locationLine: string;
@@ -148,8 +162,34 @@ export const buildVitrinePosterContent = (input: {
   const priceAmount = listing?.price_amount ?? asNumber(readPath(raw, ["price", "amount"]));
   const derived = buildPropertyDerivedFields(property, priceAmount);
 
+  // --- Modèle selon le statut ---------------------------------------------
+  const resolution = resolveVitrinePosterModel({
+    availabilityStatus: property.availability_status,
+    transaction,
+  });
+  const model = resolution.ok ? resolution.model : null;
+  const modelLabel = resolution.ok ? resolution.label : null;
+  const ribbon = model ? VITRINE_RIBBONS[model] : null;
+  if (!resolution.ok) {
+    errors.push(resolution.error);
+  }
+  // Vendu / loué : le QR doit mener à une page encore en ligne (bandeau
+  // « Vendu » / « Loué », appel à l'estimation). Même règle que le site public.
+  if (model && CLOSED_POSTER_MODELS.has(model)) {
+    const pageOnline =
+      Boolean(listing?.canonical_path) &&
+      isDetailPageServed({
+        availabilityStatus: property.availability_status,
+        isPublished: listing?.is_published,
+        publicationStatus: listing?.publication_status,
+      });
+    if (!pageOnline) {
+      errors.push("La page publique de ce bien n'est plus en ligne : le QR mènerait à une page morte.");
+    }
+  }
+
   // --- En-tête de la carte -------------------------------------------------
-  const headline = VITRINE_HEADLINE[transaction];
+  const headline = model ? VITRINE_POSTER_HEADLINES[model] : VITRINE_HEADLINE[transaction];
 
   const typeParts: string[] = [propertyTypeLabel(property.property_type).toUpperCase()];
   if (typeof derived.rooms.roomCount === "number" && derived.rooms.roomCount > 0) {
@@ -385,6 +425,9 @@ export const buildVitrinePosterContent = (input: {
 
   return {
     content: {
+      model,
+      modelLabel,
+      ribbon,
       headline,
       typeLine,
       locationLine,

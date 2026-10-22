@@ -9,6 +9,9 @@ export const maxDuration = 60;
  * Aperçu de la fiche vitrine (lot 2) : renvoie le PDF A3 en ligne.
  * `?force=1` rend malgré les manques bloquants, avec un filigrane.
  * `?diag=1` renvoie le diagnostic JSON sans rendre.
+ * `?simulate=<statut>` (recette) rend l'affiche comme si le bien avait ce
+ * statut SweepBright (option, agreement, sold, rented…), avec un filigrane
+ * « statut simulé » ; jamais archivé, jamais envoyé par mail.
  */
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const context = await getAdminRequestContext(request);
@@ -19,13 +22,23 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const url = new URL(request.url);
   const force = url.searchParams.get("force") === "1";
   const diagnosticsOnly = url.searchParams.get("diag") === "1";
+  const simulateStatus = url.searchParams.get("simulate")?.trim().toLowerCase() || null;
 
   try {
     if (diagnosticsOnly) {
-      const result = await buildVitrinePoster({ propertyId: id, force: false });
-      return NextResponse.json({ ok: result.errors.length === 0, errors: result.errors, warnings: result.warnings, content: result.content });
+      const result = await buildVitrinePoster({ propertyId: id, force: false, simulateStatus });
+      return NextResponse.json({
+        ok: result.errors.length === 0,
+        errors: result.errors,
+        warnings: result.warnings,
+        model: result.content.model,
+        modelLabel: result.content.modelLabel,
+        availabilityStatus: result.availabilityStatus,
+        simulated: Boolean(simulateStatus),
+        content: result.content,
+      });
     }
-    const result = await buildVitrinePoster({ propertyId: id, force });
+    const result = await buildVitrinePoster({ propertyId: id, force, simulateStatus });
     if (!result.pdf) {
       return NextResponse.json(
         {
@@ -46,6 +59,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         "Cache-Control": "no-store",
         "X-Vitrine-Warnings": String(result.warnings.length),
         "X-Vitrine-Errors": String(result.errors.length),
+        "X-Vitrine-Model": result.content.model ?? "none",
       },
     });
   } catch (error) {
