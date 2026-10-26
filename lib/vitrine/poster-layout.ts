@@ -50,6 +50,26 @@ export const DPE_SCALE = {
   letterInset: 4.5,
   valueGap: 11,
   selectedOutline: 2.5,
+  /** Corps de la valeur (« 157 kWh/m²/an »), Montserrat Bold. */
+  valueSize: 13.5,
+  /** Corps minimal si la valeur doit être réduite pour tenir dans la flèche. */
+  valueMinSize: 10,
+  /** Marge entre la valeur écrite dans la flèche et le départ de la pointe. */
+  insidePadding: 4,
+  /** Largeur réservée à la lettre (A–G) au début de la flèche. */
+  letterWidth: 11,
+} as const;
+
+/**
+ * Bord droit utilisable par la valeur écrite à droite de la flèche :
+ * - énergie : avant les flèches climat (709,5 pt), avec 6 pt d'air ;
+ * - climat : avant le cadre QR (997,5 pt), avec 4 pt d'air. La V2 laisse déjà
+ *   « 34 kg CO₂/m²/an » en D (116 pt) dépasser le fond sable de 1,5 pt dans
+ *   le blanc qui précède le QR ; on garde ce comportement validé.
+ */
+export const DPE_COLUMN_RIGHT = {
+  energy: DPE_SCALE.climateX - 6,
+  climate: QR_BLOCK.x - 4,
 } as const;
 /** Mentions réglementaires : 12 pt, comme le texte courant de la carte. */
 export const DPE_TEXT = { x: 427.5, top: 720, width: 546, size: 12, lineHeight: 13.2 } as const;

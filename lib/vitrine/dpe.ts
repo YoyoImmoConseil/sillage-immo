@@ -57,6 +57,46 @@ export const DPE_BAR_WIDTHS: Record<DpeClass, number> = {
   G: 225,
 };
 
+export type DpeValuePlacement =
+  | { mode: "outside"; fontSize: number }
+  | { mode: "inside"; fontSize: number };
+
+/**
+ * Où écrire la valeur (« 282 kWh/m²/an ») sur la ligne de la classe choisie.
+ * La V2 Canva la pose à droite de la flèche, ce qui ne tient que jusqu'en D :
+ * dès E la flèche est trop longue et la valeur passerait sous la colonne
+ * voisine (décision du 26/10/2026). Règle :
+ * 1. dehors, à `valueGap` de la pointe, si elle tient avant `columnRight` ;
+ * 2. sinon dans la flèche, en blanc, alignée à droite avant la pointe ;
+ * 3. si elle ne tient pas non plus dedans, le corps descend par pas de 0,5 pt
+ *    jusqu'à `minFontSize`, puis on garde ce minimum.
+ * `measure(size)` renvoie la largeur du texte au corps donné.
+ */
+export const resolveDpeValuePlacement = (input: {
+  barLeft: number;
+  barWidth: number;
+  tip: number;
+  outline: number;
+  gap: number;
+  columnRight: number;
+  letterWidth: number;
+  insidePadding: number;
+  fontSize: number;
+  minFontSize: number;
+  measure: (fontSize: number) => number;
+}): DpeValuePlacement => {
+  const outsideLeft = input.barLeft + input.barWidth + input.outline + input.gap;
+  if (outsideLeft + input.measure(input.fontSize) <= input.columnRight) {
+    return { mode: "outside", fontSize: input.fontSize };
+  }
+  const insideWidth = input.barWidth - input.tip - input.insidePadding - input.letterWidth;
+  let fontSize = input.fontSize;
+  while (fontSize > input.minFontSize && input.measure(fontSize) > insideWidth) {
+    fontSize = Math.max(input.minFontSize, fontSize - 0.5);
+  }
+  return { mode: "inside", fontSize };
+};
+
 export const isDpeClass = (value: unknown): value is DpeClass =>
   typeof value === "string" && (DPE_CLASSES as readonly string[]).includes(value.toUpperCase());
 

@@ -20,8 +20,10 @@ import {
   DPE_CLASSES,
   ENERGY_LETTER_LIGHT,
   ENERGY_SCALE_COLORS,
+  resolveDpeValuePlacement,
   type DpeClass,
 } from "@/lib/vitrine/dpe";
+import { measurePosterText } from "./poster-metrics";
 import {
   CARD,
   CARD_CENTER_X,
@@ -31,6 +33,7 @@ import {
   COLORS,
   SEPARATOR,
   DPE_BLOCK,
+  DPE_COLUMN_RIGHT,
   DPE_SCALE,
   DPE_SCALE_LABEL_TOP,
   DPE_TEXT,
@@ -326,6 +329,8 @@ const arrowPoints = (width: number, height: number, tip: number) =>
 
 type ScaleProps = {
   x: number;
+  /** Bord droit utilisable par la valeur écrite à droite de la flèche. */
+  columnRight: number;
   selected: DpeClass;
   value: number | null;
   unit: string;
@@ -333,8 +338,41 @@ type ScaleProps = {
   lightLetters: Record<DpeClass, boolean>;
 };
 
-const Scale = ({ x, selected, value, unit, colors, lightLetters }: ScaleProps) => {
+/**
+ * Haut de boîte (au sens d'AbsText) pour centrer les capitales d'une valeur
+ * écrite dans la flèche. Pour 13,5 pt on retombe sur `selectedTop - 2`, la cote
+ * V2 de la valeur écrite dehors (vérifiée sur impression) ; la formule la
+ * généralise aux corps réduits : capitales Montserrat 0,7 em, et 0,28 em
+ * d'écart entre le haut de boîte AbsText et le haut réel des capitales.
+ */
+const insideValueTop = (barTop: number, fontSize: number) =>
+  barTop + (DPE_SCALE.barHeight - 0.7 * fontSize) / 2 - 0.28 * fontSize;
+
+/** Valeur formatée à la française, espace insécable (U+00A0 : présent dans Montserrat, pas U+202F). */
+const formatDpeValue = (value: number, unit: string) =>
+  `${new Intl.NumberFormat("fr-FR").format(value).replace(/[\u202f\u00a0 ]/g, "\u00a0")}\u00a0${unit}`;
+
+const Scale = ({ x, columnRight, selected, value, unit, colors, lightLetters }: ScaleProps) => {
   const { firstBarTop, pitch, barHeight, tip, letterInset, valueGap, selectedOutline } = DPE_SCALE;
+  const selectedTop = firstBarTop + DPE_CLASSES.indexOf(selected) * pitch;
+  const valueText = typeof value === "number" ? formatDpeValue(value, unit) : null;
+  // Dehors (V2) tant que la valeur tient avant la colonne voisine ; sinon dans
+  // la flèche, en blanc, alignée à droite avant la pointe (décision du 26/10/2026).
+  const placement = valueText
+    ? resolveDpeValuePlacement({
+        barLeft: x,
+        barWidth: DPE_BAR_WIDTHS[selected],
+        tip,
+        outline: selectedOutline,
+        gap: valueGap,
+        columnRight,
+        letterWidth: letterInset + DPE_SCALE.letterWidth,
+        insidePadding: DPE_SCALE.insidePadding,
+        fontSize: DPE_SCALE.valueSize,
+        minFontSize: DPE_SCALE.valueMinSize,
+        measure: (size) => measurePosterText("sans-bold", valueText, size),
+      })
+    : null;
   const widest = DPE_BAR_WIDTHS.G + selectedOutline + 2;
   const totalHeight = pitch * (DPE_CLASSES.length - 1) + barHeight + selectedOutline * 2;
   const originY = firstBarTop - selectedOutline;
@@ -381,16 +419,30 @@ const Scale = ({ x, selected, value, unit, colors, lightLetters }: ScaleProps) =
           {dpeClass}
         </AbsText>
       ))}
-      {typeof value === "number" ? (
+      {valueText && placement?.mode === "outside" ? (
         <AbsText
           font={FONTS.sans}
-          size={13.5}
+          size={placement.fontSize}
           weight={700}
           color={COLORS.navy}
-          top={firstBarTop + DPE_CLASSES.indexOf(selected) * pitch - 2}
+          top={selectedTop - 2}
           left={x + DPE_BAR_WIDTHS[selected] + selectedOutline + valueGap}
         >
-          {`${new Intl.NumberFormat("fr-FR").format(value)} ${unit}`}
+          {valueText}
+        </AbsText>
+      ) : null}
+      {valueText && placement?.mode === "inside" ? (
+        <AbsText
+          font={FONTS.sans}
+          size={placement.fontSize}
+          weight={700}
+          color={COLORS.white}
+          top={insideValueTop(selectedTop, placement.fontSize)}
+          left={x}
+          width={DPE_BAR_WIDTHS[selected] - tip - DPE_SCALE.insidePadding}
+          align="right"
+        >
+          {valueText}
         </AbsText>
       ) : null}
     </>
@@ -423,6 +475,7 @@ const DpeBlock = ({ content }: { content: VitrinePosterContent }) => (
         </AbsText>
         <Scale
           x={DPE_SCALE.energyX}
+          columnRight={DPE_COLUMN_RIGHT.energy}
           selected={content.energy.energyClass}
           value={content.energy.energyValue}
           unit="kWh/m²/an"
@@ -431,6 +484,7 @@ const DpeBlock = ({ content }: { content: VitrinePosterContent }) => (
         />
         <Scale
           x={DPE_SCALE.climateX}
+          columnRight={DPE_COLUMN_RIGHT.climate}
           selected={content.energy.climateClass}
           value={content.energy.climateValue}
           unit="kg CO₂/m²/an"
