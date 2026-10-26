@@ -1,5 +1,7 @@
 {
-  "regions": ["cdg1"],
+  "regions": [
+    "cdg1"
+  ],
   "crons": [
     {
       "path": "/api/internal/cron/domain-events?limit=25",
@@ -24,6 +26,10 @@
     {
       "path": "/api/internal/cron/mynotary-archive?limit=50",
       "schedule": "30 3 1 * *"
+    },
+    {
+      "path": "/api/internal/cron/buyer-alerts",
+      "schedule": "0 7,8,10,11,16,17 * * *"
     }
   ]
 }

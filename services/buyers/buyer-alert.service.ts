@@ -2,7 +2,7 @@ import "server-only";
 
 import crypto from "crypto";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { sendBuyerAlertEmail } from "@/lib/email/buyer-alert";
+import { sendBuyerAlertEmail, sendBuyerPriceDropEmail } from "@/lib/email/buyer-alert";
 import type { AppLocale } from "@/lib/i18n/config";
 import { localizePath } from "@/lib/i18n/routing";
 import type { RecomputeNewMatch } from "./buyer-matching.service";
@@ -235,12 +235,18 @@ export const processBuyerAlerts = async (
       });
 
       if ("sent" in result && result.sent) {
-        const matchIds = matches.map((match) => match.matchId);
-        if (matchIds.length > 0) {
+        // Le prix mémorisé est celui de l'annonce au moment de l'envoi : une
+        // baisse ultérieure déclenchera le mail « Nouveau prix ».
+        for (const match of matches) {
+          const listing = listingsById.get(match.propertyListingId);
           await supabaseAdmin
             .from("buyer_property_matches")
-            .update({ notified_at: nowIso, updated_at: nowIso })
-            .in("id", matchIds);
+            .update({
+              notified_at: nowIso,
+              notified_price_amount: listing?.price_amount ?? null,
+              updated_at: nowIso,
+            })
+            .eq("id", match.matchId);
         }
         notifiedCount += matches.length;
       } else {
@@ -249,6 +255,140 @@ export const processBuyerAlerts = async (
     } catch (error) {
       console.error("[buyer-alert] send failed", error);
       skippedCount += matches.length;
+    }
+  }
+
+  return { notifiedCount, skippedCount };
+};
+
+/**
+ * Baisse de prix : mail « Nouveau prix » aux acquéreurs qui avaient déjà reçu
+ * ce bien (notified_at posé) à un prix supérieur au prix actif, une seule fois
+ * par baisse (notified_price_amount mis à jour après envoi). Les
+ * correspondances encore en base sont celles que le recalcul vient de retenir
+ * (score ≥ seuil) : un acquéreur sorti de la cible n'est pas prévenu.
+ */
+export const processPriceDropAlerts = async (input: {
+  propertyListingId: string;
+  previousPrice: number;
+  currentPrice: number;
+}): Promise<{ notifiedCount: number; skippedCount: number }> => {
+  if (!(input.currentPrice < input.previousPrice)) return { notifiedCount: 0, skippedCount: 0 };
+
+  const { data: listingData, error: listingError } = await supabaseAdmin
+    .from("property_listings")
+    .select("*")
+    .eq("id", input.propertyListingId)
+    .maybeSingle();
+  if (listingError) throw new Error(listingError.message);
+  const listing = (listingData as PropertyListingRow | null) ?? null;
+  if (!listing || typeof listing.price_amount !== "number") return { notifiedCount: 0, skippedCount: 0 };
+
+  const { data: matchesData, error: matchesError } = await supabaseAdmin
+    .from("buyer_property_matches")
+    .select("id, buyer_lead_id, buyer_search_profile_id, notified_at, notified_price_amount")
+    .eq("property_listing_id", listing.id)
+    .not("notified_at", "is", null);
+  if (matchesError) throw new Error(matchesError.message);
+  const due = (matchesData ?? []).filter((row) => {
+    // Avant la migration 060 le prix mémorisé peut manquer : on prend alors
+    // l'ancien prix transmis par la synchro comme référence.
+    const reference = typeof row.notified_price_amount === "number" ? row.notified_price_amount : input.previousPrice;
+    return listing.price_amount !== null && listing.price_amount < reference;
+  });
+  if (due.length === 0) return { notifiedCount: 0, skippedCount: 0 };
+
+  const profileIds = Array.from(new Set(due.map((row) => row.buyer_search_profile_id)));
+  const { data: profilesData, error: profilesError } = await supabaseAdmin
+    .from("buyer_search_profiles")
+    .select("*")
+    .in("id", profileIds);
+  if (profilesError) throw new Error(profilesError.message);
+  const profilesById = new Map(((profilesData ?? []) as BuyerSearchProfileRow[]).map((row) => [row.id, row]));
+
+  const projectIds = Array.from(
+    new Set(
+      ((profilesData ?? []) as BuyerSearchProfileRow[])
+        .map((row) => row.client_project_id)
+        .filter((value): value is string => Boolean(value))
+    )
+  );
+  let projectsById = new Map<string, ClientProjectRow>();
+  if (projectIds.length > 0) {
+    const { data: projectsData, error: projectsError } = await supabaseAdmin
+      .from("client_projects")
+      .select("*")
+      .in("id", projectIds);
+    if (projectsError) throw new Error(projectsError.message);
+    projectsById = new Map(((projectsData ?? []) as ClientProjectRow[]).map((row) => [row.id, row]));
+  }
+
+  const leadIds = Array.from(new Set(due.map((row) => row.buyer_lead_id)));
+  const { data: leadsData, error: leadsError } = await supabaseAdmin
+    .from("buyer_leads")
+    .select("*")
+    .in("id", leadIds);
+  if (leadsError) throw new Error(leadsError.message);
+  const leadsById = new Map(((leadsData ?? []) as BuyerLeadRow[]).map((row) => [row.id, row]));
+
+  const { data: mediaData } = await supabaseAdmin
+    .from("property_media")
+    .select("cached_url, remote_url")
+    .eq("property_id", listing.property_id)
+    .eq("kind", "image")
+    .order("ordinal", { ascending: true })
+    .limit(1);
+  const coverImageUrl = mediaData?.[0]?.cached_url ?? mediaData?.[0]?.remote_url ?? listing.cover_image_url ?? null;
+
+  let notifiedCount = 0;
+  let skippedCount = 0;
+  const nowIso = new Date().toISOString();
+  for (const row of due) {
+    const profile = profilesById.get(row.buyer_search_profile_id);
+    const lead = leadsById.get(row.buyer_lead_id);
+    if (!profile || profile.status !== "active" || !lead || !isLeadEligibleForAlerts(lead)) {
+      skippedCount += 1;
+      continue;
+    }
+    const project = profile.client_project_id ? (projectsById.get(profile.client_project_id) ?? null) : null;
+    const clientProjectId = profile.client_project_id ?? project?.id;
+    if (!clientProjectId) {
+      skippedCount += 1;
+      continue;
+    }
+    const locale = resolveLocale(null);
+    const previousPriceAmount =
+      typeof row.notified_price_amount === "number" ? row.notified_price_amount : input.previousPrice;
+    try {
+      const result = await sendBuyerPriceDropEmail({
+        to: lead.email,
+        locale,
+        firstName: splitFirstName(lead.full_name),
+        match: {
+          title: listing.title,
+          city: listing.city,
+          propertyType: listing.property_type,
+          priceAmount: listing.price_amount,
+          canonicalPath: listing.canonical_path,
+          coverImageUrl,
+          previousPriceAmount,
+        },
+        searchLabel: buildSearchLabel(profile, project),
+        searchUrl: buildSearchUrl(clientProjectId, locale),
+        unsubscribeUrl: buildUnsubscribeUrl(clientProjectId, locale),
+      });
+      if ("sent" in result && result.sent) {
+        await supabaseAdmin
+          .from("buyer_property_matches")
+          .update({ notified_price_amount: listing.price_amount, price_notified_at: nowIso, updated_at: nowIso })
+          .eq("id", row.id);
+        notifiedCount += 1;
+      } else {
+        skippedCount += 1;
+      }
+    } catch (error) {
+      console.error("[buyer-alert] price drop send failed", error);
+      skippedCount += 1;
     }
   }
 

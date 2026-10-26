@@ -7,7 +7,8 @@ import { cacheSweepBrightMedia } from "./sweepbright-media-cache.service";
 import type { SweepBrightEstateData } from "@/types/api/sweepbright";
 import type { Database } from "@/types/db/supabase";
 import { recomputeMatchesForProperty } from "@/services/buyers/buyer-matching.service";
-import { processBuyerAlerts } from "@/services/buyers/buyer-alert.service";
+import { processBuyerAlerts, processPriceDropAlerts } from "@/services/buyers/buyer-alert.service";
+import { detectPriceDrop } from "@/lib/buyers/match-scoring";
 import { isPublicAvailabilityStatus } from "@/lib/properties/canonical-types";
 import { ensureContactIdentity } from "@/services/contacts/contact-identity.service";
 import {
@@ -524,6 +525,8 @@ const upsertPropertyProjection = async (
   return {
     property,
     listing: listingData as PropertyListingRow,
+    /** Prix de l'annonce avant cette projection (null si première synchro). */
+    previousPriceAmount: historySnapshot?.priceAmount ?? null,
   };
 };
 
@@ -847,10 +850,22 @@ export const processSweepBrightDelivery = async (deliveryId: string) => {
       postalCode: projection.property.postal_code,
     });
 
+    // Rapprochements : toujours recalculés (admin à jour). Les alertes
+    // groupées partent aux créneaux de 9 h / 12 h / 18 h (tâche planifiée),
+    // sauf baisse de prix : envoi immédiat aux nouveaux entrants, et mail
+    // « Nouveau prix » à ceux qui avaient déjà reçu le bien (26/10/2026).
     try {
       const matchResult = await recomputeMatchesForProperty(projection.property.id);
-      if (matchResult.alertCandidates.length > 0) {
-        await processBuyerAlerts(matchResult.alertCandidates);
+      const priceDrop = detectPriceDrop(projection.previousPriceAmount, projection.listing.price_amount);
+      if (priceDrop) {
+        if (matchResult.alertCandidates.length > 0) {
+          await processBuyerAlerts(matchResult.alertCandidates);
+        }
+        await processPriceDropAlerts({
+          propertyListingId: projection.listing.id,
+          previousPrice: priceDrop.previousPrice,
+          currentPrice: priceDrop.currentPrice,
+        });
       }
     } catch (matchError) {
       console.error(

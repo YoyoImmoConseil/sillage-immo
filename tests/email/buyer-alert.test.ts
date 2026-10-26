@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
-import { renderBuyerAlertEmail } from "@/lib/email/buyer-alert";
+import { renderBuyerAlertEmail, renderBuyerPriceDropEmail } from "@/lib/email/buyer-alert";
 
 process.env.PUBLIC_SITE_URL = "https://sillage-immo.com";
 
@@ -54,5 +54,25 @@ describe("alerte acquéreur — carte du bien", () => {
     });
     expect(html.indexOf("MUSICIENS")).toBeLessThan(html.indexOf("NICE PORT"));
     expect((html.match(/<img /g) ?? []).length).toBe(1);
+  });
+});
+
+describe("mail « Nouveau prix »", () => {
+  it("ancien prix barré, nouveau prix, photo, lien vers le bien", () => {
+    const { subject, html, text } = renderBuyerPriceDropEmail({
+      ...base,
+      match: { ...musiciens, priceAmount: 188000, previousPriceAmount: 195000 },
+    });
+    expect(subject).toBe("Nouveau prix : NICE MUSICIENS – SUPERBE 5 PIÈCES BELLE ÉPOQUE");
+    expect(html).toMatch(/line-through;">195[\s\u00a0\u202f]*000 €<\/span>/);
+    expect(html).toMatch(/188[\s\u00a0\u202f]*000 €<\/p>/);
+    expect(html).toContain("<img src=");
+    expect(html).toContain("vient de passer de");
+    expect(text).toContain("→");
+  });
+
+  it("le mail d'alerte classique n'affiche jamais de prix barré", () => {
+    const { html } = renderBuyerAlertEmail({ ...base, matches: [musiciens] });
+    expect(html).not.toContain("line-through");
   });
 });

@@ -13,6 +13,8 @@ export type BuyerAlertMatchInput = {
   canonicalPath: string;
   /** Photo principale (copie Supabase, URL stable), affichée en vignette dans la carte. */
   coverImageUrl?: string | null;
+  /** Mail « Nouveau prix » : ancien prix, affiché barré au-dessus du nouveau. */
+  previousPriceAmount?: number | null;
 };
 
 export type BuyerAlertEmailInput = {
@@ -156,6 +158,10 @@ const renderMatchCard = (
   const title = match.title || typeLabel || match.canonicalPath;
   const subtitle = [match.city, typeLabel].filter(Boolean).join(" · ");
   const priceLine = formatPrice(match.priceAmount, locale);
+  const previousPriceLine =
+    typeof match.previousPriceAmount === "number" && match.previousPriceAmount > (match.priceAmount ?? 0)
+      ? formatPrice(match.previousPriceAmount, locale)
+      : "";
   const href = listingHref(baseUrl, match.canonicalPath);
   const imageUrl = thumbnailUrl(match.coverImageUrl, baseUrl);
 
@@ -186,7 +192,11 @@ const renderMatchCard = (
           }
           ${
             priceLine
-              ? `<p style="margin:10px 0 0;color:#141446;font-size:15px;font-weight:600;">${escapeHtml(priceLine)}</p>`
+              ? `<p style="margin:10px 0 0;color:#141446;font-size:15px;font-weight:600;">${
+                  previousPriceLine
+                    ? `<span style="color:#8a8aa3;font-weight:400;text-decoration:line-through;">${escapeHtml(previousPriceLine)}</span>&nbsp;&nbsp;`
+                    : ""
+                }${escapeHtml(priceLine)}</p>`
               : ""
           }
           <p style="margin:14px 0 0;font-size:14px;">
@@ -283,4 +293,127 @@ export const sendBuyerAlertEmail = async (input: BuyerAlertEmailInput) => {
     text,
     html,
   });
+};
+
+// ── Mail « Nouveau prix » ──────────────────────────────────────────────────
+//
+// Envoyé aux acquéreurs qui avaient déjà reçu le bien quand son prix baisse
+// (une fois par baisse ; décision du 26/10/2026) : « un appartement qui ne les
+// intéresse pas à 195 000 € peut les intéresser à 188 000 € ».
+
+export type BuyerPriceDropEmailInput = {
+  to: string;
+  locale: AppLocale;
+  firstName: string | null;
+  match: BuyerAlertMatchInput & { previousPriceAmount: number };
+  searchLabel: string;
+  searchUrl: string;
+  unsubscribeUrl: string;
+};
+
+type PriceDropCopy = {
+  subject: (title: string) => string;
+  /** Titre du mail (court : le titre du bien est déjà dans la carte). */
+  heading: string;
+  preheader: string;
+  eyebrow: string;
+  intro: (previous: string, current: string, label: string) => string;
+};
+
+const PRICE_DROP_COPY: Record<AppLocale, PriceDropCopy> = {
+  fr: {
+    subject: (title) => `Nouveau prix : ${title}`,
+    heading: "Le prix de ce bien vient de baisser",
+    preheader: "Le prix d'un bien de votre sélection vient de baisser.",
+    eyebrow: "Nouveau prix",
+    intro: (previous, current, label) =>
+      `Le prix de ce bien de votre recherche « ${label} » vient de passer de ${previous} à ${current}.`,
+  },
+  en: {
+    subject: (title) => `New price: ${title}`,
+    heading: "The price of this property has just dropped",
+    preheader: "The price of a property in your selection has just dropped.",
+    eyebrow: "New price",
+    intro: (previous, current, label) =>
+      `The price of this property from your search "${label}" has just gone from ${previous} to ${current}.`,
+  },
+  es: {
+    subject: (title) => `Nuevo precio: ${title}`,
+    heading: "El precio de este inmueble acaba de bajar",
+    preheader: "El precio de un inmueble de su selección acaba de bajar.",
+    eyebrow: "Nuevo precio",
+    intro: (previous, current, label) =>
+      `El precio de este inmueble de su búsqueda «${label}» acaba de pasar de ${previous} a ${current}.`,
+  },
+  ru: {
+    subject: (title) => `Новая цена: ${title}`,
+    heading: "Цена этого объекта только что снизилась",
+    preheader: "Цена объекта из вашей подборки только что снизилась.",
+    eyebrow: "Новая цена",
+    intro: (previous, current, label) =>
+      `Цена этого объекта из вашего поиска «${label}» только что изменилась с ${previous} на ${current}.`,
+  },
+};
+
+export const renderBuyerPriceDropEmail = (
+  input: BuyerPriceDropEmailInput
+): { subject: string; text: string; html: string } => {
+  const copy = COPY[input.locale] ?? COPY.fr;
+  const dropCopy = PRICE_DROP_COPY[input.locale] ?? PRICE_DROP_COPY.fr;
+  const baseUrl = (process.env.PUBLIC_SITE_URL ?? "").replace(/\/$/, "");
+  const match = input.match;
+  const typeLabel = propertyTypeLabel(match, input.locale);
+  const title = match.title || typeLabel || match.canonicalPath;
+  const previous = formatPrice(match.previousPriceAmount, input.locale);
+  const current = formatPrice(match.priceAmount, input.locale);
+  const subject = dropCopy.subject(title);
+
+  const text = [
+    copy.greeting(input.firstName),
+    "",
+    dropCopy.intro(previous, current, input.searchLabel),
+    "",
+    `- ${title} | ${[match.city, typeLabel].filter(Boolean).join(" · ")} | ${previous} → ${current} | ${listingHref(baseUrl, match.canonicalPath)}`,
+    "",
+    copy.advisorNote,
+    "",
+    `${copy.viewSearchCta}: ${input.searchUrl}`,
+    "",
+    copy.footerNote,
+    `${copy.unsubscribe}: ${input.unsubscribeUrl}`,
+  ].join("\n");
+
+  const bodyHtml = `
+    <p style="margin:0 0 12px;">${escapeHtml(copy.greeting(input.firstName))}</p>
+    <p style="margin:0 0 22px;">${escapeHtml(dropCopy.intro(previous, current, input.searchLabel))}</p>
+    ${renderMatchCard(match, copy, input.locale, baseUrl)}
+    <p style="margin:18px 0 0;color:#5b5b78;font-size:14px;line-height:1.6;">
+      ${escapeHtml(copy.advisorNote)}
+    </p>
+  `;
+
+  const footerHtml = `
+    <p style="margin:0 0 8px;">${escapeHtml(copy.footerNote)}</p>
+    <p style="margin:0;">
+      <a href="${input.unsubscribeUrl}" style="color:#5b5b78;text-decoration:underline;">
+        ${escapeHtml(copy.unsubscribe)}
+      </a>
+    </p>
+  `;
+
+  const html = renderEmailLayout({
+    preheader: dropCopy.preheader,
+    eyebrow: dropCopy.eyebrow,
+    title: dropCopy.heading,
+    bodyHtml,
+    cta: { label: copy.viewSearchCta, href: input.searchUrl },
+    footerHtml,
+  });
+
+  return { subject, text, html };
+};
+
+export const sendBuyerPriceDropEmail = async (input: BuyerPriceDropEmailInput) => {
+  const { subject, text, html } = renderBuyerPriceDropEmail(input);
+  return sendTransactionalEmail({ to: input.to, subject, text, html });
 };

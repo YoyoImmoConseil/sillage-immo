@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   ALERT_SCORE_THRESHOLD,
   buildMatchScore,
+  detectPriceDrop,
+  isBuyerAlertSlot,
+  parisHour,
   isAlertConsentSource,
   isLeadEligibleForAlerts,
   isMatchRetained,
@@ -164,5 +167,31 @@ describe("consentement à l'alerte e-mail", () => {
     expect(isLeadEligibleForAlerts({ email: "c@hotmail.fr", email_verified_at: null, source: "zapier_integration" })).toBe(false);
     expect(isLeadEligibleForAlerts({ email: "c@hotmail.fr", email_verified_at: "2026-10-01T00:00:00Z", source: "zapier_integration" })).toBe(true);
     expect(isLeadEligibleForAlerts({ email: "", email_verified_at: "2026-10-01T00:00:00Z", source: "website_buyer_signup" })).toBe(false);
+  });
+});
+
+describe("planification des alertes et baisse de prix", () => {
+  it("créneaux 9 h, 12 h, 18 h heure de Paris, été comme hiver", () => {
+    // Hiver (UTC+1) : 8 h UTC = 9 h Paris ; 7 h UTC = 8 h Paris.
+    expect(isBuyerAlertSlot(new Date("2026-12-10T08:00:00Z"))).toBe(true);
+    expect(isBuyerAlertSlot(new Date("2026-12-10T07:00:00Z"))).toBe(false);
+    expect(isBuyerAlertSlot(new Date("2026-12-10T11:00:00Z"))).toBe(true);
+    expect(isBuyerAlertSlot(new Date("2026-12-10T17:00:00Z"))).toBe(true);
+    expect(isBuyerAlertSlot(new Date("2026-12-10T16:00:00Z"))).toBe(false);
+    // Été (UTC+2) : 7 h UTC = 9 h Paris ; 8 h UTC = 10 h Paris.
+    expect(isBuyerAlertSlot(new Date("2026-07-10T07:00:00Z"))).toBe(true);
+    expect(isBuyerAlertSlot(new Date("2026-07-10T08:00:00Z"))).toBe(false);
+    expect(isBuyerAlertSlot(new Date("2026-07-10T10:00:00Z"))).toBe(true);
+    expect(isBuyerAlertSlot(new Date("2026-07-10T16:00:00Z"))).toBe(true);
+    expect(parisHour(new Date("2026-07-10T16:00:00Z"))).toBe(18);
+  });
+
+  it("baisse de prix : strictement inférieur, prix connus et positifs", () => {
+    expect(detectPriceDrop(195000, 188000)).toEqual({ previousPrice: 195000, currentPrice: 188000 });
+    expect(detectPriceDrop(195000, 195000)).toBeNull();
+    expect(detectPriceDrop(188000, 195000)).toBeNull();
+    expect(detectPriceDrop(null, 188000)).toBeNull();
+    expect(detectPriceDrop(195000, null)).toBeNull();
+    expect(detectPriceDrop(0, 188000)).toBeNull();
   });
 });

@@ -1478,6 +1478,8 @@ export type Database = {
           notified_at: string | null;
           read_at: string | null;
           first_seen_at: string;
+          notified_price_amount: number | null;
+          price_notified_at: string | null;
         };
         Insert: {
           id?: string;
@@ -1494,6 +1496,8 @@ export type Database = {
           notes?: string | null;
           computed_at?: string;
           notified_at?: string | null;
+          notified_price_amount?: number | null;
+          price_notified_at?: string | null;
           read_at?: string | null;
           first_seen_at?: string;
         };
@@ -1512,6 +1516,8 @@ export type Database = {
           notes?: string | null;
           computed_at?: string;
           notified_at?: string | null;
+          notified_price_amount?: number | null;
+          price_notified_at?: string | null;
           read_at?: string | null;
           first_seen_at?: string;
         };
