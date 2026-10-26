@@ -27,6 +27,7 @@
     "@supabase/supabase-js": "^2.98.0",
     "@tremor/react": "^3.18.7",
     "@vercel/speed-insights": "^2.0.0",
+    "fontkit": "^2.0.4",
     "leaflet": "^1.9.4",
     "leaflet-draw": "^1.0.4",
     "next": "16.1.6",

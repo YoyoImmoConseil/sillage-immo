@@ -13,7 +13,9 @@ const supabaseHostname = (() => {
 
 const nextConfig: NextConfig = {
   // react-pdf (fiche vitrine) doit rester un module Node natif, non bundlé.
-  serverExternalPackages: ["@react-pdf/renderer"],
+  // fontkit : mesure de texte avec les polices de l'affiche (même paquet que
+  // celui qu'utilise react-pdf), chargé depuis node_modules comme lui.
+  serverExternalPackages: ["@react-pdf/renderer", "fontkit"],
   // Polices et logo lus sur le disque à la génération du PDF : à embarquer
   // dans la fonction Vercel qui les utilise.
   outputFileTracingIncludes: {
