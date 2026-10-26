@@ -8,7 +8,10 @@
  * chambres minimum, qui ne font que rapporter des points.
  *
  * Tolérances : prix admis jusqu'à budget max + 10 % ; surface admise dès
- * surface min − 10 % et jusqu'à surface max + 10 %.
+ * surface min − 10 % et jusqu'à surface max + 10 %. Budget minimum : des
+ * points au-dessus, rien en dessous, mais un bien à plus de 30 % sous le
+ * minimum est écarté (un acquéreur à 500–670 k€ ne reçoit pas un studio à
+ * 195 k€ — décision du 26/10/2026).
  *
  * Seuil unique (65) : une correspondance n'est conservée, affichée dans
  * « Acquéreurs compatibles » et alertée par e-mail qu'à partir de 65 points
@@ -34,6 +37,8 @@ export const MATCH_POINTS = {
 export const MATCH_TOLERANCE = {
   /** Prix ≤ budget max × (1 + 0,10). */
   budgetMax: 0.1,
+  /** Prix < budget min × (1 − 0,30) → écarté ; entre les deux : 0 point, pas de blocage. */
+  budgetMinFloor: 0.3,
   /** Surface ≥ min × (1 − 0,10) ; surface ≤ max × (1 + 0,10). */
   livingArea: 0.1,
 } as const;
@@ -138,10 +143,15 @@ export const buildMatchScore = (profile: MatchProfileCriteria, listing: MatchLis
     }
   }
 
-  // Budget min : des points, jamais bloquant.
-  if (isNumber(profile.budget_min) && isNumber(listing.price_amount) && listing.price_amount >= profile.budget_min) {
-    score += MATCH_POINTS.budgetMin;
-    matchedCriteria.budgetMin = true;
+  // Budget min : des points au-dessus ; en dessous, rien, sauf à plus de
+  // 30 % sous le minimum, où le bien est écarté.
+  if (isNumber(profile.budget_min) && isNumber(listing.price_amount)) {
+    if (listing.price_amount >= profile.budget_min) {
+      score += MATCH_POINTS.budgetMin;
+      matchedCriteria.budgetMin = true;
+    } else if (listing.price_amount < profile.budget_min * (1 - MATCH_TOLERANCE.budgetMinFloor)) {
+      blockers.push("budget_min_floor");
+    }
   }
 
   // Pièces min : bloquant si renseigné (bien sans nombre de pièces = non satisfait).

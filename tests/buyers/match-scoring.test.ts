@@ -89,12 +89,23 @@ describe("grille de correspondance (26/10/2026)", () => {
     expect(blocked.blockers).toContain("budget_max");
   });
 
-  it("budget min et chambres min : des points, jamais bloquants", () => {
-    const above = buildMatchScore(profile({ cities: ["Nice"], budget_max: 700000, budget_min: 800000, bedrooms_min: 6 }), musiciens);
-    expect(above.blockers).toEqual([]);
-    expect(above.score).toBe(65);
+  it("budget min : 5 points au-dessus, 0 jusqu'à −30 %, écarté au-delà ; chambres min : jamais bloquant", () => {
+    // 635 000 ≥ 700 000 × 0,7 = 490 000 : sous le minimum mais dans la marge → 0 point, pas de blocage.
+    const within = buildMatchScore(profile({ cities: ["Nice"], budget_max: 800000, budget_min: 700000, bedrooms_min: 6 }), musiciens);
+    expect(within.blockers).toEqual([]);
+    expect(within.score).toBe(65);
+    // 635 000 < 950 000 × 0,7 = 665 000 → écarté.
+    const far = buildMatchScore(profile({ cities: ["Nice"], budget_max: 1000000, budget_min: 950000 }), musiciens);
+    expect(far.blockers).toContain("budget_min_floor");
     const met = buildMatchScore(profile({ cities: ["Nice"], budget_max: 700000, budget_min: 600000, bedrooms_min: 3 }), musiciens);
     expect(met.score).toBe(75);
+  });
+
+  it("Lenara (500–670 k€) ne reçoit pas un 2 pièces à 195 k€ : 195 000 < 350 000", () => {
+    const egliseRusse = { ...musiciens, price_amount: 195000, rooms: 2, bedrooms: 1, living_area: 32.18, floor: 4 };
+    const evaluation = buildMatchScore(profile({ cities: ["Nice"], budget_min: 500000, budget_max: 670000 }), egliseRusse);
+    expect(evaluation.blockers).toEqual(["budget_min_floor"]);
+    expect(isMatchRetained(evaluation)).toBe(false);
   });
 
   it("surface : −10 % admis sous le minimum, +10 % admis au-dessus du maximum", () => {
