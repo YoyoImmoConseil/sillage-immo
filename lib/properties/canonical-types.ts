@@ -33,6 +33,59 @@ export const isPublicAvailabilityStatus = (
 };
 
 /**
+ * Statuts dont la page de détail publique reste en ligne : la liste blanche
+ * (annonces actives) plus les biens vendus / loués, servis avec un bandeau
+ * « Vendu » / « Loué » et un seul appel à l'action (estimation). Les
+ * catalogues et la recherche restent limités à `PUBLIC_AVAILABILITY_STATUSES`.
+ */
+export const DETAIL_PAGE_AVAILABILITY_STATUSES = [
+  ...PUBLIC_AVAILABILITY_STATUSES,
+  "sold",
+  "rented",
+] as const;
+
+export type DetailPageAvailabilityStatus = (typeof DETAIL_PAGE_AVAILABILITY_STATUSES)[number];
+
+const DETAIL_PAGE_AVAILABILITY_STATUS_SET = new Set<string>(DETAIL_PAGE_AVAILABILITY_STATUSES);
+
+export const isDetailPageAvailabilityStatus = (
+  value: string | null | undefined
+): value is DetailPageAvailabilityStatus => {
+  if (typeof value !== "string") return false;
+  return DETAIL_PAGE_AVAILABILITY_STATUS_SET.has(value.trim().toLowerCase());
+};
+
+export const isClosedAvailabilityStatus = (value: string | null | undefined): value is "sold" | "rented" => {
+  const normalized = typeof value === "string" ? value.trim().toLowerCase() : "";
+  return normalized === "sold" || normalized === "rented";
+};
+
+/**
+ * La page de détail publique est-elle servie pour ce bien ?
+ * - annonce active (statut de la liste blanche) : il faut `is_published` et
+ *   `publication_status = active`, comme avant ;
+ * - vendu / loué : la synchro SweepBright dépublie l'annonce
+ *   (`is_published = false`, `publication_status = inactive`) ; la page reste
+ *   servie tant que l'annonce n'est pas `deleted` ;
+ * - tout autre statut (prospect, withdrawn, deleted, absent) : 404.
+ * Une seule règle, partagée par le site public et le garde-fou de la fiche
+ * vitrine (le QR d'une affiche « Vendu » doit mener à une page vivante).
+ */
+export const isDetailPageServed = (input: {
+  availabilityStatus: string | null | undefined;
+  isPublished: boolean | null | undefined;
+  publicationStatus: string | null | undefined;
+}): boolean => {
+  if (isPublicAvailabilityStatus(input.availabilityStatus)) {
+    return input.isPublished === true && input.publicationStatus === "active";
+  }
+  if (isClosedAvailabilityStatus(input.availabilityStatus)) {
+    return input.publicationStatus !== "deleted";
+  }
+  return false;
+};
+
+/**
  * Full set of `availability_status` values we expose in the admin status
  * dropdown. Includes both the public whitelist and the internal/SweepBright
  * statuses that should NEVER reach the public site (prospect, sold, rented,

@@ -17,7 +17,7 @@ import {
   cacheTagListingBySlug,
   DEPLOYMENT_CACHE_KEY,
 } from "@/lib/cache/tags";
-import { isPublicAvailabilityStatus } from "@/lib/properties/canonical-types";
+import { isDetailPageServed, isPublicAvailabilityStatus } from "@/lib/properties/canonical-types";
 import { normalizeListingDescriptionFees } from "@/lib/properties/listing-description";
 
 type ListingRow = Database["public"]["Tables"]["property_listings"]["Row"];
@@ -462,17 +462,16 @@ const getPublicPropertyListingByExternalIdUncached = async (input: {
   }
   if (!propertyData) return null;
   const property = propertyData as PropertyRow;
-  // Defensive: don't expose properties whose SweepBright status is not in the
-  // public whitelist (e.g. `prospect`, `deleted`, `withdrawn`, `null`).
-  if (!isPublicAvailabilityStatus(property.availability_status)) return null;
-
+  // Defensive: don't expose properties whose SweepBright status is neither in
+  // the public whitelist nor sold / rented (e.g. `prospect`, `deleted`,
+  // `withdrawn`, `null`). Sold / rented pages stay online (banner « Vendu » /
+  // « Loué », presentation price, estimation CTA) — see `isDetailPageServed`.
   const [listingResult, mediaResult] = await Promise.all([
     supabaseAdmin
       .from("property_listings")
       .select("*")
       .eq("property_id", property.id)
-      .eq("is_published", true)
-      .eq("publication_status", "active")
+      .neq("publication_status", "deleted")
       .maybeSingle(),
     supabaseAdmin
       .from("property_media")
@@ -488,12 +487,22 @@ const getPublicPropertyListingByExternalIdUncached = async (input: {
     throw new Error(listingResult.error.message);
   }
   if (!listingResult.data) return null;
+  const listingRow = listingResult.data as ListingRow;
+  if (
+    !isDetailPageServed({
+      availabilityStatus: property.availability_status,
+      isPublished: listingRow.is_published,
+      publicationStatus: listingRow.publication_status,
+    })
+  ) {
+    return null;
+  }
   if (mediaResult.error) {
     throw new Error(mediaResult.error.message);
   }
 
   return hydrateListingSnapshotWithProperty(
-    listingResult.data as ListingRow,
+    listingRow,
     property,
     (mediaResult.data ?? []) as MediaRow[],
     locale

@@ -35,7 +35,7 @@ import {
   listPublicPropertyListings,
   toPublicPropertyListingSummary,
 } from "@/services/properties/property-listing.service";
-import { getListingCommercialStatusLabel } from "./listing-status-banner";
+import { getListingCommercialStatusLabel, isListingClosed } from "./listing-status-banner";
 
 const METADATA_FALLBACKS: Record<AppLocale, { title: string; description: string }> = {
   fr: {
@@ -67,7 +67,11 @@ export const buildPublicListingMetadata = (
     };
   }
 
-  const title = `${humanizeListingTitle(listing.title) ?? fallback.title} | Sillage Immo`;
+  const closedLabel = isListingClosed(listing.property.availabilityStatus)
+    ? getListingCommercialStatusLabel(listing.property.availabilityStatus, locale)
+    : null;
+  const baseTitle = humanizeListingTitle(listing.title) ?? fallback.title;
+  const title = `${closedLabel ? `${closedLabel} · ` : ""}${baseTitle} | Sillage Immo`;
   const description = toMetaDescription(listing.property.description) ?? fallback.description;
   return {
     ...buildPublicPageMetadata({
@@ -147,6 +151,10 @@ export async function PublicListingDetailPage({
       callAction: "Appeler",
       alertCta: "Recevoir les biens similaires",
       alertHint: "Une alerte pré-remplie avec le type, la ville et le budget de ce bien.",
+      estimateCta: "Estimez votre bien",
+      closedSale: "Ce bien a été vendu par Sillage Immo.",
+      closedRental: "Ce bien a été loué par Sillage Immo.",
+      closedHint: "Vous avez un bien similaire ? Obtenez une estimation précise et confidentielle.",
       similar: "Biens similaires",
     },
     en: {
@@ -199,6 +207,10 @@ export async function PublicListingDetailPage({
       callAction: "Call",
       alertCta: "Get similar properties",
       alertHint: "A pre-filled alert with this property's type, city and budget.",
+      estimateCta: "Get your property valued",
+      closedSale: "This property has been sold by Sillage Immo.",
+      closedRental: "This property has been let by Sillage Immo.",
+      closedHint: "Own a similar property? Get an accurate, confidential valuation.",
       similar: "Similar properties",
     },
     es: {
@@ -251,6 +263,10 @@ export async function PublicListingDetailPage({
       callAction: "Llamar",
       alertCta: "Recibir inmuebles similares",
       alertHint: "Una alerta prellenada con el tipo, la ciudad y el presupuesto de este inmueble.",
+      estimateCta: "Valore su inmueble",
+      closedSale: "Este inmueble ha sido vendido por Sillage Immo.",
+      closedRental: "Este inmueble ha sido alquilado por Sillage Immo.",
+      closedHint: "¿Tiene un inmueble similar? Obtenga una valoración precisa y confidencial.",
       similar: "Inmuebles similares",
     },
     ru: {
@@ -303,6 +319,10 @@ export async function PublicListingDetailPage({
       callAction: "Позвонить",
       alertCta: "Получать похожие объекты",
       alertHint: "Оповещение с типом, городом и бюджетом этого объекта.",
+      estimateCta: "Оцените вашу недвижимость",
+      closedSale: "Этот объект продан агентством Sillage Immo.",
+      closedRental: "Этот объект сдан агентством Sillage Immo.",
+      closedHint: "У вас похожий объект? Получите точную и конфиденциальную оценку.",
       similar: "Похожие объекты",
     },
   }[locale];
@@ -312,6 +332,12 @@ export async function PublicListingDetailPage({
   const commercialStatusLabel =
     getListingCommercialStatusLabel(listing.property.availabilityStatus, locale) ??
     copy.statusAvailable;
+  // Bien vendu / loué : page conservée (prix ou loyer de présentation, jamais
+  // le prix de vente réel), aucun appel à la visite, un seul appel à l'action :
+  // l'estimation.
+  const isClosed = isListingClosed(listing.property.availabilityStatus);
+  const closedNotice = isClosed ? (listing.businessType === "sale" ? copy.closedSale : copy.closedRental) : null;
+  const estimateHref = localizePath("/estimation", locale);
   const contact = listing.property.negotiator;
   const contactEmail = typeof contact.email === "string" && contact.email.trim() ? contact.email.trim() : null;
   const contactProfile = contactEmail ? await getPublicTeamMemberByEmail(contactEmail, locale) : null;
@@ -453,6 +479,9 @@ export async function PublicListingDetailPage({
                 {line.text}
               </p>
             ))}
+            {closedNotice ? (
+              <p className="text-sm font-semibold uppercase tracking-[0.12em] text-sand">{closedNotice}</p>
+            ) : null}
             <div className="pt-2">
               <ListingShareButtons url={shareUrl} title={listingTitle} locale={locale} tone="dark" />
             </div>
@@ -499,6 +528,7 @@ export async function PublicListingDetailPage({
                   {line.text}
                 </p>
               ))}
+              {closedNotice ? <p className="text-sm font-semibold">{closedNotice}</p> : null}
               {summaryMeta ? <p className="text-sm opacity-70">{summaryMeta}</p> : null}
               <div className="pt-2">
                 <ListingShareButtons url={shareUrl} title={listingTitle} locale={locale} />
@@ -702,15 +732,31 @@ export async function PublicListingDetailPage({
                 </a>
               ) : null}
               <div className="border-t border-sand/20 pt-4">
-                <Link
-                  href={alertHref}
-                  className="inline-flex min-h-11 items-center justify-center rounded-full border border-sand/60 px-5 text-sm font-semibold text-sand transition hover:bg-sand/10"
-                  data-track-cta="listing_create_alert"
-                  data-track-location="listing_contact"
-                >
-                  {copy.alertCta}
-                </Link>
-                <p className="mt-2 text-xs text-sand/70">{copy.alertHint}</p>
+                {isClosed ? (
+                  <>
+                    <Link
+                      href={estimateHref}
+                      className="inline-flex min-h-11 items-center justify-center rounded-full bg-sand px-5 text-sm font-semibold text-navy transition hover:bg-sand/90"
+                      data-track-cta="listing_closed_estimate"
+                      data-track-location="listing_contact"
+                    >
+                      {copy.estimateCta}
+                    </Link>
+                    <p className="mt-2 text-xs text-sand/70">{copy.closedHint}</p>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      href={alertHref}
+                      className="inline-flex min-h-11 items-center justify-center rounded-full border border-sand/60 px-5 text-sm font-semibold text-sand transition hover:bg-sand/10"
+                      data-track-cta="listing_create_alert"
+                      data-track-location="listing_contact"
+                    >
+                      {copy.alertCta}
+                    </Link>
+                    <p className="mt-2 text-xs text-sand/70">{copy.alertHint}</p>
+                  </>
+                )}
               </div>
             </section>
 
@@ -846,21 +892,34 @@ export async function PublicListingDetailPage({
             « Appeler » → tel:. Hauteur tactile ≥ 48px, safe-area iOS respectée. */}
         <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[rgba(20,20,70,0.18)] bg-sand/95 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur desktop:hidden">
           <div className="flex items-center gap-3">
-            <a
-              href={visitHref}
-              {...(visitOpensWhatsApp ? { target: "_blank", rel: "noreferrer" } : {})}
-              className="inline-flex min-h-12 flex-1 items-center justify-center rounded-full bg-navy px-5 text-sm font-semibold text-sand"
-            >
-              {copy.requestVisit}
-            </a>
-            {contactPhone ? (
-              <a
-                href={`tel:${contactPhone}`}
-                className="inline-flex min-h-12 items-center justify-center rounded-full border border-navy px-5 text-sm font-semibold text-navy"
+            {isClosed ? (
+              <Link
+                href={estimateHref}
+                className="inline-flex min-h-12 flex-1 items-center justify-center rounded-full bg-navy px-5 text-sm font-semibold text-sand"
+                data-track-cta="listing_closed_estimate"
+                data-track-location="listing_sticky_bar"
               >
-                {copy.callAction}
-              </a>
-            ) : null}
+                {copy.estimateCta}
+              </Link>
+            ) : (
+              <>
+                <a
+                  href={visitHref}
+                  {...(visitOpensWhatsApp ? { target: "_blank", rel: "noreferrer" } : {})}
+                  className="inline-flex min-h-12 flex-1 items-center justify-center rounded-full bg-navy px-5 text-sm font-semibold text-sand"
+                >
+                  {copy.requestVisit}
+                </a>
+                {contactPhone ? (
+                  <a
+                    href={`tel:${contactPhone}`}
+                    className="inline-flex min-h-12 items-center justify-center rounded-full border border-navy px-5 text-sm font-semibold text-navy"
+                  >
+                    {copy.callAction}
+                  </a>
+                ) : null}
+              </>
+            )}
           </div>
         </div>
       </section>

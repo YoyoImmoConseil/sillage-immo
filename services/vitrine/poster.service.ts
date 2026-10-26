@@ -25,6 +25,8 @@ export type VitrinePosterResult = VitrinePosterDiagnostics & {
   content: VitrinePosterContent;
   pdf: Buffer | null;
   fileName: string;
+  /** Statut SweepBright lu (ou simulé en recette) au moment du rendu. */
+  availabilityStatus: string | null;
 };
 
 const slugify = (value: string) =>
@@ -67,17 +69,31 @@ const loadPropertyBundle = async (propertyId: string) => {
 export const buildVitrinePoster = async (input: {
   propertyId: string;
   force?: boolean;
+  /**
+   * Recette : simule un statut SweepBright (option, agreement, sold, rented…)
+   * sans toucher à la base. Le rendu est filigrané « statut simulé ».
+   */
+  simulateStatus?: string | null;
 }): Promise<VitrinePosterResult> => {
   const bundle = await loadPropertyBundle(input.propertyId);
   if (!bundle.property) {
     throw new Error("Bien introuvable.");
   }
-  const { property, listing, media } = bundle;
+  const { listing, media } = bundle;
+  const property = input.simulateStatus
+    ? { ...bundle.property, availability_status: input.simulateStatus }
+    : bundle.property;
 
   const built = buildVitrinePosterContent({
     property,
     listing: listing
-      ? { price_amount: listing.price_amount, canonical_path: listing.canonical_path, business_type: listing.business_type }
+      ? {
+          price_amount: listing.price_amount,
+          canonical_path: listing.canonical_path,
+          business_type: listing.business_type,
+          is_published: listing.is_published,
+          publication_status: listing.publication_status,
+        }
       : null,
     // Même URL canonique que le SEO : le QR d'une affiche imprimée depuis une
     // preview doit pointer vers le site public, jamais vers la preview.
@@ -95,7 +111,7 @@ export const buildVitrinePoster = async (input: {
   const fileName = `fiche-vitrine-${slugify(built.content.locationLine) || property.id}.pdf`;
 
   if (errors.length > 0 && !input.force) {
-    return { content: built.content, pdf: null, fileName, errors, warnings };
+    return { content: built.content, pdf: null, fileName, errors, warnings, availabilityStatus: property.availability_status };
   }
 
   // Photos choisies dans l'admin (par identifiant SweepBright, stable entre
@@ -137,9 +153,13 @@ export const buildVitrinePoster = async (input: {
     cardPhoto,
     logo,
     qrModules,
-    draftWatermark: errors.length > 0 ? "APERÇU · DONNÉES INCOMPLÈTES" : null,
+    draftWatermark: input.simulateStatus
+      ? "APERÇU · STATUT SIMULÉ"
+      : errors.length > 0
+        ? "APERÇU · DONNÉES INCOMPLÈTES"
+        : null,
   }) as unknown as ReactElement<DocumentProps>;
   const pdf = await renderToBuffer(element);
 
-  return { content: built.content, pdf: Buffer.from(pdf), fileName, errors, warnings };
+  return { content: built.content, pdf: Buffer.from(pdf), fileName, errors, warnings, availabilityStatus: property.availability_status };
 };

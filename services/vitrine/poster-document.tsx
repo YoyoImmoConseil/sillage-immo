@@ -3,6 +3,7 @@ import {
   Document,
   Font,
   Image,
+  Line,
   Page,
   Polygon,
   Rect,
@@ -12,6 +13,7 @@ import {
   View,
 } from "@react-pdf/renderer";
 import React, { type ReactElement } from "react";
+
 import type { VitrinePosterContent } from "@/lib/vitrine/poster-content";
 import {
   CLIMATE_LETTER_LIGHT,
@@ -44,7 +46,9 @@ import {
   QR_CAPTION_TOP,
   QR_FRAME,
   REFERENCE_TOP,
+  RIBBON,
 } from "@/lib/vitrine/poster-layout";
+import type { VitrineRibbonSpec } from "@/lib/vitrine/poster-status";
 import {
   VITRINE_CLIMATE_SCALE_LABEL,
   VITRINE_DPE_TITLE,
@@ -110,6 +114,15 @@ const CAP_TOP_OFFSET: Record<string, number> = {
   [FONTS.sans]: 0.05,
   [FONTS.text]: 0.22,
 };
+
+// Texte du ruban (Montserrat Bold, boîte sans position absolue dans une vue
+// tournée) : react-pdf pose la ligne de base à l'ascendante (968/1000 em) du
+// haut de la boîte, donc le haut des capitales (700/1000 em) tombe à 0,268 em.
+// Mesuré sur le rendu : écart < 0,1 pt. La boîte est plus large que l'axe de
+// la bande (≈ 313 pt) pour ne jamais passer à la ligne.
+const RIBBON_CAP_TOP_OFFSET = 0.268;
+const RIBBON_CAP_HEIGHT = 0.7;
+const RIBBON_TEXT_BOX_WIDTH = 360;
 
 type AbsTextProps = {
   font: string;
@@ -315,6 +328,73 @@ const Card = ({ content, photo }: { content: VitrinePosterContent; photo: Vitrin
       >
         {content.characteristicsLine}
       </AbsText>
+    </>
+  );
+};
+
+// --- Ruban d'angle (statut) ------------------------------------------------------
+
+/**
+ * Ruban à 45° ancré au coin haut droit de la grande photo : bande, deux
+ * filets parallèles, texte en capitales tourné de +45° (du haut-gauche vers
+ * le bas-droite). Tout est dessiné dans le repère de la photo, donc borné par
+ * elle (les quatre sommets de la bande sont sur ses bords haut et droit).
+ */
+const Ribbon = ({ spec }: { spec: VitrineRibbonSpec }) => {
+  const W = MAIN_PHOTO.w;
+  const H = MAIN_PHOTO.h;
+  const { innerOffset: a, outerOffset: b, railOffsets, railThickness, textCenterOffset, rotationDegrees } = RIBBON;
+  // Centre du texte, en coordonnées page.
+  const cx = MAIN_PHOTO.x + W - textCenterOffset;
+  const cy = MAIN_PHOTO.y + textCenterOffset;
+  // Boîte tournée autour de son centre (= centre du texte). Le texte SVG de
+  // react-pdf ignore l'interlettrage : on passe par un Text classique, centré
+  // horizontalement (décalé d'un demi-interlettrage, react-pdf en ajoutant un
+  // après la dernière lettre), dont les capitales sont centrées verticalement.
+  const boxWidth = RIBBON_TEXT_BOX_WIDTH;
+  const boxHeight = spec.fontSize * 2;
+  const capTop = boxHeight / 2 - (RIBBON_CAP_TOP_OFFSET + RIBBON_CAP_HEIGHT / 2) * spec.fontSize;
+  return (
+    <>
+      <Svg
+        style={{ position: "absolute", left: MAIN_PHOTO.x, top: MAIN_PHOTO.y }}
+        width={W}
+        height={H}
+        viewBox={`0 0 ${W} ${H}`}
+      >
+        <Polygon points={`${W - b},0 ${W - a},0 ${W},${a} ${W},${b}`} fill={spec.bandColor} />
+        {railOffsets.map((offset) => (
+          <Line key={offset} x1={W - offset} y1={0} x2={W} y2={offset} stroke={spec.inkColor} strokeWidth={railThickness} />
+        ))}
+      </Svg>
+      <View
+        style={{
+          position: "absolute",
+          left: cx - boxWidth / 2,
+          top: cy - boxHeight / 2,
+          width: boxWidth,
+          height: boxHeight,
+          transform: `rotate(${rotationDegrees}deg)`,
+        }}
+      >
+        <Text
+          style={{
+            position: "absolute",
+            left: spec.letterSpacing / 2,
+            top: capTop,
+            width: boxWidth,
+            textAlign: "center",
+            fontFamily: FONTS.sans,
+            fontWeight: 700,
+            fontSize: spec.fontSize,
+            lineHeight: 1,
+            letterSpacing: spec.letterSpacing,
+            color: spec.inkColor,
+          }}
+        >
+          {spec.text}
+        </Text>
+      </View>
     </>
   );
 };
@@ -571,6 +651,7 @@ export const VitrinePosterDocument = ({
             {`Référence : ${content.reference}`}
           </AbsText>
         ) : null}
+        {content.ribbon ? <Ribbon spec={content.ribbon} /> : null}
         <Card content={content} photo={cardPhoto} />
         <DpeBlock content={content} />
         <QrBlock modules={qrModules} logo={logo} />
@@ -591,7 +672,7 @@ export const VitrinePosterDocument = ({
             style={{
               position: "absolute",
               left: 0,
-              top: 300,
+              top: 380,
               width: PAGE.width,
               textAlign: "center",
               fontFamily: FONTS.sans,

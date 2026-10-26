@@ -75,3 +75,20 @@ export const CARD_RHYTHM = {
 
 /** Séparateurs de la carte : trait plein, même longueur que les pointillés de la V2. */
 export const SEPARATOR = { width: 86, thickness: 1.5 } as const;
+
+/** 1 px Canva (page 1587 × 1123) = 1190,55 / 1587 pt. */
+export const CANVA_PX_TO_PT = 1190.55 / 1587;
+
+/**
+ * Ruban d'angle (design Canva DAHYpvhWfDw, pages 1 à 3), ancré au coin haut
+ * droit de la grande photo. Cotes Canva : a = 215, b = 375, filets à 231,97
+ * et 358,03, épaisseur 1,6, centre du texte à 147,5 de l'angle, rotation +45°.
+ */
+export const RIBBON = {
+  innerOffset: 215 * CANVA_PX_TO_PT,
+  outerOffset: 375 * CANVA_PX_TO_PT,
+  railOffsets: [231.97 * CANVA_PX_TO_PT, 358.03 * CANVA_PX_TO_PT] as const,
+  railThickness: 1.6 * CANVA_PX_TO_PT,
+  textCenterOffset: 147.5 * CANVA_PX_TO_PT,
+  rotationDegrees: 45,
+} as const;

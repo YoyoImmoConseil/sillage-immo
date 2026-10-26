@@ -22,8 +22,12 @@ type VitrinePosterHistoryItem = {
   emailError: string | null;
   warnings: string[];
   priceLine: string | null;
+  modelLabel: string | null;
   downloadUrl: string | null;
 };
+
+/** Modèle d'affiche déduit du statut du bien (calculé côté serveur). */
+type VitrinePosterModelInfo = { ok: true; label: string } | { ok: false; error: string };
 
 type GenerationResult =
   | { ok: false; message?: string; errors?: string[]; warnings?: string[] }
@@ -45,6 +49,7 @@ type PropertyVitrinePanelProps = {
   suggestedQuartier: string | null;
   media: VitrineMediaOption[];
   history: VitrinePosterHistoryItem[];
+  posterModel: VitrinePosterModelInfo;
   initialMainMediaRef: string | null;
   initialCardMediaRef: string | null;
   initialUpdatedAt: string | null;
@@ -91,6 +96,7 @@ export function PropertyVitrinePanel({
   suggestedQuartier,
   media,
   history,
+  posterModel,
   initialMainMediaRef,
   initialCardMediaRef,
   initialUpdatedAt,
@@ -547,9 +553,18 @@ export function PropertyVitrinePanel({
               {isGenerating ? "Génération en cours…" : "Imprimer la fiche vitrine"}
             </button>
           ) : null}
+          {posterModel.ok ? (
+            <span className="rounded-full border border-navy/20 bg-navy/5 px-3 py-1 text-xs font-medium text-navy">
+              Modèle : {posterModel.label}
+            </span>
+          ) : (
+            <span className="rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-medium text-red-700">
+              Modèle indéterminé — {posterModel.error}
+            </span>
+          )}
           <span className="text-xs text-navy/60">
             Même PDF que l&apos;aperçu, mais archivé (preuve de ce qui est affiché en vitrine) et envoyé par e-mail
-            (pièce jointe + lien valable 7 jours).
+            (pièce jointe + lien valable 7 jours). Le modèle (ruban de statut) suit le statut SweepBright du bien.
           </span>
         </div>
         {generation ? (
@@ -598,6 +613,7 @@ export function PropertyVitrinePanel({
                 <li key={item.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
                   <span className="text-navy">
                     {formatStamp(item.createdAt, item.generatedBy)}
+                    {item.modelLabel ? ` · ${item.modelLabel}` : ""}
                     {item.priceLine ? ` · ${item.priceLine}` : ""}
                     {item.emailSentTo ? ` · envoyée à ${item.emailSentTo}` : ""}
                     {item.emailError ? ` · e-mail en échec` : ""}

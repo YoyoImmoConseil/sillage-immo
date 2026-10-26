@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { sendVitrinePosterEmail } from "@/lib/email/vitrine-poster";
 import type { VitrinePosterContent } from "@/lib/vitrine/poster-content";
+import { isVitrinePosterModel, VITRINE_POSTER_MODEL_LABELS, type VitrinePosterModel } from "@/lib/vitrine/poster-status";
 import type { Database } from "@/types/db/supabase";
 import { buildVitrinePoster } from "./poster.service";
 
@@ -88,6 +89,8 @@ export const generateVitrinePoster = async (input: {
       content: built.content as unknown as Record<string, unknown>,
       warnings: built.warnings,
       generated_by: input.requester.email,
+      poster_model: built.content.model,
+      availability_status: built.availabilityStatus,
     })
     .select("id")
     .single();
@@ -157,6 +160,9 @@ export type VitrinePosterHistoryItem = {
   emailError: string | null;
   warnings: string[];
   priceLine: string | null;
+  /** Modèle d'affiche (ruban) : null pour les affiches archivées avant le lot statuts. */
+  model: VitrinePosterModel | null;
+  modelLabel: string | null;
   downloadUrl: string | null;
 };
 
@@ -179,6 +185,11 @@ export const listVitrinePosters = async (propertyId: string, limit = 5): Promise
         downloadUrl = null;
       }
       const content = row.content as Partial<VitrinePosterContent> | null;
+      const model = isVitrinePosterModel(row.poster_model)
+        ? row.poster_model
+        : isVitrinePosterModel(content?.model)
+          ? content.model
+          : null;
       return {
         id: row.id,
         createdAt: row.created_at,
@@ -189,6 +200,8 @@ export const listVitrinePosters = async (propertyId: string, limit = 5): Promise
         emailError: row.email_error,
         warnings: Array.isArray(row.warnings) ? row.warnings : [],
         priceLine: typeof content?.priceLine === "string" ? content.priceLine : null,
+        model,
+        modelLabel: model ? VITRINE_POSTER_MODEL_LABELS[model] : null,
         downloadUrl,
       };
     })

@@ -6,7 +6,7 @@ type ListingStatusBannerProps = {
   compact?: boolean;
 };
 
-type CommercialStatus = "agreement" | "option";
+type CommercialStatus = "agreement" | "option" | "sold" | "rented";
 
 const STATUS_LABELS: Record<CommercialStatus, Record<AppLocale, string>> = {
   agreement: {
@@ -21,6 +21,21 @@ const STATUS_LABELS: Record<CommercialStatus, Record<AppLocale, string>> = {
     es: "Bajo Oferta",
     ru: "Под предложением",
   },
+  // Pages des biens vendus / loués : restent en ligne (preuve sociale, SEO)
+  // avec le prix ou loyer de présentation et un seul appel à l'action
+  // (estimation). Jamais de prix de vente réel.
+  sold: {
+    fr: "Vendu",
+    en: "Sold",
+    es: "Vendido",
+    ru: "Продано",
+  },
+  rented: {
+    fr: "Loué",
+    en: "Let",
+    es: "Alquilado",
+    ru: "Сдано",
+  },
 };
 
 const normalizeAvailabilityStatus = (
@@ -30,7 +45,15 @@ const normalizeAvailabilityStatus = (
   const normalized = value.trim().toLowerCase();
   if (normalized === "agreement") return "agreement";
   if (normalized === "option") return "option";
+  if (normalized === "sold") return "sold";
+  if (normalized === "rented") return "rented";
   return null;
+};
+
+/** Vendu ou loué : la page reste en ligne mais sans appel à la visite. */
+export const isListingClosed = (availabilityStatus: string | null | undefined): boolean => {
+  const status = normalizeAvailabilityStatus(availabilityStatus);
+  return status === "sold" || status === "rented";
 };
 
 export const isListingUnderAgreement = (
