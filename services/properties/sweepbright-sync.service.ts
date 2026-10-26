@@ -7,7 +7,7 @@ import { cacheSweepBrightMedia } from "./sweepbright-media-cache.service";
 import type { SweepBrightEstateData } from "@/types/api/sweepbright";
 import type { Database } from "@/types/db/supabase";
 import { recomputeMatchesForProperty } from "@/services/buyers/buyer-matching.service";
-import { processBuyerAlertsForNewMatches } from "@/services/buyers/buyer-alert.service";
+import { processBuyerAlerts } from "@/services/buyers/buyer-alert.service";
 import { isPublicAvailabilityStatus } from "@/lib/properties/canonical-types";
 import { ensureContactIdentity } from "@/services/contacts/contact-identity.service";
 import {
@@ -849,8 +849,8 @@ export const processSweepBrightDelivery = async (deliveryId: string) => {
 
     try {
       const matchResult = await recomputeMatchesForProperty(projection.property.id);
-      if (matchResult.newMatches.length > 0) {
-        await processBuyerAlertsForNewMatches(matchResult.newMatches);
+      if (matchResult.alertCandidates.length > 0) {
+        await processBuyerAlerts(matchResult.alertCandidates);
       }
     } catch (matchError) {
       console.error(

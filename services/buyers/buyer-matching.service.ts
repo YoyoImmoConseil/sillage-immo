@@ -2,6 +2,7 @@ import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import type { Database } from "@/types/db/supabase";
 import { isPublicAvailabilityStatus } from "@/lib/properties/canonical-types";
+import { ALERT_SCORE_THRESHOLD, buildMatchScore, isMatchRetained } from "@/lib/buyers/match-scoring";
 
 type BuyerLeadRow = Database["public"]["Tables"]["buyer_leads"]["Row"];
 type BuyerSearchProfileRow = Database["public"]["Tables"]["buyer_search_profiles"]["Row"];
@@ -31,144 +32,6 @@ export type PropertyBuyerMatchListItem = {
   fullName: string;
   email: string;
   statusLabel: string;
-};
-
-const normalizeToken = (value: string) =>
-  value
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
-
-const buildMatchScore = (profile: BuyerSearchProfileRow, listing: PropertyListingRow) => {
-  let score = 0;
-  const matchedCriteria: Record<string, unknown> = {};
-  const blockers: string[] = [];
-
-  if (profile.business_type !== listing.business_type) {
-    blockers.push("business_type");
-  } else {
-    score += 20;
-    matchedCriteria.businessType = true;
-  }
-
-  if (profile.property_types.length > 0) {
-    const propertyType = normalizeToken(listing.property_type ?? "");
-    const allowedTypes = profile.property_types.map(normalizeToken);
-    if (!propertyType || !allowedTypes.includes(propertyType)) {
-      blockers.push("property_type");
-    } else {
-      score += 15;
-      matchedCriteria.propertyType = listing.property_type;
-    }
-  }
-
-  if (profile.cities.length > 0) {
-    const city = normalizeToken(listing.city ?? "");
-    const allowedCities = profile.cities.map(normalizeToken);
-    if (!city || !allowedCities.includes(city)) {
-      blockers.push("city");
-    } else {
-      score += 15;
-      matchedCriteria.city = listing.city;
-    }
-  }
-
-  if (typeof profile.budget_max === "number" && typeof listing.price_amount === "number") {
-    if (listing.price_amount > profile.budget_max) {
-      blockers.push("budget_max");
-    } else {
-      score += 15;
-      matchedCriteria.budgetMax = true;
-    }
-  }
-
-  if (typeof profile.budget_min === "number" && typeof listing.price_amount === "number") {
-    if (listing.price_amount < profile.budget_min) {
-      blockers.push("budget_min");
-    } else {
-      score += 5;
-      matchedCriteria.budgetMin = true;
-    }
-  }
-
-  if (typeof profile.rooms_min === "number") {
-    if (typeof listing.rooms !== "number" || listing.rooms < profile.rooms_min) {
-      blockers.push("rooms_min");
-    } else {
-      score += 10;
-      matchedCriteria.roomsMin = true;
-    }
-  }
-
-  if (typeof profile.rooms_max === "number" && typeof listing.rooms === "number") {
-    if (listing.rooms > profile.rooms_max) {
-      blockers.push("rooms_max");
-    }
-  }
-
-  if (typeof profile.bedrooms_min === "number") {
-    if (typeof listing.bedrooms !== "number" || listing.bedrooms < profile.bedrooms_min) {
-      blockers.push("bedrooms_min");
-    } else {
-      score += 5;
-      matchedCriteria.bedroomsMin = true;
-    }
-  }
-
-  if (typeof profile.living_area_min === "number") {
-    if (typeof listing.living_area !== "number" || listing.living_area < profile.living_area_min) {
-      blockers.push("living_area_min");
-    } else {
-      score += 10;
-      matchedCriteria.livingAreaMin = true;
-    }
-  }
-
-  if (typeof profile.living_area_max === "number" && typeof listing.living_area === "number") {
-    if (listing.living_area > profile.living_area_max) {
-      blockers.push("living_area_max");
-    }
-  }
-
-  if (typeof profile.floor_min === "number") {
-    if (typeof listing.floor !== "number" || listing.floor < profile.floor_min) {
-      blockers.push("floor_min");
-    } else {
-      score += 3;
-      matchedCriteria.floorMin = true;
-    }
-  }
-
-  if (typeof profile.floor_max === "number" && typeof listing.floor === "number") {
-    if (listing.floor > profile.floor_max) {
-      blockers.push("floor_max");
-    }
-  }
-
-  if (profile.requires_terrace === true) {
-    if (listing.has_terrace !== true) {
-      blockers.push("requires_terrace");
-    } else {
-      score += 6;
-      matchedCriteria.requiresTerrace = true;
-    }
-  }
-
-  if (profile.requires_elevator === true) {
-    if (listing.has_elevator !== true) {
-      blockers.push("requires_elevator");
-    } else {
-      score += 6;
-      matchedCriteria.requiresElevator = true;
-    }
-  }
-
-  return {
-    score,
-    blockers,
-    matchedCriteria,
-  };
 };
 
 // Borne explicite (PostgREST plafonne déjà à 1000 lignes par défaut) :
@@ -223,7 +86,14 @@ export type RecomputeNewMatch = {
 };
 
 export type RecomputeMatchesResult = {
+  /** Correspondances créées par ce recalcul (paire profil × annonce inconnue avant). */
   newMatches: RecomputeNewMatch[];
+  /**
+   * Correspondances à alerter : score ≥ ALERT_SCORE_THRESHOLD et jamais
+   * notifiées, qu'elles soient nouvelles ou qu'un recalcul vienne de les
+   * faire passer le seuil (décision du 26/10/2026).
+   */
+  alertCandidates: RecomputeNewMatch[];
   totalMatches: number;
 };
 
@@ -260,30 +130,34 @@ const matchPairKey = (profileId: string, listingId: string) =>
 const batchUpsertMatches = async (input: {
   rows: MatchUpsertRow[];
   existingPairs: Set<string>;
-}): Promise<RecomputeNewMatch[]> => {
-  if (input.rows.length === 0) return [];
+}): Promise<{ newMatches: RecomputeNewMatch[]; alertCandidates: RecomputeNewMatch[] }> => {
+  if (input.rows.length === 0) return { newMatches: [], alertCandidates: [] };
 
   const { data, error } = await supabaseAdmin
     .from("buyer_property_matches")
     .upsert(input.rows, { onConflict: "buyer_search_profile_id,property_listing_id" })
-    .select("id, buyer_lead_id, buyer_search_profile_id, property_id, property_listing_id, score");
+    .select("id, buyer_lead_id, buyer_search_profile_id, property_id, property_listing_id, score, notified_at");
   if (error) throw new Error(error.message);
 
-  return (data ?? [])
-    .filter(
-      (row) =>
-        !input.existingPairs.has(
-          matchPairKey(row.buyer_search_profile_id, row.property_listing_id)
-        )
-    )
-    .map((row) => ({
+  const rows = (data ?? []).map((row) => ({
+    match: {
       matchId: row.id,
       buyerLeadId: row.buyer_lead_id,
       buyerSearchProfileId: row.buyer_search_profile_id,
       propertyId: row.property_id,
       propertyListingId: row.property_listing_id,
       score: row.score,
-    }));
+    },
+    isNew: !input.existingPairs.has(matchPairKey(row.buyer_search_profile_id, row.property_listing_id)),
+    notifiedAt: row.notified_at,
+  }));
+
+  return {
+    newMatches: rows.filter((row) => row.isNew).map((row) => row.match),
+    alertCandidates: rows
+      .filter((row) => !row.notifiedAt && row.match.score >= ALERT_SCORE_THRESHOLD)
+      .map((row) => row.match),
+  };
 };
 
 export const recomputeMatchesForBuyerLead = async (
@@ -291,18 +165,19 @@ export const recomputeMatchesForBuyerLead = async (
 ): Promise<RecomputeMatchesResult> => {
   const profiles = await getAllActiveProfilesForLead(buyerLeadId);
   if (profiles.length === 0) {
-    return { newMatches: [], totalMatches: 0 };
+    return { newMatches: [], alertCandidates: [], totalMatches: 0 };
   }
 
   const listings = await listActiveListings();
   const now = new Date().toISOString();
   const newMatches: RecomputeNewMatch[] = [];
+  const alertCandidates: RecomputeNewMatch[] = [];
   let totalMatches = 0;
 
   for (const profile of profiles) {
     const evaluated = listings
       .map((listing) => ({ listing, evaluation: buildMatchScore(profile, listing) }))
-      .filter(({ evaluation }) => evaluation.blockers.length === 0 && evaluation.score > 0)
+      .filter(({ evaluation }) => isMatchRetained(evaluation))
       .sort((left, right) => right.evaluation.score - left.evaluation.score)
       .slice(0, 50);
 
@@ -345,11 +220,12 @@ export const recomputeMatchesForBuyerLead = async (
       existingPairs,
     });
 
-    newMatches.push(...created);
+    newMatches.push(...created.newMatches);
+    alertCandidates.push(...created.alertCandidates);
     totalMatches += evaluated.length;
   }
 
-  return { newMatches, totalMatches };
+  return { newMatches, alertCandidates, totalMatches };
 };
 
 export const recomputeMatchesForProperty = async (
@@ -371,7 +247,7 @@ export const recomputeMatchesForProperty = async (
     !propertyData ||
     !isPublicAvailabilityStatus(propertyData.availability_status)
   ) {
-    return { newMatches: [], totalMatches: 0 };
+    return { newMatches: [], alertCandidates: [], totalMatches: 0 };
   }
 
   const { data: listingData, error: listingError } = await supabaseAdmin
@@ -386,7 +262,7 @@ export const recomputeMatchesForProperty = async (
     throw new Error(listingError.message);
   }
   if (!listingData) {
-    return { newMatches: [], totalMatches: 0 };
+    return { newMatches: [], alertCandidates: [], totalMatches: 0 };
   }
 
   const listing = listingData as PropertyListingRow;
@@ -403,7 +279,7 @@ export const recomputeMatchesForProperty = async (
 
   const matching = profiles
     .map((profile) => ({ profile, evaluation: buildMatchScore(profile, listing) }))
-    .filter(({ evaluation }) => evaluation.blockers.length === 0 && evaluation.score > 0)
+    .filter(({ evaluation }) => isMatchRetained(evaluation))
     .sort((left, right) => right.evaluation.score - left.evaluation.score)
     .slice(0, 200);
 
@@ -434,7 +310,7 @@ export const recomputeMatchesForProperty = async (
 
   // Un seul upsert batch (jusqu'à 200 lignes) au lieu de 2-3 requêtes
   // par profil correspondant.
-  const newMatches = await batchUpsertMatches({
+  const upserted = await batchUpsertMatches({
     rows: matching.map(({ profile, evaluation }) => ({
       buyer_lead_id: profile.buyer_lead_id,
       buyer_search_profile_id: profile.id,
@@ -450,7 +326,7 @@ export const recomputeMatchesForProperty = async (
     existingPairs,
   });
 
-  return { newMatches, totalMatches: matching.length };
+  return { ...upserted, totalMatches: matching.length };
 };
 
 export const listMatchesForBuyerLead = async (buyerLeadId: string): Promise<BuyerMatchListItem[]> => {
