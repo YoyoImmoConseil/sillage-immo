@@ -247,3 +247,32 @@ export const isLeadEligibleForAlerts = (lead: {
   email_verified_at: string | null;
   source: string | null;
 }) => Boolean(lead.email && lead.email.trim()) && (Boolean(lead.email_verified_at) || isAlertConsentSource(lead.source));
+
+/**
+ * Créneaux d'envoi des alertes groupées : 9 h, 12 h et 18 h, heure de Paris,
+ * été comme hiver (décision du 26/10/2026). La tâche Vercel tourne en UTC aux
+ * heures candidates (7, 8, 10, 11, 16, 17) et ne poursuit que si l'heure de
+ * Paris est l'une des trois.
+ */
+export const BUYER_ALERT_PARIS_HOURS: readonly number[] = [9, 12, 18];
+
+export const parisHour = (date: Date) =>
+  Number.parseInt(
+    new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", hour: "numeric", hour12: false }).format(date),
+    10
+  );
+
+export const isBuyerAlertSlot = (date: Date) => BUYER_ALERT_PARIS_HOURS.includes(parisHour(date));
+
+/**
+ * Baisse de prix : nouveau prix actif strictement inférieur au précédent
+ * (une hausse ou un prix identique ne déclenchent rien).
+ */
+export const detectPriceDrop = (
+  previousPrice: number | null | undefined,
+  currentPrice: number | null | undefined
+): { previousPrice: number; currentPrice: number } | null => {
+  if (typeof previousPrice !== "number" || typeof currentPrice !== "number") return null;
+  if (!(previousPrice > 0 && currentPrice > 0)) return null;
+  return currentPrice < previousPrice ? { previousPrice, currentPrice } : null;
+};

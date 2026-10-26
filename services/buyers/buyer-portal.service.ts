@@ -5,7 +5,6 @@ import type { Database } from "@/types/db/supabase";
 import type { PropertyBusinessType } from "@/types/domain/properties";
 import type { BuyerSearchProfileSnapshot } from "@/types/domain/buyers";
 import { recomputeMatchesForBuyerLead } from "./buyer-matching.service";
-import { processBuyerAlerts } from "./buyer-alert.service";
 
 type ClientProjectRow = Database["public"]["Tables"]["client_projects"]["Row"];
 type BuyerProjectRow = Database["public"]["Tables"]["buyer_projects"]["Row"];
@@ -492,10 +491,9 @@ export const updateBuyerSearch = async (
     input.patch.status === undefined || input.patch.status === "active";
   if (shouldRecompute && updatedRow.status === "active") {
     try {
-      const result = await recomputeMatchesForBuyerLead(updatedRow.buyer_lead_id);
-      if (result.alertCandidates.length > 0) {
-        await processBuyerAlerts(result.alertCandidates);
-      }
+      // Recalcul seul : les alertes groupées partent aux créneaux planifiés
+      // (9 h / 12 h / 18 h), l'espace client affiche déjà la sélection.
+      await recomputeMatchesForBuyerLead(updatedRow.buyer_lead_id);
     } catch (error) {
       console.error("[buyer-portal] criteria recompute failed", error);
     }
