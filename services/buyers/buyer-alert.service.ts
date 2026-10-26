@@ -6,6 +6,7 @@ import { sendBuyerAlertEmail } from "@/lib/email/buyer-alert";
 import type { AppLocale } from "@/lib/i18n/config";
 import { localizePath } from "@/lib/i18n/routing";
 import type { RecomputeNewMatch } from "./buyer-matching.service";
+import { ALERT_SCORE_THRESHOLD, isLeadEligibleForAlerts } from "@/lib/buyers/match-scoring";
 import type { Database } from "@/types/db/supabase";
 
 type BuyerLeadRow = Database["public"]["Tables"]["buyer_leads"]["Row"];
@@ -13,7 +14,6 @@ type BuyerSearchProfileRow = Database["public"]["Tables"]["buyer_search_profiles
 type PropertyListingRow = Database["public"]["Tables"]["property_listings"]["Row"];
 type ClientProjectRow = Database["public"]["Tables"]["client_projects"]["Row"];
 
-const ALERT_SCORE_THRESHOLD = 60;
 
 const getAlertSecret = () => {
   const secret = process.env.BUYER_ALERT_HMAC_SECRET?.trim();
@@ -83,10 +83,18 @@ const splitFirstName = (fullName: string | null) => {
   return trimmed.split(/\s+/)[0] ?? null;
 };
 
-export const processBuyerAlertsForNewMatches = async (
-  newMatches: RecomputeNewMatch[]
+/**
+ * Envoie l'alerte « nouveaux biens pour votre recherche » pour des
+ * correspondances jamais notifiées dont le score atteint le seuil (les
+ * `alertCandidates` d'un recalcul). Garde-fous : recherche active, adresse
+ * présente, et consentement (adresse vérifiée, ou contact venu des formulaires
+ * du site / saisi par l'équipe — voir `isLeadEligibleForAlerts`).
+ * `notified_at` est posé après envoi : une correspondance n'est alertée qu'une fois.
+ */
+export const processBuyerAlerts = async (
+  candidates: RecomputeNewMatch[]
 ): Promise<{ notifiedCount: number; skippedCount: number }> => {
-  const eligible = newMatches.filter((match) => match.score >= ALERT_SCORE_THRESHOLD);
+  const eligible = candidates.filter((match) => match.score >= ALERT_SCORE_THRESHOLD);
   if (eligible.length === 0) {
     return { notifiedCount: 0, skippedCount: 0 };
   }
@@ -159,11 +167,7 @@ export const processBuyerAlertsForNewMatches = async (
     }
 
     const lead = leadsById.get(profile.buyer_lead_id);
-    if (!lead || !lead.email) {
-      skippedCount += matches.length;
-      continue;
-    }
-    if (!lead.email_verified_at) {
+    if (!lead || !isLeadEligibleForAlerts(lead)) {
       skippedCount += matches.length;
       continue;
     }

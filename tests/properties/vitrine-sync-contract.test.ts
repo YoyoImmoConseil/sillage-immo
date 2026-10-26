@@ -18,7 +18,7 @@ vi.mock("@/lib/cache/revalidate", () => ({ revalidatePublicListings: vi.fn() }))
 vi.mock("@/services/properties/sweepbright-client.service", () => ({ sweepBrightClient: {} }));
 vi.mock("@/services/properties/sweepbright-media-cache.service", () => ({ cacheSweepBrightMedia: vi.fn() }));
 vi.mock("@/services/buyers/buyer-matching.service", () => ({ recomputeMatchesForProperty: vi.fn() }));
-vi.mock("@/services/buyers/buyer-alert.service", () => ({ processBuyerAlertsForNewMatches: vi.fn() }));
+vi.mock("@/services/buyers/buyer-alert.service", () => ({ processBuyerAlerts: vi.fn() }));
 vi.mock("@/services/contacts/contact-identity.service", () => ({ ensureContactIdentity: vi.fn() }));
 vi.mock("@/services/properties/sweepbright-history.service", () => ({
   readSweepBrightProjectionSnapshot: vi.fn(),

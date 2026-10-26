@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAdminRequestContext, hasAdminPermission } from "@/lib/admin/auth";
 import { recomputeMatchesForProperty } from "@/services/buyers/buyer-matching.service";
-import { processBuyerAlertsForNewMatches } from "@/services/buyers/buyer-alert.service";
+import { processBuyerAlerts } from "@/services/buyers/buyer-alert.service";
 
 export async function POST(
   request: Request,
@@ -16,9 +16,9 @@ export async function POST(
     const { id } = await params;
     const result = await recomputeMatchesForProperty(id);
     let notifiedCount = 0;
-    if (result.newMatches.length > 0) {
+    if (result.alertCandidates.length > 0) {
       try {
-        const alert = await processBuyerAlertsForNewMatches(result.newMatches);
+        const alert = await processBuyerAlerts(result.alertCandidates);
         notifiedCount = alert.notifiedCount;
       } catch (error) {
         console.error("[admin property match] alert failed", error);
