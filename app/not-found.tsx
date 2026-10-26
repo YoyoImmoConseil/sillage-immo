@@ -60,8 +60,11 @@ export default async function NotFound() {
   const locale = await getRequestLocale();
   const copy = COPY[locale] ?? COPY.fr;
   return (
-    <main className="min-h-screen">
-      <section aria-labelledby="not-found-title" className="relative isolate overflow-hidden bg-navy text-sand">
+    <main>
+      <section
+        aria-labelledby="not-found-title"
+        className="relative isolate flex min-h-[70vh] items-center overflow-hidden bg-navy text-sand"
+      >
         <Image
           src="/decor-sillage-blue.svg"
           alt=""
