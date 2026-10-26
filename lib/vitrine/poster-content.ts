@@ -115,6 +115,14 @@ export const formatEuros = (amount: number, options?: { decimals?: number }) => 
   return `${formatted.replace(/[\u202f\u00a0 ]/g, NBSP)}${NBSP}€`;
 };
 
+/**
+ * Montant légal en centimes : les centimes ne s'écrivent que s'il y en a
+ * (« 392,21 € TTC » mais « 830 € »). Un montant d'honoraires arrondi sur
+ * l'affiche serait inexact face au bail et au site, qui écrivent les centimes.
+ */
+export const formatLegalEuros = (cents: number) =>
+  formatEuros(fromCents(cents), { decimals: cents % 100 === 0 ? 0 : 2 });
+
 // « 32,18 m² », « 4,70 m² », « 89 m² » : deux décimales dès qu'il y en a.
 export const formatArea = (value: number) => {
   const decimals = Number.isInteger(value) ? 0 : 2;
@@ -195,9 +203,26 @@ export const buildVitrinePosterContent = (input: {
   if (typeof derived.rooms.roomCount === "number" && derived.rooms.roomCount > 0) {
     typeParts[0] += ` ${plural(derived.rooms.roomCount, "PIÈCE", "PIÈCES")}`;
   }
-  const headlineArea = derived.surfaces.livingArea ?? derived.surfaces.loiCarrezArea;
-  if (typeof headlineArea === "number" && headlineArea > 0) {
+  // Location : le caractère meublé est une mention obligatoire (arrêté du
+  // 10 janvier 2017) ; SweepBright le donne dans features.comfort.furnished.
+  const isFurnished = readPath(raw, ["features", "comfort", "furnished"]) === true;
+  if (transaction === "rental" && isFurnished) {
+    typeParts[0] += " MEUBLÉ";
+  }
+  // Location : seule la surface habitable (R. 111-2 CCH) est admise ; le Carrez
+  // ne la remplace pas. Vente : habitable si connue, sinon Carrez.
+  const livingArea =
+    typeof derived.surfaces.livingArea === "number" && derived.surfaces.livingArea > 0 ? derived.surfaces.livingArea : null;
+  const carrezArea =
+    typeof derived.surfaces.loiCarrezArea === "number" && derived.surfaces.loiCarrezArea > 0
+      ? derived.surfaces.loiCarrezArea
+      : null;
+  const headlineArea = transaction === "rental" ? livingArea : (livingArea ?? carrezArea);
+  if (headlineArea !== null) {
     typeParts.push(formatArea(headlineArea));
+  }
+  if (transaction === "rental" && livingArea === null) {
+    errors.push("Surface habitable absente dans SweepBright : mention obligatoire pour une location (le Carrez ne la remplace pas).");
   }
   const typeLine = typeParts.join(" · ");
 
@@ -240,24 +265,41 @@ export const buildVitrinePosterContent = (input: {
       errors.push("Charge des honoraires non renseignée dans SweepBright (ni vendeur ni acquéreur).");
     }
   } else {
-    const rent = derived.price.rentIncludingChargesCents ?? derived.price.rentExcludingChargesCents;
+    // Mentions de l'arrêté du 10 janvier 2017 (art. 4), une par ligne pour
+    // tenir dans la carte : loyer CC « / mois », provisions sur charges,
+    // complément de loyer s'il existe, dépôt de garantie, honoraires TTC à la
+    // charge du locataire et, à part, la part état des lieux. Centimes écrits
+    // quand il y en a. Décision du 26/10/2026.
+    const price = derived.price;
+    const rent = price.rentIncludingChargesCents ?? price.rentExcludingChargesCents;
     if (typeof rent !== "number") {
       errors.push("Loyer absent dans SweepBright.");
     } else {
       priceLine = `${formatEuros(fromCents(rent))}${NBSP}/ mois`;
-      if (typeof derived.price.chargesProvisionCents === "number") {
-        legalLines.push(
-          `Loyer charges comprises, dont ${formatEuros(fromCents(derived.price.chargesProvisionCents))} de provisions sur charges`
-        );
+      legalLines.push("Loyer charges comprises");
+    }
+    if (typeof price.chargesProvisionCents === "number") {
+      legalLines.push(`Provisions sur charges : ${formatLegalEuros(price.chargesProvisionCents)}${NBSP}/ mois`);
+    } else {
+      warnings.push("Provisions sur charges absentes dans SweepBright : le montant des charges n'est pas affiché.");
+    }
+    if (typeof price.rentSupplementCents === "number" && price.rentSupplementCents > 0) {
+      legalLines.push(`Complément de loyer : ${formatLegalEuros(price.rentSupplementCents)}${NBSP}/ mois`);
+    }
+    if (typeof price.securityDepositCents === "number") {
+      legalLines.push(`Dépôt de garantie : ${formatLegalEuros(price.securityDepositCents)}`);
+    } else {
+      warnings.push("Dépôt de garantie absent dans SweepBright : la mention n'est pas affichée.");
+    }
+    if (typeof price.totalTenantFeesCents === "number") {
+      legalLines.push(`Honoraires à la charge du locataire : ${formatLegalEuros(price.totalTenantFeesCents)} TTC`);
+      if (typeof price.inventoryReportFeesCents === "number") {
+        legalLines.push(`dont état des lieux : ${formatLegalEuros(price.inventoryReportFeesCents)} TTC`);
       } else {
-        legalLines.push("Loyer charges comprises");
+        warnings.push("Honoraires d'état des lieux absents dans SweepBright : la part état des lieux n'est pas affichée.");
       }
-    }
-    if (typeof derived.price.securityDepositCents === "number") {
-      legalLines.push(`Dépôt de garantie : ${formatEuros(fromCents(derived.price.securityDepositCents))}`);
-    }
-    if (typeof derived.price.totalTenantFeesCents === "number") {
-      legalLines.push(`Honoraires locataire : ${formatEuros(fromCents(derived.price.totalTenantFeesCents))} TTC`);
+    } else {
+      errors.push("Honoraires à la charge du locataire absents dans SweepBright : mention obligatoire pour une location.");
     }
   }
 
@@ -307,10 +349,12 @@ export const buildVitrinePosterContent = (input: {
 
   // --- Ligne de caractéristiques -------------------------------------------------
   const characteristics: string[] = [];
-  if (typeof derived.surfaces.loiCarrezArea === "number" && derived.surfaces.loiCarrezArea > 0) {
-    characteristics.push(`${formatArea(derived.surfaces.loiCarrezArea)} Carrez`);
-  } else if (typeof derived.surfaces.livingArea === "number" && derived.surfaces.livingArea > 0) {
-    characteristics.push(`${formatArea(derived.surfaces.livingArea)} habitables`);
+  if (transaction === "rental") {
+    if (livingArea !== null) characteristics.push(`${formatArea(livingArea)} habitables`);
+  } else if (carrezArea !== null) {
+    characteristics.push(`${formatArea(carrezArea)} Carrez`);
+  } else if (livingArea !== null) {
+    characteristics.push(`${formatArea(livingArea)} habitables`);
   }
   if (typeof derived.surfaces.plotArea === "number" && derived.surfaces.plotArea > 0) {
     characteristics.push(`terrain de ${formatArea(derived.surfaces.plotArea)}`);

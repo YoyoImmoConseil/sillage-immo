@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildVitrinePosterContent, formatArea, formatEuros } from "@/lib/vitrine/poster-content";
+import { buildVitrinePosterContent, formatArea, formatEuros, formatLegalEuros } from "@/lib/vitrine/poster-content";
 import { resolveDpeStatus } from "@/lib/vitrine/dpe";
 import { deriveVitrineQuartierFromTitle } from "@/lib/properties/vitrine-editorial";
 import type { Database } from "@/types/db/supabase";
@@ -225,14 +225,90 @@ describe("buildVitrinePosterContent — Église Russe (V2)", () => {
   it("location : loyer charges comprises et provisions", () => {
     const { content, errors } = build({
       negotiation: "let",
-      raw_payload: { ...egliseRusseRaw, price: { amount: 1200 }, price_recurring_costs: { amount: 120 } },
+      raw_payload: { ...egliseRusseRaw, ...rentalRaw },
     });
     expect(errors).toEqual([]);
     expect(content.headline).toBe("Bien à louer");
     expect(content.model).toBe("rental");
     expect(content.ribbon).toBeNull();
     expect(content.priceLine).toBe(`1${NBSP}200${NBSP}€${NBSP}/ mois`);
-    expect(content.legalLines[0]).toBe(`Loyer charges comprises, dont 120${NBSP}€ de provisions sur charges`);
+    expect(content.legalLines[0]).toBe("Loyer charges comprises");
+    expect(content.legalLines[1]).toBe(`Provisions sur charges : 120${NBSP}€${NBSP}/ mois`);
+  });
+});
+
+/** Bien loué réel (30,17 m², meublé) tel que SweepBright l'expose. */
+const rentalRaw = {
+  price: { amount: 1200 },
+  price_recurring_costs: { amount: 120 },
+  price_guarantee: { amount: 830 },
+  buyer_fixed_fee: { amount: 301.7 },
+  price_inventory_report_cost: { amount: 90.51 },
+  price_rent_supplement: { amount: 0 },
+  features: { ...egliseRusseRaw.features, comfort: { furnished: true } },
+};
+
+describe("buildVitrinePosterContent — mentions location (arrêté du 10 janvier 2017)", () => {
+  const rental = (overrides: Partial<PropertyRow> = {}, rawOverrides: Record<string, unknown> = {}) =>
+    build({ negotiation: "let", raw_payload: { ...egliseRusseRaw, ...rentalRaw, ...rawOverrides }, ...overrides });
+
+  it("une mention par ligne, centimes quand il y en a, part état des lieux à part", () => {
+    const { content, errors, warnings } = rental();
+    expect(errors).toEqual([]);
+    expect(warnings).toEqual([]);
+    expect(content.legalLines).toEqual([
+      "Loyer charges comprises",
+      `Provisions sur charges : 120${NBSP}€${NBSP}/ mois`,
+      `Dépôt de garantie : 830${NBSP}€`,
+      `Honoraires à la charge du locataire : 392,21${NBSP}€ TTC`,
+      `dont état des lieux : 90,51${NBSP}€ TTC`,
+    ]);
+  });
+
+  it("meublé : dans la ligne de type ; surface habitable dans les caractéristiques, jamais le Carrez", () => {
+    const { content } = rental();
+    expect(content.typeLine).toBe(`APPARTEMENT 2${NBSP}PIÈCES MEUBLÉ · 32,18${NBSP}m²`);
+    expect(content.characteristicsLine.replace(/\u00a0/g, " ")).toMatch(/^32,18 m² habitables ·/);
+    expect(content.characteristicsLine).not.toContain("Carrez");
+
+    const unfurnished = rental({}, { features: { ...egliseRusseRaw.features, comfort: { furnished: false } } });
+    expect(unfurnished.content.typeLine).toBe(`APPARTEMENT 2${NBSP}PIÈCES · 32,18${NBSP}m²`);
+  });
+
+  it("surface habitable absente : bloquant en location (le Carrez ne la remplace pas), pas en vente", () => {
+    const { content, errors } = rental({ living_area: null }, { sizes: { loi_carrez_area: { size: 32.18 } } });
+    expect(errors).toContain("Surface habitable absente dans SweepBright : mention obligatoire pour une location (le Carrez ne la remplace pas).");
+    expect(content.typeLine).toBe(`APPARTEMENT 2${NBSP}PIÈCES MEUBLÉ`);
+    expect(content.characteristicsLine).not.toContain("habitables");
+    expect(content.characteristicsLine).not.toContain("Carrez");
+
+    const sale = build({ living_area: null, raw_payload: { ...egliseRusseRaw, sizes: { loi_carrez_area: { size: 32.18 } } } });
+    expect(sale.errors).toEqual([]);
+    expect(sale.content.typeLine).toBe(`APPARTEMENT 2${NBSP}PIÈCES · 32,18${NBSP}m²`);
+    expect(sale.content.characteristicsLine.replace(/\u00a0/g, " ")).toMatch(/^32,18 m² Carrez/);
+  });
+
+  it("complément de loyer : affiché seulement s'il est positif", () => {
+    expect(rental({}, { price_rent_supplement: { amount: 50 } }).content.legalLines).toContain(`Complément de loyer : 50${NBSP}€${NBSP}/ mois`);
+    expect(rental({}, { price_rent_supplement: { amount: null, currency: "EUR" } }).content.legalLines.join("|")).not.toContain("Complément");
+    expect(rental().content.legalLines.join("|")).not.toContain("Complément");
+  });
+
+  it("honoraires locataire absents : bloquant ; provisions, dépôt ou état des lieux absents : avertissement", () => {
+    const noFees = rental({}, { buyer_fixed_fee: null, price_inventory_report_cost: null });
+    expect(noFees.errors).toContain("Honoraires à la charge du locataire absents dans SweepBright : mention obligatoire pour une location.");
+
+    const partial = rental({}, { price_recurring_costs: null, price_guarantee: null, price_inventory_report_cost: null });
+    expect(partial.errors).toEqual([]);
+    expect(partial.content.legalLines).toEqual([
+      "Loyer charges comprises",
+      `Honoraires à la charge du locataire : 301,70${NBSP}€ TTC`,
+    ]);
+    expect(partial.warnings.filter((w) => w.includes("SweepBright"))).toHaveLength(3);
+  });
+
+  it("le prix ou loyer affiché reste celui de présentation (loyer CC = prix demandé SweepBright)", () => {
+    expect(rental().content.priceLine).toBe(`1${NBSP}200${NBSP}€${NBSP}/ mois`);
   });
 });
 
@@ -275,7 +351,7 @@ describe("buildVitrinePosterContent — modèles selon le statut", () => {
     const { content, errors } = build({
       negotiation: "let",
       availability_status: "rented",
-      raw_payload: { ...egliseRusseRaw, price: { amount: 1200 }, price_recurring_costs: { amount: 120 } },
+      raw_payload: { ...egliseRusseRaw, ...rentalRaw },
     });
     expect(errors).toEqual([]);
     expect(content.model).toBe("rented");
@@ -339,6 +415,10 @@ describe("formats", () => {
     expect(formatArea(89)).toBe(`89${NBSP}m²`);
     expect(formatEuros(195000)).toBe(`195${NBSP}000${NBSP}€`);
     expect(formatEuros(8003.57, { decimals: 2 })).toBe(`8${NBSP}003,57${NBSP}€`);
+    // Montants légaux en centimes : centimes seulement s'il y en a.
+    expect(formatLegalEuros(39221)).toBe(`392,21${NBSP}€`);
+    expect(formatLegalEuros(83000)).toBe(`830${NBSP}€`);
+    expect(formatLegalEuros(130000)).toBe(`1${NBSP}300${NBSP}€`);
   });
 
   it("interprète les classes DPE", () => {
