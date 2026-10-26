@@ -2,13 +2,17 @@ import "server-only";
 import { sendTransactionalEmail } from "./smtp";
 import { escapeHtml, renderEmailLayout } from "./layout";
 import type { AppLocale } from "@/lib/i18n/config";
+import { formatPropertyTypeLabel } from "@/lib/properties/property-type-label";
 
 export type BuyerAlertMatchInput = {
   title: string | null;
   city: string | null;
+  /** Type SweepBright brut (`apartment`, `house`…) ; libellé traduit au rendu. */
   propertyType: string | null;
   priceAmount: number | null;
   canonicalPath: string;
+  /** Photo principale (copie Supabase, URL stable), affichée en vignette dans la carte. */
+  coverImageUrl?: string | null;
 };
 
 export type BuyerAlertEmailInput = {
@@ -123,21 +127,55 @@ const formatPrice = (amount: number | null, locale: AppLocale) => {
   return `${amount.toLocaleString(numberLocale)} €`;
 };
 
+const propertyTypeLabel = (match: BuyerAlertMatchInput, locale: AppLocale) =>
+  match.propertyType ? formatPropertyTypeLabel(match.propertyType, locale) : null;
+
+const listingHref = (baseUrl: string, canonicalPath: string) =>
+  `${baseUrl}${canonicalPath.startsWith("/") ? canonicalPath : `/${canonicalPath}`}`;
+
+/**
+ * Vignette servie par l'optimiseur d'images du site (`/_next/image`, 1 200 px,
+ * qualité 75, la seule admise par la configuration) : la copie Supabase fait 1 à 2 Mo, trop lourd pour un mail. Seules
+ * des URL https absolues sont acceptées (jamais une donnée brute).
+ */
+const thumbnailUrl = (value: string | null | undefined, baseUrl: string) => {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!/^https:\/\/[^\s"'<>]+$/i.test(trimmed)) return null;
+  if (!baseUrl) return trimmed;
+  return `${baseUrl}/_next/image?url=${encodeURIComponent(trimmed)}&w=1200&q=75`;
+};
+
 const renderMatchCard = (
   match: BuyerAlertMatchInput,
   copy: Copy,
   locale: AppLocale,
   baseUrl: string
 ) => {
-  const title = match.title || match.propertyType || match.canonicalPath;
-  const subtitle = [match.city, match.propertyType].filter(Boolean).join(" · ");
+  const typeLabel = propertyTypeLabel(match, locale);
+  const title = match.title || typeLabel || match.canonicalPath;
+  const subtitle = [match.city, typeLabel].filter(Boolean).join(" · ");
   const priceLine = formatPrice(match.priceAmount, locale);
-  const href = `${baseUrl}${match.canonicalPath.startsWith("/") ? match.canonicalPath : `/${match.canonicalPath}`}`;
+  const href = listingHref(baseUrl, match.canonicalPath);
+  const imageUrl = thumbnailUrl(match.coverImageUrl, baseUrl);
+
+  // Vignette : pleine largeur de la carte, ratio 16:9 forcé par la hauteur
+  // (les clients mail ignorent object-fit ; l'image est servie en 1 200 px de
+  // large, la hauteur fixe évite les cartes de tailles différentes).
+  const imageHtml = imageUrl
+    ? `
+          <a href="${href}" style="display:block;text-decoration:none;">
+            <img src="${escapeHtml(imageUrl)}" alt="" width="560" height="315"
+              style="display:block;width:100%;height:auto;max-height:315px;border:0;border-radius:12px 12px 0 0;object-fit:cover;" />
+          </a>`
+    : "";
 
   return `
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 14px;">
       <tr>
-        <td style="background:#ffffff;border:1px solid rgba(20,20,70,0.12);border-radius:14px;padding:18px 20px;">
+        <td style="background:#ffffff;border:1px solid rgba(20,20,70,0.12);border-radius:14px;padding:0;overflow:hidden;">
+          ${imageHtml}
+          <div style="padding:18px 20px;">
           <p style="margin:0;font-size:16px;font-weight:600;color:#141446;line-height:1.35;">
             ${escapeHtml(title)}
           </p>
@@ -156,19 +194,17 @@ const renderMatchCard = (
               ${escapeHtml(copy.openListing)} &rarr;
             </a>
           </p>
+          </div>
         </td>
       </tr>
     </table>
   `;
 };
 
-export const sendBuyerAlertEmail = async (input: BuyerAlertEmailInput) => {
+/** Rendu pur (sujet, texte, HTML), testable sans envoi. */
+export const renderBuyerAlertEmail = (input: BuyerAlertEmailInput): { subject: string; text: string; html: string } => {
   const copy = COPY[input.locale] ?? COPY.fr;
   const count = input.matches.length;
-  if (count === 0) {
-    return { sent: false as const, reason: "no_matches" as const };
-  }
-
   const baseUrl = (process.env.PUBLIC_SITE_URL ?? "").replace(/\/$/, "");
   const visibleMatches = input.matches.slice(0, 10);
 
@@ -178,12 +214,13 @@ export const sendBuyerAlertEmail = async (input: BuyerAlertEmailInput) => {
 
   const matchesText = visibleMatches
     .map((match) => {
-      const title = match.title || match.propertyType || match.canonicalPath;
+      const typeLabel = propertyTypeLabel(match, input.locale);
+      const title = match.title || typeLabel || match.canonicalPath;
       const parts = [
         `- ${title}`,
-        [match.city, match.propertyType].filter(Boolean).join(" · "),
+        [match.city, typeLabel].filter(Boolean).join(" · "),
         formatPrice(match.priceAmount, input.locale),
-        `${baseUrl}${match.canonicalPath.startsWith("/") ? match.canonicalPath : `/${match.canonicalPath}`}`,
+        listingHref(baseUrl, match.canonicalPath),
       ].filter(Boolean);
       return parts.join(" | ");
     })
@@ -232,6 +269,14 @@ export const sendBuyerAlertEmail = async (input: BuyerAlertEmailInput) => {
     footerHtml,
   });
 
+  return { subject, text, html };
+};
+
+export const sendBuyerAlertEmail = async (input: BuyerAlertEmailInput) => {
+  if (input.matches.length === 0) {
+    return { sent: false as const, reason: "no_matches" as const };
+  }
+  const { subject, text, html } = renderBuyerAlertEmail(input);
   return sendTransactionalEmail({
     to: input.to,
     subject,

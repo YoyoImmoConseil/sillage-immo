@@ -148,6 +148,26 @@ export const processBuyerAlerts = async (
     ((listingsData ?? []) as PropertyListingRow[]).map((row) => [row.id, row])
   );
 
+  // Photo principale : la copie Supabase de la première image du carrousel
+  // (URL stable, un mail s'ouvre des jours plus tard) ; à défaut la couverture
+  // de l'annonce.
+  const propertyIds = Array.from(new Set(((listingsData ?? []) as PropertyListingRow[]).map((row) => row.property_id)));
+  const coverByPropertyId = new Map<string, string>();
+  if (propertyIds.length > 0) {
+    const { data: mediaData, error: mediaError } = await supabaseAdmin
+      .from("property_media")
+      .select("property_id, kind, ordinal, cached_url, remote_url")
+      .in("property_id", propertyIds)
+      .eq("kind", "image")
+      .order("ordinal", { ascending: true });
+    if (mediaError) throw new Error(mediaError.message);
+    for (const row of mediaData ?? []) {
+      if (coverByPropertyId.has(row.property_id)) continue;
+      const url = row.cached_url ?? row.remote_url;
+      if (url) coverByPropertyId.set(row.property_id, url);
+    }
+  }
+
   const byProfile = new Map<string, RecomputeNewMatch[]>();
   for (const match of eligible) {
     const bucket = byProfile.get(match.buyerSearchProfileId);
@@ -193,6 +213,7 @@ export const processBuyerAlerts = async (
           propertyType: listing.property_type,
           priceAmount: listing.price_amount,
           canonicalPath: listing.canonical_path,
+          coverImageUrl: coverByPropertyId.get(listing.property_id) ?? listing.cover_image_url ?? null,
         };
       })
       .filter((value): value is NonNullable<typeof value> => Boolean(value));
