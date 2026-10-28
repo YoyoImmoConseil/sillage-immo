@@ -6,6 +6,7 @@ import type { AppLocale } from "@/lib/i18n/config";
 import { resolveLocalizedText } from "@/lib/i18n/localized-content";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { CACHE_TAG_TEAM_PUBLIC, DEPLOYMENT_CACHE_KEY } from "@/lib/cache/tags";
+import { normalizeCardSlug, slugifyFirstName } from "@/lib/team/card";
 import { parseAdminProfileMetadata } from "@/services/admin/admin-profile-metadata";
 import { ADMIN_ROLE_LABELS, type AdminRole, type AdminTeamTitle } from "@/types/domain/admin";
 
@@ -28,6 +29,8 @@ type TeamRoleRow = {
 export type PublicTeamMember = {
   id: string;
   fullName: string;
+  firstName: string;
+  lastName: string;
   role: AdminRole;
   roleLabel: string;
   title: AdminTeamTitle | null;
@@ -36,6 +39,10 @@ export type PublicTeamMember = {
   bio: string | null;
   avatarUrl: string | null;
   bookingUrl: string | null;
+  /** Carte de visite virtuelle : slug choisi dans l'admin, sinon dérivé du prénom. */
+  cardSlug: string | null;
+  whatsappPhone: string | null;
+  cardEnabled: boolean;
 };
 
 const ROLE_ORDER: AdminRole[] = ["administrateur", "manager", "collaborateur"];
@@ -55,13 +62,15 @@ const mapPublicTeamMember = (
 ): PublicTeamMember => {
   const metadata = parseAdminProfileMetadata(row.metadata);
   const role = (roleByProfileId.get(row.id)?.role as AdminRole | undefined) ?? "collaborateur";
-  const fullName =
-    row.full_name?.trim() ||
-    [row.first_name?.trim() ?? "", row.last_name?.trim() ?? ""].filter(Boolean).join(" ");
+  const firstName = row.first_name?.trim() ?? "";
+  const lastName = row.last_name?.trim() ?? "";
+  const fullName = row.full_name?.trim() || [firstName, lastName].filter(Boolean).join(" ");
 
   return {
     id: row.id,
     fullName: fullName || row.email,
+    firstName,
+    lastName,
     role,
     roleLabel: ADMIN_ROLE_LABELS[role],
     title: metadata.title,
@@ -75,6 +84,9 @@ const mapPublicTeamMember = (
     }),
     avatarUrl: metadata.avatarUrl,
     bookingUrl: sanitizeBookingUrl(metadata.bookingUrl),
+    cardSlug: normalizeCardSlug(metadata.cardSlug) ?? slugifyFirstName(firstName),
+    whatsappPhone: metadata.whatsappPhone,
+    cardEnabled: metadata.cardEnabled,
   };
 };
 

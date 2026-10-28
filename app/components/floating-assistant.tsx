@@ -26,7 +26,9 @@ export function FloatingAssistant() {
   const hidden =
     withoutLocale.startsWith("/admin") ||
     withoutLocale.startsWith("/espace-client") ||
-    withoutLocale.startsWith("/auth");
+    withoutLocale.startsWith("/auth") ||
+    // Cartes de visite : page épurée, sans panneau flottant.
+    withoutLocale.startsWith("/equipe");
 
   if (hidden) return null;
 

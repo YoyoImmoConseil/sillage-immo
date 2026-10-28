@@ -18,6 +18,12 @@ export type AdminProfileMetadata = {
   // Defaults to true so existing profiles stay visible; set to false for a
   // "shadow" collaborator who keeps admin access but is hidden from the site.
   showOnSite: boolean;
+  /** Carte de visite virtuelle (/equipe/<slug>) : slug choisi, sinon dérivé du prénom. */
+  cardSlug: string | null;
+  /** Numéro WhatsApp s'il diffère du téléphone affiché (sinon on réutilise `phone`). */
+  whatsappPhone: string | null;
+  /** Seul un `false` explicite désactive la carte (redirection vers /agence). */
+  cardEnabled: boolean;
   bioTranslations: Partial<Record<AppLocale, string | null | undefined>>;
 };
 
@@ -52,6 +58,9 @@ export const parseAdminProfileMetadata = (value: unknown): AdminProfileMetadata 
     bookingUrl: toStringOrNull(metadata?.booking_url),
     // Only an explicit `false` hides the profile; missing/true => visible.
     showOnSite: metadata?.show_on_site === false ? false : true,
+    cardSlug: toStringOrNull(metadata?.card_slug),
+    whatsappPhone: toStringOrNull(metadata?.whatsapp_phone),
+    cardEnabled: metadata?.card_enabled === false ? false : true,
     bioTranslations: {
       fr: resolveLocalizedText({ locale: "fr", field: "bio", fallback: null, sources: [metadata] }) ?? undefined,
       en: resolveLocalizedText({ locale: "en", field: "bio", fallback: null, sources: [metadata] }) ?? undefined,
@@ -76,6 +85,9 @@ export const buildAdminProfileMetadata = (
     ...(patch.avatarUrl !== undefined ? { avatar_url: patch.avatarUrl } : {}),
     ...(patch.bookingUrl !== undefined ? { booking_url: patch.bookingUrl } : {}),
     ...(patch.showOnSite !== undefined ? { show_on_site: patch.showOnSite } : {}),
+    ...(patch.cardSlug !== undefined ? { card_slug: patch.cardSlug } : {}),
+    ...(patch.whatsappPhone !== undefined ? { whatsapp_phone: patch.whatsappPhone } : {}),
+    ...(patch.cardEnabled !== undefined ? { card_enabled: patch.cardEnabled } : {}),
   };
 
   return mergeLocalizedText(baseMetadata, "bio", patch.bioTranslations);

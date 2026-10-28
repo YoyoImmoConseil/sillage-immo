@@ -3,6 +3,7 @@ import {
   SILLAGE_ADDRESS_POSTAL_CODE,
   SILLAGE_ADDRESS_STREET,
   SILLAGE_CONTACT_EMAIL,
+  SILLAGE_INSTAGRAM_URL,
   SILLAGE_LEGAL,
   SILLAGE_PHONE_RAW,
 } from "@/lib/brand/company";
@@ -12,7 +13,7 @@ import { SITE_NAME, SITE_URL } from "@/lib/seo/site";
  * Données structurées de l'agence (schema.org RealEstateAgent) pour l'accueil :
  * nom, adresse, téléphone, zone desservie, langues. Pas d'horaires ni de note
  * tant que la fiche Google Business Profile n'est pas corrigée (on n'invente
- * rien). `sameAs` à compléter avec la fiche Google et les réseaux le moment venu.
+ * rien). `sameAs` : Instagram ; la fiche Google sera ajoutée quand elle sera corrigée.
  */
 export function buildOrganizationJsonLd() {
   return {
@@ -38,6 +39,7 @@ export function buildOrganizationJsonLd() {
       { "@type": "City", name: "Nice" },
       { "@type": "AdministrativeArea", name: "Alpes-Maritimes" },
     ],
+    sameAs: [SILLAGE_INSTAGRAM_URL],
     knowsLanguage: ["fr", "en", "es", "ru"],
     founder: { "@type": "Person", name: "Yoann Uzzan" },
     identifier: [{ "@type": "PropertyValue", propertyID: "SIREN", value: SILLAGE_LEGAL.siren }],

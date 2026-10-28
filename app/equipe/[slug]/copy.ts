@@ -1,0 +1,130 @@
+import type { AppLocale } from "@/lib/i18n/config";
+
+export type TeamCardCopy = {
+  agencyLine: string;
+  call: string;
+  whatsapp: string;
+  email: string;
+  saveContact: string;
+  saveContactHint: string;
+  followTitle: string;
+  instagram: string;
+  website: string;
+  reviews: string;
+  listingsTitleOwn: string;
+  listingsTitleAgency: string;
+  listingsAll: string;
+  agencyTitle: string;
+  agencyCall: string;
+  agencyDirections: string;
+  legalTitle: string;
+  legalLinks: { legal: string; fees: string };
+  seoTitle: (name: string, title: string | null) => string;
+  seoDescription: (name: string, title: string | null) => string;
+  portraitAlt: (name: string) => string;
+};
+
+const base = {
+  fr: {
+    agencyLine: "Sillage Immo · Nice",
+    call: "Appeler",
+    whatsapp: "WhatsApp",
+    email: "E-mail",
+    saveContact: "Enregistrer le contact",
+    saveContactHint: "Ajoute ma fiche à vos contacts en un geste.",
+    followTitle: "Suivre Sillage",
+    instagram: "Instagram",
+    website: "Le site Sillage Immo",
+    reviews: "Laisser un avis Google",
+    listingsTitleOwn: "Ses biens du moment",
+    listingsTitleAgency: "Les biens du moment",
+    listingsAll: "Voir tous les biens",
+    agencyTitle: "L'agence",
+    agencyCall: "Appeler l'agence",
+    agencyDirections: "Itinéraire",
+    legalTitle: "Mentions légales",
+    legalLinks: { legal: "Mentions légales complètes", fees: "Honoraires" },
+    seoTitle: (name: string, title: string | null) =>
+      `${name}${title ? ` — ${title}` : ""} · Sillage Immo, agence immobilière à Nice`,
+    seoDescription: (name: string, title: string | null) =>
+      `${name}${title ? `, ${title.toLowerCase()}` : ""} chez Sillage Immo, agence immobilière au Port de Nice. Appel, WhatsApp, e-mail et fiche contact à enregistrer.`,
+    portraitAlt: (name: string) => `Portrait de ${name}`,
+  },
+  en: {
+    agencyLine: "Sillage Immo · Nice",
+    call: "Call",
+    whatsapp: "WhatsApp",
+    email: "Email",
+    saveContact: "Save contact",
+    saveContactHint: "Adds my card to your contacts in one tap.",
+    followTitle: "Follow Sillage",
+    instagram: "Instagram",
+    website: "Sillage Immo website",
+    reviews: "Leave a Google review",
+    listingsTitleOwn: "Current listings",
+    listingsTitleAgency: "Current listings",
+    listingsAll: "See all properties",
+    agencyTitle: "The agency",
+    agencyCall: "Call the agency",
+    agencyDirections: "Directions",
+    legalTitle: "Legal notice",
+    legalLinks: { legal: "Full legal notice", fees: "Fees" },
+    seoTitle: (name: string, title: string | null) =>
+      `${name}${title ? ` — ${title}` : ""} · Sillage Immo, real estate agency in Nice`,
+    seoDescription: (name: string, title: string | null) =>
+      `${name}${title ? `, ${title.toLowerCase()}` : ""} at Sillage Immo, real estate agency in the Port of Nice. Call, WhatsApp, email and a contact card to save.`,
+    portraitAlt: (name: string) => `Portrait of ${name}`,
+  },
+  es: {
+    agencyLine: "Sillage Immo · Niza",
+    call: "Llamar",
+    whatsapp: "WhatsApp",
+    email: "E-mail",
+    saveContact: "Guardar contacto",
+    saveContactHint: "Añade mi ficha a tus contactos con un toque.",
+    followTitle: "Seguir a Sillage",
+    instagram: "Instagram",
+    website: "Web de Sillage Immo",
+    reviews: "Dejar una reseña en Google",
+    listingsTitleOwn: "Sus inmuebles del momento",
+    listingsTitleAgency: "Inmuebles del momento",
+    listingsAll: "Ver todos los inmuebles",
+    agencyTitle: "La agencia",
+    agencyCall: "Llamar a la agencia",
+    agencyDirections: "Cómo llegar",
+    legalTitle: "Aviso legal",
+    legalLinks: { legal: "Aviso legal completo", fees: "Honorarios" },
+    seoTitle: (name: string, title: string | null) =>
+      `${name}${title ? ` — ${title}` : ""} · Sillage Immo, agencia inmobiliaria en Niza`,
+    seoDescription: (name: string, title: string | null) =>
+      `${name}${title ? `, ${title.toLowerCase()}` : ""} en Sillage Immo, agencia inmobiliaria en el Puerto de Niza. Llamada, WhatsApp, e-mail y ficha de contacto para guardar.`,
+    portraitAlt: (name: string) => `Retrato de ${name}`,
+  },
+  ru: {
+    agencyLine: "Sillage Immo · Ницца",
+    call: "Позвонить",
+    whatsapp: "WhatsApp",
+    email: "E-mail",
+    saveContact: "Сохранить контакт",
+    saveContactHint: "Добавьте мою визитку в контакты одним касанием.",
+    followTitle: "Следить за Sillage",
+    instagram: "Instagram",
+    website: "Сайт Sillage Immo",
+    reviews: "Оставить отзыв в Google",
+    listingsTitleOwn: "Актуальные объекты",
+    listingsTitleAgency: "Актуальные объекты",
+    listingsAll: "Все объекты",
+    agencyTitle: "Агентство",
+    agencyCall: "Позвонить в агентство",
+    agencyDirections: "Маршрут",
+    legalTitle: "Правовая информация",
+    legalLinks: { legal: "Полная правовая информация", fees: "Комиссия" },
+    seoTitle: (name: string, title: string | null) =>
+      `${name}${title ? ` — ${title}` : ""} · Sillage Immo, агентство недвижимости в Ницце`,
+    seoDescription: (name: string, title: string | null) =>
+      `${name}${title ? `, ${title}` : ""} — Sillage Immo, агентство недвижимости в порту Ниццы. Звонок, WhatsApp, e-mail и визитка для сохранения в контакты.`,
+    portraitAlt: (name: string) => `Портрет: ${name}`,
+  },
+} satisfies Record<AppLocale, TeamCardCopy>;
+
+export const TEAM_CARD_COPY: Record<AppLocale, TeamCardCopy> = base;
