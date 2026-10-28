@@ -75,14 +75,15 @@ export default async function TeamCardOpenGraphImage({ params }: ImageProps) {
           )}
         </div>
         <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
-          <img src={logo} alt="" width={132} height={120} style={{ opacity: 0.9 }} />
-          <div style={{ marginTop: 36, fontSize: 64, fontWeight: 700, lineHeight: 1.1 }}>
+          <img src={logo} alt="" width={176} height={160} style={{ opacity: 0.92 }} />
+          <div style={{ marginTop: 32, fontSize: 64, fontWeight: 700, lineHeight: 1.1 }}>
             {member?.fullName ?? "Sillage Immo"}
           </div>
           {title ? <div style={{ marginTop: 10, fontSize: 36, opacity: 0.85 }}>{title}</div> : null}
-          <div style={{ marginTop: 44, fontSize: 26, opacity: 0.65, letterSpacing: 4, textTransform: "uppercase" }}>
-            Sillage Immo · Nice · sillage-immo.com
+          <div style={{ marginTop: 40, fontSize: 24, opacity: 0.65, letterSpacing: 4, textTransform: "uppercase" }}>
+            Agence immobilière · Nice
           </div>
+          <div style={{ marginTop: 6, fontSize: 24, opacity: 0.65, letterSpacing: 4 }}>sillage-immo.com</div>
         </div>
       </div>
     ),

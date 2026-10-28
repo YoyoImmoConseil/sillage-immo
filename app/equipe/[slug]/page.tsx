@@ -83,6 +83,10 @@ export default async function TeamCardPage({ params }: PageProps) {
 
   const actionClass =
     "flex flex-col items-center justify-center gap-2 rounded-2xl bg-sand/10 px-2 py-4 text-xs font-semibold text-sand ring-1 ring-sand/25 transition hover:bg-sand/20";
+  // Sans téléphone, la grille se resserre sur les gestes disponibles (e-mail seul ou e-mail + WhatsApp).
+  const actionCount = 1 + (member.phoneE164 ? 1 : 0) + (member.whatsappE164 ? 1 : 0);
+  const actionGridClass =
+    actionCount === 3 ? "grid-cols-3" : actionCount === 2 ? "grid-cols-2" : "grid-cols-1";
   const rowClass =
     "flex items-center gap-4 rounded-2xl bg-white px-4 py-4 text-sm font-semibold text-navy ring-1 ring-navy/10 transition hover:bg-navy/5";
 
@@ -145,7 +149,7 @@ export default async function TeamCardPage({ params }: PageProps) {
             <span className="break-all">{member.email}</span>
           </p>
 
-          <div className="mt-8 grid grid-cols-3 gap-3">
+          <div className={`mt-8 grid gap-3 ${actionGridClass}`}>
             {member.phoneE164 ? (
               <a
                 href={`tel:${member.phoneE164}`}
