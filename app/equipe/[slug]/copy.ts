@@ -7,9 +7,8 @@ export type TeamCardCopy = {
   email: string;
   saveContact: string;
   saveContactHint: string;
-  followTitle: string;
-  instagram: string;
-  website: string;
+  qrTitle: string;
+  qrHint: string;
   reviews: string;
   listingsTitleOwn: string;
   listingsTitleAgency: string;
@@ -32,9 +31,8 @@ const base = {
     email: "E-mail",
     saveContact: "Enregistrer le contact",
     saveContactHint: "Ajoute ma fiche à vos contacts en un geste.",
-    followTitle: "Suivre Sillage",
-    instagram: "Instagram",
-    website: "Le site Sillage Immo",
+    qrTitle: "Faites scanner ce code",
+    qrHint: "Il ouvre cette carte sur le téléphone de votre interlocuteur.",
     reviews: "Laisser un avis Google",
     listingsTitleOwn: "Ses biens du moment",
     listingsTitleAgency: "Les biens du moment",
@@ -57,9 +55,8 @@ const base = {
     email: "Email",
     saveContact: "Save contact",
     saveContactHint: "Adds my card to your contacts in one tap.",
-    followTitle: "Follow Sillage",
-    instagram: "Instagram",
-    website: "Sillage Immo website",
+    qrTitle: "Let them scan this code",
+    qrHint: "It opens this card on the other person's phone.",
     reviews: "Leave a Google review",
     listingsTitleOwn: "Current listings",
     listingsTitleAgency: "Current listings",
@@ -82,9 +79,8 @@ const base = {
     email: "E-mail",
     saveContact: "Guardar contacto",
     saveContactHint: "Añade mi ficha a tus contactos con un toque.",
-    followTitle: "Seguir a Sillage",
-    instagram: "Instagram",
-    website: "Web de Sillage Immo",
+    qrTitle: "Haga escanear este código",
+    qrHint: "Abre esta tarjeta en el teléfono de su interlocutor.",
     reviews: "Dejar una reseña en Google",
     listingsTitleOwn: "Sus inmuebles del momento",
     listingsTitleAgency: "Inmuebles del momento",
@@ -107,9 +103,8 @@ const base = {
     email: "E-mail",
     saveContact: "Сохранить контакт",
     saveContactHint: "Добавьте мою визитку в контакты одним касанием.",
-    followTitle: "Следить за Sillage",
-    instagram: "Instagram",
-    website: "Сайт Sillage Immo",
+    qrTitle: "Дайте отсканировать этот код",
+    qrHint: "Он открывает эту визитку на телефоне собеседника.",
     reviews: "Оставить отзыв в Google",
     listingsTitleOwn: "Актуальные объекты",
     listingsTitleAgency: "Актуальные объекты",

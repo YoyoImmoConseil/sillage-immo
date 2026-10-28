@@ -66,12 +66,19 @@ export const buildWhatsAppUrl = (e164: string): string => `https://wa.me/${e164.
 
 export const buildTeamCardPath = (slug: string) => `${TEAM_CARD_BASE_PATH}/${slug}`;
 
+/** Support : badge ou carte imprimée (card), QR montré à l'écran du téléphone (screen). */
+export type TeamCardMedium = "card" | "screen";
+
 /** URL absolue de la carte, avec provenance tracée (utm) pour GA4. */
-export const buildTeamCardUrl = (slug: string, source?: TeamCardSource): string => {
+export const buildTeamCardUrl = (
+  slug: string,
+  source?: TeamCardSource,
+  medium: TeamCardMedium = "card"
+): string => {
   const url = new URL(buildTeamCardPath(slug), `${SITE_URL}/`);
   if (source) {
     url.searchParams.set("utm_source", source);
-    url.searchParams.set("utm_medium", "card");
+    url.searchParams.set("utm_medium", medium);
     url.searchParams.set("utm_campaign", "carte-visite");
   }
   return url.toString();

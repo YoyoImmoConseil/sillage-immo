@@ -54,6 +54,9 @@ describe("buildTeamCardUrl", () => {
     expect(buildTeamCardUrl("yoann", "qr")).toBe(
       "https://sillage-immo.com/equipe/yoann?utm_source=qr&utm_medium=card&utm_campaign=carte-visite"
     );
+    expect(buildTeamCardUrl("yoann", "qr", "screen")).toBe(
+      "https://sillage-immo.com/equipe/yoann?utm_source=qr&utm_medium=screen&utm_campaign=carte-visite"
+    );
   });
 });
 

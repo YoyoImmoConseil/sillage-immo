@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowRight, ChevronRight, Globe, Mail, MapPin, Phone, UserPlus } from "lucide-react";
+import { ArrowRight, Globe, Mail, MapPin, Phone, UserPlus } from "lucide-react";
 
 import {
   SILLAGE_ADDRESS_DISPLAY,
@@ -24,6 +24,7 @@ import {
   formatPhoneDisplay,
 } from "@/lib/team/card";
 import { buildTeamCardJsonLd } from "@/lib/team/card-jsonld";
+import { renderQrSvg } from "@/lib/team/card-assets";
 import { getTeamCardBySlug } from "@/services/team/team-card.service";
 import { PropertyCard } from "@/app/components/property-card";
 import { BrandIcon } from "./brand-icon";
@@ -81,42 +82,12 @@ export default async function TeamCardPage({ params }: PageProps) {
     imageUrl: member.avatarUrl,
   });
 
-  const actionClass =
-    "flex flex-col items-center justify-center gap-2 rounded-2xl bg-sand/10 px-2 py-4 text-xs font-semibold text-sand ring-1 ring-sand/25 transition hover:bg-sand/20";
-  // Sans téléphone, la grille se resserre sur les gestes disponibles (e-mail seul ou e-mail + WhatsApp).
-  const actionCount = 1 + (member.phoneE164 ? 1 : 0) + (member.whatsappE164 ? 1 : 0);
-  const actionGridClass =
-    actionCount === 3 ? "grid-cols-3" : actionCount === 2 ? "grid-cols-2" : "grid-cols-1";
-  const rowClass =
-    "flex items-center gap-4 rounded-2xl bg-white px-4 py-4 text-sm font-semibold text-navy ring-1 ring-navy/10 transition hover:bg-navy/5";
+  // QR affiché à l'écran (utm_medium=screen) : distinct du QR imprimé (card).
+  const screenQrSvg = await renderQrSvg(buildTeamCardUrl(member.slug, "qr", "screen"));
 
-  const followLinks = [
-    {
-      href: SILLAGE_INSTAGRAM_URL,
-      label: copy.instagram,
-      icon: <BrandIcon name="instagram" className="h-5 w-5" />,
-      cta: "team_card_instagram",
-      external: true,
-    },
-    {
-      href: localizePath("/", locale),
-      label: copy.website,
-      icon: <Globe aria-hidden className="h-5 w-5" strokeWidth={1.75} />,
-      cta: "team_card_website",
-      external: false,
-    },
-    ...(SILLAGE_GOOGLE_REVIEWS_URL
-      ? [
-          {
-            href: SILLAGE_GOOGLE_REVIEWS_URL,
-            label: copy.reviews,
-            icon: <BrandIcon name="google" className="h-5 w-5" />,
-            cta: "team_card_reviews",
-            external: true,
-          },
-        ]
-      : []),
-  ];
+  const rowClass =
+    "flex items-center gap-4 rounded-2xl bg-sand/10 px-4 py-3.5 text-left text-base font-medium text-sand ring-1 ring-sand/20 transition hover:bg-sand/20";
+  const iconClass = "flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sand/15 text-sand";
 
   return (
     <main className="min-h-screen bg-white">
@@ -144,50 +115,86 @@ export default async function TeamCardPage({ params }: PageProps) {
           <p className="mt-6 text-[11px] uppercase tracking-[0.24em] text-sand/70">{copy.agencyLine}</p>
           <h1 className="mt-2 font-serif text-3xl font-semibold leading-tight md:text-4xl">{member.fullName}</h1>
           {title ? <p className="mt-1 text-sm text-sand/80 md:text-base">{title}</p> : null}
-          <p className="mt-3 text-sm text-sand/75">
-            {member.phoneE164 ? <span>{formatPhoneDisplay(member.phoneE164)} · </span> : null}
-            <span className="break-all">{member.email}</span>
-          </p>
 
-          <div className={`mt-8 grid gap-3 ${actionGridClass}`}>
+          <ul className="mt-8 space-y-3">
             {member.phoneE164 ? (
-              <a
-                href={`tel:${member.phoneE164}`}
-                className={actionClass}
-                data-track-phone={member.phoneE164}
-                data-track-location="team_card"
-              >
-                <Phone aria-hidden className="h-6 w-6" strokeWidth={1.75} />
-                {copy.call}
-              </a>
+              <li>
+                <a
+                  href={`tel:${member.phoneE164}`}
+                  className={rowClass}
+                  data-track-phone={member.phoneE164}
+                  data-track-location="team_card"
+                >
+                  <span className={iconClass}>
+                    <Phone aria-hidden className="h-5 w-5" strokeWidth={1.75} />
+                  </span>
+                  <span>{formatPhoneDisplay(member.phoneE164)}</span>
+                </a>
+              </li>
             ) : null}
             {member.whatsappE164 ? (
+              <li>
+                <a
+                  href={buildWhatsAppUrl(member.whatsappE164)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={rowClass}
+                  data-track-whatsapp={member.whatsappE164}
+                  data-track-location="team_card"
+                >
+                  <span className={iconClass}>
+                    <BrandIcon name="whatsapp" className="h-5 w-5" />
+                  </span>
+                  <span>{copy.whatsapp}</span>
+                </a>
+              </li>
+            ) : null}
+            <li>
               <a
-                href={buildWhatsAppUrl(member.whatsappE164)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={actionClass}
-                data-track-whatsapp={member.whatsappE164}
+                href={`mailto:${member.email}`}
+                className={rowClass}
+                data-track-email={member.email}
                 data-track-location="team_card"
               >
-                <BrandIcon name="whatsapp" className="h-6 w-6" />
-                {copy.whatsapp}
+                <span className={iconClass}>
+                  <Mail aria-hidden className="h-5 w-5" strokeWidth={1.75} />
+                </span>
+                <span className="break-all">{member.email}</span>
               </a>
-            ) : null}
-            <a
-              href={`mailto:${member.email}`}
-              className={actionClass}
-              data-track-email={member.email}
-              data-track-location="team_card"
-            >
-              <Mail aria-hidden className="h-6 w-6" strokeWidth={1.75} />
-              {copy.email}
-            </a>
-          </div>
+            </li>
+            <li>
+              <a
+                href={SILLAGE_INSTAGRAM_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={rowClass}
+                data-track-cta="team_card_instagram"
+                data-track-location="team_card"
+              >
+                <span className={iconClass}>
+                  <BrandIcon name="instagram" className="h-5 w-5" />
+                </span>
+                <span>sillage.immo</span>
+              </a>
+            </li>
+            <li>
+              <Link
+                href={localizePath("/", locale)}
+                className={rowClass}
+                data-track-cta="team_card_website"
+                data-track-location="team_card"
+              >
+                <span className={iconClass}>
+                  <Globe aria-hidden className="h-5 w-5" strokeWidth={1.75} />
+                </span>
+                <span>sillage-immo.com</span>
+              </Link>
+            </li>
+          </ul>
 
           <a
             href={vcardHref}
-            className="mt-4 flex items-center justify-center gap-3 rounded-full bg-sand px-6 py-4 text-base font-semibold text-navy shadow-sm transition hover:-translate-y-[1px] hover:opacity-95"
+            className="mt-6 flex items-center justify-center gap-3 rounded-full bg-sand px-6 py-4 text-base font-semibold text-navy shadow-sm transition hover:-translate-y-[1px] hover:opacity-95"
             data-track-cta="team_card_save_contact"
             data-track-location="team_card"
           >
@@ -195,45 +202,18 @@ export default async function TeamCardPage({ params }: PageProps) {
             {copy.saveContact}
           </a>
           <p className="mt-3 text-xs text-sand/65">{copy.saveContactHint}</p>
-        </div>
-      </section>
 
-      {/* Suivre Sillage */}
-      <section aria-labelledby="team-card-follow" className="sillage-section-light">
-        <div className="mx-auto w-full max-w-md px-5 py-10 md:max-w-xl">
-          <h2 id="team-card-follow" className="text-xs uppercase tracking-[0.22em] text-navy/65">
-            {copy.followTitle}
-          </h2>
-          <ul className="mt-4 space-y-3">
-            {followLinks.map((link) => (
-              <li key={link.cta}>
-                {link.external ? (
-                  <a
-                    href={link.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={rowClass}
-                    data-track-cta={link.cta}
-                    data-track-location="team_card"
-                  >
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-navy text-sand">
-                      {link.icon}
-                    </span>
-                    <span className="flex-1">{link.label}</span>
-                    <ChevronRight aria-hidden className="h-5 w-5 text-navy/40" />
-                  </a>
-                ) : (
-                  <Link href={link.href} className={rowClass} data-track-cta={link.cta} data-track-location="team_card">
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-navy text-sand">
-                      {link.icon}
-                    </span>
-                    <span className="flex-1">{link.label}</span>
-                    <ChevronRight aria-hidden className="h-5 w-5 text-navy/40" />
-                  </Link>
-                )}
-              </li>
-            ))}
-          </ul>
+          {/* QR à faire scanner : même carte, provenance « écran » */}
+          <div className="mx-auto mt-10 flex max-w-xs flex-col items-center gap-3">
+            <div
+              aria-label={copy.qrTitle}
+              role="img"
+              className="w-44 rounded-2xl bg-white p-3 [&_svg]:block [&_svg]:h-auto [&_svg]:w-full"
+              dangerouslySetInnerHTML={{ __html: screenQrSvg }}
+            />
+            <p className="text-sm font-semibold">{copy.qrTitle}</p>
+            <p className="text-xs text-sand/65">{copy.qrHint}</p>
+          </div>
         </div>
       </section>
 
@@ -295,6 +275,20 @@ export default async function TeamCardPage({ params }: PageProps) {
               {copy.agencyDirections}
             </a>
           </div>
+
+          {SILLAGE_GOOGLE_REVIEWS_URL ? (
+            <a
+              href={SILLAGE_GOOGLE_REVIEWS_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-navy underline underline-offset-4"
+              data-track-cta="team_card_reviews"
+              data-track-location="team_card_agency"
+            >
+              <BrandIcon name="google" className="h-4 w-4" />
+              {copy.reviews}
+            </a>
+          ) : null}
 
           <div className="mt-8 border-t border-navy/10 pt-5 text-[11px] leading-relaxed text-navy/65">
             <p className="font-semibold uppercase tracking-[0.18em] text-navy/55">{copy.legalTitle}</p>
