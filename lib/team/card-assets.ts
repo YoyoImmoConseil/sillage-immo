@@ -8,7 +8,12 @@ import sharp from "sharp";
 export const TEAM_CARD_NAVY = "#141446";
 export const TEAM_CARD_SAND = "#f4ece4";
 
-/** Photo du collaborateur redimensionnée (carré centré) en JPEG, pour la vCard et l'image de partage. */
+/**
+ * Photo du collaborateur recadrée en carré, en JPEG, pour la vCard et l'image
+ * de partage. Les portraits sont verticaux (exigé par l'admin) : on ancre le
+ * recadrage en haut, là où est le visage — les stratégies « attention » /
+ * « entropy » de sharp suivent les textures (mur de pierre) et coupent la tête.
+ */
 export const fetchPortraitJpeg = async (
   url: string | null,
   size: number
@@ -20,7 +25,7 @@ export const fetchPortraitJpeg = async (
     const source = Buffer.from(await response.arrayBuffer());
     return await sharp(source)
       .rotate()
-      .resize(size, size, { fit: "cover", position: "attention" })
+      .resize(size, size, { fit: "cover", position: "top" })
       .jpeg({ quality: 82, mozjpeg: true })
       .toBuffer();
   } catch (error) {

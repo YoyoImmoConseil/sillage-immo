@@ -110,7 +110,8 @@ export default async function TeamCardPage({ params }: PageProps) {
                 fill
                 priority
                 sizes="(max-width: 768px) 144px, 176px"
-                className="object-cover"
+                // Portraits verticaux : le visage est en haut, on ancre le recadrage en haut.
+                className="object-cover object-top"
               />
             ) : (
               <span className="flex h-full w-full items-center justify-center font-serif text-4xl font-semibold">
