@@ -2,6 +2,7 @@ import "server-only";
 import type { AppLocale } from "@/lib/i18n/config";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { revalidatePublicTeam } from "@/lib/cache/revalidate";
+import { normalizeCardSlug, normalizePhoneE164 } from "@/lib/team/card";
 import {
   buildAdminProfileMetadata,
   countWords,
@@ -41,6 +42,10 @@ export type AdminUserListItem = {
   avatarUrl: string | null;
   bookingUrl: string | null;
   showOnSite: boolean;
+  /** Carte de visite virtuelle (/equipe/<slug>). */
+  cardSlug: string | null;
+  whatsappPhone: string | null;
+  cardEnabled: boolean;
 };
 
 const buildFullName = (firstName?: string | null, lastName?: string | null) => {
@@ -194,6 +199,9 @@ export const listAdminUsers = async (): Promise<AdminUserListItem[]> => {
       avatarUrl: metadata.avatarUrl,
       bookingUrl: metadata.bookingUrl,
       showOnSite: metadata.showOnSite,
+      cardSlug: metadata.cardSlug,
+      whatsappPhone: metadata.whatsappPhone,
+      cardEnabled: metadata.cardEnabled,
     };
   });
 };
@@ -469,6 +477,9 @@ export const updateAdminUserProfile = async (input: {
   avatarUrl?: string | null;
   bookingUrl?: string;
   showOnSite?: boolean;
+  cardSlug?: string;
+  whatsappPhone?: string;
+  cardEnabled?: boolean;
 }) => {
   const { data: currentProfile, error: currentProfileError } = await supabaseAdmin
     .from("admin_profiles")
@@ -494,7 +505,22 @@ export const updateAdminUserProfile = async (input: {
     input.bookingUrl === undefined ? currentMetadata.bookingUrl : input.bookingUrl?.trim() || null;
   const showOnSite =
     input.showOnSite === undefined ? currentMetadata.showOnSite : input.showOnSite;
+  const rawCardSlug = input.cardSlug === undefined ? currentMetadata.cardSlug : input.cardSlug?.trim() || null;
+  const cardSlug = rawCardSlug === null ? null : normalizeCardSlug(rawCardSlug);
+  const rawWhatsappPhone =
+    input.whatsappPhone === undefined ? currentMetadata.whatsappPhone : input.whatsappPhone?.trim() || null;
+  const cardEnabled = input.cardEnabled === undefined ? currentMetadata.cardEnabled : input.cardEnabled;
   const fullName = buildFullName(firstName, lastName);
+
+  if (rawCardSlug !== null && cardSlug === null) {
+    throw new Error("L'adresse de la carte doit contenir au moins une lettre ou un chiffre.");
+  }
+  if (phone && normalizePhoneE164(phone) === null) {
+    throw new Error("Le téléphone doit être un numéro valide (ex. 06 09 95 12 84).");
+  }
+  if (rawWhatsappPhone && normalizePhoneE164(rawWhatsappPhone) === null) {
+    throw new Error("Le numéro WhatsApp doit être un numéro valide (ex. 06 09 95 12 84).");
+  }
 
   if (rawTitle !== null && title === null) {
     throw new Error("Le titre selectionne est invalide.");
@@ -523,6 +549,9 @@ export const updateAdminUserProfile = async (input: {
     avatarUrl: input.avatarUrl === undefined ? currentMetadata.avatarUrl : input.avatarUrl,
     bookingUrl,
     showOnSite,
+    cardSlug,
+    whatsappPhone: rawWhatsappPhone,
+    cardEnabled,
   });
 
   const { error: updateError } = await supabaseAdmin
@@ -555,6 +584,9 @@ export const updateAdminUserProfile = async (input: {
       avatarUrl: input.avatarUrl === undefined ? undefined : input.avatarUrl,
       bookingUrl,
       showOnSite,
+      cardSlug,
+      whatsappPhone: rawWhatsappPhone,
+      cardEnabled,
     }
   );
 

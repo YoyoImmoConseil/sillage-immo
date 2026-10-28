@@ -21,6 +21,9 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/api/admin/properties/[id]/vitrine/preview": ["./assets/vitrine/**/*"],
     "/api/admin/properties/[id]/vitrine/generate": ["./assets/vitrine/**/*"],
+    // Cartes de visite : polices et logo des images générées (fond d'écran QR, aperçu de lien).
+    "/equipe/[slug]/qr-ecran.png": ["./assets/vitrine/fonts/Montserrat-*.ttf", "./assets/vitrine/logo-sillage-sand.png"],
+    "/equipe/[slug]/opengraph-image": ["./assets/vitrine/fonts/Montserrat-*.ttf", "./assets/vitrine/logo-sillage-sand.png"],
   },
   images: {
     remotePatterns: [

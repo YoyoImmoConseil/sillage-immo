@@ -20,6 +20,15 @@ export const SILLAGE_MAPS_URL =
  */
 export const SHOW_HOME_TEAM_SECTION = false;
 
+/** Réseaux et liens publics de l'agence (carte de visite, JSON-LD, pied de page). */
+export const SILLAGE_INSTAGRAM_URL = "https://www.instagram.com/sillage.immo/";
+/**
+ * Lien « Laisser un avis » de la fiche Google Business Profile
+ * (format https://g.page/r/<id>/review). Vide tant que Yoann ne l'a pas
+ * communiqué : le bouton « Avis Google » est alors masqué, on n'invente rien.
+ */
+export const SILLAGE_GOOGLE_REVIEWS_URL = "";
+
 /** Email de contact public (RGPD, réclamations). */
 export const SILLAGE_CONTACT_EMAIL = "yu@sillage-immo.com";
 

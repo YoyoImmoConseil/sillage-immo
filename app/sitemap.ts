@@ -3,6 +3,8 @@ import { SUPPORTED_LOCALES } from "@/lib/i18n/config";
 import { localizePath } from "@/lib/i18n/routing";
 import { SITE_URL } from "@/lib/seo/site";
 import { listPublicPropertyListings } from "@/services/properties/property-listing.service";
+import { listTeamCardMembers } from "@/services/team/team-card.service";
+import { buildTeamCardPath } from "@/lib/team/card";
 import { QUARTIERS } from "@/lib/quartiers/data";
 
 export const revalidate = 3600;
@@ -58,6 +60,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   } catch (error) {
     console.error("[sitemap] listings unavailable", error);
+  }
+
+  // Cartes de visite des collaborateurs (/equipe/<prenom>).
+  try {
+    const members = await listTeamCardMembers("fr");
+    for (const member of members) {
+      entries.push({
+        ...withLanguages(buildTeamCardPath(member.slug)),
+        changeFrequency: "monthly",
+        priority: 0.5,
+      });
+    }
+  } catch (error) {
+    console.error("[sitemap] team cards unavailable", error);
   }
 
   return entries;
