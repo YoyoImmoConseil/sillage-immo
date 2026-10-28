@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { parseApiResponse } from "@/lib/http/parse-api-response";
+import { buildTeamCardPath, normalizeCardSlug, slugifyFirstName } from "@/lib/team/card";
 import { ADMIN_TEAM_TITLES, type AdminRole, type AdminTeamTitle } from "@/types/domain/admin";
 
 type UserProfile = {
@@ -21,6 +22,9 @@ type UserProfile = {
   avatarUrl: string | null;
   bookingUrl: string | null;
   showOnSite: boolean;
+  cardSlug: string | null;
+  whatsappPhone: string | null;
+  cardEnabled: boolean;
 };
 
 const countWords = (value: string) =>
@@ -60,12 +64,28 @@ export function UserProfileForm({ user, canManage }: { user: UserProfile; canMan
   const [avatarUrl, setAvatarUrl] = useState(user.avatarUrl);
   const [bookingUrl, setBookingUrl] = useState(user.bookingUrl ?? "");
   const [showOnSite, setShowOnSite] = useState(user.showOnSite);
+  const [cardSlug, setCardSlug] = useState(user.cardSlug ?? "");
+  const [whatsappPhone, setWhatsappPhone] = useState(user.whatsappPhone ?? "");
+  const [cardEnabled, setCardEnabled] = useState(user.cardEnabled);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [isUploading, startUploading] = useTransition();
 
   const words = useMemo(() => countWords(bio), [bio]);
+
+  // Carte de visite : ce qui est en ligne correspond à la fiche enregistrée,
+  // pas aux champs en cours de saisie.
+  const savedSlug = normalizeCardSlug(user.cardSlug) ?? slugifyFirstName(user.firstName);
+  const savedCardPath = savedSlug ? buildTeamCardPath(savedSlug) : null;
+  const cardBlockers = [
+    !user.isActive ? "compte désactivé" : null,
+    !user.showOnSite ? "« Afficher sur le site » désactivé" : null,
+    !user.cardEnabled ? "carte désactivée" : null,
+    !savedSlug ? "prénom manquant" : null,
+  ].filter((value): value is string => Boolean(value));
+  const cardIsLive = cardBlockers.length === 0 && savedCardPath !== null;
+  const previewSlug = normalizeCardSlug(cardSlug) ?? slugifyFirstName(firstName) ?? "prenom";
 
   const save = () => {
     setError(null);
@@ -76,7 +96,18 @@ export function UserProfileForm({ user, canManage }: { user: UserProfile; canMan
         const response = await fetch(`/api/admin/users/${user.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ firstName, lastName, title, phone, bio, bookingUrl, showOnSite }),
+          body: JSON.stringify({
+            firstName,
+            lastName,
+            title,
+            phone,
+            bio,
+            bookingUrl,
+            showOnSite,
+            cardSlug,
+            whatsappPhone,
+            cardEnabled,
+          }),
         });
         const parsed = await parseApiResponse(response);
         if (!parsed.ok) {
@@ -323,19 +354,129 @@ export function UserProfileForm({ user, canManage }: { user: UserProfile; canMan
           </div>
         </div>
 
-        {canManage ? (
-          <div className="mt-6 flex justify-end">
+      </section>
+
+      <section className="rounded-2xl border border-[rgba(20,20,70,0.16)] bg-white p-6">
+        <h2 className="text-lg font-semibold text-navy">Carte de visite virtuelle</h2>
+        <p className="mt-1 text-sm text-navy/70">
+          Page publique ouverte par le badge NFC, le QR code ou NameDrop :{" "}
+          <span className="font-mono text-xs">sillage-immo.com{buildTeamCardPath(previewSlug)}</span>. Elle reprend le
+          portrait, le titre, le téléphone et l&apos;e-mail ci-dessus ; les mentions légales viennent de l&apos;agence.
+        </p>
+
+        <div className="mt-5 grid gap-4 md:grid-cols-2">
+          <div className="flex items-start justify-between gap-4 rounded-2xl border border-[rgba(20,20,70,0.16)] bg-sand/50 px-4 py-3 md:col-span-2">
+            <div>
+              <span className="block text-sm font-medium text-navy">Carte active</span>
+              <span className="mt-1 block text-xs text-navy/60">
+                Désactivée, l&apos;adresse de la carte renvoie vers la page agence (un badge déjà distribué ne tombe
+                jamais sur une erreur).
+              </span>
+            </div>
             <button
               type="button"
-              className="sillage-btn rounded px-4 py-2 text-sm disabled:opacity-60"
-              disabled={isPending || isUploading || words > 250}
-              onClick={save}
+              role="switch"
+              aria-checked={cardEnabled}
+              aria-label="Carte active"
+              disabled={!canManage || isPending}
+              onClick={() => setCardEnabled((value) => !value)}
+              className={`relative inline-flex h-6 w-11 flex-none items-center rounded-full transition disabled:opacity-60 ${
+                cardEnabled ? "bg-navy" : "bg-navy/25"
+              }`}
             >
-              {isPending ? "Enregistrement..." : "Enregistrer la fiche"}
+              <span
+                className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${
+                  cardEnabled ? "translate-x-[22px]" : "translate-x-0.5"
+                }`}
+              />
             </button>
           </div>
-        ) : null}
+          <label className="text-sm text-navy">
+            <span className="mb-2 block font-medium">Adresse de la carte</span>
+            <div className="flex items-center rounded border focus-within:ring-1 focus-within:ring-navy">
+              <span className="px-3 text-xs text-navy/50">/equipe/</span>
+              <input
+                className="w-full rounded-r px-2 py-2 outline-none"
+                placeholder={slugifyFirstName(firstName) ?? "prenom"}
+                value={cardSlug}
+                disabled={!canManage || isPending}
+                onChange={(event) => setCardSlug(event.target.value)}
+              />
+            </div>
+            <span className="mt-2 block text-xs text-navy/60">
+              Vide : le prénom, sans accent. À renseigner seulement en cas d&apos;homonyme (ex. julien-d).
+            </span>
+          </label>
+          <label className="text-sm text-navy">
+            <span className="mb-2 block font-medium">Numéro WhatsApp (si différent du téléphone)</span>
+            <input
+              className="w-full rounded border px-3 py-2"
+              placeholder="Ex. 06 00 00 00 00"
+              value={whatsappPhone}
+              disabled={!canManage || isPending}
+              onChange={(event) => setWhatsappPhone(event.target.value)}
+            />
+            <span className="mt-2 block text-xs text-navy/60">
+              Vide : le bouton WhatsApp utilise le téléphone de la fiche.
+            </span>
+          </label>
+        </div>
+
+        <div className="mt-5 rounded-2xl bg-sand/50 px-4 py-4 text-sm text-navy">
+          {cardIsLive && savedCardPath ? (
+            <>
+              <p>
+                Carte en ligne :{" "}
+                <a href={savedCardPath} target="_blank" rel="noreferrer" className="font-medium underline">
+                  sillage-immo.com{savedCardPath}
+                </a>
+              </p>
+              <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-xs">
+                <li>
+                  <a href={`${savedCardPath}/qr.png`} target="_blank" rel="noreferrer" className="underline">
+                    QR code (PNG, à imprimer ou partager)
+                  </a>
+                </li>
+                <li>
+                  <a href={`${savedCardPath}/qr.svg`} target="_blank" rel="noreferrer" className="underline">
+                    QR code vectoriel (SVG, imprimeur)
+                  </a>
+                </li>
+                <li>
+                  <a href={`${savedCardPath}/qr-ecran.png`} target="_blank" rel="noreferrer" className="underline">
+                    Fond d&apos;écran de verrouillage avec QR
+                  </a>
+                </li>
+                <li>
+                  <a href={`${savedCardPath}/contact.vcf`} className="underline">
+                    Fiche contact (.vcf)
+                  </a>
+                </li>
+              </ul>
+              <p className="mt-3 text-xs text-navy/60">
+                Les modifications ci-dessus sont visibles sur la carte après enregistrement (quelques minutes de cache au plus).
+              </p>
+            </>
+          ) : (
+            <p>
+              Carte hors ligne ({cardBlockers.join(", ")}) : l&apos;adresse renvoie vers la page agence.
+            </p>
+          )}
+        </div>
       </section>
+
+      {canManage ? (
+        <div className="flex justify-end">
+          <button
+            type="button"
+            className="sillage-btn rounded px-4 py-2 text-sm disabled:opacity-60"
+            disabled={isPending || isUploading || words > 250}
+            onClick={save}
+          >
+            {isPending ? "Enregistrement..." : "Enregistrer la fiche"}
+          </button>
+        </div>
+      ) : null}
 
       {result ? <p className="text-sm text-green-700">{result}</p> : null}
       {error ? <p className="text-sm text-red-700">{error}</p> : null}

@@ -17,6 +17,9 @@ type PatchBody = {
   avatarUrl?: string | null;
   bookingUrl?: string;
   showOnSite?: boolean;
+  cardSlug?: string;
+  whatsappPhone?: string;
+  cardEnabled?: boolean;
 };
 
 export async function GET(request: Request, { params }: RouteParams) {
@@ -75,6 +78,9 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       avatarUrl: body?.avatarUrl,
       bookingUrl: body?.bookingUrl,
       showOnSite: typeof body?.showOnSite === "boolean" ? body.showOnSite : undefined,
+      cardSlug: typeof body?.cardSlug === "string" ? body.cardSlug : undefined,
+      whatsappPhone: typeof body?.whatsappPhone === "string" ? body.whatsappPhone : undefined,
+      cardEnabled: typeof body?.cardEnabled === "boolean" ? body.cardEnabled : undefined,
     });
 
     return NextResponse.json({ ok: true });
