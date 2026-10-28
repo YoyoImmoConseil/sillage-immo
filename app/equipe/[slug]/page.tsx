@@ -85,9 +85,10 @@ export default async function TeamCardPage({ params }: PageProps) {
   // QR affiché à l'écran (utm_medium=screen) : distinct du QR imprimé (card).
   const screenQrSvg = await renderQrSvg(buildTeamCardUrl(member.slug, "qr", "screen"));
 
+  // Lignes de contact : pictogramme + texte en beige sur bleu, sans cadre ; le texte est le lien.
   const rowClass =
-    "flex items-center gap-4 rounded-2xl bg-sand/10 px-4 py-3.5 text-left text-base font-medium text-sand ring-1 ring-sand/20 transition hover:bg-sand/20";
-  const iconClass = "flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sand/15 text-sand";
+    "group inline-flex items-center gap-3 py-1 text-base text-sand transition hover:text-white";
+  const iconClass = "flex h-5 w-5 shrink-0 items-center justify-center text-sand/75 group-hover:text-sand";
 
   return (
     <main className="min-h-screen bg-white">
@@ -116,7 +117,7 @@ export default async function TeamCardPage({ params }: PageProps) {
           <h1 className="mt-2 font-serif text-3xl font-semibold leading-tight md:text-4xl">{member.fullName}</h1>
           {title ? <p className="mt-1 text-sm text-sand/80 md:text-base">{title}</p> : null}
 
-          <ul className="mt-8 space-y-3">
+          <ul className="mx-auto mt-8 flex w-fit flex-col items-start gap-2 text-left">
             {member.phoneE164 ? (
               <li>
                 <a
@@ -126,9 +127,9 @@ export default async function TeamCardPage({ params }: PageProps) {
                   data-track-location="team_card"
                 >
                   <span className={iconClass}>
-                    <Phone aria-hidden className="h-5 w-5" strokeWidth={1.75} />
+                    <Phone aria-hidden className="h-[18px] w-[18px]" strokeWidth={1.75} />
                   </span>
-                  <span>{formatPhoneDisplay(member.phoneE164)}</span>
+                  <span className="underline-offset-4 group-hover:underline">{formatPhoneDisplay(member.phoneE164)}</span>
                 </a>
               </li>
             ) : null}
@@ -143,9 +144,9 @@ export default async function TeamCardPage({ params }: PageProps) {
                   data-track-location="team_card"
                 >
                   <span className={iconClass}>
-                    <BrandIcon name="whatsapp" className="h-5 w-5" />
+                    <BrandIcon name="whatsapp" className="h-[18px] w-[18px]" />
                   </span>
-                  <span>{copy.whatsapp}</span>
+                  <span className="underline-offset-4 group-hover:underline">{copy.whatsapp}</span>
                 </a>
               </li>
             ) : null}
@@ -157,9 +158,9 @@ export default async function TeamCardPage({ params }: PageProps) {
                 data-track-location="team_card"
               >
                 <span className={iconClass}>
-                  <Mail aria-hidden className="h-5 w-5" strokeWidth={1.75} />
+                  <Mail aria-hidden className="h-[18px] w-[18px]" strokeWidth={1.75} />
                 </span>
-                <span className="break-all">{member.email}</span>
+                <span className="break-all underline-offset-4 group-hover:underline">{member.email}</span>
               </a>
             </li>
             <li>
@@ -172,9 +173,9 @@ export default async function TeamCardPage({ params }: PageProps) {
                 data-track-location="team_card"
               >
                 <span className={iconClass}>
-                  <BrandIcon name="instagram" className="h-5 w-5" />
+                  <BrandIcon name="instagram" className="h-[18px] w-[18px]" />
                 </span>
-                <span>sillage.immo</span>
+                <span className="underline-offset-4 group-hover:underline">sillage.immo</span>
               </a>
             </li>
             <li>
@@ -185,9 +186,9 @@ export default async function TeamCardPage({ params }: PageProps) {
                 data-track-location="team_card"
               >
                 <span className={iconClass}>
-                  <Globe aria-hidden className="h-5 w-5" strokeWidth={1.75} />
+                  <Globe aria-hidden className="h-[18px] w-[18px]" strokeWidth={1.75} />
                 </span>
-                <span>sillage-immo.com</span>
+                <span className="underline-offset-4 group-hover:underline">sillage-immo.com</span>
               </Link>
             </li>
           </ul>
