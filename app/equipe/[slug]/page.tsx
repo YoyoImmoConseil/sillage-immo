@@ -25,9 +25,11 @@ import {
 } from "@/lib/team/card";
 import { buildTeamCardJsonLd } from "@/lib/team/card-jsonld";
 import { renderQrSvg } from "@/lib/team/card-assets";
+import { getTeamCardBaseUrl } from "@/services/team/team-card-base-url";
 import { getTeamCardBySlug } from "@/services/team/team-card.service";
 import { PropertyCard } from "@/app/components/property-card";
 import { BrandIcon } from "./brand-icon";
+import { ShareCardButton } from "./share-card-button";
 import { TEAM_CARD_COPY } from "./copy";
 
 type PageProps = { params: Promise<{ slug: string }> };
@@ -82,8 +84,11 @@ export default async function TeamCardPage({ params }: PageProps) {
     imageUrl: member.avatarUrl,
   });
 
+  // Liens suivis réellement (QR, partage) : domaine de preview pendant les tests, site en production.
+  const baseUrl = await getTeamCardBaseUrl();
   // QR affiché à l'écran (utm_medium=screen) : distinct du QR imprimé (card).
-  const screenQrSvg = await renderQrSvg(buildTeamCardUrl(member.slug, "qr", "screen"));
+  const screenQrSvg = await renderQrSvg(buildTeamCardUrl(member.slug, "qr", "screen", baseUrl));
+  const shareUrl = buildTeamCardUrl(member.slug, "share", "screen", baseUrl);
 
   // Lignes de contact : pictogramme + texte en beige sur bleu, sans cadre ; le texte est le lien.
   const rowClass =
@@ -203,6 +208,15 @@ export default async function TeamCardPage({ params }: PageProps) {
             {copy.saveContact}
           </a>
           <p className="mt-3 text-xs text-sand/65">{copy.saveContactHint}</p>
+          <div className="mt-4">
+            <ShareCardButton
+              url={shareUrl}
+              title={`${member.fullName} — ${SITE_NAME}`}
+              text={copy.shareText(member.fullName, title)}
+              label={copy.share}
+              copiedLabel={copy.shareCopied}
+            />
+          </div>
 
           {/* QR à faire scanner : même carte, provenance « écran » */}
           <div className="mx-auto mt-10 flex max-w-xs flex-col items-center gap-3">

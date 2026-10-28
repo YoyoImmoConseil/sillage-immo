@@ -7,6 +7,9 @@ export type TeamCardCopy = {
   email: string;
   saveContact: string;
   saveContactHint: string;
+  share: string;
+  shareCopied: string;
+  shareText: (name: string, title: string | null) => string;
   qrTitle: string;
   qrHint: string;
   reviews: string;
@@ -31,6 +34,10 @@ const base = {
     email: "E-mail",
     saveContact: "Enregistrer le contact",
     saveContactHint: "Ajoute ma fiche à vos contacts en un geste.",
+    share: "Partager ma carte",
+    shareCopied: "Lien copié",
+    shareText: (name: string, title: string | null) =>
+      `${name}${title ? `, ${title}` : ""} — Sillage Immo, agence immobilière à Nice. Mes coordonnées :`,
     qrTitle: "Faites scanner ce code",
     qrHint: "Il ouvre cette carte sur le téléphone de votre interlocuteur.",
     reviews: "Laisser un avis Google",
@@ -55,6 +62,10 @@ const base = {
     email: "Email",
     saveContact: "Save contact",
     saveContactHint: "Adds my card to your contacts in one tap.",
+    share: "Share my card",
+    shareCopied: "Link copied",
+    shareText: (name: string, title: string | null) =>
+      `${name}${title ? `, ${title}` : ""} — Sillage Immo, real estate agency in Nice. My contact details:`,
     qrTitle: "Let them scan this code",
     qrHint: "It opens this card on the other person's phone.",
     reviews: "Leave a Google review",
@@ -79,6 +90,10 @@ const base = {
     email: "E-mail",
     saveContact: "Guardar contacto",
     saveContactHint: "Añade mi ficha a tus contactos con un toque.",
+    share: "Compartir mi tarjeta",
+    shareCopied: "Enlace copiado",
+    shareText: (name: string, title: string | null) =>
+      `${name}${title ? `, ${title}` : ""} — Sillage Immo, agencia inmobiliaria en Niza. Mis datos de contacto:`,
     qrTitle: "Haga escanear este código",
     qrHint: "Abre esta tarjeta en el teléfono de su interlocutor.",
     reviews: "Dejar una reseña en Google",
@@ -103,6 +118,10 @@ const base = {
     email: "E-mail",
     saveContact: "Сохранить контакт",
     saveContactHint: "Добавьте мою визитку в контакты одним касанием.",
+    share: "Поделиться визиткой",
+    shareCopied: "Ссылка скопирована",
+    shareText: (name: string, title: string | null) =>
+      `${name}${title ? `, ${title}` : ""} — Sillage Immo, агентство недвижимости в Ницце. Мои контакты:`,
     qrTitle: "Дайте отсканировать этот код",
     qrHint: "Он открывает эту визитку на телефоне собеседника.",
     reviews: "Оставить отзыв в Google",

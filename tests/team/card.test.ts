@@ -57,6 +57,9 @@ describe("buildTeamCardUrl", () => {
     expect(buildTeamCardUrl("yoann", "qr", "screen")).toBe(
       "https://sillage-immo.com/equipe/yoann?utm_source=qr&utm_medium=screen&utm_campaign=carte-visite"
     );
+    expect(buildTeamCardUrl("yoann", "share", "screen", "https://preview.vercel.app/")).toBe(
+      "https://preview.vercel.app/equipe/yoann?utm_source=share&utm_medium=screen&utm_campaign=carte-visite"
+    );
   });
 });
 

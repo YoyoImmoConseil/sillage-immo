@@ -15,7 +15,7 @@ import { SITE_NAME, SITE_URL } from "@/lib/seo/site";
 export const TEAM_CARD_BASE_PATH = "/equipe";
 
 /** Provenances tracées dans l'URL (utm_source) selon le support utilisé. */
-export type TeamCardSource = "nfc" | "qr" | "namedrop" | "og" | "vcard";
+export type TeamCardSource = "nfc" | "qr" | "namedrop" | "og" | "vcard" | "share";
 
 /** « Jean-Édouard » → « jean-edouard ». Retourne null si rien d'exploitable. */
 export const slugifyFirstName = (value: string | null | undefined): string | null => {
@@ -69,13 +69,17 @@ export const buildTeamCardPath = (slug: string) => `${TEAM_CARD_BASE_PATH}/${slu
 /** Support : badge ou carte imprimée (card), QR montré à l'écran du téléphone (screen). */
 export type TeamCardMedium = "card" | "screen";
 
-/** URL absolue de la carte, avec provenance tracée (utm) pour GA4. */
+/**
+ * URL absolue de la carte, avec provenance tracée (utm) pour GA4. `baseUrl`
+ * permet de viser le domaine de preview pendant les tests (par défaut, le site).
+ */
 export const buildTeamCardUrl = (
   slug: string,
   source?: TeamCardSource,
-  medium: TeamCardMedium = "card"
+  medium: TeamCardMedium = "card",
+  baseUrl: string = SITE_URL
 ): string => {
-  const url = new URL(buildTeamCardPath(slug), `${SITE_URL}/`);
+  const url = new URL(buildTeamCardPath(slug), `${baseUrl.replace(/\/+$/, "")}/`);
   if (source) {
     url.searchParams.set("utm_source", source);
     url.searchParams.set("utm_medium", medium);

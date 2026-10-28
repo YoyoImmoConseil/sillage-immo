@@ -13,6 +13,7 @@ import {
   renderQrPng,
   toPngDataUri,
 } from "@/lib/team/card-assets";
+import { getTeamCardBaseUrl } from "@/services/team/team-card-base-url";
 import { getTeamCardMemberBySlug } from "@/services/team/team-card.service";
 
 export const runtime = "nodejs";
@@ -37,7 +38,7 @@ export async function GET(_request: Request, context: RouteContext) {
   const [fonts, logo, qr] = await Promise.all([
     loadCardFonts(),
     loadCardLogoDataUri(),
-    renderQrPng(buildTeamCardUrl(member.slug, "qr"), 760),
+    renderQrPng(buildTeamCardUrl(member.slug, "qr", "card", await getTeamCardBaseUrl()), 760),
   ]);
   const title = getAdminTeamTitleLabel(member.title, locale);
 

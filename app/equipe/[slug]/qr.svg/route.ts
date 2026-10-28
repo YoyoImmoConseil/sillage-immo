@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getRequestLocale } from "@/lib/i18n/request";
 import { buildTeamCardUrl } from "@/lib/team/card";
 import { renderQrSvg } from "@/lib/team/card-assets";
+import { getTeamCardBaseUrl } from "@/services/team/team-card-base-url";
 import { getTeamCardMemberBySlug } from "@/services/team/team-card.service";
 
 export const runtime = "nodejs";
@@ -15,7 +16,7 @@ export async function GET(_request: Request, context: RouteContext) {
   const member = await getTeamCardMemberBySlug(slug, await getRequestLocale());
   if (!member) return new NextResponse(null, { status: 404 });
 
-  const svg = await renderQrSvg(buildTeamCardUrl(member.slug, "qr"));
+  const svg = await renderQrSvg(buildTeamCardUrl(member.slug, "qr", "card", await getTeamCardBaseUrl()));
   return new NextResponse(svg, {
     status: 200,
     headers: {
