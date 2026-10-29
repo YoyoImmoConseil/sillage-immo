@@ -34,6 +34,8 @@ export type ReplaySignaturesInput = {
   dryRun?: boolean;
   /** Budget de temps (ms) : au-delà, on s'arrête proprement (`partial`). */
   timeBudgetMs?: number;
+  /** Nombre maximal de contrats à déposer par appel (rejeu par lots). */
+  maxContracts?: number;
 };
 
 export type ReplaySignaturesResult = {
@@ -49,6 +51,7 @@ export type ReplaySignaturesResult = {
   errors: number;
   partial: boolean;
   sample: string[];
+  timings: { listOperationsMs: number; queuedMs: number; loopMs: number };
 };
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -123,10 +126,19 @@ export const replaySignedContracts = async (
     errors: 0,
     partial: false,
     sample: [],
+    timings: { listOperationsMs: 0, queuedMs: 0, loopMs: 0 },
   };
+  const maxContracts = input.maxContracts ?? Number.POSITIVE_INFINITY;
+  let handled = 0;
 
-  const [operations, queued] = await Promise.all([listAllOperations(organizationId), listQueuedContractIds()]);
+  const t0 = Date.now();
+  const operations = await listAllOperations(organizationId);
+  result.timings.listOperationsMs = Date.now() - t0;
+  const t1 = Date.now();
+  const queued = await listQueuedContractIds();
+  result.timings.queuedMs = Date.now() - t1;
   result.operations = operations.length;
+  const loopStart = Date.now();
 
   for (const operation of operations) {
     const contracts = Array.isArray(operation.contracts) ? operation.contracts : [];
@@ -144,10 +156,12 @@ export const replaySignedContracts = async (
         result.alreadyQueued += 1;
         continue;
       }
-      if (Date.now() > deadline) {
+      if (Date.now() > deadline || handled >= maxContracts) {
         result.partial = true;
+        result.timings.loopMs = Date.now() - loopStart;
         return result;
       }
+      handled += 1;
 
       const rawContract = asRecord(contract);
       const signatureId =
@@ -214,5 +228,6 @@ export const replaySignedContracts = async (
       else result.errors += 1;
     }
   }
+  result.timings.loopMs = Date.now() - loopStart;
   return result;
 };

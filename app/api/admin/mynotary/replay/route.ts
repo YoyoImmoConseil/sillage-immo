@@ -9,7 +9,8 @@ export const maxDuration = 300;
 
 /**
  * Rejeu des signatures MyNotary dans la boîte de réception (rattrapage).
- * POST ?dryRun=1 pour compter sans écrire ; ?since=2026-06-01 pour borner.
+ * POST ?dryRun=1 pour compter sans écrire ; ?since=2026-06-01 pour borner ;
+ * ?max=25 pour déposer par lots (rappeler jusqu'à partial=false).
  * Lecture seule côté MyNotary ; la projection suit par le cron mynotary-events.
  */
 export const POST = async (request: Request) => {
@@ -20,8 +21,10 @@ export const POST = async (request: Request) => {
   const url = new URL(request.url);
   const dryRun = url.searchParams.get("dryRun") === "1";
   const since = url.searchParams.get("since");
+  const maxRaw = Number.parseInt(url.searchParams.get("max") ?? "", 10);
+  const maxContracts = Number.isFinite(maxRaw) && maxRaw > 0 ? maxRaw : undefined;
   try {
-    const result = await replaySignedContracts({ dryRun, since, timeBudgetMs: 270_000 });
+    const result = await replaySignedContracts({ dryRun, since, maxContracts, timeBudgetMs: 240_000 });
     return NextResponse.json({ ok: true, ...result });
   } catch (error) {
     return NextResponse.json(
