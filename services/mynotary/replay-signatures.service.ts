@@ -36,6 +36,8 @@ export type ReplaySignaturesInput = {
   timeBudgetMs?: number;
   /** Nombre maximal de contrats à déposer par appel (rejeu par lots). */
   maxContracts?: number;
+  /** Redépose aussi les contrats déjà rejoués (event_id suffixé par l'horodatage). */
+  force?: boolean;
 };
 
 export type ReplaySignaturesResult = {
@@ -84,7 +86,9 @@ const listQueuedContractIds = async (): Promise<Set<string>> => {
     .select("event_id")
     .like("event_id", `${EVENT_ID_PREFIX}%`);
   if (error) throw new Error(error.message);
-  return new Set((data ?? []).map((row) => String(row.event_id).slice(EVENT_ID_PREFIX.length)));
+  return new Set(
+    (data ?? []).map((row) => String(row.event_id).slice(EVENT_ID_PREFIX.length).split(":")[0])
+  );
 };
 
 export const replaySignedContracts = async (
@@ -136,7 +140,7 @@ export const replaySignedContracts = async (
       }
       result.signed += 1;
       const contractId = String(contract.id);
-      if (queued.has(contractId)) {
+      if (queued.has(contractId) && !input.force) {
         result.alreadyQueued += 1;
         continue;
       }
@@ -202,8 +206,12 @@ export const replaySignedContracts = async (
         signers,
         _replay: { source: "replay-signatures.service", at: new Date().toISOString(), operationLabel: operation.label ?? null },
       };
+      const eventId =
+        input.force && queued.has(contractId)
+          ? `${EVENT_ID_PREFIX}${contractId}:${Date.now()}`
+          : `${EVENT_ID_PREFIX}${contractId}`;
       const { error } = await supabaseAdmin.from("mynotary_events").insert({
-        event_id: `${EVENT_ID_PREFIX}${contractId}`,
+        event_id: eventId,
         event_type: "signature_completed",
         event_created_at: signatureTime,
         raw_payload: payload,

@@ -17,6 +17,8 @@ const setupSupabaseMock = () => {
     data: { id: "doc-1", matched_seller_project_id: null },
     error: null,
   };
+  // Ligne déjà en base pour ce contrat (lue avant l'upsert) ; null = inconnue.
+  const state: { existingRow: Record<string, unknown> | null } = { existingRow: null };
   const supabaseAdmin = {
     from(table: string) {
       const ops: StoredCall["ops"] = [];
@@ -40,6 +42,10 @@ const setupSupabaseMock = () => {
           }
           return finish({ data: null, error: null });
         },
+        maybeSingle: () => {
+          ops.push({ kind: "maybeSingle", args: [] });
+          return finish({ data: state.existingRow, error: null });
+        },
         upsert: chain("upsert"),
         update: chain("update"),
         eq: (col: string, value: unknown) => {
@@ -57,7 +63,7 @@ const setupSupabaseMock = () => {
       return builder;
     },
   };
-  return { supabaseAdmin, calls };
+  return { supabaseAdmin, calls, state };
 };
 
 const mockState = setupSupabaseMock();
@@ -87,6 +93,7 @@ vi.mock("@/services/mynotary/archive-signed-document.service", () => ({
 
 beforeEach(() => {
   mockState.calls.length = 0;
+  mockState.state.existingRow = null;
   emitDomainEventMock.mockReset();
   matchSignedDocumentMock.mockReset();
   archiveSignedDocumentMock.mockReset();
@@ -256,6 +263,54 @@ describe("processSignatureCompleted", () => {
     const upsertArgs = upsertCall!.ops.find((o) => o.kind === "upsert")!
       .args[0] as Record<string, unknown>;
     expect(upsertArgs.mynotary_register_type).toBe("MANAGEMENT");
+  });
+
+  it("keeps existing files, signers and raw_payload when a thin backfill payload arrives", async () => {
+    matchSignedDocumentMock.mockResolvedValue({
+      sellerProjectId: null,
+      propertyId: null,
+      confidence: 0,
+      method: "none",
+    });
+    mockState.state.existingRow = {
+      files: [{ name: "mandat.pdf", signedFileId: "file-42" }],
+      signers: [{ email: "alice@example.com", role: "seller" }],
+      raw_payload: { source: "webhook", payload: { contractData: { biens: [] } } },
+    };
+    const { processSignatureCompleted } = await import(
+      "@/services/mynotary/signature-completed.service"
+    );
+    await processSignatureCompleted({
+      payload: { ...baseMandatePayload, signers: [], files: [] },
+      source: "backfill",
+    });
+    const upsertCall = mockState.calls.find(
+      (c) => c.table === "mynotary_signed_documents" && c.ops.some((o) => o.kind === "upsert")
+    );
+    const upsertArgs = upsertCall!.ops.find((o) => o.kind === "upsert")!.args[0] as Record<string, unknown>;
+    expect(upsertArgs.files).toEqual([{ name: "mandat.pdf", signedFileId: "file-42" }]);
+    expect(upsertArgs.signers).toEqual([{ email: "alice@example.com", role: "seller" }]);
+    expect((upsertArgs.raw_payload as Record<string, unknown>).source).toBe("webhook");
+  });
+
+  it("lets a full payload (webhook or replay) replace files and signers", async () => {
+    matchSignedDocumentMock.mockResolvedValue({
+      sellerProjectId: null,
+      propertyId: null,
+      confidence: 0,
+      method: "none",
+    });
+    mockState.state.existingRow = { files: [], signers: [], raw_payload: { source: "backfill" } };
+    const { processSignatureCompleted } = await import(
+      "@/services/mynotary/signature-completed.service"
+    );
+    await processSignatureCompleted({ payload: baseMandatePayload, source: "webhook" });
+    const upsertCall = mockState.calls.find(
+      (c) => c.table === "mynotary_signed_documents" && c.ops.some((o) => o.kind === "upsert")
+    );
+    const upsertArgs = upsertCall!.ops.find((o) => o.kind === "upsert")!.args[0] as Record<string, unknown>;
+    expect((upsertArgs.files as Array<Record<string, unknown>>).map((f) => f.signedFileId)).toEqual(["file-42"]);
+    expect((upsertArgs.raw_payload as Record<string, unknown>).source).toBe("webhook");
   });
 
   it("invokes the archive service with the file ids only (never the signed URL)", async () => {

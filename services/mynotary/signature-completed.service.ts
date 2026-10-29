@@ -169,8 +169,34 @@ export const processSignatureCompleted = async (
   const mynotaryContractId = String(payload.contractId);
   const mynotaryOperationId = String(payload.operationId);
   const signedAt = resolveSignedAt(payload);
-  const signers = sanitizeSigners(payload.signers);
-  const files = sanitizeFiles(payload.files);
+  const incomingSigners = sanitizeSigners(payload.signers);
+  const incomingFiles = sanitizeFiles(payload.files);
+
+  // La synchro quotidienne (liste des opérations) ne porte ni signataires ni
+  // fichiers : un rejeu « mince » ne doit jamais effacer ce qu'un webhook ou
+  // un rejeu complet a déjà posé (incident du 28/10/2026 : 38 documents
+  // signés de juin à octobre vidés de leurs fichiers par le premier passage
+  // du cron). On conserve l'existant quand le payload entrant est vide, et le
+  // raw_payload d'origine (contractData du webhook) dans le même cas.
+  const { data: existingRow } = await supabaseAdmin
+    .from("mynotary_signed_documents")
+    .select("files, signers, raw_payload")
+    .eq("mynotary_contract_id", mynotaryContractId)
+    .maybeSingle();
+  const existingFiles = sanitizeFiles(
+    Array.isArray(existingRow?.files) ? (existingRow.files as Array<Partial<MyNotaryFile>>) : undefined
+  );
+  const existingSigners = sanitizeSigners(
+    Array.isArray(existingRow?.signers) ? (existingRow.signers as MyNotarySigner[]) : undefined
+  );
+  const files = incomingFiles.length > 0 ? incomingFiles : existingFiles;
+  const signers = incomingSigners.length > 0 ? incomingSigners : existingSigners;
+  const thinPayload = incomingFiles.length === 0 && incomingSigners.length === 0;
+  const keepExistingRawPayload =
+    thinPayload &&
+    existingRow?.raw_payload !== null &&
+    typeof existingRow?.raw_payload === "object" &&
+    (existingFiles.length > 0 || existingSigners.length > 0);
 
   const { data: upsertRow, error: upsertError } = await supabaseAdmin
     .from("mynotary_signed_documents")
@@ -192,7 +218,9 @@ export const processSignatureCompleted = async (
         seller_contacts: enrichment?.sellerContacts ?? [],
         property_price: enrichment?.price ?? null,
         living_area: enrichment?.livingArea ?? null,
-        raw_payload: {
+        raw_payload: keepExistingRawPayload
+          ? (existingRow?.raw_payload as Record<string, unknown>)
+          : {
           source,
           register_type: registerType ?? null,
           payload: payload as unknown as Record<string, unknown>,
