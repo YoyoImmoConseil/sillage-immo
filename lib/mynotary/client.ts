@@ -317,10 +317,13 @@ export const listOperations = async (
   }>({
     method: "GET",
     path: "/operations",
+    // Spec (external-filtered.yaml) : pagination par `offset` / `limit`
+    // (max 300). `page` / `pageSize` étaient ignorés côté serveur : la même
+    // première page revenait à chaque appel (vérifié le 29/10/2026).
     query: {
       organizationId: params.organizationId,
-      page: params.page ?? 0,
-      pageSize,
+      offset: (params.page ?? 0) * pageSize,
+      limit: pageSize,
     },
   });
   if (Array.isArray(data)) return data;

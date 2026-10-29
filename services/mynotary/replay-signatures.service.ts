@@ -1,6 +1,6 @@
 import "server-only";
 import { serverEnv } from "@/lib/env/server";
-import { getFileDownloadUrl, getSignature, listOperations } from "@/lib/mynotary/client";
+import { getSignature, listOperations } from "@/lib/mynotary/client";
 import { isContractSigned, type MyNotaryOperationListItem } from "@/lib/mynotary/types";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
@@ -58,22 +58,6 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const asRecord = (value: unknown): Record<string, unknown> =>
   value && typeof value === "object" ? (value as Record<string, unknown>) : {};
-
-/** Nom réel du fichier (Content-Disposition du lien de téléchargement) ; null si indisponible. */
-const readFileName = async (fileId: string): Promise<string | null> => {
-  try {
-    const url = await getFileDownloadUrl(fileId);
-    const response = await fetch(url, { headers: { Range: "bytes=0-0" }, redirect: "follow" });
-    const disposition = response.headers.get("content-disposition") ?? "";
-    await response.body?.cancel?.();
-    const star = disposition.match(/filename\*=(?:UTF-8'')?([^;]+)/i);
-    const plain = disposition.match(/filename="?([^";]+)"?/i);
-    const raw = star ? decodeURIComponent(star[1]) : plain ? plain[1] : null;
-    return raw ? raw.trim().replace(/\.pdf$/i, "") : null;
-  } catch {
-    return null;
-  }
-};
 
 const listAllOperations = async (organizationId: string): Promise<MyNotaryOperationListItem[]> => {
   const operations: MyNotaryOperationListItem[] = [];
@@ -172,13 +156,15 @@ export const replaySignedContracts = async (
         try {
           const signature = await getSignature(String(signatureId));
           const signatureFiles = signature?.files ?? [];
+          // GET /signatures/{id} porte le nom réel de chaque fichier (« Mandat de vente.pdf »).
           for (const [index, file] of signatureFiles.entries()) {
             if (!file?.signedFileId) continue;
             const fallback =
               signatureFiles.length > 1
                 ? `${contract.label ?? "document"} (${index + 1})`
                 : (contract.label ?? "document");
-            files.push({ signedFileId: file.signedFileId, name: (await readFileName(file.signedFileId)) ?? fallback });
+            const name = typeof file.name === "string" && file.name.trim() ? file.name.trim().replace(/\.pdf$/i, "") : fallback;
+            files.push({ signedFileId: file.signedFileId, name });
           }
           for (const signatory of signature?.signatories ?? []) {
             signers.push({
