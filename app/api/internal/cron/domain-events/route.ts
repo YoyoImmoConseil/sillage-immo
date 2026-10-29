@@ -1,31 +1,13 @@
 import { NextResponse } from "next/server";
-import { isAdminRequest } from "@/lib/admin/auth";
-import { serverEnv } from "@/lib/env/server";
+import { isInternalRequest } from "@/lib/admin/auth";
 import {
   getDomainEventQueueStats,
   processPendingDomainEvents,
 } from "@/services/events/domain-events-processor.service";
 
-const parseBearer = (request: Request) => {
-  const auth = request.headers.get("authorization");
-  if (!auth) return null;
-  const [scheme, token] = auth.split(" ");
-  if (!scheme || !token || scheme.toLowerCase() !== "bearer") return null;
-  return token.trim();
-};
-
-const isCronAuthorized = (request: Request) => {
-  const expected = serverEnv.DOMAIN_EVENTS_CRON_SECRET;
-  if (!expected) return false;
-  const headerSecret = request.headers.get("x-cron-secret");
-  if (headerSecret && headerSecret === expected) return true;
-  const bearer = parseBearer(request);
-  return Boolean(bearer && bearer === expected);
-};
-
-const isAuthorized = async (request: Request) => {
-  return (await isAdminRequest(request)) || isCronAuthorized(request);
-};
+// Même règle d'accès que les autres tâches planifiées : `isInternalRequest`
+// accepte le secret envoyé par Vercel (CRON_SECRET), le secret interne
+// (DOMAIN_EVENTS_CRON_SECRET) ou une session admin.
 
 const jsonError = (status: number, message: string) => {
   return NextResponse.json({ ok: false, message }, { status });
@@ -40,11 +22,8 @@ const parseLimitFromUrl = (request: Request) => {
 };
 
 export const GET = async (request: Request) => {
-  if (!(await isAuthorized(request))) {
+  if (!(await isInternalRequest(request))) {
     return jsonError(401, "Unauthorized.");
-  }
-  if (!serverEnv.DOMAIN_EVENTS_CRON_SECRET && !(await isAdminRequest(request))) {
-    return jsonError(500, "DOMAIN_EVENTS_CRON_SECRET is not configured.");
   }
 
   const limit = parseLimitFromUrl(request) ?? 25;

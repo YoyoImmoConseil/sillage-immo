@@ -407,6 +407,37 @@ export const getRegisterEntries = async (
 
 export type MyNotaryFileDownload = { downloadUrl: string };
 
+export type MyNotarySignatureDetails = {
+  id?: number | string;
+  status?: string;
+  files?: Array<{ signedFileId?: string; name?: string }>;
+  signatories?: Array<{
+    id?: number | string;
+    firstname?: string;
+    lastname?: string;
+    email?: string;
+    phone?: string;
+    type?: string;
+  }>;
+};
+
+// GET /signatures/{signatureId} — cérémonie de signature d'un contrat :
+// signataires et identifiants permanents des fichiers signés. Null quand la
+// cérémonie n'existe pas (signature papier ou importée) : 404 côté API.
+export const getSignature = async (
+  signatureId: string
+): Promise<MyNotarySignatureDetails | null> => {
+  try {
+    return await callMyNotary<MyNotarySignatureDetails>({
+      method: "GET",
+      path: `/signatures/${encodeURIComponent(signatureId)}`,
+    });
+  } catch (error) {
+    if ((error as MyNotaryRequestError | null)?.status === 404) return null;
+    throw error;
+  }
+};
+
 // GET /files/{fileId} — lien de téléchargement frais (valable 7 jours)
 // pour un identifiant de fichier (signedFileId d'un webhook, fileId d'un
 // drive-file, dernier segment des anciennes URLs `documents`). C'est la
