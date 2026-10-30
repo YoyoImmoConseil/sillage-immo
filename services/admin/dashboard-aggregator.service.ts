@@ -815,7 +815,9 @@ const periodCacheKey = (input?: DashboardPeriodInput): string => {
   const preset = input?.preset ?? "default";
   const since = input?.since ?? "auto";
   const until = input?.until ?? "now";
-  return `admin-dashboard-pilot-v2-${preset}-${since}-${until}`;
+  // v3 (30/10/2026) : purge d'un instantané figé en production (KPI à 0
+  // alors que la base contenait 5 offres et 3 mandats sur 30 jours).
+  return `admin-dashboard-pilot-v3-${preset}-${since}-${until}`;
 };
 
 export const getDashboardSnapshot = async (
