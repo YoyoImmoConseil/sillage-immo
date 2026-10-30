@@ -1,5 +1,5 @@
 import "server-only";
-import { unstable_cache } from "next/cache";
+import { cache } from "react";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 // Single aggregator for the IA-augmented admin dashboard.
@@ -10,10 +10,12 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 // from a single `select` query is colocated to keep the dashboard
 // snappy (target: < 800ms SSR).
 //
-// The whole snapshot is cached for 5 minutes via `unstable_cache`
-// behind the tag `admin-dashboard-pilot` — invalidate by calling
-// `revalidateTag("admin-dashboard-pilot")` from any service that
-// materially changes leads/mandates/visits.
+// Pas de cache de données pour l'instantané KPI (décision Yoann, 30/10/2026) :
+// un instantané `unstable_cache` est resté figé en production pendant des
+// semaines (offres à 0 alors que la base en comptait 5), et le calcul ne
+// prend qu'une seconde sur une page réservée à l'équipe. `cache()` de React
+// évite seulement de recalculer deux fois dans la même requête. Les
+// synthèses IA gardent leur propre cache (dashboard-syntheses.service).
 
 const PERIOD_DAYS = 30;
 const HEATMAP_PERIOD_DAYS = 90;
@@ -805,31 +807,10 @@ const computeDashboardSnapshot = async (
   };
 };
 
+/** Tag partagé avec les synthèses IA : `revalidateTag` depuis les jalons vendeur. */
 export const DASHBOARD_PILOT_CACHE_TAG = "admin-dashboard-pilot";
 
-// Build a deterministic cache key per period so the dashboard does
-// not serve cross-range snapshots. The tag stays shared so
-// `revalidateTag(DASHBOARD_PILOT_CACHE_TAG)` invalidates every period
-// at once when underlying data changes.
-const periodCacheKey = (input?: DashboardPeriodInput): string => {
-  const preset = input?.preset ?? "default";
-  const since = input?.since ?? "auto";
-  const until = input?.until ?? "now";
-  // v3 (30/10/2026) : purge d'un instantané figé en production (KPI à 0
-  // alors que la base contenait 5 offres et 3 mandats sur 30 jours).
-  return `admin-dashboard-pilot-v3-${preset}-${since}-${until}`;
-};
-
-export const getDashboardSnapshot = async (
-  input?: DashboardPeriodInput
-): Promise<DashboardSnapshot> => {
-  const cached = unstable_cache(
-    () => computeDashboardSnapshot(input),
-    [periodCacheKey(input)],
-    {
-      revalidate: 300,
-      tags: [DASHBOARD_PILOT_CACHE_TAG],
-    }
-  );
-  return cached();
-};
+/** Instantané calculé à chaque requête (dédupliqué par React dans la même requête). */
+export const getDashboardSnapshot = cache(
+  async (input?: DashboardPeriodInput): Promise<DashboardSnapshot> => computeDashboardSnapshot(input)
+);

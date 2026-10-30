@@ -162,8 +162,8 @@ async function PilotDashboardCore({
       <ConversationsInsights snapshot={snapshot.conversations} />
 
       <p className="text-xs text-navy/55">
-        Snapshot dashboard mis à jour toutes les 5 minutes (SSR cached) •
-        synthèses IA mises à jour toutes les heures • dernière génération{" "}
+        Chiffres calculés à chaque affichage • synthèses IA mises à jour toutes les
+        heures • dernière génération{" "}
         {new Date(snapshot.generatedAt).toLocaleString("fr-FR", {
           day: "2-digit",
           month: "short",
