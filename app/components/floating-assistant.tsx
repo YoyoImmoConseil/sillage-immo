@@ -27,8 +27,9 @@ export function FloatingAssistant() {
     withoutLocale.startsWith("/admin") ||
     withoutLocale.startsWith("/espace-client") ||
     withoutLocale.startsWith("/auth") ||
-    // Cartes de visite : page épurée, sans panneau flottant.
-    withoutLocale.startsWith("/equipe");
+    // Cartes de visite et pages de suivi des relances : épurées, sans panneau flottant.
+    withoutLocale.startsWith("/equipe") ||
+    withoutLocale.startsWith("/suivi");
 
   if (hidden) return null;
 

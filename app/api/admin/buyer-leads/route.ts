@@ -37,6 +37,9 @@ const payloadSchema = z.object({
   rgpdConsentCollected: z.literal(true),
   criteria: buyerSearchCriteriaSchema,
   coBuyers: z.array(coBuyerSchema).max(5).optional(),
+  // false : lead, profil client, projet et invitation créés sans e-mail
+  // d'activation (contacts déjà relancés par ailleurs, saisie en lot).
+  sendMagicLink: z.boolean().optional().default(true),
 });
 
 export const POST = async (request: Request) => {
@@ -145,34 +148,38 @@ export const POST = async (request: Request) => {
       }
     }
 
-    let emailSent = true;
+    let emailSent = input.sendMagicLink;
     let emailFailureCode: string | undefined;
-    try {
-      const sent = await sendClientPortalMagicLink({
-        email,
-        nextPath,
-        inviteToken: signup.invitationToken,
-        origin: requestUrl.origin,
-      });
-      if (!sent.ok) {
+    if (input.sendMagicLink) {
+      try {
+        const sent = await sendClientPortalMagicLink({
+          email,
+          nextPath,
+          inviteToken: signup.invitationToken,
+          origin: requestUrl.origin,
+        });
+        if (!sent.ok) {
+          emailSent = false;
+          emailFailureCode = sent.code;
+        }
+      } catch (error) {
         emailSent = false;
-        emailFailureCode = sent.code;
+        console.error(
+          "[admin/buyer-leads] invitation email failed:",
+          error instanceof Error ? error.message : error
+        );
       }
-    } catch (error) {
-      emailSent = false;
-      console.error(
-        "[admin/buyer-leads] invitation email failed:",
-        error instanceof Error ? error.message : error
-      );
     }
 
     return NextResponse.json(
       {
         ok: true,
-        code: emailSent ? "created" : "created_email_failed",
-        message: emailSent
-          ? "Acquereur cree et invitation envoyee."
-          : "Acquereur cree mais l'envoi de l'invitation a echoue. Vous pouvez renvoyer un lien depuis la fiche.",
+        code: !input.sendMagicLink ? "created_without_email" : emailSent ? "created" : "created_email_failed",
+        message: !input.sendMagicLink
+          ? "Acquereur cree sans envoi d'invitation."
+          : emailSent
+            ? "Acquereur cree et invitation envoyee."
+            : "Acquereur cree mais l'envoi de l'invitation a echoue. Vous pouvez renvoyer un lien depuis la fiche.",
         data: {
           buyerLeadId: signup.buyerLeadId,
           clientProjectId: signup.clientProjectId,

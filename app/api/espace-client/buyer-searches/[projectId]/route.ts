@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { toCanonicalBuyerPropertyTypes } from "@/lib/buyers/property-type-normalizer";
 import { getClientSpacePageContext } from "@/lib/client-space/auth";
 import {
   archiveBuyerSearch,
@@ -10,7 +11,11 @@ const patchSchema = z.object({
   businessType: z.enum(["sale", "rental"]).optional(),
   locationText: z.string().max(500).nullable().optional(),
   cities: z.array(z.string().min(1)).max(20).optional(),
-  propertyTypes: z.array(z.string().min(1)).max(20).optional(),
+  propertyTypes: z
+    .array(z.string().min(1))
+    .max(20)
+    .optional()
+    .transform((value) => (value === undefined ? undefined : toCanonicalBuyerPropertyTypes(value))),
   budgetMin: z.number().int().nonnegative().nullable().optional(),
   budgetMax: z.number().int().nonnegative().nullable().optional(),
   roomsMin: z.number().int().min(0).max(50).nullable().optional(),

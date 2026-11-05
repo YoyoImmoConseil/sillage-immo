@@ -1,5 +1,6 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { toCanonicalBuyerPropertyTypes } from "@/lib/buyers/property-type-normalizer";
 import type { Database } from "@/types/db/supabase";
 import {
   ensureContactIdentity,
@@ -403,7 +404,7 @@ export const updateBuyerLeadForAdmin = async (input: {
 }) => {
   const now = new Date().toISOString();
   const cities = normalizeStringArray(input.cities);
-  const propertyTypes = normalizeStringArray(input.propertyTypes);
+  const propertyTypes = toCanonicalBuyerPropertyTypes(normalizeStringArray(input.propertyTypes));
 
   const { error: leadError } = await supabaseAdmin
     .from("buyer_leads")
