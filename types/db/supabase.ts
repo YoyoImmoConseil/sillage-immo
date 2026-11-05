@@ -2946,6 +2946,45 @@ export type Database = {
           }
         ];
       };
+      // Journal d'activité générique (table créée hors migrations du dépôt,
+      // relevée en base le 05/11/2026 : id, created_at, actor_user_id,
+      // event_type, source, entity_type, entity_id, external_id, payload).
+      activity_events: {
+        Row: {
+          id: string;
+          created_at: string;
+          actor_user_id: string | null;
+          event_type: string;
+          source: string;
+          entity_type: string | null;
+          entity_id: string | null;
+          external_id: string | null;
+          payload: Record<string, unknown>;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          actor_user_id?: string | null;
+          event_type: string;
+          source: string;
+          entity_type?: string | null;
+          entity_id?: string | null;
+          external_id?: string | null;
+          payload: Record<string, unknown>;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          actor_user_id?: string | null;
+          event_type?: string;
+          source?: string;
+          entity_type?: string | null;
+          entity_id?: string | null;
+          external_id?: string | null;
+          payload?: Record<string, unknown>;
+        };
+        Relationships: [];
+      };
       app_settings: {
         Row: {
           key: string;

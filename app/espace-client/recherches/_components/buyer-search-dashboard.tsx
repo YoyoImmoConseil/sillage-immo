@@ -24,6 +24,8 @@ type Props = {
   projectId: string;
   status: string;
   archived: boolean;
+  /** Ouvre le formulaire des critères dès l'arrivée (lien « mes critères ont changé »). */
+  initialEditing?: boolean;
   criteriaSummary: CriteriaRow[];
   searchProfile: BuyerSearchProfileSnapshot;
   matches: BuyerSearchMatchListItem[];
@@ -44,7 +46,7 @@ const unmapTriState = (value: "any" | "yes" | "no"): boolean | null => {
 
 export function BuyerSearchDashboard(props: Props) {
   const router = useRouter();
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(props.initialEditing === true);
   const [isPending, setIsPending] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const hasMarkedRef = useRef(false);

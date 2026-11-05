@@ -12,12 +12,17 @@ import { PresentedPropertiesClient } from "../_components/presented-properties-c
 
 type SavedBuyerSearchPageProps = {
   params: Promise<{ projectId: string }>;
+  /** `?edit=1` ouvre directement le formulaire des critères (bouton « mes critères ont changé » des relances). */
+  searchParams?: Promise<{ edit?: string | string[] }>;
 };
 
 export default async function SavedBuyerSearchPage(props: SavedBuyerSearchPageProps) {
   const locale = await getRequestLocale();
   const context = await requireClientSpacePageContext();
   const { projectId } = await props.params;
+  const query = (await props.searchParams) ?? {};
+  const editParam = Array.isArray(query.edit) ? query.edit[0] : query.edit;
+  const startEditing = editParam === "1";
   const detail = await getClientBuyerSearchDetail({
     clientProfileId: context.clientProfile.id,
     clientProjectId: projectId,
@@ -357,6 +362,7 @@ export default async function SavedBuyerSearchPage(props: SavedBuyerSearchPagePr
         projectId={detail.clientProjectId}
         status={detail.searchProfile.status}
         archived={archivedOrClosed}
+        initialEditing={startEditing && !archivedOrClosed}
         criteriaSummary={criteriaSummary}
         searchProfile={detail.searchProfile}
         matches={detail.matches}
