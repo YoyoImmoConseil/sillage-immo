@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { normalizeBuyerPropertyTypes } from "@/lib/buyers/property-type-normalizer";
 import type { BuyerSignupCriteriaInput } from "@/services/buyers/buyer-signup.service";
 
 /**
@@ -49,21 +50,26 @@ export type BuyerSearchCriteriaPayload = z.infer<typeof buyerSearchCriteriaSchem
  */
 export const toBuyerSignupCriteria = (
   criteria: BuyerSearchCriteriaPayload
-): BuyerSignupCriteriaInput => ({
-  businessType: criteria.businessType,
-  cities: criteria.cities,
-  propertyTypes: criteria.propertyTypes,
-  locationText: criteria.locationText ?? null,
-  budgetMin: criteria.budgetMin ?? null,
-  budgetMax: criteria.budgetMax ?? null,
-  roomsMin: criteria.roomsMin ?? null,
-  roomsMax: criteria.roomsMax ?? null,
-  bedroomsMin: criteria.bedroomsMin ?? null,
-  livingAreaMin: criteria.livingAreaMin ?? null,
-  livingAreaMax: criteria.livingAreaMax ?? null,
-  floorMin: criteria.floorMin ?? null,
-  floorMax: criteria.floorMax ?? null,
-  requiresTerrace: criteria.requiresTerrace ?? null,
-  requiresElevator: criteria.requiresElevator ?? null,
-  zonePolygon: criteria.zonePolygon ?? null,
-});
+): BuyerSignupCriteriaInput => {
+  // Types de biens ramenés au vocabulaire canonique (formulaire, admin,
+  // Zapier) ; un libellé « T3 » renseigne les pièces si elles manquent.
+  const normalized = normalizeBuyerPropertyTypes(criteria.propertyTypes);
+  return {
+    businessType: criteria.businessType,
+    cities: criteria.cities,
+    propertyTypes: normalized.propertyTypes,
+    locationText: criteria.locationText ?? null,
+    budgetMin: criteria.budgetMin ?? null,
+    budgetMax: criteria.budgetMax ?? null,
+    roomsMin: criteria.roomsMin ?? normalized.roomsHint ?? null,
+    roomsMax: criteria.roomsMax ?? null,
+    bedroomsMin: criteria.bedroomsMin ?? null,
+    livingAreaMin: criteria.livingAreaMin ?? null,
+    livingAreaMax: criteria.livingAreaMax ?? null,
+    floorMin: criteria.floorMin ?? null,
+    floorMax: criteria.floorMax ?? null,
+    requiresTerrace: criteria.requiresTerrace ?? null,
+    requiresElevator: criteria.requiresElevator ?? null,
+    zonePolygon: criteria.zonePolygon ?? null,
+  };
+};
