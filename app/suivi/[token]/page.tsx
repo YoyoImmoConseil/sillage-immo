@@ -4,6 +4,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { isClosingResponse, isFollowupResponse, type FollowupClosingResponse } from "@/lib/buyers/followup-token";
+import { isReactivationCampaign } from "@/lib/reactivation/model";
 import {
   buildFollowupPortalLink,
   getFollowupLead,
@@ -12,6 +13,7 @@ import {
 } from "@/services/buyers/buyer-followup.service";
 import { FOLLOWUP_CONFIRM_SCREENS, FOLLOWUP_INVALID_SCREEN, FOLLOWUP_SCREENS, personalize } from "./copy";
 import { FollowupScreenView } from "./followup-screen";
+import { OwnerFollowupPage } from "./owner-page";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +24,7 @@ export const metadata: Metadata = {
 
 type PageProps = {
   params: Promise<{ token: string }>;
-  searchParams: Promise<{ r?: string | string[]; done?: string | string[] }>;
+  searchParams: Promise<{ r?: string | string[]; done?: string | string[]; choose?: string | string[] }>;
 };
 
 const first = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value);
@@ -36,6 +38,8 @@ const first = (value: string | string[] | undefined) => (Array.isArray(value) ? 
  * - conclu / abandon : écran de confirmation d'abord (un robot d'analyse de
  *   liens ne doit pas clore un projet), enregistrement au clic via
  *   /suivi/<jeton>/confirm, puis retour ici avec `done=1`.
+ * - campagne `reac-*` : branche propriétaires (owner-page.tsx), mêmes
+ *   principes avec les réponses vendre / valeur / vendu / garde / stop.
  */
 export default async function FollowupPage({ params, searchParams }: PageProps) {
   const { token } = await params;
@@ -44,7 +48,22 @@ export default async function FollowupPage({ params, searchParams }: PageProps) 
   const done = first(query.done) === "1";
 
   const payload = verifyFollowupToken(token);
-  if (!payload || !isFollowupResponse(response)) {
+  if (!payload) return renderInvalid();
+
+  // Campagnes `reac-*` : contact de réactivation SweepBright (propriétaires), pas un lead acquéreur.
+  if (isReactivationCampaign(payload.campaign)) {
+    const requestHeaders = await headers();
+    return OwnerFollowupPage({
+      token,
+      payload,
+      response,
+      done,
+      choose: first(query.choose) === "1",
+      userAgent: requestHeaders.get("user-agent"),
+    });
+  }
+
+  if (!isFollowupResponse(response)) {
     return renderInvalid();
   }
   const lead = await getFollowupLead(payload.leadId);

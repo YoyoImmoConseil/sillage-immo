@@ -28,7 +28,8 @@ import { createClientPortalAccessLink } from "@/services/clients/client-portal-m
 const ACTIVITY_SOURCE = "email_followup";
 const ACTIVITY_EVENT_TYPE = "buyer_followup_response";
 
-const getFollowupSecret = () => {
+/** Secret HMAC des jetons /suivi (partagé avec la réactivation SweepBright). */
+export const getFollowupSecret = () => {
   const secret = process.env.BUYER_ALERT_HMAC_SECRET?.trim();
   if (secret) return secret;
   if (process.env.NODE_ENV === "production") {
