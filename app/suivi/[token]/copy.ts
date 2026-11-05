@@ -22,7 +22,7 @@ export const FOLLOWUP_SCREENS: Record<FollowupResponse, FollowupScreen> = {
   visio: {
     eyebrow: EYEBROW,
     title: "Merci {firstName}, nous vous proposons un créneau très vite.",
-    body: "Votre demande de point en visio est bien enregistrée : Yoann vous recontacte sous 24 h ouvrées pour fixer un moment qui vous convient. Votre projet reste actif et vos alertes continuent.",
+    body: "Votre demande de point en visio est bien enregistrée : votre conseiller Sillage vous recontacte sous 24 h ouvrées pour fixer un moment qui vous convient. Votre projet reste actif et vos alertes continuent.",
     primary: { label: "Appeler l'agence", href: "tel:+33423450485", track: "followup_visio_call" },
     secondary: { label: "Ouvrir mon espace Sillage", href: "/espace-client/login" },
   },
