@@ -14,6 +14,7 @@ import {
 import { SITE_URL } from "@/lib/seo/site";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { getFollowupSecret } from "@/services/buyers/buyer-followup.service";
+import { sendSweepBrightOwnerLead } from "@/services/properties/sweepbright-leads.service";
 import { createSellerLead } from "@/services/sellers/seller-lead.service";
 import type { Database } from "@/types/db/supabase";
 
@@ -24,9 +25,12 @@ import type { Database } from "@/types/db/supabase";
  * Un clic : fiche mise à jour (statut, réponse, historique, séquence
  * arrêtée), journal activity_events, et pour « je vends » / « sa valeur » :
  * promotion en lead vendeur (source reactivation_sweepbright), notification
- * immédiate à l'agence. Un webhook sortant optionnel
- * (REACTIVATION_WEBHOOK_URL, sinon BUYER_FOLLOWUP_WEBHOOK_URL) répercute la
- * réponse vers SweepBright via Zapier (label + note).
+ * immédiate à l'agence, et note horodatée écrite dans SweepBright par
+ * l'API Website (POST /contacts/owners : met à jour le propriétaire trouvé
+ * par id et ajoute la réponse en interaction ; cette API n'écrit pas de
+ * label, qui reste posé à la main ou par Zapier). Un webhook sortant
+ * optionnel (REACTIVATION_WEBHOOK_URL, sinon BUYER_FOLLOWUP_WEBHOOK_URL)
+ * répercute aussi la réponse, pour le label.
  */
 
 export type ReactivationContactRow = Database["public"]["Tables"]["reactivation_contacts"]["Row"];
@@ -180,6 +184,7 @@ export const recordOwnerResponse = async (input: {
   let notified = false;
   if (OWNER_HOT_RESPONSES.has(input.response) || input.response === "vendu_cherche") {
     notified = await notifyAgency(contact, input.response, sellerLeadId);
+    await writeSweepBrightNote(contact, input.response, nowIso);
   }
 
   await pushWebhook({ contact, response: input.response, newStatus, sellerLeadId, at: nowIso });
@@ -265,6 +270,34 @@ const notifyAgency = async (contact: ReactivationContactRow, response: OwnerResp
   } catch (error) {
     console.error("[reactivation] notification failed:", error instanceof Error ? error.message : error);
     return false;
+  }
+};
+
+/**
+ * Note dans SweepBright pour les réponses chaudes : l'API Website met à jour
+ * le propriétaire (retrouvé par son id SweepBright) et consigne le message en
+ * interaction, ce qui le fait remonter aux négociateurs. Réservé aux réponses
+ * chaudes : sur « je le garde » ou « vendu », cela créerait du bruit
+ * (label NOUVEAU, notification). Jamais bloquant.
+ */
+const writeSweepBrightNote = async (contact: ReactivationContactRow, response: OwnerResponse, atIso: string) => {
+  if (process.env.REACTIVATION_SWEEPBRIGHT_NOTE === "off") return;
+  const firstName = contact.first_name?.trim() || contact.full_name?.trim().split(/\s+/)[0] || "Contact";
+  const lastName = contact.last_name?.trim() || contact.full_name?.trim().split(/\s+/).slice(1).join(" ") || "Sillage";
+  const phone = contact.phone?.trim();
+  if (!phone) return; // l'API exige un téléphone ; sans lui, le webhook et la notification suffisent
+  const when = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", dateStyle: "short", timeStyle: "short" }).format(new Date(atIso));
+  try {
+    await sendSweepBrightOwnerLead({
+      id: contact.sweepbright_contact_id,
+      firstName,
+      lastName,
+      email: contact.email,
+      phone,
+      message: `Réactivation Sillage (${contact.campaign}) — ${when} : a cliqué « ${OWNER_RESPONSE_LABELS[response]} ». À rappeler dans la journée.`,
+    });
+  } catch (error) {
+    console.error("[reactivation] SweepBright note failed:", error instanceof Error ? error.message : error);
   }
 };
 
