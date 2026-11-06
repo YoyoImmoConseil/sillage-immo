@@ -88,11 +88,11 @@ export function ReactivationTools({
     setStatus({ kind: "busy", message: "Synchronisation MyNotary…" });
     try {
       const response = await fetch("/api/admin/reactivation/protect-sync", { method: "POST" });
-      const json = (await response.json()) as { ok: boolean; message?: string; data?: { operations: number; signedContracts: number; people: number } };
+      const json = (await response.json()) as { ok: boolean; message?: string; data?: { operations: number; signedContracts: number; fromSignatories: number; fromRecords: number; fromWebhooks: number } };
       if (!json.ok || !json.data) throw new Error(json.message ?? "Synchronisation refusée.");
       setStatus({
         kind: "done",
-        message: `MyNotary : ${json.data.operations} dossiers lus, ${json.data.signedContracts} mandats / compromis signés, ${json.data.people} lignes protégées.`,
+        message: `MyNotary : ${json.data.operations} dossiers lus, ${json.data.signedContracts} mandats / compromis signés — ${json.data.fromSignatories} signataires, ${json.data.fromRecords} fiches, ${json.data.fromWebhooks} signataires reçus par webhook.`,
       });
       router.refresh();
     } catch (error) {

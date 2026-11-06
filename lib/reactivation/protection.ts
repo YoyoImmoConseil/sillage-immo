@@ -68,3 +68,27 @@ export const isContactProtected = (
 /** Borne basse de la fenêtre glissante. */
 export const protectionWindowStart = (now: Date, days = PROTECTION_WINDOW_DAYS): Date =>
   new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+
+export const asString = (value: unknown): string | null => (typeof value === "string" && value.trim() ? value.trim() : null);
+
+/** Date de signature d'un contrat : signature, sinon validation, sinon création. */
+export const contractSignedAt = (contract: { signatureTime?: string | null; validatedTime?: string | null; creationTime?: string | null }) => {
+  const raw = contract.signatureTime ?? contract.validatedTime ?? contract.creationTime ?? null;
+  if (!raw) return null;
+  const date = new Date(raw);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+};
+
+/** Identité lisible d'une fiche MyNotary, personne physique ou morale (représentant). */
+export const identityFromRecordQuestions = (questions: Record<string, unknown>) => {
+  const lastName =
+    asString(questions.nom) ??
+    asString(questions.nom_usage) ??
+    asString(questions.representant_nom) ??
+    asString(questions.personne_morale_denomination) ??
+    asString(questions.denomination);
+  const firstName = asString(questions.prenoms) ?? asString(questions.prenom) ?? asString(questions.representant_prenom);
+  const email = normalizeProtectedEmail(asString(questions.email) ?? asString(questions.representant_email) ?? asString(questions.personne_morale_email));
+  return { lastName, firstName, email, name: normalizeProtectedName(lastName, firstName) };
+};
+

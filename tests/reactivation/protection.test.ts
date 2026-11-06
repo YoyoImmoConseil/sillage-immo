@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   PROTECTED_ROLES,
+  contractSignedAt,
+  identityFromRecordQuestions,
   isContactProtected,
   isProtectingContractModel,
   normalizeProtectedEmail,
@@ -58,5 +60,26 @@ describe("protection MyNotary — règle permanente des 12 mois", () => {
   it("fenêtre glissante de 365 jours à partir de la date de signature", () => {
     const now = new Date("2026-11-06T09:00:00Z");
     expect(protectionWindowStart(now).toISOString()).toBe("2025-11-06T09:00:00.000Z");
+  });
+});
+
+describe("protection MyNotary — date et personnes morales", () => {
+  it("retient la date de signature, sinon la validation, sinon la création", () => {
+    expect(contractSignedAt({ creationTime: "2026-07-31T10:00:00Z", validatedTime: "2026-10-25T10:00:00Z", signatureTime: "2026-10-26T09:00:00Z" })).toBe(
+      "2026-10-26T09:00:00.000Z"
+    );
+    expect(contractSignedAt({ creationTime: "2026-07-31T10:00:00Z", validatedTime: "2026-10-25T10:00:00Z" })).toBe("2026-10-25T10:00:00.000Z");
+    expect(contractSignedAt({ creationTime: "2026-07-31T10:00:00Z" })).toBe("2026-07-31T10:00:00.000Z");
+    expect(contractSignedAt({})).toBeNull();
+  });
+
+  it("lit une personne morale par son représentant, et une personne physique par nom / prénoms / e-mail", () => {
+    expect(
+      identityFromRecordQuestions({ personne_morale_denomination: "SCI NONO", representant_nom: "Oran", representant_prenom: "Nathalie marie-claude" })
+    ).toMatchObject({ lastName: "Oran", firstName: "Nathalie marie-claude", email: null, name: "oran|nathalie" });
+    expect(identityFromRecordQuestions({ nom: "BETTINI", prenoms: "Stephane jean claude", email: "BettiniStephane@gmail.com" })).toMatchObject({
+      email: "bettinistephane@gmail.com",
+      name: "bettini|stephane",
+    });
   });
 });
