@@ -98,6 +98,12 @@ export const runReactivationSendBatch = async (input: {
   dryRunTo?: string | null;
   /** Test seulement : force l'expéditeur (yoann / jordan / laura) pour relire chaque version signée. */
   dryRunSender?: SenderKey | null;
+  /**
+   * Ordre des J0 : `oldest` (défaut, fiches SweepBright les plus anciennes
+   * d'abord) ou `newest` (les plus récentes d'abord — premiers lots, pour
+   * construire la réputation d'envoi sur des adresses vivantes).
+   */
+  order?: "oldest" | "newest";
 }): Promise<SendSummary> => {
   const campaign = input.campaign ?? DEFAULT_REACTIVATION_CAMPAIGN;
   const limit = input.limit ?? resolveDailyLimitWithRamp(await countSentSoFar(campaign));
@@ -142,7 +148,7 @@ export const runReactivationSendBatch = async (input: {
     .eq("campaign", campaign)
     .in("segment", [...OWNER_SEGMENTS])
     .eq("status", "pending")
-    .order("sweepbright_created_at", { ascending: true, nullsFirst: false })
+    .order("sweepbright_created_at", { ascending: input.order !== "newest", nullsFirst: false })
     .limit(fetchSize);
   if (pendingError) throw new Error(pendingError.message);
 

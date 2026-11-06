@@ -29,6 +29,7 @@ export function ReactivationTools({
   const [testCount, setTestCount] = useState(3);
   const [testSender, setTestSender] = useState<"" | "yoann" | "jordan" | "laura">("");
   const [batchLimit, setBatchLimit] = useState(defaultLimit);
+  const [order, setOrder] = useState<"oldest" | "newest">("oldest");
 
   const importFile = async () => {
     if (!file) return;
@@ -64,7 +65,7 @@ export function ReactivationTools({
       const response = await fetch("/api/admin/reactivation/send", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ limit, dryRunTo, dryRunSender: dryRunTo && testSender ? testSender : null }),
+        body: JSON.stringify({ limit, dryRunTo, dryRunSender: dryRunTo && testSender ? testSender : null, order }),
       });
       const json = (await response.json()) as {
         ok: boolean;
@@ -157,13 +158,20 @@ export function ReactivationTools({
         <p className="text-sm opacity-70">
           Le cron envoie {defaultLimit} mails par jour ouvré à 9 h. Ce bouton envoie un lot tout de suite, aux vrais contacts.
         </p>
-        <input type="number" min={1} max={500} className={`${inputClass} w-24`} value={batchLimit} onChange={(event) => setBatchLimit(Number(event.target.value) || 1)} />
+        <div className="flex flex-wrap gap-2">
+          <input type="number" min={1} max={500} className={`${inputClass} w-24`} value={batchLimit} onChange={(event) => setBatchLimit(Number(event.target.value) || 1)} />
+          <select className={inputClass} value={order} onChange={(event) => setOrder(event.target.value === "newest" ? "newest" : "oldest")}>
+            <option value="oldest">Fiches les plus anciennes d&apos;abord (cron)</option>
+            <option value="newest">Fiches les plus récentes d&apos;abord</option>
+          </select>
+        </div>
         <button
           type="button"
           className={buttonClass}
           disabled={busy}
           onClick={() => {
-            if (window.confirm(`Envoyer jusqu'à ${batchLimit} mails aux contacts de la campagne ${campaign} ?`)) void send(null, batchLimit);
+            if (window.confirm(`Envoyer jusqu'à ${batchLimit} mails aux contacts de la campagne ${campaign} (${order === "newest" ? "fiches les plus récentes" : "fiches les plus anciennes"} d'abord) ?`))
+              void send(null, batchLimit);
           }}
         >
           Envoyer aux contacts
