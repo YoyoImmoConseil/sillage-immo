@@ -64,14 +64,22 @@ export const resolveDailyLimitWithRamp = (totalSentSoFar: number) =>
 
 /** Total des mails déjà partis sur la campagne (toutes étapes), pour la montée en cadence. */
 export const countSentSoFar = async (campaign: string): Promise<number> => {
-  const { data, error } = await supabaseAdmin
-    .from("reactivation_contacts")
-    .select("sent_count")
-    .eq("campaign", campaign)
-    .gt("sent_count", 0)
-    .limit(20000);
-  if (error) throw new Error(error.message);
-  return (data ?? []).reduce((sum, row) => sum + (row.sent_count ?? 0), 0);
+  // Lecture par pages : PostgREST plafonne chaque réponse à 1 000 lignes.
+  const PAGE = 1000;
+  let total = 0;
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabaseAdmin
+      .from("reactivation_contacts")
+      .select("sent_count")
+      .eq("campaign", campaign)
+      .gt("sent_count", 0)
+      .order("id", { ascending: true })
+      .range(from, from + PAGE - 1);
+    if (error) throw new Error(error.message);
+    total += (data ?? []).reduce((sum, row) => sum + (row.sent_count ?? 0), 0);
+    if (!data || data.length < PAGE) break;
+  }
+  return total;
 };
 
 export const runReactivationSendBatch = async (input: {
@@ -231,13 +239,25 @@ export type ReactivationStats = {
 
 /** Chiffres de la page admin « Réactivation ». */
 export const getReactivationStats = async (campaign = DEFAULT_REACTIVATION_CAMPAIGN): Promise<ReactivationStats> => {
-  const { data, error } = await supabaseAdmin
-    .from("reactivation_contacts")
-    .select("id, full_name, email, phone, segment, status, sequence_step, subject_variant, response, responded_at, seller_lead_id, negotiator")
-    .eq("campaign", campaign)
-    .limit(20000);
-  if (error) throw new Error(error.message);
-  const rows = data ?? [];
+  // PostgREST plafonne chaque réponse à 1 000 lignes quel que soit `limit` :
+  // on lit par pages jusqu'à épuisement.
+  const PAGE = 1000;
+  type StatsRow = Pick<
+    ReactivationContactRow,
+    "id" | "full_name" | "email" | "phone" | "segment" | "status" | "sequence_step" | "subject_variant" | "response" | "responded_at" | "seller_lead_id" | "negotiator"
+  >;
+  const rows: StatsRow[] = [];
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabaseAdmin
+      .from("reactivation_contacts")
+      .select("id, full_name, email, phone, segment, status, sequence_step, subject_variant, response, responded_at, seller_lead_id, negotiator")
+      .eq("campaign", campaign)
+      .order("id", { ascending: true })
+      .range(from, from + PAGE - 1);
+    if (error) throw new Error(error.message);
+    rows.push(...((data ?? []) as StatsRow[]));
+    if (!data || data.length < PAGE) break;
+  }
   const count = (key: (row: (typeof rows)[number]) => string | null | undefined) => {
     const out: Record<string, number> = {};
     for (const row of rows) {
