@@ -23,6 +23,7 @@ const NAV_ITEMS = [
   { href: "/admin/transactions", label: "Transactions", permission: "operations.view" as AdminPermission },
   { href: "/admin/reconciliation", label: "Réconciliation", permission: "clients.view" as AdminPermission },
   { href: "/admin/sweepbright-sync", label: "Sync SweepBright", permission: "operations.view" as AdminPermission },
+  { href: "/admin/reactivation", label: "Réactivation", permission: "leads.sellers.view" as AdminPermission },
   { href: "/admin/mcp-keys", label: "Clés MCP", permission: "admin.users.manage" as AdminPermission },
 ];
 
