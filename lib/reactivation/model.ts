@@ -20,7 +20,7 @@ export const isReactivationSegment = (value: unknown): value is ReactivationSegm
   typeof value === "string" && (REACTIVATION_SEGMENTS as readonly string[]).includes(value);
 
 /** Réponses possibles d'un propriétaire (boutons du mail et de la page de confirmation). */
-export const OWNER_RESPONSES = ["vendre", "valeur", "vendu", "vendu_cherche", "garde", "stop", "rappel", "cherche"] as const;
+export const OWNER_RESPONSES = ["vendre", "valeur", "vendu", "vendu_cherche", "garde", "stop", "rappel", "visio", "cherche"] as const;
 export type OwnerResponse = (typeof OWNER_RESPONSES)[number];
 
 export const isOwnerResponse = (value: unknown): value is OwnerResponse =>
@@ -34,11 +34,17 @@ export const OWNER_HOT_RESPONSES: ReadonlySet<OwnerResponse> = new Set(["vendre"
 
 /**
  * Réponses secondaires, posées sur l'écran de confirmation : elles complètent
- * la réponse principale sans la remplacer. `rappel` = préfère être rappelé
- * plutôt que réserver ; `cherche` = cherche aussi à acheter (vente-rachat,
- * ou propriétaire qui garde mais cherche un autre bien).
+ * la réponse principale sans la remplacer. `rappel` = demande à être
+ * rappelé(e) par téléphone ; `visio` = part réserver une visio sur le planning
+ * du négociateur (Google Calendar ne sait proposer qu'un type de rendez-vous
+ * par planning, le choix appel / visio se fait donc ici) ; `cherche` = cherche
+ * aussi à acheter (vente-rachat, ou propriétaire qui garde mais cherche un
+ * autre bien).
  */
-export const OWNER_SECONDARY_RESPONSES: ReadonlySet<OwnerResponse> = new Set(["rappel", "cherche"]);
+export const OWNER_SECONDARY_RESPONSES: ReadonlySet<OwnerResponse> = new Set(["rappel", "visio", "cherche"]);
+
+/** Réponses qui déclenchent un mail au négociateur de la fiche (copie agence). */
+export const OWNER_NOTIFY_RESPONSES: ReadonlySet<OwnerResponse> = new Set(["vendre", "valeur", "vendu_cherche", "cherche", "rappel", "visio"]);
 
 export const OWNER_RESPONSE_LABELS: Record<OwnerResponse, string> = {
   vendre: "J'envisage de vendre, parlons-en",
@@ -47,7 +53,8 @@ export const OWNER_RESPONSE_LABELS: Record<OwnerResponse, string> = {
   vendu_cherche: "Je l'ai vendu, et je cherche un autre bien",
   garde: "Je le garde, pas de projet",
   stop: "Ne plus recevoir de messages",
-  rappel: "Préfère être rappelé(e)",
+  rappel: "Demande à être rappelé(e)",
+  visio: "Réserve une visio",
   cherche: "Cherche aussi à acheter",
 };
 

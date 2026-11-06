@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import type { FollowupTokenPayload } from "@/lib/buyers/followup-token";
 import {
@@ -19,8 +20,11 @@ import { OWNER_CONFIRM_SCREENS, OWNER_SCREENS, withSender } from "./owner-copy";
  * Branche « réactivation propriétaires » de /suivi/<jeton> (campagnes `reac-*`).
  *
  * - vendre / valeur : enregistrées à l'ouverture, puis le choix « être
- *   rappelé » / « réserver un créneau » (+ « je cherche aussi à acheter »).
- * - garde / rappel / cherche / vendu_cherche : enregistrées à l'ouverture.
+ *   rappelé » / « réserver une visio » (+ « je cherche aussi à acheter »).
+ * - rappel : enregistrée, mail au négociateur (c'est lui qui appelle).
+ * - visio : enregistrée, mail au négociateur, puis redirection vers son
+ *   planning Google Calendar (sans planning : écran d'attente).
+ * - garde / cherche / vendu_cherche : enregistrées à l'ouverture.
  * - vendu / stop : écran de confirmation d'abord, enregistrement au clic via
  *   /suivi/<jeton>/confirm, puis retour ici avec `done=1`.
  * - `choose=1` : l'écran des quatre choix, sans rien enregistrer.
@@ -45,6 +49,12 @@ export async function OwnerFollowupPage(input: {
   }
   if (!input.done) {
     await recordOwnerResponse({ payload: input.payload, response: input.response, userAgent: input.userAgent });
+  }
+  // Visio : la réponse est enregistrée et le négociateur prévenu, la personne
+  // part réserver sur son planning. redirect() lève une exception Next.js
+  // (pas d'instruction après) ; sans planning, l'écran d'attente ci-dessous.
+  if (input.response === "visio" && sender.bookingUrl) {
+    redirect(sender.bookingUrl);
   }
   const screen = OWNER_SCREENS[input.response];
   const title = personalize(withSender(screen.title, sender.firstName), contact.firstName);
@@ -93,9 +103,10 @@ const renderInvalid = () => (
 );
 
 /**
- * Après « je vends » / « sa valeur » : à égalité, être rappelé(e) (défaut,
- * enregistré) ou réserver un créneau (si le négociateur a une page) ; en
- * dessous, « je cherche aussi à acheter » (vente-rachat).
+ * Après « je vends » / « sa valeur » : à égalité, être rappelé(e) par
+ * téléphone (défaut) ou réserver une visio sur le planning du négociateur (si
+ * elle ou il en a un) ; les deux passent par ?r=… pour être enregistrées et
+ * prévenir le négociateur. En dessous, « je cherche aussi à acheter ».
  */
 const renderContactChoice = (token: string, screen: FollowupScreen, title: string, body: string, sender: ReactivationSender) => (
   <FollowupScreenView screen={screen} title={title} body={body}>
@@ -105,12 +116,17 @@ const renderContactChoice = (token: string, screen: FollowupScreen, title: strin
       data-track-cta="reactivation_choice_rappel"
       data-track-location="followup"
     >
-      Je préfère être rappelé(e)
+      Je préfère que {sender.firstName} m&apos;appelle
     </Link>
     {sender.bookingUrl ? (
-      <a href={sender.bookingUrl} className={outlineClass} data-track-cta="reactivation_choice_booking" data-track-location="followup">
-        Je réserve un créneau avec {sender.firstName}
-      </a>
+      <Link
+        href={`/suivi/${encodeURIComponent(token)}?r=visio`}
+        className={outlineClass}
+        data-track-cta="reactivation_choice_visio"
+        data-track-location="followup"
+      >
+        Je réserve une visio avec {sender.firstName}
+      </Link>
     ) : (
       <a href="tel:+33423450485" className={outlineClass} data-track-cta="reactivation_choice_call" data-track-location="followup">
         Appeler l&apos;agence

@@ -6,15 +6,17 @@ const EYEBROW = "Sillage Immo · Votre bien à Nice";
 /**
  * Écrans de la réactivation propriétaires (/suivi/<jeton>?r=…).
  * `{firstName}` et `{sender}` (prénom du négociateur signataire) sont remplacés.
- * Sur vendre / valeur, l'écran propose à égalité « être rappelé » et « réserver
- * un créneau » (décision du 06/11 : une partie de la base n'a pas d'agenda en
- * ligne) ; la réservation n'apparaît que si le négociateur a une page.
+ * Sur vendre / valeur, l'écran propose à égalité « être rappelé » (appel
+ * téléphonique, mail au négociateur) et « réserver une visio » (planning
+ * Google Calendar du négociateur — un planning ne sait proposer qu'un type de
+ * rendez-vous, d'où le choix ici, décision du 06/11) ; la visio n'apparaît que
+ * si le négociateur a une page.
  */
 export const OWNER_SCREENS: Record<OwnerResponse, FollowupScreen> = {
   vendre: {
     eyebrow: EYEBROW,
     title: "Merci {firstName}, parlons-en.",
-    body: "Votre réponse est enregistrée. Comment préférez-vous que nous nous parlions ? {sender} peut vous appeler dans la journée, ou vous choisissez vous-même un créneau de 15 minutes, par téléphone ou en visio.",
+    body: "Votre réponse est enregistrée. Comment préférez-vous que nous nous parlions ? {sender} peut vous appeler dans la journée, ou vous choisissez vous-même un créneau de 15 minutes en visio.",
   },
   valeur: {
     eyebrow: EYEBROW,
@@ -26,6 +28,14 @@ export const OWNER_SCREENS: Record<OwnerResponse, FollowupScreen> = {
     title: "C'est noté, {firstName}.",
     body: "{sender} vous appelle dans la journée, au numéro que nous avons pour vous. Si ce numéro a changé, un simple e-mail suffit.",
     primary: { label: "Voir les prix de mon quartier", href: "/quartiers", track: "reactivation_rappel_quartiers" },
+    secondary: { label: "Retour à l'accueil", href: "/" },
+  },
+  // Affiché seulement si le négociateur n'a pas de planning (sinon redirection directe).
+  visio: {
+    eyebrow: EYEBROW,
+    title: "C'est noté, {firstName}.",
+    body: "{sender} vous écrit dans la journée pour convenir d'un créneau de visio. Si vous préférez un appel, répondez simplement à son message.",
+    primary: { label: "Voir les prix de mon quartier", href: "/quartiers", track: "reactivation_visio_quartiers" },
     secondary: { label: "Retour à l'accueil", href: "/" },
   },
   cherche: {

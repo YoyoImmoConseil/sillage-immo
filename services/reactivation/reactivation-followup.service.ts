@@ -6,6 +6,7 @@ import { sendTransactionalEmail } from "@/lib/email/smtp";
 import { escapeHtml, renderEmailLayout } from "@/lib/email/layout";
 import {
   OWNER_HOT_RESPONSES,
+  OWNER_NOTIFY_RESPONSES,
   OWNER_RESPONSE_LABELS,
   OWNER_SECONDARY_RESPONSES,
   cleanFirstName,
@@ -141,6 +142,7 @@ export const recordOwnerResponse = async (input: {
   const history = Array.isArray(contact.response_history) ? contact.response_history : [];
   const metadata = { ...(contact.metadata ?? {}) } as Record<string, unknown>;
   if (input.response === "rappel") metadata.prefers_callback = true;
+  if (input.response === "visio") metadata.prefers_video = true;
   if (input.response === "cherche" || input.response === "vendu_cherche") metadata.wants_to_buy = true;
 
   let sellerLeadId = contact.seller_lead_id;
@@ -194,9 +196,14 @@ export const recordOwnerResponse = async (input: {
     console.error("[reactivation] activity_events insert failed:", activityError.message);
   }
 
+  // Mail au négociateur : à la réponse chaude (le lead existe, même si la
+  // personne ferme la page ensuite), puis une seconde fois au choix appel /
+  // visio, qui dit comment la joindre. Note SweepBright sur les chaudes seulement.
   let notified = false;
-  if (OWNER_HOT_RESPONSES.has(input.response) || input.response === "vendu_cherche" || input.response === "cherche") {
+  if (OWNER_NOTIFY_RESPONSES.has(input.response)) {
     notified = await notifyAgency(contact, input.response, sellerLeadId);
+  }
+  if (OWNER_HOT_RESPONSES.has(input.response) || input.response === "vendu_cherche" || input.response === "cherche") {
     await writeSweepBrightNote(contact, input.response, nowIso);
   }
 
@@ -248,17 +255,37 @@ const promoteToSellerLead = async (contact: ReactivationContactRow, response: Ow
 const notifyAgency = async (contact: ReactivationContactRow, response: OwnerResponse, sellerLeadId: string | null) => {
   const label = OWNER_RESPONSE_LABELS[response];
   const fullName = contact.full_name?.trim() || contact.email;
-  const subject = response === "vendre" ? `Vendeur chaud — ${fullName}` : response === "valeur" ? `Estimation demandée — ${fullName}` : `Réactivation — ${fullName} : ${label}`;
+  const sender = resolveSender(senderKeyForNegotiator(contact.negotiator));
+  const subject =
+    response === "vendre"
+      ? `Vendeur chaud — ${fullName}`
+      : response === "valeur"
+        ? `Estimation demandée — ${fullName}`
+        : response === "rappel"
+          ? `À rappeler — ${fullName} demande un appel`
+          : response === "visio"
+            ? `Visio — ${fullName} réserve un créneau`
+            : `Réactivation — ${fullName} : ${label}`;
   const phoneLine = contact.phone
     ? `<a href="tel:${escapeHtml(contact.phone.replace(/\s+/g, ""))}" style="color:#141446;">${escapeHtml(contact.phone)}</a>`
     : "non renseigné";
   const adminLink = sellerLeadId ? `${SITE_URL}/admin/seller-leads/${sellerLeadId}` : `${SITE_URL}/admin/reactivation`;
+  // Consigne selon le moment : à la réponse chaude, la personne choisit encore
+  // entre appel et visio ; au choix, l'action est précise.
+  const instruction = OWNER_HOT_RESPONSES.has(response)
+    ? `À l'écran suivant, ${escapeHtml(fullName)} choisit entre un rappel téléphonique et une visio sur votre planning : vous recevrez un second mail. Sans ce second mail d'ici ce soir, rappelez-le ou -la dans la journée.`
+    : response === "rappel"
+      ? `${escapeHtml(fullName)} a choisi <strong>l'appel téléphonique</strong> : à vous de rappeler dans la journée.`
+      : response === "visio"
+        ? `${escapeHtml(fullName)} est parti(e) réserver une <strong>visio</strong> sur votre planning Google Calendar : l'invitation arrive dans votre agenda. Si aucune réservation n'apparaît d'ici ce soir, rappelez-le ou -la.`
+        : `C'est à vous, négociateur de la fiche, de rappeler dans la journée.`;
   const bodyHtml = `
     <p style="margin:0 0 12px;">${escapeHtml(fullName)} (contact SweepBright, ${escapeHtml(contact.segment)}) a répondu à la relance <strong>${escapeHtml(contact.campaign)}</strong> :</p>
     <p style="margin:0 0 18px;padding:12px 16px;background:#f4ece4;border-radius:12px;font-weight:600;">${escapeHtml(label)}</p>
     <p style="margin:0 0 6px;">E-mail : <a href="mailto:${escapeHtml(contact.email)}" style="color:#141446;">${escapeHtml(contact.email)}</a></p>
     <p style="margin:0 0 6px;">Téléphone : ${phoneLine}</p>
-    <p style="margin:0;">Négociateur SweepBright : ${escapeHtml(contact.negotiator ?? "—")} — c'est à lui ou elle de rappeler dans la journée.</p>
+    <p style="margin:0 0 12px;">Négociateur SweepBright : ${escapeHtml(contact.negotiator ?? "—")} (mail signé ${escapeHtml(sender.displayName)}).</p>
+    <p style="margin:0;">${instruction}</p>
   `;
   const html = renderEmailLayout({
     preheader: `${fullName} : ${label}`,
@@ -273,13 +300,19 @@ const notifyAgency = async (contact: ReactivationContactRow, response: OwnerResp
     "",
     `E-mail : ${contact.email}`,
     `Téléphone : ${contact.phone ?? "non renseigné"}`,
-    `Négociateur SweepBright : ${contact.negotiator ?? "—"}`,
+    `Négociateur SweepBright : ${contact.negotiator ?? "—"} (mail signé ${sender.displayName})`,
+    instruction
+      .replace(/<[^>]+>/g, "")
+      .replaceAll("&amp;", "&")
+      .replaceAll("&lt;", "<")
+      .replaceAll("&gt;", ">")
+      .replaceAll("&quot;", '"')
+      .replaceAll("&#39;", "'"),
     "",
     adminLink,
   ].join("\n");
   try {
     // Au négociateur de la fiche (c'est lui qui rappelle), copie à l'agence si c'est quelqu'un d'autre.
-    const sender = resolveSender(senderKeyForNegotiator(contact.negotiator));
     const recipients = sender.email === SILLAGE_CONTACT_EMAIL ? [SILLAGE_CONTACT_EMAIL] : [sender.email, SILLAGE_CONTACT_EMAIL];
     const results = await Promise.all(recipients.map((to) => sendTransactionalEmail({ to, subject, html, text })));
     return results.some((result) => result.sent);

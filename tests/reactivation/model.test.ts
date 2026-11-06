@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  OWNER_NOTIFY_RESPONSES,
+  OWNER_SECONDARY_RESPONSES,
   cleanFirstName,
   dailyLimitFor,
   resolveSender,
@@ -53,6 +55,17 @@ describe("réactivation — règles pures", () => {
     expect(resolveOwnerResponseStatus("stop")).toBe("unsubscribed");
     expect(resolveOwnerResponseStatus("vendre")).toBe("responded");
     expect(resolveOwnerResponseStatus("garde")).toBe("responded");
+  });
+
+  it("appel et visio sont des réponses secondaires qui préviennent le négociateur ; « garde » et « vendu » ne préviennent pas", () => {
+    expect(OWNER_SECONDARY_RESPONSES.has("rappel")).toBe(true);
+    expect(OWNER_SECONDARY_RESPONSES.has("visio")).toBe(true);
+    expect(OWNER_NOTIFY_RESPONSES.has("rappel")).toBe(true);
+    expect(OWNER_NOTIFY_RESPONSES.has("visio")).toBe(true);
+    expect(OWNER_NOTIFY_RESPONSES.has("vendre")).toBe(true);
+    expect(OWNER_NOTIFY_RESPONSES.has("garde")).toBe(false);
+    expect(OWNER_NOTIFY_RESPONSES.has("vendu")).toBe(false);
+    expect(OWNER_NOTIFY_RESPONSES.has("stop")).toBe(false);
   });
 
   it("nettoie les prénoms douteux de SweepBright", () => {
