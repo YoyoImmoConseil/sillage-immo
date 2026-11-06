@@ -3081,6 +3081,63 @@ export type Database = {
         };
         Relationships: [];
       };
+      protected_contacts: {
+        Row: {
+          id: string;
+          created_at: string;
+          synced_at: string;
+          source: string;
+          contract_id: string;
+          contract_model: string | null;
+          operation_id: string | null;
+          operation_label: string | null;
+          operation_archived: boolean;
+          record_id: string;
+          role: string;
+          first_name: string | null;
+          last_name: string | null;
+          normalized_email: string | null;
+          normalized_name: string | null;
+          signed_at: string;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          synced_at?: string;
+          source?: string;
+          contract_id: string;
+          contract_model?: string | null;
+          operation_id?: string | null;
+          operation_label?: string | null;
+          operation_archived?: boolean;
+          record_id: string;
+          role: string;
+          first_name?: string | null;
+          last_name?: string | null;
+          normalized_email?: string | null;
+          normalized_name?: string | null;
+          signed_at: string;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          synced_at?: string;
+          source?: string;
+          contract_id?: string;
+          contract_model?: string | null;
+          operation_id?: string | null;
+          operation_label?: string | null;
+          operation_archived?: boolean;
+          record_id?: string;
+          role?: string;
+          first_name?: string | null;
+          last_name?: string | null;
+          normalized_email?: string | null;
+          normalized_name?: string | null;
+          signed_at?: string;
+        };
+        Relationships: [];
+      };
       app_settings: {
         Row: {
           key: string;

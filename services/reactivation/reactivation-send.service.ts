@@ -18,6 +18,8 @@ import {
 } from "@/lib/reactivation/model";
 import { SITE_URL } from "@/lib/seo/site";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { isContactProtected } from "@/lib/reactivation/protection";
+import { assertProtectionFresh, loadProtectionIndex } from "./protected-contacts.service";
 import { buildOwnerLinks, type ReactivationContactRow } from "./reactivation-followup.service";
 
 /**
@@ -32,6 +34,8 @@ export type SendSummary = {
   campaign: string;
   limit: number;
   considered: number;
+  /** Contacts sautés parce que protégés (mandat / compromis signé < 12 mois). */
+  protected: number;
   sent: number;
   sentByStep: Record<string, number>;
   sentByVariant: Record<string, number>;
@@ -99,6 +103,7 @@ export const runReactivationSendBatch = async (input: {
     campaign,
     limit,
     considered: 0,
+    protected: 0,
     sent: 0,
     sentByStep: {},
     sentByVariant: {},
@@ -107,7 +112,16 @@ export const runReactivationSendBatch = async (input: {
     errors: [],
   };
 
-  // Rappels échus d'abord (ils ont une date), puis les J0 par ancienneté SweepBright.
+  // Protection MyNotary (règle permanente) : index des personnes ayant signé un
+  // mandat / compromis dans les 12 derniers mois. L'envoi refuse de partir si
+  // cet index n'est pas à jour.
+  const protection = await loadProtectionIndex(now);
+  assertProtectionFresh(protection, now);
+
+  // Rappels échus d'abord (ils ont une date), puis les J0 par ancienneté
+  // SweepBright. On lit plus large que le plafond pour pouvoir sauter les
+  // contacts protégés sans entamer le lot.
+  const fetchSize = Math.min(limit * 3 + 20, 1000);
   const { data: dueRows, error: dueError } = await supabaseAdmin
     .from("reactivation_contacts")
     .select("*")
@@ -116,24 +130,29 @@ export const runReactivationSendBatch = async (input: {
     .eq("status", "sent")
     .lte("next_send_at", now.toISOString())
     .order("next_send_at", { ascending: true })
-    .limit(limit);
+    .limit(fetchSize);
   if (dueError) throw new Error(dueError.message);
 
-  const remaining = Math.max(0, limit - (dueRows?.length ?? 0));
-  const { data: pendingRows, error: pendingError } =
-    remaining > 0
-      ? await supabaseAdmin
-          .from("reactivation_contacts")
-          .select("*")
-          .eq("campaign", campaign)
-          .in("segment", [...OWNER_SEGMENTS])
-          .eq("status", "pending")
-          .order("sweepbright_created_at", { ascending: true, nullsFirst: false })
-          .limit(remaining)
-      : { data: [], error: null };
+  const { data: pendingRows, error: pendingError } = await supabaseAdmin
+    .from("reactivation_contacts")
+    .select("*")
+    .eq("campaign", campaign)
+    .in("segment", [...OWNER_SEGMENTS])
+    .eq("status", "pending")
+    .order("sweepbright_created_at", { ascending: true, nullsFirst: false })
+    .limit(fetchSize);
   if (pendingError) throw new Error(pendingError.message);
 
-  const queue = [...(dueRows ?? []), ...(pendingRows ?? [])] as ReactivationContactRow[];
+  const candidates = [...(dueRows ?? []), ...(pendingRows ?? [])] as ReactivationContactRow[];
+  const queue: ReactivationContactRow[] = [];
+  for (const contact of candidates) {
+    if (queue.length >= limit) break;
+    if (isContactProtected(contact, protection)) {
+      summary.protected += 1;
+      continue;
+    }
+    queue.push(contact);
+  }
   summary.considered = queue.length;
 
   const { count: j0SentSoFar } = await supabaseAdmin

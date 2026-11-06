@@ -11,7 +11,17 @@ const CHUNK = 500;
  * Outils de la page « Réactivation » : import d'un export JSON SweepBright
  * (lots de 500), envoi d'un lot de test à une adresse, envoi d'un lot réel.
  */
-export function ReactivationTools({ campaign, defaultLimit, contactEmail }: { campaign: string; defaultLimit: number; contactEmail: string }) {
+export function ReactivationTools({
+  campaign,
+  defaultLimit,
+  contactEmail,
+  protection,
+}: {
+  campaign: string;
+  defaultLimit: number;
+  contactEmail: string;
+  protection: { size: number; syncedAt: string | null };
+}) {
   const router = useRouter();
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   const [file, setFile] = useState<File | null>(null);
@@ -58,7 +68,7 @@ export function ReactivationTools({ campaign, defaultLimit, contactEmail }: { ca
       const json = (await response.json()) as {
         ok: boolean;
         message?: string;
-        data?: { sent: number; failed: number; dormant: number; sentByVariant: Record<string, number>; errors: string[] };
+        data?: { sent: number; failed: number; dormant: number; protected: number; sentByVariant: Record<string, number>; errors: string[] };
       };
       if (!json.ok || !json.data) throw new Error(json.message ?? "Envoi refusé.");
       const variants = Object.entries(json.data.sentByVariant)
@@ -66,11 +76,27 @@ export function ReactivationTools({ campaign, defaultLimit, contactEmail }: { ca
         .join(" · ");
       setStatus({
         kind: json.data.failed > 0 ? "error" : "done",
-        message: `${json.data.sent} envoyé(s)${dryRunTo ? ` à ${dryRunTo}` : ""}, ${json.data.failed} en échec, ${json.data.dormant} passé(s) en dormant${variants ? ` — objets : ${variants}` : ""}${json.data.errors.length ? ` — ${json.data.errors.slice(0, 3).join(" ; ")}` : ""}.`,
+        message: `${json.data.sent} envoyé(s)${dryRunTo ? ` à ${dryRunTo}` : ""}, ${json.data.failed} en échec, ${json.data.dormant} passé(s) en dormant, ${json.data.protected} protégé(s) MyNotary sauté(s)${variants ? ` — objets : ${variants}` : ""}${json.data.errors.length ? ` — ${json.data.errors.slice(0, 3).join(" ; ")}` : ""}.`,
       });
       router.refresh();
     } catch (error) {
       setStatus({ kind: "error", message: error instanceof Error ? error.message : "Envoi impossible." });
+    }
+  };
+
+  const syncProtection = async () => {
+    setStatus({ kind: "busy", message: "Synchronisation MyNotary…" });
+    try {
+      const response = await fetch("/api/admin/reactivation/protect-sync", { method: "POST" });
+      const json = (await response.json()) as { ok: boolean; message?: string; data?: { operations: number; signedContracts: number; people: number } };
+      if (!json.ok || !json.data) throw new Error(json.message ?? "Synchronisation refusée.");
+      setStatus({
+        kind: "done",
+        message: `MyNotary : ${json.data.operations} dossiers lus, ${json.data.signedContracts} mandats / compromis signés, ${json.data.people} lignes protégées.`,
+      });
+      router.refresh();
+    } catch (error) {
+      setStatus({ kind: "error", message: error instanceof Error ? error.message : "Synchronisation impossible." });
     }
   };
 
@@ -83,6 +109,17 @@ export function ReactivationTools({ campaign, defaultLimit, contactEmail }: { ca
 
   return (
     <section className="grid gap-4 lg:grid-cols-3">
+      <article className="space-y-3 rounded-2xl border border-[rgba(20,20,70,0.18)] bg-white/70 p-5 lg:col-span-3">
+        <h3 className="font-semibold">Protection MyNotary — mandat ou compromis signé depuis moins de 12 mois : jamais relancé</h3>
+        <p className="text-sm opacity-70">
+          {protection.size} personne(s) protégée(s) dans la fenêtre glissante ·{" "}
+          {protection.syncedAt ? `synchronisé le ${protection.syncedAt}` : "jamais synchronisé — aucun envoi ne partira tant que ce n'est pas fait"}. Resynchronisé
+          chaque nuit ; un contact protégé est sauté sans changer de statut et redevient contactable de lui-même après 12 mois.
+        </p>
+        <button type="button" className={outlineClass} disabled={busy} onClick={syncProtection}>
+          Synchroniser MyNotary maintenant
+        </button>
+      </article>
       <article className="space-y-3 rounded-2xl border border-[rgba(20,20,70,0.18)] bg-white/70 p-5">
         <h3 className="font-semibold">1. Importer les contacts SweepBright</h3>
         <p className="text-sm opacity-70">

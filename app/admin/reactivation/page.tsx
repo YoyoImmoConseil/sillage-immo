@@ -4,6 +4,7 @@ import { AdminShell } from "@/app/components/admin-shell";
 import { hasAdminPermission, requireAdminPagePermission } from "@/lib/admin/auth";
 import { SILLAGE_CONTACT_EMAIL } from "@/lib/brand/company";
 import { DEFAULT_REACTIVATION_CAMPAIGN, OWNER_RESPONSE_LABELS, OWNER_SUBJECTS, isOwnerResponse } from "@/lib/reactivation/model";
+import { loadProtectionIndex } from "@/services/reactivation/protected-contacts.service";
 import { countSentSoFar, getReactivationStats, isReactivationPaused, resolveDailyLimitWithRamp } from "@/services/reactivation/reactivation-send.service";
 import { ReactivationTools } from "./reactivation-tools";
 
@@ -38,6 +39,11 @@ export default async function ReactivationAdminPage() {
   const dailyLimit = resolveDailyLimitWithRamp(sentSoFar);
   const canManage = hasAdminPermission(context, "leads.sellers.manage");
   const paused = isReactivationPaused();
+  const protection = await loadProtectionIndex();
+  const protectionSummary = {
+    size: protection.size,
+    syncedAt: protection.syncedAt ? formatDate(protection.syncedAt.toISOString()) : null,
+  };
   const responded = stats.byStatus.responded ?? 0;
   const unsubscribed = stats.byStatus.unsubscribed ?? 0;
   const contacted = (stats.byStatus.sent ?? 0) + responded + unsubscribed + (stats.byStatus.dormant ?? 0);
@@ -83,7 +89,7 @@ export default async function ReactivationAdminPage() {
         </section>
 
         {canManage ? (
-          <ReactivationTools campaign={stats.campaign} defaultLimit={dailyLimit} contactEmail={SILLAGE_CONTACT_EMAIL} />
+          <ReactivationTools campaign={stats.campaign} defaultLimit={dailyLimit} contactEmail={SILLAGE_CONTACT_EMAIL} protection={protectionSummary} />
         ) : null}
 
         <section className="grid gap-4 lg:grid-cols-3">
