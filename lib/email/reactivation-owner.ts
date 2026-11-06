@@ -133,7 +133,7 @@ const quartiersLine = (quartiersUrl: string) => `
 
 const textFooter = (links: OwnerEmailLinks, bookingUrl: string | null, quartiersUrl: string, sender: ReactivationSender) =>
   [
-    ...(bookingUrl ? ["", `Vous préférez en parler de vive voix ? Réservez 15 minutes avec moi : ${bookingUrl}`] : []),
+    ...(bookingUrl ? ["", `Vous préférez en parler de vive voix ? Réservez 15 minutes de visio avec moi au créneau qui vous arrange : ${bookingUrl} — ou répondez simplement à ce message pour que je vous appelle.`] : []),
     "",
     "À bientôt,",
     sender.displayName,
