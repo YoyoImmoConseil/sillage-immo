@@ -29,7 +29,7 @@ export function ReactivationTools({
   const [testCount, setTestCount] = useState(3);
   const [testSender, setTestSender] = useState<"" | "yoann" | "jordan" | "laura">("");
   const [batchLimit, setBatchLimit] = useState(defaultLimit);
-  const [order, setOrder] = useState<"oldest" | "newest">("oldest");
+  const [order, setOrder] = useState<"auto" | "oldest" | "newest">("auto");
 
   const importFile = async () => {
     if (!file) return;
@@ -65,7 +65,7 @@ export function ReactivationTools({
       const response = await fetch("/api/admin/reactivation/send", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ limit, dryRunTo, dryRunSender: dryRunTo && testSender ? testSender : null, order }),
+        body: JSON.stringify({ limit, dryRunTo, dryRunSender: dryRunTo && testSender ? testSender : null, order: order === "auto" ? undefined : order }),
       });
       const json = (await response.json()) as {
         ok: boolean;
@@ -160,9 +160,14 @@ export function ReactivationTools({
         </p>
         <div className="flex flex-wrap gap-2">
           <input type="number" min={1} max={500} className={`${inputClass} w-24`} value={batchLimit} onChange={(event) => setBatchLimit(Number(event.target.value) || 1)} />
-          <select className={inputClass} value={order} onChange={(event) => setOrder(event.target.value === "newest" ? "newest" : "oldest")}>
-            <option value="oldest">Fiches les plus anciennes d&apos;abord (cron)</option>
+          <select
+            className={inputClass}
+            value={order}
+            onChange={(event) => setOrder(event.target.value === "newest" ? "newest" : event.target.value === "oldest" ? "oldest" : "auto")}
+          >
+            <option value="auto">Ordre automatique (récents d&apos;abord jusqu&apos;à 500 envois, puis anciens)</option>
             <option value="newest">Fiches les plus récentes d&apos;abord</option>
+            <option value="oldest">Fiches les plus anciennes d&apos;abord</option>
           </select>
         </div>
         <button
@@ -170,7 +175,7 @@ export function ReactivationTools({
           className={buttonClass}
           disabled={busy}
           onClick={() => {
-            if (window.confirm(`Envoyer jusqu'à ${batchLimit} mails aux contacts de la campagne ${campaign} (${order === "newest" ? "fiches les plus récentes" : "fiches les plus anciennes"} d'abord) ?`))
+            if (window.confirm(`Envoyer jusqu'à ${batchLimit} mails aux contacts de la campagne ${campaign} (${order === "newest" ? "fiches les plus récentes d'abord" : order === "oldest" ? "fiches les plus anciennes d'abord" : "ordre automatique"}) ?`))
               void send(null, batchLimit);
           }}
         >

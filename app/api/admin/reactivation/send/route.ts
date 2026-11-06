@@ -21,7 +21,7 @@ export async function POST(request: Request) {
   const limit = typeof body.limit === "number" && body.limit > 0 ? Math.min(Math.floor(body.limit), 500) : undefined;
   const dryRunTo = typeof body.dryRunTo === "string" && body.dryRunTo.includes("@") ? body.dryRunTo.trim() : null;
   const dryRunSender = isSenderKey(body.dryRunSender) ? body.dryRunSender : null;
-  const order = body.order === "newest" ? "newest" : "oldest";
+  const order = body.order === "newest" || body.order === "oldest" ? body.order : undefined;
   try {
     const summary = await runReactivationSendBatch({ limit, dryRunTo, dryRunSender, order });
     return NextResponse.json({ ok: true, dryRun: Boolean(dryRunTo), data: summary });

@@ -41,6 +41,8 @@ export type SendSummary = {
   protected: number;
   /** Contacts passés en « exclu » à l'envoi (confrères, adresses anonymisées, noms bannis). */
   excluded: number;
+  /** Ordre des J0 appliqué à ce lot. */
+  order: "oldest" | "newest";
   sent: number;
   sentByStep: Record<string, number>;
   sentByVariant: Record<string, number>;
@@ -76,6 +78,19 @@ export const resolveDailyLimitWithRamp = (totalSentSoFar: number) =>
     afterRamp: envInt("REACTIVATION_DAILY_LIMIT_AFTER_RAMP", DEFAULT_DAILY_LIMIT_AFTER_RAMP),
     threshold: envInt("REACTIVATION_RAMP_THRESHOLD", DEFAULT_RAMP_THRESHOLD),
   });
+
+/**
+ * Ordre des J0 par défaut (décision Yoann 06/11) : fiches les plus récentes
+ * d'abord tant que la campagne n'a pas atteint le seuil de montée en cadence
+ * (500 envois), pour construire la réputation d'envoi sur des adresses
+ * vivantes ; ensuite ordre chronologique. REACTIVATION_ORDER=newest|oldest
+ * force l'un ou l'autre.
+ */
+export const resolveDefaultOrder = (totalSentSoFar: number): "oldest" | "newest" => {
+  const forced = (process.env.REACTIVATION_ORDER ?? "").trim().toLowerCase();
+  if (forced === "newest" || forced === "oldest") return forced;
+  return totalSentSoFar < envInt("REACTIVATION_RAMP_THRESHOLD", DEFAULT_RAMP_THRESHOLD) ? "newest" : "oldest";
+};
 
 /** Total des mails déjà partis sur la campagne (toutes étapes), pour la montée en cadence. */
 export const countSentSoFar = async (campaign: string): Promise<number> => {
@@ -113,7 +128,9 @@ export const runReactivationSendBatch = async (input: {
   order?: "oldest" | "newest";
 }): Promise<SendSummary> => {
   const campaign = input.campaign ?? DEFAULT_REACTIVATION_CAMPAIGN;
-  const limit = input.limit ?? resolveDailyLimitWithRamp(await countSentSoFar(campaign));
+  const sentSoFar = await countSentSoFar(campaign);
+  const limit = input.limit ?? resolveDailyLimitWithRamp(sentSoFar);
+  const order = input.order ?? resolveDefaultOrder(sentSoFar);
   const now = input.now ?? new Date();
   const summary: SendSummary = {
     campaign,
@@ -121,6 +138,7 @@ export const runReactivationSendBatch = async (input: {
     considered: 0,
     protected: 0,
     excluded: 0,
+    order,
     sent: 0,
     sentByStep: {},
     sentByVariant: {},
@@ -159,7 +177,7 @@ export const runReactivationSendBatch = async (input: {
     .in("segment", [...OWNER_SEGMENTS])
     .eq("status", "pending")
     .lte("sweepbright_created_at", maxCreatedAt)
-    .order("sweepbright_created_at", { ascending: input.order !== "newest", nullsFirst: false })
+    .order("sweepbright_created_at", { ascending: order !== "newest", nullsFirst: false })
     .limit(fetchSize);
   if (pendingError) throw new Error(pendingError.message);
 

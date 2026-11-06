@@ -5,7 +5,13 @@ import { hasAdminPermission, requireAdminPagePermission } from "@/lib/admin/auth
 import { SILLAGE_CONTACT_EMAIL } from "@/lib/brand/company";
 import { DEFAULT_REACTIVATION_CAMPAIGN, OWNER_RESPONSE_LABELS, OWNER_SUBJECTS, isOwnerResponse } from "@/lib/reactivation/model";
 import { loadProtectionIndex } from "@/services/reactivation/protected-contacts.service";
-import { countSentSoFar, getReactivationStats, isReactivationPaused, resolveDailyLimitWithRamp } from "@/services/reactivation/reactivation-send.service";
+import {
+  countSentSoFar,
+  getReactivationStats,
+  isReactivationPaused,
+  resolveDailyLimitWithRamp,
+  resolveDefaultOrder,
+} from "@/services/reactivation/reactivation-send.service";
 import { ReactivationTools } from "./reactivation-tools";
 
 export const dynamic = "force-dynamic";
@@ -74,7 +80,9 @@ export default async function ReactivationAdminPage() {
           {paused ? (
             <strong>envoi automatique en pause (REACTIVATION_PAUSED)</strong>
           ) : (
-            <>{dailyLimit} envois par jour ouvré à 9 h</>
+            <>
+              {dailyLimit} envois par jour ouvré à 9 h, {resolveDefaultOrder(sentSoFar) === "newest" ? "fiches les plus récentes d'abord" : "fiches les plus anciennes d'abord"}
+            </>
           )}{" "}
           ({sentSoFar} mails partis ; 50 jusqu&apos;à 500, puis 150) ·{" "}
           <Link href="/admin/seller-leads" className="underline">
