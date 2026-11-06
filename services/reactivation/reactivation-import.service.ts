@@ -92,7 +92,7 @@ export const decideSegment = (
   const email = (contact.email ?? "").toLowerCase();
   const fragments = options.excludedEmailFragments ?? [];
   if (fragments.some((fragment) => email.includes(fragment))) {
-    return { segment, exclude: email.includes("@orpi.com") ? "adresse_orpi" : "adresse_anonymisee" };
+    return { segment, exclude: email.includes("dummy") ? "adresse_anonymisee" : "adresse_pro" };
   }
   const excludedNames = options.excludedNames ?? [];
   if (excludedNames.some((pattern) => pattern.test(fullName) || pattern.test(email))) {

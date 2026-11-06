@@ -70,7 +70,7 @@ export function ReactivationTools({
       const json = (await response.json()) as {
         ok: boolean;
         message?: string;
-        data?: { sent: number; failed: number; dormant: number; protected: number; sentByVariant: Record<string, number>; errors: string[] };
+        data?: { sent: number; failed: number; dormant: number; protected: number; excluded: number; sentByVariant: Record<string, number>; errors: string[] };
       };
       if (!json.ok || !json.data) throw new Error(json.message ?? "Envoi refusé.");
       const variants = Object.entries(json.data.sentByVariant)
@@ -78,7 +78,7 @@ export function ReactivationTools({
         .join(" · ");
       setStatus({
         kind: json.data.failed > 0 ? "error" : "done",
-        message: `${json.data.sent} envoyé(s)${dryRunTo ? ` à ${dryRunTo}` : ""}, ${json.data.failed} en échec, ${json.data.dormant} passé(s) en dormant, ${json.data.protected} protégé(s) MyNotary sauté(s)${variants ? ` — objets : ${variants}` : ""}${json.data.errors.length ? ` — ${json.data.errors.slice(0, 3).join(" ; ")}` : ""}.`,
+        message: `${json.data.sent} envoyé(s)${dryRunTo ? ` à ${dryRunTo}` : ""}, ${json.data.failed} en échec, ${json.data.dormant} passé(s) en dormant, ${json.data.protected} protégé(s) MyNotary sauté(s), ${json.data.excluded} exclu(s) à l'envoi${variants ? ` — objets : ${variants}` : ""}${json.data.errors.length ? ` — ${json.data.errors.slice(0, 3).join(" ; ")}` : ""}.`,
       });
       router.refresh();
     } catch (error) {

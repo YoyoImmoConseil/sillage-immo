@@ -70,6 +70,8 @@ describe("réactivation — règles pures", () => {
 
   it("nettoie les prénoms douteux de SweepBright", () => {
     expect(cleanFirstName("jean")).toBe("Jean");
+    expect(cleanFirstName(".")).toBeNull();
+    expect(cleanFirstName("M")).toBeNull();
     expect(cleanFirstName("Marie-Laure")).toBe("Marie-Laure");
     expect(cleanFirstName("N/A")).toBeNull();
     expect(cleanFirstName("firstname")).toBeNull();

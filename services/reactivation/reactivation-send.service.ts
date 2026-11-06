@@ -7,6 +7,7 @@ import {
   DEFAULT_DAILY_LIMIT_AFTER_RAMP,
   DEFAULT_RAMP_THRESHOLD,
   DEFAULT_REACTIVATION_CAMPAIGN,
+  DEFAULT_MIN_CONTACT_AGE_DAYS,
   cleanFirstName,
   dailyLimitFor,
   decideNextSend,
@@ -20,6 +21,7 @@ import {
 import { SITE_URL } from "@/lib/seo/site";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { isContactProtected } from "@/lib/reactivation/protection";
+import { excludedEmailFragments, excludedNamePatterns } from "./reactivation-import.service";
 import { assertProtectionFresh, loadProtectionIndex } from "./protected-contacts.service";
 import { buildOwnerLinks, type ReactivationContactRow } from "./reactivation-followup.service";
 
@@ -37,6 +39,8 @@ export type SendSummary = {
   considered: number;
   /** Contacts sautés parce que protégés (mandat / compromis signé < 12 mois). */
   protected: number;
+  /** Contacts passés en « exclu » à l'envoi (confrères, adresses anonymisées, noms bannis). */
+  excluded: number;
   sent: number;
   sentByStep: Record<string, number>;
   sentByVariant: Record<string, number>;
@@ -54,6 +58,9 @@ const envInt = (name: string, fallback: number) => {
 
 /** REACTIVATION_PAUSED=1 : le cron n'envoie rien (les envois manuels restent possibles). */
 export const isReactivationPaused = () => /^(1|true|on|yes)$/i.test((process.env.REACTIVATION_PAUSED ?? "").trim());
+
+/** Âge minimum d'une fiche pour le J0 (REACTIVATION_MIN_AGE_DAYS, 365 par défaut). */
+export const resolveMinContactAgeDays = () => envInt("REACTIVATION_MIN_AGE_DAYS", DEFAULT_MIN_CONTACT_AGE_DAYS);
 
 /** Plafond de départ (REACTIVATION_DAILY_LIMIT, 50 par défaut). */
 export const resolveDailyLimit = () => envInt("REACTIVATION_DAILY_LIMIT", DEFAULT_DAILY_LIMIT);
@@ -113,6 +120,7 @@ export const runReactivationSendBatch = async (input: {
     limit,
     considered: 0,
     protected: 0,
+    excluded: 0,
     sent: 0,
     sentByStep: {},
     sentByVariant: {},
@@ -142,20 +150,41 @@ export const runReactivationSendBatch = async (input: {
     .limit(fetchSize);
   if (dueError) throw new Error(dueError.message);
 
+  // J0 : fiches d'au moins REACTIVATION_MIN_AGE_DAYS (un contact de la semaine n'est pas dormant).
+  const maxCreatedAt = new Date(now.getTime() - resolveMinContactAgeDays() * 24 * 60 * 60 * 1000).toISOString();
   const { data: pendingRows, error: pendingError } = await supabaseAdmin
     .from("reactivation_contacts")
     .select("*")
     .eq("campaign", campaign)
     .in("segment", [...OWNER_SEGMENTS])
     .eq("status", "pending")
+    .lte("sweepbright_created_at", maxCreatedAt)
     .order("sweepbright_created_at", { ascending: input.order !== "newest", nullsFirst: false })
     .limit(fetchSize);
   if (pendingError) throw new Error(pendingError.message);
 
+  // Exclusions (confrères, adresses anonymisées, noms bannis) revérifiées à
+  // l'envoi : la liste peut avoir grandi depuis l'import.
+  const fragments = excludedEmailFragments();
+  const namePatterns = excludedNamePatterns();
   const candidates = [...(dueRows ?? []), ...(pendingRows ?? [])] as ReactivationContactRow[];
   const queue: ReactivationContactRow[] = [];
   for (const contact of candidates) {
     if (queue.length >= limit) break;
+    const email = contact.email.toLowerCase();
+    const fullName = contact.full_name ?? `${contact.first_name ?? ""} ${contact.last_name ?? ""}`;
+    const excludedByEmail = fragments.some((fragment) => email.includes(fragment));
+    const excludedByName = namePatterns.some((pattern) => pattern.test(fullName) || pattern.test(email));
+    if (excludedByEmail || excludedByName) {
+      if (!input.dryRunTo) {
+        await supabaseAdmin
+          .from("reactivation_contacts")
+          .update({ status: "excluded", exclude_reason: excludedByEmail ? "adresse_exclue" : "nom_exclu", next_send_at: null })
+          .eq("id", contact.id);
+      }
+      summary.excluded += 1;
+      continue;
+    }
     if (isContactProtected(contact, protection)) {
       summary.protected += 1;
       continue;

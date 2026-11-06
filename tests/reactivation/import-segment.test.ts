@@ -35,7 +35,9 @@ describe("segmentation à l'import", () => {
 describe("exclusions fixées le 06/11", () => {
   const opts = { excludedNames: excludedNamePatterns(), excludedEmailFragments: excludedEmailFragments() };
   it("écarte @orpi.com et les adresses anonymisées dummy", () => {
-    expect(decideSegment({ ...vendor, email: "agence@orpi.com" }, opts).exclude).toBe("adresse_orpi");
+    expect(decideSegment({ ...vendor, email: "agence@orpi.com" }, opts).exclude).toBe("adresse_pro");
+    expect(decideSegment({ ...vendor, email: "fabrice@eraimmo.fr" }, opts).exclude).toBe("adresse_pro");
+    expect(decideSegment({ ...vendor, email: "c@citya.com" }, opts).exclude).toBe("adresse_pro");
     expect(decideSegment({ ...vendor, email: "dummy15349321@dummy.com" }, opts).exclude).toBe("adresse_anonymisee");
   });
   it("écarte Benjamin et Laurent Chiche, Reumaux, Raimondi, Charbonnel, Taddei, Funel — pas les autres Chiche", () => {

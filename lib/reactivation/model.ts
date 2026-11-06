@@ -150,6 +150,8 @@ export const cleanFirstName = (value: string | null | undefined): string | null 
   const raw = (value ?? "").trim();
   if (!raw) return null;
   if (raw.length > 40 || raw.includes("@") || /\d/.test(raw)) return null;
+  // Moins de deux lettres (« . », « M », « - ») : on préfère « Bonjour, » à « Bonjour ., ».
+  if ((raw.match(/\p{L}/gu) ?? []).length < 2) return null;
   const lowered = raw.toLowerCase();
   if (["n/a", "na", "firstname", "prenom", "prénom", "inconnu", "test", "mr", "mme", "m."].includes(lowered)) return null;
   // Première lettre en capitale, le reste tel quel (prénoms composés conservés).
@@ -262,7 +264,43 @@ export const dailyLimitFor = (
 // ---------------------------------------------------------------------------
 
 /** Fragments d'adresse e-mail qui excluent la fiche (minuscules). */
-export const DEFAULT_EXCLUDED_EMAIL_FRAGMENTS = ["@orpi.com", "dummy"] as const;
+/**
+ * Adresses jamais contactées : agences et réseaux (confrères), adresses
+ * anonymisées. Fragments comparés à l'adresse en minuscules.
+ */
+export const DEFAULT_EXCLUDED_EMAIL_FRAGMENTS = [
+  "@orpi.com",
+  "dummy",
+  "@eraimmo.fr",
+  "@era-immobilier",
+  "@citya.com",
+  "@beaumontimmo.com",
+  "@century21",
+  "@laforet",
+  "@iadfrance",
+  "@safti",
+  "@capifrance",
+  "@foncia",
+  "@nexity",
+  "@guy-hoquet",
+  "@stephaneplaza",
+  "@kwfrance",
+  "@engelvoelkers",
+  "@barnes-international",
+  "@sothebysrealty",
+  "@lafourmi-immo",
+  "@proprietes-privees",
+  "@efficity",
+  "@squarehabitat",
+  "@arthurimmo",
+  "@immo",
+  "immobilier",
+  "@sillage-immo.com",
+  "@immoconseilnice.com",
+] as const;
+
+/** Âge minimum d'une fiche SweepBright pour recevoir le J0 (REACTIVATION_MIN_AGE_DAYS, un an par défaut — décision Yoann 06/11) : un contact récent n'est pas dormant. */
+export const DEFAULT_MIN_CONTACT_AGE_DAYS = 365;
 
 /** Motifs de nom (prénom + nom, insensible à la casse) exclus par défaut. */
 export const DEFAULT_EXCLUDED_NAME_PATTERNS = [
