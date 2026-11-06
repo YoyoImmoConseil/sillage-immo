@@ -47,6 +47,9 @@ const envInt = (name: string, fallback: number) => {
   return Number.isFinite(raw) && raw > 0 ? raw : fallback;
 };
 
+/** REACTIVATION_PAUSED=1 : le cron n'envoie rien (les envois manuels restent possibles). */
+export const isReactivationPaused = () => /^(1|true|on|yes)$/i.test((process.env.REACTIVATION_PAUSED ?? "").trim());
+
 /** Plafond de départ (REACTIVATION_DAILY_LIMIT, 50 par défaut). */
 export const resolveDailyLimit = () => envInt("REACTIVATION_DAILY_LIMIT", DEFAULT_DAILY_LIMIT);
 

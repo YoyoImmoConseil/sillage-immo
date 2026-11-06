@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { isInternalRequest } from "@/lib/admin/auth";
 import { isReactivationSendSlot, parisHourOf } from "@/lib/reactivation/model";
-import { runReactivationSendBatch } from "@/services/reactivation/reactivation-send.service";
+import { isReactivationPaused, runReactivationSendBatch } from "@/services/reactivation/reactivation-send.service";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -13,6 +13,8 @@ export const maxDuration = 120;
  * que si l'heure de Paris est 9 h (été comme hiver). `?force=1` (appel manuel
  * authentifié) passe outre le créneau ; `?limit=` borne le lot ;
  * `?dryRunTo=adresse` envoie tout à une adresse de test sans rien écrire.
+ * REACTIVATION_PAUSED=1 suspend l'envoi automatique (les envois manuels
+ * depuis l'admin et `?force=1` restent possibles).
  */
 export const GET = async (request: Request) => {
   if (!(await isInternalRequest(request))) {
@@ -21,6 +23,9 @@ export const GET = async (request: Request) => {
   const url = new URL(request.url);
   const force = url.searchParams.get("force") === "1";
   const now = new Date();
+  if (!force && isReactivationPaused()) {
+    return NextResponse.json({ ok: true, skipped: true, paused: true, parisHour: parisHourOf(now) });
+  }
   if (!force && !isReactivationSendSlot(now)) {
     return NextResponse.json({ ok: true, skipped: true, parisHour: parisHourOf(now) });
   }

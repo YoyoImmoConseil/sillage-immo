@@ -4,7 +4,7 @@ import { AdminShell } from "@/app/components/admin-shell";
 import { hasAdminPermission, requireAdminPagePermission } from "@/lib/admin/auth";
 import { SILLAGE_CONTACT_EMAIL } from "@/lib/brand/company";
 import { DEFAULT_REACTIVATION_CAMPAIGN, OWNER_RESPONSE_LABELS, OWNER_SUBJECTS, isOwnerResponse } from "@/lib/reactivation/model";
-import { countSentSoFar, getReactivationStats, resolveDailyLimitWithRamp } from "@/services/reactivation/reactivation-send.service";
+import { countSentSoFar, getReactivationStats, isReactivationPaused, resolveDailyLimitWithRamp } from "@/services/reactivation/reactivation-send.service";
 import { ReactivationTools } from "./reactivation-tools";
 
 export const dynamic = "force-dynamic";
@@ -37,6 +37,7 @@ export default async function ReactivationAdminPage() {
   const sentSoFar = await countSentSoFar(DEFAULT_REACTIVATION_CAMPAIGN);
   const dailyLimit = resolveDailyLimitWithRamp(sentSoFar);
   const canManage = hasAdminPermission(context, "leads.sellers.manage");
+  const paused = isReactivationPaused();
   const responded = stats.byStatus.responded ?? 0;
   const unsubscribed = stats.byStatus.unsubscribed ?? 0;
   const contacted = (stats.byStatus.sent ?? 0) + responded + unsubscribed + (stats.byStatus.dormant ?? 0);
@@ -59,7 +60,13 @@ export default async function ReactivationAdminPage() {
     >
       <section className="space-y-8 text-navy">
         <p className="text-sm opacity-70">
-          Campagne <code>{stats.campaign}</code> · {dailyLimit} envois par jour ouvré à 9 h ({sentSoFar} mails partis ; 50 jusqu&apos;à 500, puis 150) ·{" "}
+          Campagne <code>{stats.campaign}</code> ·{" "}
+          {paused ? (
+            <strong>envoi automatique en pause (REACTIVATION_PAUSED)</strong>
+          ) : (
+            <>{dailyLimit} envois par jour ouvré à 9 h</>
+          )}{" "}
+          ({sentSoFar} mails partis ; 50 jusqu&apos;à 500, puis 150) ·{" "}
           <Link href="/admin/seller-leads" className="underline">
             leads vendeurs
           </Link>
