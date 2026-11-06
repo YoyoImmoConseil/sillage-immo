@@ -13,6 +13,7 @@ import {
   nextSendAtAfter,
   pickSubjectVariant,
   resolveSender,
+  type SenderKey,
   senderKeyForNegotiator,
   type OwnerSubjectVariant,
 } from "@/lib/reactivation/model";
@@ -93,8 +94,10 @@ export const runReactivationSendBatch = async (input: {
   campaign?: string;
   limit?: number;
   now?: Date;
-  /** Adresse de test : tout part vers elle, rien n'est écrit sur les contacts. */
+  /** Adresse de test : tout part vers elle, rien n'est écrit sur les contacts, et les liens sont des liens d'aperçu. */
   dryRunTo?: string | null;
+  /** Test seulement : force l'expéditeur (yoann / jordan / laura) pour relire chaque version signée. */
+  dryRunSender?: SenderKey | null;
 }): Promise<SendSummary> => {
   const campaign = input.campaign ?? DEFAULT_REACTIVATION_CAMPAIGN;
   const limit = input.limit ?? resolveDailyLimitWithRamp(await countSentSoFar(campaign));
@@ -181,8 +184,8 @@ export const runReactivationSendBatch = async (input: {
       decision.step === 1 ? pickSubjectVariant(rotation) : ((contact.subject_variant as OwnerSubjectVariant | null) ?? "A");
     if (decision.step === 1) rotation += 1;
 
-    const sender = resolveSender(senderKeyForNegotiator(contact.negotiator));
-    const links = buildOwnerLinks({ contactId: contact.id, campaign });
+    const sender = resolveSender(input.dryRunTo && input.dryRunSender ? input.dryRunSender : senderKeyForNegotiator(contact.negotiator));
+    const links = buildOwnerLinks({ contactId: contact.id, campaign, preview: Boolean(input.dryRunTo) });
     const rendered = renderOwnerReactivationEmail({
       step: decision.step,
       variant,
@@ -242,6 +245,10 @@ export type ReactivationStats = {
   total: number;
   byStatus: Record<string, number>;
   bySegment: Record<string, number>;
+  /** Contacts « à envoyer » réellement pris par l'envoi (segments propriétaires et anciens prospects). */
+  pendingSendable: number;
+  /** Contacts « à envoyer » d'un segment que l'envoi ne prend pas (clients acte signé, acquéreurs). */
+  pendingOtherSegments: number;
   byStep: Record<string, number>;
   byVariantSent: Record<string, number>;
   byVariantResponded: Record<string, number>;
@@ -309,6 +316,8 @@ export const getReactivationStats = async (campaign = DEFAULT_REACTIVATION_CAMPA
     total: rows.length,
     byStatus: count((row) => row.status),
     bySegment: count((row) => row.segment),
+    pendingSendable: rows.filter((row) => row.status === "pending" && (OWNER_SEGMENTS as readonly string[]).includes(row.segment)).length,
+    pendingOtherSegments: rows.filter((row) => row.status === "pending" && !(OWNER_SEGMENTS as readonly string[]).includes(row.segment)).length,
     byStep: count((row) => String(row.sequence_step)),
     byVariantSent: count((row) => (row.sequence_step >= 1 ? row.subject_variant : null)),
     byVariantResponded: count((row) => (row.responded_at ? row.subject_variant : null)),

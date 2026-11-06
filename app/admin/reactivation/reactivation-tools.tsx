@@ -27,6 +27,7 @@ export function ReactivationTools({
   const [file, setFile] = useState<File | null>(null);
   const [testTo, setTestTo] = useState(contactEmail);
   const [testCount, setTestCount] = useState(3);
+  const [testSender, setTestSender] = useState<"" | "yoann" | "jordan" | "laura">("");
   const [batchLimit, setBatchLimit] = useState(defaultLimit);
 
   const importFile = async () => {
@@ -63,7 +64,7 @@ export function ReactivationTools({
       const response = await fetch("/api/admin/reactivation/send", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ limit, dryRunTo }),
+        body: JSON.stringify({ limit, dryRunTo, dryRunSender: dryRunTo && testSender ? testSender : null }),
       });
       const json = (await response.json()) as {
         ok: boolean;
@@ -133,10 +134,19 @@ export function ReactivationTools({
       </article>
       <article className="space-y-3 rounded-2xl border border-[rgba(20,20,70,0.18)] bg-white/70 p-5">
         <h3 className="font-semibold">2. Test en conditions réelles</h3>
-        <p className="text-sm opacity-70">Les prochains mails du lot partent vers cette adresse ; rien n&apos;est écrit sur les contacts.</p>
+        <p className="text-sm opacity-70">
+          Les prochains mails du lot partent vers cette adresse ; rien n&apos;est écrit sur les contacts, et les boutons des mails de test ouvrent le
+          parcours en aperçu (rien n&apos;est enregistré).
+        </p>
         <div className="flex flex-wrap gap-2">
           <input type="email" className={inputClass} value={testTo} onChange={(event) => setTestTo(event.target.value)} placeholder="adresse de test" />
           <input type="number" min={1} max={20} className={`${inputClass} w-20`} value={testCount} onChange={(event) => setTestCount(Number(event.target.value) || 1)} />
+          <select className={inputClass} value={testSender} onChange={(event) => setTestSender(event.target.value as "" | "yoann" | "jordan" | "laura")}>
+            <option value="">Signature : celle de la fiche</option>
+            <option value="yoann">Signature : Yoann</option>
+            <option value="jordan">Signature : Jordan S.</option>
+            <option value="laura">Signature : Laura</option>
+          </select>
         </div>
         <button type="button" className={outlineClass} disabled={busy || !testTo.includes("@")} onClick={() => send(testTo, testCount)}>
           Envoyer le test

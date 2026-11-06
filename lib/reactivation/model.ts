@@ -172,6 +172,8 @@ export const normalizeEmailForReactivation = (email: string): string | null => {
 
 export type SenderKey = "yoann" | "jordan" | "laura";
 
+export const isSenderKey = (value: unknown): value is SenderKey => value === "yoann" || value === "jordan" || value === "laura";
+
 export type ReactivationSender = {
   key: SenderKey;
   /** Prénom utilisé dans les écrans (« Je vous appelle… » signé). */

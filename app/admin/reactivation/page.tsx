@@ -49,7 +49,11 @@ export default async function ReactivationAdminPage() {
   const contacted = (stats.byStatus.sent ?? 0) + responded + unsubscribed + (stats.byStatus.dormant ?? 0);
   const cards = [
     { label: "Contacts importés", value: stats.total },
-    { label: "À envoyer", value: stats.byStatus.pending ?? 0 },
+    {
+      label: "À envoyer",
+      value: stats.pendingSendable,
+      hint: stats.pendingOtherSegments > 0 ? `+ ${stats.pendingOtherSegments} hors vague (clients acte signé / acquéreurs)` : undefined,
+    },
     { label: "Contactés", value: contacted },
     { label: "Ont répondu", value: responded, hint: rate(responded, contacted) },
     { label: "Vendeurs chauds", value: (stats.byResponse.vendre ?? 0) + (stats.byResponse.valeur ?? 0) },

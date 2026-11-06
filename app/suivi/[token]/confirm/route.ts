@@ -22,14 +22,19 @@ export async function POST(request: Request, context: RouteContext) {
   if (isReactivationCampaign(payload.campaign)) {
     const confirmable = isOwnerResponse(response) && (OWNER_CONFIRM_RESPONSES.has(response) || response === "vendu_cherche");
     if (!confirmable) return NextResponse.redirect(back, 303);
-    try {
-      await recordOwnerResponse({ payload, response, userAgent: request.headers.get("user-agent") });
-    } catch (error) {
-      console.error("[suivi/confirm] owner record failed:", error instanceof Error ? error.message : error);
-      return NextResponse.redirect(back, 303);
+    // Aperçu (mails de test) : rien n'est enregistré, on affiche l'écran suivant.
+    const preview = form?.get("apercu") === "1";
+    if (!preview) {
+      try {
+        await recordOwnerResponse({ payload, response, userAgent: request.headers.get("user-agent") });
+      } catch (error) {
+        console.error("[suivi/confirm] owner record failed:", error instanceof Error ? error.message : error);
+        return NextResponse.redirect(back, 303);
+      }
     }
     back.searchParams.set("r", response);
     back.searchParams.set("done", "1");
+    if (preview) back.searchParams.set("apercu", "1");
     return NextResponse.redirect(back, 303);
   }
 

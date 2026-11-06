@@ -24,7 +24,7 @@ export const metadata: Metadata = {
 
 type PageProps = {
   params: Promise<{ token: string }>;
-  searchParams: Promise<{ r?: string | string[]; done?: string | string[]; choose?: string | string[] }>;
+  searchParams: Promise<{ r?: string | string[]; done?: string | string[]; choose?: string | string[]; apercu?: string | string[] }>;
 };
 
 const first = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value);
@@ -59,6 +59,7 @@ export default async function FollowupPage({ params, searchParams }: PageProps) 
       response,
       done,
       choose: first(query.choose) === "1",
+      preview: first(query.apercu) === "1",
       userAgent: requestHeaders.get("user-agent"),
     });
   }

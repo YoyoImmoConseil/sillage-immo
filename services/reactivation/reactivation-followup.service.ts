@@ -52,26 +52,31 @@ export type OwnerLinks = {
   stop: string;
 };
 
-const buildUrl = (baseUrl: string, token: string, response: OwnerResponse) => {
+const buildUrl = (baseUrl: string, token: string, response: OwnerResponse, preview: boolean) => {
   const url = new URL(`/suivi/${token}`, `${baseUrl.replace(/\/+$/, "")}/`);
   url.searchParams.set("r", response);
+  if (preview) url.searchParams.set(PREVIEW_PARAM, "1");
   return url.toString();
 };
 
-/** Jeton signé + les cinq URL des boutons d'un contact. */
-export const buildOwnerLinks = (input: { contactId: string; campaign: string; baseUrl?: string }): OwnerLinks => {
+/** Paramètre d'aperçu : la page affiche le parcours sans rien enregistrer (mails de test). */
+export const PREVIEW_PARAM = "apercu";
+
+/** Jeton signé + les cinq URL des boutons d'un contact. `preview` : liens d'aperçu (test), aucun clic n'est enregistré. */
+export const buildOwnerLinks = (input: { contactId: string; campaign: string; baseUrl?: string; preview?: boolean }): OwnerLinks => {
   const token = buildFollowupToken(
     { leadId: input.contactId, campaign: input.campaign, issuedAt: Math.floor(Date.now() / 1000) },
     getFollowupSecret()
   );
   const baseUrl = input.baseUrl ?? SITE_URL;
+  const preview = Boolean(input.preview);
   return {
     token,
-    vendre: buildUrl(baseUrl, token, "vendre"),
-    valeur: buildUrl(baseUrl, token, "valeur"),
-    vendu: buildUrl(baseUrl, token, "vendu"),
-    garde: buildUrl(baseUrl, token, "garde"),
-    stop: buildUrl(baseUrl, token, "stop"),
+    vendre: buildUrl(baseUrl, token, "vendre", preview),
+    valeur: buildUrl(baseUrl, token, "valeur", preview),
+    vendu: buildUrl(baseUrl, token, "vendu", preview),
+    garde: buildUrl(baseUrl, token, "garde", preview),
+    stop: buildUrl(baseUrl, token, "stop", preview),
   };
 };
 
