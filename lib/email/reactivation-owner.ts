@@ -63,8 +63,8 @@ const bookingBlock = (bookingUrl: string | null) =>
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${SAND};border-radius:6px;">
         <tr><td style="padding:16px 20px;font-size:14px;line-height:22px;color:${INK};">
           Vous préférez en parler de vive voix&nbsp;?
-          <a href="${bookingUrl}" style="color:${NAVY};font-weight:600;text-decoration:underline;">Réservez 15 minutes avec moi</a>,
-          par téléphone ou en visio, au créneau qui vous arrange.
+          <a href="${bookingUrl}" style="color:${NAVY};font-weight:600;text-decoration:underline;">Réservez 15 minutes de visio avec moi</a>
+          au créneau qui vous arrange, ou répondez simplement à ce message pour que je vous appelle.
         </td></tr>
       </table>`
     : "";

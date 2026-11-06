@@ -20,7 +20,7 @@ describe("mail de réactivation propriétaires", () => {
     expect(a.html).toContain("j'ai fondé <strong>Sillage Immo</strong>");
     expect(a.html).toContain("Je remets mes dossiers à jour");
     for (const href of Object.values(links)) expect(a.html).toContain(href);
-    expect(a.html).toContain("Réservez 15 minutes avec moi");
+    expect(a.html).toContain("Réservez 15 minutes de visio avec moi");
     expect(a.html).toContain("me désinscrire");
     expect(a.html).toContain("#141446");
     expect(a.html).not.toContain("{{");
