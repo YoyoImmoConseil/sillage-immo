@@ -20,7 +20,7 @@ export const isReactivationSegment = (value: unknown): value is ReactivationSegm
   typeof value === "string" && (REACTIVATION_SEGMENTS as readonly string[]).includes(value);
 
 /** Réponses possibles d'un propriétaire (boutons du mail et de la page de confirmation). */
-export const OWNER_RESPONSES = ["vendre", "valeur", "vendu", "vendu_cherche", "garde", "stop"] as const;
+export const OWNER_RESPONSES = ["vendre", "valeur", "vendu", "vendu_cherche", "garde", "stop", "rappel", "cherche"] as const;
 export type OwnerResponse = (typeof OWNER_RESPONSES)[number];
 
 export const isOwnerResponse = (value: unknown): value is OwnerResponse =>
@@ -32,6 +32,14 @@ export const OWNER_CONFIRM_RESPONSES: ReadonlySet<OwnerResponse> = new Set(["ven
 /** Réponses « chaudes » : notification immédiate et promotion en lead vendeur. */
 export const OWNER_HOT_RESPONSES: ReadonlySet<OwnerResponse> = new Set(["vendre", "valeur"]);
 
+/**
+ * Réponses secondaires, posées sur l'écran de confirmation : elles complètent
+ * la réponse principale sans la remplacer. `rappel` = préfère être rappelé
+ * plutôt que réserver ; `cherche` = cherche aussi à acheter (vente-rachat,
+ * ou propriétaire qui garde mais cherche un autre bien).
+ */
+export const OWNER_SECONDARY_RESPONSES: ReadonlySet<OwnerResponse> = new Set(["rappel", "cherche"]);
+
 export const OWNER_RESPONSE_LABELS: Record<OwnerResponse, string> = {
   vendre: "J'envisage de vendre, parlons-en",
   valeur: "J'aimerais connaître sa valeur aujourd'hui",
@@ -39,6 +47,8 @@ export const OWNER_RESPONSE_LABELS: Record<OwnerResponse, string> = {
   vendu_cherche: "Je l'ai vendu, et je cherche un autre bien",
   garde: "Je le garde, pas de projet",
   stop: "Ne plus recevoir de messages",
+  rappel: "Préfère être rappelé(e)",
+  cherche: "Cherche aussi à acheter",
 };
 
 export type ReactivationStatus =
@@ -144,3 +154,114 @@ export const normalizeEmailForReactivation = (email: string): string | null => {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return null;
   return value;
 };
+
+// ---------------------------------------------------------------------------
+// Expéditeur : le négociateur de la fiche SweepBright (décision du 06/11/2026).
+// Chaque mail est signé à la première personne par Yoann, Jordan ou Laura ;
+// chacun rappelle ses propres chauds. Jordan signe « Jordan S. », jamais son
+// nom complet. Les fiches de Maylis (ancienne collaboratrice) et celles sans
+// négociateur reviennent à Yoann.
+// ---------------------------------------------------------------------------
+
+export type SenderKey = "yoann" | "jordan" | "laura";
+
+export type ReactivationSender = {
+  key: SenderKey;
+  /** Prénom utilisé dans les écrans (« Je vous appelle… » signé). */
+  firstName: string;
+  /** Nom affiché dans l'expéditeur et la signature. */
+  displayName: string;
+  /** Adresse d'envoi (doit être sur le domaine vérifié dans Resend). */
+  email: string;
+  /** Phrase de pont après « Nous nous sommes connus à l'occasion d'un projet immobilier à Nice. » */
+  bridge: string;
+  /** Ligne sous le nom dans la signature. */
+  role: string;
+  /** Page de réservation (vide = pas de bouton « réserver »). */
+  bookingUrl: string | null;
+};
+
+const DEFAULT_SENDERS: Record<SenderKey, Omit<ReactivationSender, "bookingUrl" | "email"> & { email: string }> = {
+  yoann: {
+    key: "yoann",
+    firstName: "Yoann",
+    displayName: "Yoann Uzzan",
+    email: "yu@sillage-immo.com",
+    bridge: "Depuis, j'ai fondé Sillage Immo, une agence indépendante installée rue Arson, avec une idée simple : moins de mandats, mieux suivis.",
+    role: "Fondateur · Sillage Immo",
+  },
+  jordan: {
+    key: "jordan",
+    firstName: "Jordan",
+    displayName: "Jordan S.",
+    email: "jordan@sillage-immo.com",
+    bridge: "Depuis, je travaille chez Sillage Immo, l'agence indépendante fondée par Yoann Uzzan rue Arson, avec une idée simple : moins de mandats, mieux suivis.",
+    role: "Conseiller · Sillage Immo",
+  },
+  laura: {
+    key: "laura",
+    firstName: "Laura",
+    displayName: "Laura Zeisser",
+    email: "laura@sillage-immo.com",
+    bridge: "Depuis, je travaille chez Sillage Immo, l'agence indépendante fondée par Yoann Uzzan rue Arson, avec une idée simple : moins de mandats, mieux suivis.",
+    role: "Conseillère · Sillage Immo",
+  },
+};
+
+/** Clé d'expéditeur d'après le nom du négociateur SweepBright (insensible à la casse ; inconnu → Yoann). */
+export const senderKeyForNegotiator = (negotiator: string | null | undefined): SenderKey => {
+  const value = (negotiator ?? "").toLowerCase();
+  if (value.includes("jordan")) return "jordan";
+  if (value.includes("laura")) return "laura";
+  return "yoann";
+};
+
+/**
+ * Expéditeur résolu, avec les surcharges d'environnement :
+ * REACTIVATION_SENDER_<KEY>_EMAIL, REACTIVATION_SENDER_<KEY>_BOOKING_URL
+ * (REACTIVATION_BOOKING_URL sert de repli pour Yoann).
+ */
+export const resolveSender = (key: SenderKey, env: Record<string, string | undefined> = process.env): ReactivationSender => {
+  const base = DEFAULT_SENDERS[key];
+  const upper = key.toUpperCase();
+  const email = env[`REACTIVATION_SENDER_${upper}_EMAIL`]?.trim() || base.email;
+  const booking =
+    env[`REACTIVATION_SENDER_${upper}_BOOKING_URL`]?.trim() || (key === "yoann" ? env.REACTIVATION_BOOKING_URL?.trim() : "") || null;
+  return { ...base, email, bookingUrl: booking };
+};
+
+// ---------------------------------------------------------------------------
+// Cadence : 50 par jour sur les 500 premiers envois, puis 150 (décision du 06/11).
+// ---------------------------------------------------------------------------
+
+export const DEFAULT_RAMP_THRESHOLD = 500;
+export const DEFAULT_DAILY_LIMIT_AFTER_RAMP = 150;
+
+/** Plafond du jour d'après le nombre total de mails déjà partis sur la campagne. */
+export const dailyLimitFor = (
+  totalSentSoFar: number,
+  options: { base?: number; afterRamp?: number; threshold?: number } = {}
+): number => {
+  const base = options.base ?? DEFAULT_DAILY_LIMIT;
+  const afterRamp = options.afterRamp ?? DEFAULT_DAILY_LIMIT_AFTER_RAMP;
+  const threshold = options.threshold ?? DEFAULT_RAMP_THRESHOLD;
+  return totalSentSoFar >= threshold ? Math.max(base, afterRamp) : base;
+};
+
+// ---------------------------------------------------------------------------
+// Exclusions fixées le 06/11/2026 (en plus de REACTIVATION_EXCLUDED_NAMES).
+// ---------------------------------------------------------------------------
+
+/** Fragments d'adresse e-mail qui excluent la fiche (minuscules). */
+export const DEFAULT_EXCLUDED_EMAIL_FRAGMENTS = ["@orpi.com", "dummy"] as const;
+
+/** Motifs de nom (prénom + nom, insensible à la casse) exclus par défaut. */
+export const DEFAULT_EXCLUDED_NAME_PATTERNS = [
+  "taddei",
+  "funel",
+  "benjamin chiche",
+  "laurent chiche",
+  "reumaux",
+  "raimondi",
+  "charbonnel",
+] as const;

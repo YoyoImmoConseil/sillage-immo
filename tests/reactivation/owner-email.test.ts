@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 import { renderOwnerReactivationEmail } from "@/lib/email/reactivation-owner";
+import { resolveSender } from "@/lib/reactivation/model";
 
 const links = {
   vendre: "https://sillage-immo.com/suivi/t?r=vendre",
@@ -57,5 +58,18 @@ describe("mail de réactivation propriétaires", () => {
     const a = renderOwnerReactivationEmail({ ...base, step: 1, variant: "A", firstName: "<b>X</b>" });
     expect(a.html).not.toContain("<b>X</b>");
     expect(a.html).toContain("&lt;b&gt;X&lt;/b&gt;");
+  });
+});
+
+describe("expéditeur par négociateur", () => {
+  it("Jordan signe « Jordan S. » avec le pont équipe, Yoann « j'ai fondé »", () => {
+    const j = renderOwnerReactivationEmail({ ...base, step: 1, variant: "A", firstName: "Jean", sender: resolveSender("jordan", {}) });
+    expect(j.html).toContain("Jordan S.");
+    expect(j.html).not.toContain("Saiman");
+    expect(j.html).toContain("l'agence indépendante fondée par Yoann Uzzan");
+    expect(j.text).toContain("Jordan S.");
+    const y = renderOwnerReactivationEmail({ ...base, step: 1, variant: "A", firstName: "Jean" });
+    expect(y.html).toContain("j'ai fondé <strong>Sillage Immo</strong>");
+    expect(y.html).toContain("Yoann Uzzan");
   });
 });

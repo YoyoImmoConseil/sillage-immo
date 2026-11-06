@@ -4,7 +4,7 @@ import { AdminShell } from "@/app/components/admin-shell";
 import { hasAdminPermission, requireAdminPagePermission } from "@/lib/admin/auth";
 import { SILLAGE_CONTACT_EMAIL } from "@/lib/brand/company";
 import { DEFAULT_REACTIVATION_CAMPAIGN, OWNER_RESPONSE_LABELS, OWNER_SUBJECTS, isOwnerResponse } from "@/lib/reactivation/model";
-import { getReactivationStats, resolveDailyLimit } from "@/services/reactivation/reactivation-send.service";
+import { countSentSoFar, getReactivationStats, resolveDailyLimitWithRamp } from "@/services/reactivation/reactivation-send.service";
 import { ReactivationTools } from "./reactivation-tools";
 
 export const dynamic = "force-dynamic";
@@ -34,6 +34,8 @@ const rate = (part: number, whole: number) => (whole > 0 ? `${Math.round((part /
 export default async function ReactivationAdminPage() {
   const context = await requireAdminPagePermission("leads.sellers.view");
   const stats = await getReactivationStats(DEFAULT_REACTIVATION_CAMPAIGN);
+  const sentSoFar = await countSentSoFar(DEFAULT_REACTIVATION_CAMPAIGN);
+  const dailyLimit = resolveDailyLimitWithRamp(sentSoFar);
   const canManage = hasAdminPermission(context, "leads.sellers.manage");
   const responded = stats.byStatus.responded ?? 0;
   const unsubscribed = stats.byStatus.unsubscribed ?? 0;
@@ -57,7 +59,7 @@ export default async function ReactivationAdminPage() {
     >
       <section className="space-y-8 text-navy">
         <p className="text-sm opacity-70">
-          Campagne <code>{stats.campaign}</code> · {resolveDailyLimit()} envois par jour ouvré à 9 h ·{" "}
+          Campagne <code>{stats.campaign}</code> · {dailyLimit} envois par jour ouvré à 9 h ({sentSoFar} mails partis ; 50 jusqu&apos;à 500, puis 150) ·{" "}
           <Link href="/admin/seller-leads" className="underline">
             leads vendeurs
           </Link>
@@ -74,7 +76,7 @@ export default async function ReactivationAdminPage() {
         </section>
 
         {canManage ? (
-          <ReactivationTools campaign={stats.campaign} defaultLimit={resolveDailyLimit()} contactEmail={SILLAGE_CONTACT_EMAIL} />
+          <ReactivationTools campaign={stats.campaign} defaultLimit={dailyLimit} contactEmail={SILLAGE_CONTACT_EMAIL} />
         ) : null}
 
         <section className="grid gap-4 lg:grid-cols-3">

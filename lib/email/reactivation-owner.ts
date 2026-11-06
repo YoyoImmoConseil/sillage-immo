@@ -1,5 +1,5 @@
 import { SILLAGE_ADDRESS_DISPLAY, SILLAGE_CONTACT_EMAIL, SILLAGE_PHONE_DISPLAY } from "@/lib/brand/company";
-import { OWNER_PREHEADER, OWNER_SUBJECTS, type OwnerSubjectVariant } from "@/lib/reactivation/model";
+import { OWNER_PREHEADER, OWNER_SUBJECTS, resolveSender, type OwnerSubjectVariant, type ReactivationSender } from "@/lib/reactivation/model";
 import { escapeHtml } from "./layout";
 
 /**
@@ -27,6 +27,8 @@ export type OwnerEmailInput = {
   /** Page de réservation (Google Agenda). Absente → la phrase « réservez 15 minutes » n'apparaît pas. */
   bookingUrl: string | null;
   quartiersUrl: string;
+  /** Expéditeur (négociateur de la fiche). Absent → Yoann. */
+  sender?: ReactivationSender;
 };
 
 const NAVY = "#141446";
@@ -117,11 +119,11 @@ const shell = (input: { preheader: string; title: string; bodyHtml: string; butt
 </body>
 </html>`;
 
-const signature = () => `
+const signature = (sender: ReactivationSender) => `
       <p style="margin:24px 0 0 0;font-size:15px;line-height:24px;">
         À bientôt,<br>
-        <strong>Yoann Uzzan</strong><br>
-        <span style="color:${MUTED};">Fondateur · Sillage Immo</span>
+        <strong>${escapeHtml(sender.displayName)}</strong><br>
+        <span style="color:${MUTED};">${escapeHtml(sender.role)}</span>
       </p>`;
 
 const quartiersLine = (quartiersUrl: string) => `
@@ -129,13 +131,13 @@ const quartiersLine = (quartiersUrl: string) => `
         Les prix de votre quartier, mis à jour chaque mois&nbsp;: <a href="${quartiersUrl}" style="color:${NAVY};">sillage-immo.com/quartiers</a>
       </p>`;
 
-const textFooter = (links: OwnerEmailLinks, bookingUrl: string | null, quartiersUrl: string) =>
+const textFooter = (links: OwnerEmailLinks, bookingUrl: string | null, quartiersUrl: string, sender: ReactivationSender) =>
   [
     ...(bookingUrl ? ["", `Vous préférez en parler de vive voix ? Réservez 15 minutes avec moi : ${bookingUrl}`] : []),
     "",
     "À bientôt,",
-    "Yoann Uzzan",
-    "Fondateur · Sillage Immo",
+    sender.displayName,
+    sender.role,
     "",
     `Les prix de votre quartier, mis à jour chaque mois : ${quartiersUrl}`,
     "",
@@ -144,6 +146,7 @@ const textFooter = (links: OwnerEmailLinks, bookingUrl: string | null, quartiers
   ].join("\n");
 
 const renderJ0 = (input: OwnerEmailInput) => {
+  const sender = input.sender ?? resolveSender("yoann");
   const subject = OWNER_SUBJECTS[input.variant];
   const marketSentence =
     input.variant === "B"
@@ -152,7 +155,7 @@ const renderJ0 = (input: OwnerEmailInput) => {
   const bodyHtml = [
     paragraph(escapeHtml(greeting(input.firstName))),
     paragraph(
-      `Nous nous sommes connus à l'occasion d'un projet immobilier à Nice. Depuis, j'ai fondé <strong>Sillage Immo</strong>, une agence indépendante installée rue Arson, avec une idée simple&nbsp;: moins de mandats, mieux suivis.${escapeHtml(marketSentence)}`
+      `Nous nous sommes connus à l'occasion d'un projet immobilier à Nice. ${sender.bridge.replace("Sillage Immo", "<strong>Sillage Immo</strong>").replace(" : ", "&nbsp;: ")}${escapeHtml(marketSentence)}`
     ),
     paragraph(
       `Je remets mes dossiers à jour et je préfère vous poser la question plutôt que de deviner&nbsp;: <strong>où en êtes-vous aujourd'hui avec votre bien&nbsp;?</strong>`
@@ -164,7 +167,7 @@ const renderJ0 = (input: OwnerEmailInput) => {
     secondaryButton("J'aimerais connaître sa valeur aujourd'hui", input.links.valeur) +
     secondaryButton("Je l'ai vendu", input.links.vendu) +
     quietLink("Je le garde, pas de projet", input.links.garde);
-  const afterHtml = bookingBlock(input.bookingUrl) + signature() + quartiersLine(input.quartiersUrl);
+  const afterHtml = bookingBlock(input.bookingUrl) + signature(sender) + quartiersLine(input.quartiersUrl);
   const html = shell({
     preheader: OWNER_PREHEADER,
     title: "Votre bien à Nice : où en êtes-vous ?",
@@ -176,7 +179,7 @@ const renderJ0 = (input: OwnerEmailInput) => {
   const text = [
     greeting(input.firstName),
     "",
-    `Nous nous sommes connus à l'occasion d'un projet immobilier à Nice. Depuis, j'ai fondé Sillage Immo, une agence indépendante installée rue Arson, avec une idée simple : moins de mandats, mieux suivis.${marketSentence}`,
+    `Nous nous sommes connus à l'occasion d'un projet immobilier à Nice. ${sender.bridge}${marketSentence}`,
     "",
     "Je remets mes dossiers à jour et je préfère vous poser la question plutôt que de deviner : où en êtes-vous aujourd'hui avec votre bien ?",
     "",
@@ -186,12 +189,13 @@ const renderJ0 = (input: OwnerEmailInput) => {
     `J'aimerais connaître sa valeur aujourd'hui : ${input.links.valeur}`,
     `Je l'ai vendu : ${input.links.vendu}`,
     `Je le garde, pas de projet : ${input.links.garde}`,
-    textFooter(input.links, input.bookingUrl, input.quartiersUrl),
+    textFooter(input.links, input.bookingUrl, input.quartiersUrl, sender),
   ].join("\n");
   return { subject, html, text };
 };
 
 const renderReminder = (input: OwnerEmailInput) => {
+  const sender = input.sender ?? resolveSender("yoann");
   const subject = "Un clic suffit";
   const bodyHtml = [
     paragraph(escapeHtml(greeting(input.firstName))),
@@ -205,7 +209,7 @@ const renderReminder = (input: OwnerEmailInput) => {
     secondaryButton("J'aimerais connaître sa valeur aujourd'hui", input.links.valeur) +
     secondaryButton("Je l'ai vendu", input.links.vendu) +
     quietLink("Je le garde, pas de projet", input.links.garde);
-  const afterHtml = bookingBlock(input.bookingUrl) + signature() + quartiersLine(input.quartiersUrl);
+  const afterHtml = bookingBlock(input.bookingUrl) + signature(sender) + quartiersLine(input.quartiersUrl);
   const html = shell({
     preheader: "La même question qu'il y a une semaine, et votre réponse en un clic.",
     title: "Un clic suffit",
@@ -225,12 +229,13 @@ const renderReminder = (input: OwnerEmailInput) => {
     `J'aimerais connaître sa valeur aujourd'hui : ${input.links.valeur}`,
     `Je l'ai vendu : ${input.links.vendu}`,
     `Je le garde, pas de projet : ${input.links.garde}`,
-    textFooter(input.links, input.bookingUrl, input.quartiersUrl),
+    textFooter(input.links, input.bookingUrl, input.quartiersUrl, sender),
   ].join("\n");
   return { subject, html, text };
 };
 
 const renderLast = (input: OwnerEmailInput) => {
+  const sender = input.sender ?? resolveSender("yoann");
   const subject = "On classe votre dossier ?";
   const bodyHtml = [
     paragraph(escapeHtml(greeting(input.firstName))),
@@ -242,7 +247,7 @@ const renderLast = (input: OwnerEmailInput) => {
   const buttonsHtml =
     primaryButton("Gardez-moi dans votre veille de quartier", input.links.garde) +
     secondaryButton("Classez mon dossier", input.links.stop);
-  const afterHtml = signature() + quartiersLine(input.quartiersUrl);
+  const afterHtml = signature(sender) + quartiersLine(input.quartiersUrl);
   const html = shell({
     preheader: "Dernier message : je garde votre dossier ouvert, ou je le classe.",
     title: "On classe votre dossier ?",
@@ -260,7 +265,7 @@ const renderLast = (input: OwnerEmailInput) => {
     "",
     `Gardez-moi dans votre veille de quartier : ${input.links.garde}`,
     `Classez mon dossier : ${input.links.stop}`,
-    textFooter(input.links, null, input.quartiersUrl),
+    textFooter(input.links, null, input.quartiersUrl, sender),
   ].join("\n");
   return { subject, html, text };
 };

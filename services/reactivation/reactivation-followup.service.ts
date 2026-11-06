@@ -7,8 +7,11 @@ import { escapeHtml, renderEmailLayout } from "@/lib/email/layout";
 import {
   OWNER_HOT_RESPONSES,
   OWNER_RESPONSE_LABELS,
+  OWNER_SECONDARY_RESPONSES,
   cleanFirstName,
   resolveOwnerResponseStatus,
+  resolveSender,
+  senderKeyForNegotiator,
   type OwnerResponse,
 } from "@/lib/reactivation/model";
 import { SITE_URL } from "@/lib/seo/site";
@@ -81,6 +84,7 @@ export type ReactivationContactSummary = {
   phone: string | null;
   status: string;
   response: string | null;
+  negotiator: string | null;
 };
 
 const toSummary = (row: ReactivationContactRow): ReactivationContactSummary => ({
@@ -93,6 +97,7 @@ const toSummary = (row: ReactivationContactRow): ReactivationContactSummary => (
   phone: row.phone,
   status: row.status,
   response: row.response,
+  negotiator: row.negotiator,
 });
 
 export const getReactivationContact = async (contactId: string): Promise<ReactivationContactSummary | null> => {
@@ -128,8 +133,15 @@ export const recordOwnerResponse = async (input: {
   if (!row) return null;
   const contact = row as ReactivationContactRow;
   const nowIso = new Date().toISOString();
-  const newStatus = resolveOwnerResponseStatus(input.response);
+  const secondary = OWNER_SECONDARY_RESPONSES.has(input.response);
+  // Une réponse secondaire (rappel / cherche) complète la réponse principale sans la remplacer ;
+  // sans réponse principale (lien suivi directement), elle devient la réponse.
+  const mainResponse = secondary && contact.response ? contact.response : input.response;
+  const newStatus = secondary && contact.status === "responded" ? "responded" : resolveOwnerResponseStatus(input.response);
   const history = Array.isArray(contact.response_history) ? contact.response_history : [];
+  const metadata = { ...(contact.metadata ?? {}) } as Record<string, unknown>;
+  if (input.response === "rappel") metadata.prefers_callback = true;
+  if (input.response === "cherche" || input.response === "vendu_cherche") metadata.wants_to_buy = true;
 
   let sellerLeadId = contact.seller_lead_id;
   if (OWNER_HOT_RESPONSES.has(input.response) && !sellerLeadId) {
@@ -140,10 +152,11 @@ export const recordOwnerResponse = async (input: {
     .from("reactivation_contacts")
     .update({
       status: newStatus,
-      response: input.response,
+      response: mainResponse,
       responded_at: contact.responded_at ?? nowIso,
       next_send_at: null,
       seller_lead_id: sellerLeadId,
+      metadata,
       response_history: [
         ...history,
         {
@@ -182,7 +195,7 @@ export const recordOwnerResponse = async (input: {
   }
 
   let notified = false;
-  if (OWNER_HOT_RESPONSES.has(input.response) || input.response === "vendu_cherche") {
+  if (OWNER_HOT_RESPONSES.has(input.response) || input.response === "vendu_cherche" || input.response === "cherche") {
     notified = await notifyAgency(contact, input.response, sellerLeadId);
     await writeSweepBrightNote(contact, input.response, nowIso);
   }
@@ -245,7 +258,7 @@ const notifyAgency = async (contact: ReactivationContactRow, response: OwnerResp
     <p style="margin:0 0 18px;padding:12px 16px;background:#f4ece4;border-radius:12px;font-weight:600;">${escapeHtml(label)}</p>
     <p style="margin:0 0 6px;">E-mail : <a href="mailto:${escapeHtml(contact.email)}" style="color:#141446;">${escapeHtml(contact.email)}</a></p>
     <p style="margin:0 0 6px;">Téléphone : ${phoneLine}</p>
-    <p style="margin:0;">Négociateur SweepBright : ${escapeHtml(contact.negotiator ?? "—")}</p>
+    <p style="margin:0;">Négociateur SweepBright : ${escapeHtml(contact.negotiator ?? "—")} — c'est à lui ou elle de rappeler dans la journée.</p>
   `;
   const html = renderEmailLayout({
     preheader: `${fullName} : ${label}`,
@@ -265,8 +278,11 @@ const notifyAgency = async (contact: ReactivationContactRow, response: OwnerResp
     adminLink,
   ].join("\n");
   try {
-    const sent = await sendTransactionalEmail({ to: SILLAGE_CONTACT_EMAIL, subject, html, text });
-    return sent.sent;
+    // Au négociateur de la fiche (c'est lui qui rappelle), copie à l'agence si c'est quelqu'un d'autre.
+    const sender = resolveSender(senderKeyForNegotiator(contact.negotiator));
+    const recipients = sender.email === SILLAGE_CONTACT_EMAIL ? [SILLAGE_CONTACT_EMAIL] : [sender.email, SILLAGE_CONTACT_EMAIL];
+    const results = await Promise.all(recipients.map((to) => sendTransactionalEmail({ to, subject, html, text })));
+    return results.some((result) => result.sent);
   } catch (error) {
     console.error("[reactivation] notification failed:", error instanceof Error ? error.message : error);
     return false;

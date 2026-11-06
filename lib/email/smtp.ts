@@ -16,6 +16,19 @@ type EmailPayload = {
   html: string;
   /** Pièces jointes (même forme pour Resend et Nodemailer). */
   attachments?: EmailAttachment[];
+  /** Expéditeur affiché, s'il diffère de l'expéditeur par défaut (nom et adresse du même domaine). */
+  sender?: { name: string; email: string } | null;
+  replyTo?: string | null;
+};
+
+/** Options Nodemailer d'un envoi : expéditeur par défaut ou surchargé, sans les champs maison. */
+const toSmtpOptions = (payload: EmailPayload, fromEmail: string) => {
+  const { sender, replyTo, ...rest } = payload;
+  return {
+    from: sender ? `${sender.name} <${sender.email}>` : `${getFromName()} <${fromEmail}>`,
+    ...(replyTo ? { replyTo } : {}),
+    ...rest,
+  };
 };
 
 const isSmtpConfigured = () => {
@@ -251,9 +264,11 @@ const sendWithResend = async (payload: EmailPayload) => {
   }
 
   const resend = new Resend(process.env.RESEND_API_KEY);
+  const { sender, replyTo, ...rest } = payload;
   const { error } = await resend.emails.send({
-    from: `${getFromName()} <${fromEmail}>`,
-    ...payload,
+    from: sender ? `${sender.name} <${sender.email}>` : `${getFromName()} <${fromEmail}>`,
+    ...(replyTo ? { replyTo } : {}),
+    ...rest,
   });
 
   if (error) {
@@ -279,10 +294,7 @@ export const sendOtpEmail = async (email: string, code: string) => {
     return { sent: false as const, reason: "email_from_not_configured" as const };
   }
 
-  await transporter.sendMail({
-    from: `${getFromName()} <${fromEmail}>`,
-    ...payload,
-  });
+  await transporter.sendMail(toSmtpOptions(payload, fromEmail));
 
   return { sent: true as const, provider: "smtp" as const };
 };
@@ -302,10 +314,7 @@ export const sendTransactionalEmail = async (payload: EmailPayload) => {
     return { sent: false as const, reason: "email_from_not_configured" as const };
   }
 
-  await transporter.sendMail({
-    from: `${getFromName()} <${fromEmail}>`,
-    ...payload,
-  });
+  await transporter.sendMail(toSmtpOptions(payload, fromEmail));
 
   return { sent: true as const, provider: "smtp" as const };
 };
@@ -336,10 +345,7 @@ export const sendClientPortalAccessEmail = async (input: {
     return { sent: false as const, reason: "email_from_not_configured" as const };
   }
 
-  await transporter.sendMail({
-    from: `${getFromName()} <${fromEmail}>`,
-    ...payload,
-  });
+  await transporter.sendMail(toSmtpOptions(payload, fromEmail));
 
   return { sent: true as const, provider: "smtp" as const };
 };

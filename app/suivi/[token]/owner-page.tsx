@@ -1,78 +1,141 @@
 import Link from "next/link";
 
 import type { FollowupTokenPayload } from "@/lib/buyers/followup-token";
-import { OWNER_CONFIRM_RESPONSES, isOwnerResponse, type OwnerResponse } from "@/lib/reactivation/model";
+import {
+  OWNER_CONFIRM_RESPONSES,
+  OWNER_HOT_RESPONSES,
+  isOwnerResponse,
+  resolveSender,
+  senderKeyForNegotiator,
+  type OwnerResponse,
+  type ReactivationSender,
+} from "@/lib/reactivation/model";
 import { getReactivationContact, recordOwnerResponse } from "@/services/reactivation/reactivation-followup.service";
 import { FOLLOWUP_INVALID_SCREEN, personalize, type FollowupScreen } from "./copy";
 import { FollowupScreenView } from "./followup-screen";
-import { OWNER_CONFIRM_SCREENS, OWNER_SCREENS } from "./owner-copy";
+import { OWNER_CONFIRM_SCREENS, OWNER_SCREENS, withSender } from "./owner-copy";
 
 /**
  * Branche « réactivation propriétaires » de /suivi/<jeton> (campagnes `reac-*`).
  *
- * - vendre / valeur / garde / vendu_cherche : enregistrées à l'ouverture.
+ * - vendre / valeur : enregistrées à l'ouverture, puis le choix « être
+ *   rappelé » / « réserver un créneau » (+ « je cherche aussi à acheter »).
+ * - garde / rappel / cherche / vendu_cherche : enregistrées à l'ouverture.
  * - vendu / stop : écran de confirmation d'abord, enregistrement au clic via
  *   /suivi/<jeton>/confirm, puis retour ici avec `done=1`.
+ * - `choose=1` : l'écran des quatre choix, sans rien enregistrer.
  */
 export async function OwnerFollowupPage(input: {
   token: string;
   payload: FollowupTokenPayload;
   response: string | undefined;
   done: boolean;
-  /** `choose=1` : l'écran des quatre choix, sans rien enregistrer (retour arrière d'une confirmation). */
   choose: boolean;
   userAgent: string | null;
 }) {
   if (!isOwnerResponse(input.response)) return renderInvalid();
   const contact = await getReactivationContact(input.payload.leadId);
   if (!contact) return renderInvalid();
+  const sender = resolveSender(senderKeyForNegotiator(contact.negotiator));
 
   if (input.choose) return renderChoices(input.token, contact.firstName);
 
   if (OWNER_CONFIRM_RESPONSES.has(input.response) && !input.done) {
-    return renderConfirm(input.token, input.response as "vendu" | "stop", contact.firstName);
+    return renderConfirm(input.token, input.response as "vendu" | "stop", contact.firstName, sender);
   }
   if (!input.done) {
     await recordOwnerResponse({ payload: input.payload, response: input.response, userAgent: input.userAgent });
   }
-  const screen = withBooking(OWNER_SCREENS[input.response]);
-  return (
-    <FollowupScreenView
-      screen={screen}
-      title={personalize(screen.title, contact.firstName)}
-      body={personalize(screen.body, contact.firstName)}
-    />
-  );
+  const screen = OWNER_SCREENS[input.response];
+  const title = personalize(withSender(screen.title, sender.firstName), contact.firstName);
+  const body = personalize(withSender(screen.body, sender.firstName), contact.firstName);
+
+  if (OWNER_HOT_RESPONSES.has(input.response)) {
+    return renderContactChoice(input.token, screen, title, body, sender);
+  }
+  if (input.response === "garde") {
+    return (
+      <FollowupScreenView screen={screen} title={title} body={body}>
+        {screen.primary ? renderLink(screen.primary, buttonClass) : null}
+        <Link
+          href={`/suivi/${encodeURIComponent(input.token)}?r=cherche`}
+          className={outlineClass}
+          data-track-cta="reactivation_garde_cherche"
+          data-track-location="followup"
+        >
+          Je cherche un autre bien
+        </Link>
+      </FollowupScreenView>
+    );
+  }
+  return <FollowupScreenView screen={screen} title={title} body={body} />;
 }
-
-const bookingUrl = () => process.env.REACTIVATION_BOOKING_URL?.trim() || null;
-
-/** Remplace `{bookingUrl}` par la page de réservation, ou retire le bouton si elle n'est pas configurée. */
-const withBooking = (screen: FollowupScreen): FollowupScreen => {
-  const url = bookingUrl();
-  if (!screen.primary || !screen.primary.href.includes("{bookingUrl}")) return screen;
-  if (url) return { ...screen, primary: { ...screen.primary, href: url } };
-  return {
-    ...screen,
-    primary: screen.secondary ? { ...screen.secondary, track: screen.primary.track } : undefined,
-    secondary: undefined,
-  };
-};
-
-const renderInvalid = () => (
-  <FollowupScreenView screen={FOLLOWUP_INVALID_SCREEN} title={FOLLOWUP_INVALID_SCREEN.title} body={FOLLOWUP_INVALID_SCREEN.body} />
-);
 
 const buttonClass =
   "inline-flex min-h-11 items-center justify-center rounded-full bg-sand px-5 text-sm font-semibold text-navy transition hover:bg-sand/90";
 const outlineClass =
   "inline-flex min-h-11 items-center justify-center rounded-full border border-sand/60 px-5 text-sm font-semibold text-sand transition hover:bg-sand/10";
+const quietClass = "inline-flex min-h-11 items-center text-sm text-sand/80 underline underline-offset-4 hover:text-sand";
 
-const renderConfirm = (token: string, response: "vendu" | "stop", firstName: string | null) => {
+const renderLink = (link: { label: string; href: string; track?: string }, className: string) =>
+  link.href.startsWith("/") ? (
+    <Link href={link.href} className={className} data-track-cta={link.track} data-track-location="followup">
+      {link.label}
+    </Link>
+  ) : (
+    <a href={link.href} className={className} data-track-cta={link.track} data-track-location="followup">
+      {link.label}
+    </a>
+  );
+
+const renderInvalid = () => (
+  <FollowupScreenView screen={FOLLOWUP_INVALID_SCREEN} title={FOLLOWUP_INVALID_SCREEN.title} body={FOLLOWUP_INVALID_SCREEN.body} />
+);
+
+/**
+ * Après « je vends » / « sa valeur » : à égalité, être rappelé(e) (défaut,
+ * enregistré) ou réserver un créneau (si le négociateur a une page) ; en
+ * dessous, « je cherche aussi à acheter » (vente-rachat).
+ */
+const renderContactChoice = (token: string, screen: FollowupScreen, title: string, body: string, sender: ReactivationSender) => (
+  <FollowupScreenView screen={screen} title={title} body={body}>
+    <Link
+      href={`/suivi/${encodeURIComponent(token)}?r=rappel`}
+      className={buttonClass}
+      data-track-cta="reactivation_choice_rappel"
+      data-track-location="followup"
+    >
+      Je préfère être rappelé(e)
+    </Link>
+    {sender.bookingUrl ? (
+      <a href={sender.bookingUrl} className={outlineClass} data-track-cta="reactivation_choice_booking" data-track-location="followup">
+        Je réserve un créneau avec {sender.firstName}
+      </a>
+    ) : (
+      <a href="tel:+33423450485" className={outlineClass} data-track-cta="reactivation_choice_call" data-track-location="followup">
+        Appeler l&apos;agence
+      </a>
+    )}
+    <Link
+      href={`/suivi/${encodeURIComponent(token)}?r=cherche`}
+      className={quietClass}
+      data-track-cta="reactivation_choice_cherche"
+      data-track-location="followup"
+    >
+      Je cherche aussi à acheter
+    </Link>
+  </FollowupScreenView>
+);
+
+const renderConfirm = (token: string, response: "vendu" | "stop", firstName: string | null, sender: ReactivationSender) => {
   const screen = OWNER_CONFIRM_SCREENS[response];
   const action = `/suivi/${encodeURIComponent(token)}/confirm`;
   return (
-    <FollowupScreenView screen={screen} title={personalize(screen.title, firstName)} body={personalize(screen.body, firstName)}>
+    <FollowupScreenView
+      screen={screen}
+      title={personalize(withSender(screen.title, sender.firstName), firstName)}
+      body={personalize(withSender(screen.body, sender.firstName), firstName)}
+    >
       <form method="post" action={action}>
         <input type="hidden" name="r" value={response} />
         <button type="submit" className={buttonClass} data-track-cta={`reactivation_${response}_confirm`} data-track-location="followup">
@@ -111,7 +174,7 @@ const renderChoices = (token: string, firstName: string | null) => {
   const screen: FollowupScreen = {
     eyebrow: "Sillage Immo · Votre bien à Nice",
     title: "Où en êtes-vous aujourd'hui, {firstName} ?",
-    body: "Rien n'a été enregistré. Un seul clic suffit, je n'ai pas besoin d'autre chose.",
+    body: "Rien n'a été enregistré. Un seul clic suffit, nous n'avons pas besoin d'autre chose.",
   };
   return (
     <FollowupScreenView screen={screen} title={personalize(screen.title, firstName)} body={screen.body}>

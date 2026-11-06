@@ -1,6 +1,8 @@
 import "server-only";
 
 import {
+  DEFAULT_EXCLUDED_EMAIL_FRAGMENTS,
+  DEFAULT_EXCLUDED_NAME_PATTERNS,
   DEFAULT_REACTIVATION_CAMPAIGN,
   isReactivationCampaign,
   isReactivationSegment,
@@ -44,12 +46,24 @@ const CLIENT_LABEL = "SIGNE/ACTE";
 
 const hasLabel = (labels: string[], prefix: string) => labels.some((label) => label.toUpperCase().startsWith(prefix));
 
+const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/**
+ * Noms à ne jamais contacter : la liste fixée le 06/11 (DEFAULT_EXCLUDED_NAME_PATTERNS)
+ * plus REACTIVATION_EXCLUDED_NAMES (séparés par des virgules). Comparés au
+ * « prénom nom » et à l'e-mail, sans tenir compte de la casse.
+ */
 export const excludedNamePatterns = (): RegExp[] =>
-  (process.env.REACTIVATION_EXCLUDED_NAMES ?? "")
-    .split(",")
+  [...DEFAULT_EXCLUDED_NAME_PATTERNS, ...(process.env.REACTIVATION_EXCLUDED_NAMES ?? "").split(",")]
     .map((value) => value.trim())
     .filter(Boolean)
-    .map((value) => new RegExp(value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"));
+    .map((value) => new RegExp(escapeRegExp(value).replace(/\s+/g, "\\s+"), "i"));
+
+/** Fragments d'adresse exclus : @orpi.com, adresses anonymisées « dummy », plus REACTIVATION_EXCLUDED_EMAILS. */
+export const excludedEmailFragments = (): string[] =>
+  [...DEFAULT_EXCLUDED_EMAIL_FRAGMENTS, ...(process.env.REACTIVATION_EXCLUDED_EMAILS ?? "").split(",")]
+    .map((value) => value.trim().toLowerCase())
+    .filter(Boolean);
 
 export type SegmentDecision =
   | { segment: ReactivationSegment; exclude: null }
@@ -58,7 +72,7 @@ export type SegmentDecision =
 /** Segment et exclusion d'une fiche. Pure, testable. */
 export const decideSegment = (
   contact: ImportedContactInput,
-  options: { excludedNames?: RegExp[] } = {}
+  options: { excludedNames?: RegExp[]; excludedEmailFragments?: string[] } = {}
 ): SegmentDecision => {
   const labels = contact.labels ?? [];
   const negotiations = (contact.negotiations ?? []).map((value) => value.toLowerCase());
@@ -74,9 +88,14 @@ export const decideSegment = (
         ? "a1_acquereur"
         : "a2_ancien");
 
-  const fullName = `${contact.first_name ?? ""} ${contact.last_name ?? ""}`.trim();
+  const fullName = `${contact.first_name ?? ""} ${contact.last_name ?? ""}`.replace(/\s+/g, " ").trim();
+  const email = (contact.email ?? "").toLowerCase();
+  const fragments = options.excludedEmailFragments ?? [];
+  if (fragments.some((fragment) => email.includes(fragment))) {
+    return { segment, exclude: email.includes("@orpi.com") ? "adresse_orpi" : "adresse_anonymisee" };
+  }
   const excludedNames = options.excludedNames ?? [];
-  if (excludedNames.some((pattern) => pattern.test(fullName) || pattern.test(contact.email ?? ""))) {
+  if (excludedNames.some((pattern) => pattern.test(fullName) || pattern.test(email))) {
     return { segment, exclude: "nom_exclu" };
   }
   if (!contact.email || !normalizeEmailForReactivation(contact.email)) return { segment, exclude: "email_invalide" };
@@ -103,6 +122,7 @@ export const importReactivationContacts = async (input: {
   const campaign = (input.campaign ?? DEFAULT_REACTIVATION_CAMPAIGN).trim().toLowerCase();
   if (!isReactivationCampaign(campaign)) throw new Error("La campagne doit commencer par « reac- ».");
   const patterns = excludedNamePatterns();
+  const fragments = excludedEmailFragments();
   const summary: ImportSummary = {
     received: input.contacts.length,
     upserted: 0,
@@ -121,7 +141,7 @@ export const importReactivationContacts = async (input: {
 
   for (const contact of ordered) {
     if (!contact.sweepbright_contact_id) continue;
-    const decision = decideSegment(contact, { excludedNames: patterns });
+    const decision = decideSegment(contact, { excludedNames: patterns, excludedEmailFragments: fragments });
     const normalizedEmail = contact.email ? normalizeEmailForReactivation(contact.email) : null;
     const emailKey = normalizedEmail ?? `invalid:${contact.sweepbright_contact_id}`;
     if (seenEmails.has(emailKey)) {

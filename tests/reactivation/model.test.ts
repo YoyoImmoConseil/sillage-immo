@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import {
   cleanFirstName,
+  dailyLimitFor,
+  resolveSender,
+  senderKeyForNegotiator,
   decideNextSend,
   isReactivationCampaign,
   isReactivationSendSlot,
@@ -65,5 +68,27 @@ describe("réactivation — règles pures", () => {
   it("valide les e-mails", () => {
     expect(normalizeEmailForReactivation(" Jean.Martin@Example.com ")).toBe("jean.martin@example.com");
     expect(normalizeEmailForReactivation("pas un mail")).toBeNull();
+  });
+});
+
+describe("expéditeur et cadence", () => {
+  it("résout le négociateur SweepBright vers l'expéditeur", () => {
+    expect(senderKeyForNegotiator("jordan saiman")).toBe("jordan");
+    expect(senderKeyForNegotiator("Jordan Saiman")).toBe("jordan");
+    expect(senderKeyForNegotiator("laura zeisser")).toBe("laura");
+    expect(senderKeyForNegotiator("maylis goutaudier")).toBe("yoann");
+    expect(senderKeyForNegotiator(null)).toBe("yoann");
+  });
+  it("Jordan n'affiche jamais son nom complet ; les surcharges d'environnement s'appliquent", () => {
+    expect(resolveSender("jordan", {}).displayName).toBe("Jordan S.");
+    expect(resolveSender("yoann", { REACTIVATION_BOOKING_URL: "https://cal/x" }).bookingUrl).toBe("https://cal/x");
+    expect(resolveSender("jordan", { REACTIVATION_BOOKING_URL: "https://cal/x" }).bookingUrl).toBeNull();
+    expect(resolveSender("laura", { REACTIVATION_SENDER_LAURA_EMAIL: "lz@sillage-immo.com" }).email).toBe("lz@sillage-immo.com");
+  });
+  it("monte à 150 par jour après 500 envois", () => {
+    expect(dailyLimitFor(0)).toBe(50);
+    expect(dailyLimitFor(499)).toBe(50);
+    expect(dailyLimitFor(500)).toBe(150);
+    expect(dailyLimitFor(2000, { base: 40, afterRamp: 120, threshold: 300 })).toBe(120);
   });
 });

@@ -4,11 +4,16 @@ import { renderOwnerReactivationEmail } from "@/lib/email/reactivation-owner";
 import { sendTransactionalEmail } from "@/lib/email/smtp";
 import {
   DEFAULT_DAILY_LIMIT,
+  DEFAULT_DAILY_LIMIT_AFTER_RAMP,
+  DEFAULT_RAMP_THRESHOLD,
   DEFAULT_REACTIVATION_CAMPAIGN,
   cleanFirstName,
+  dailyLimitFor,
   decideNextSend,
   nextSendAtAfter,
   pickSubjectVariant,
+  resolveSender,
+  senderKeyForNegotiator,
   type OwnerSubjectVariant,
 } from "@/lib/reactivation/model";
 import { SITE_URL } from "@/lib/seo/site";
@@ -37,12 +42,37 @@ export type SendSummary = {
 
 const OWNER_SEGMENTS = ["v1_proprietaire", "a2_ancien"] as const;
 
-export const resolveDailyLimit = () => {
-  const raw = Number.parseInt(process.env.REACTIVATION_DAILY_LIMIT ?? "", 10);
-  return Number.isFinite(raw) && raw > 0 ? raw : DEFAULT_DAILY_LIMIT;
+const envInt = (name: string, fallback: number) => {
+  const raw = Number.parseInt(process.env[name] ?? "", 10);
+  return Number.isFinite(raw) && raw > 0 ? raw : fallback;
 };
 
-const bookingUrl = () => process.env.REACTIVATION_BOOKING_URL?.trim() || null;
+/** Plafond de départ (REACTIVATION_DAILY_LIMIT, 50 par défaut). */
+export const resolveDailyLimit = () => envInt("REACTIVATION_DAILY_LIMIT", DEFAULT_DAILY_LIMIT);
+
+/**
+ * Plafond du jour avec montée en cadence (décision du 06/11) : le plafond de
+ * départ jusqu'à REACTIVATION_RAMP_THRESHOLD envois (500), puis
+ * REACTIVATION_DAILY_LIMIT_AFTER_RAMP (150).
+ */
+export const resolveDailyLimitWithRamp = (totalSentSoFar: number) =>
+  dailyLimitFor(totalSentSoFar, {
+    base: resolveDailyLimit(),
+    afterRamp: envInt("REACTIVATION_DAILY_LIMIT_AFTER_RAMP", DEFAULT_DAILY_LIMIT_AFTER_RAMP),
+    threshold: envInt("REACTIVATION_RAMP_THRESHOLD", DEFAULT_RAMP_THRESHOLD),
+  });
+
+/** Total des mails déjà partis sur la campagne (toutes étapes), pour la montée en cadence. */
+export const countSentSoFar = async (campaign: string): Promise<number> => {
+  const { data, error } = await supabaseAdmin
+    .from("reactivation_contacts")
+    .select("sent_count")
+    .eq("campaign", campaign)
+    .gt("sent_count", 0)
+    .limit(20000);
+  if (error) throw new Error(error.message);
+  return (data ?? []).reduce((sum, row) => sum + (row.sent_count ?? 0), 0);
+};
 
 export const runReactivationSendBatch = async (input: {
   campaign?: string;
@@ -52,7 +82,7 @@ export const runReactivationSendBatch = async (input: {
   dryRunTo?: string | null;
 }): Promise<SendSummary> => {
   const campaign = input.campaign ?? DEFAULT_REACTIVATION_CAMPAIGN;
-  const limit = input.limit ?? resolveDailyLimit();
+  const limit = input.limit ?? resolveDailyLimitWithRamp(await countSentSoFar(campaign));
   const now = input.now ?? new Date();
   const summary: SendSummary = {
     campaign,
@@ -121,22 +151,26 @@ export const runReactivationSendBatch = async (input: {
       decision.step === 1 ? pickSubjectVariant(rotation) : ((contact.subject_variant as OwnerSubjectVariant | null) ?? "A");
     if (decision.step === 1) rotation += 1;
 
+    const sender = resolveSender(senderKeyForNegotiator(contact.negotiator));
     const links = buildOwnerLinks({ contactId: contact.id, campaign });
     const rendered = renderOwnerReactivationEmail({
       step: decision.step,
       variant,
       firstName: cleanFirstName(contact.first_name) ?? cleanFirstName(contact.full_name?.split(/\s+/)[0]),
       links,
-      bookingUrl: bookingUrl(),
+      bookingUrl: sender.bookingUrl,
       quartiersUrl: `${SITE_URL}/quartiers`,
+      sender,
     });
 
     try {
       const result = await sendTransactionalEmail({
         to: input.dryRunTo ?? contact.email,
-        subject: input.dryRunTo ? `[TEST ${contact.email}] ${rendered.subject}` : rendered.subject,
+        subject: input.dryRunTo ? `[TEST ${contact.email} · ${sender.displayName}] ${rendered.subject}` : rendered.subject,
         html: rendered.html,
         text: rendered.text,
+        sender: { name: `${sender.displayName} – Sillage Immo`, email: sender.email },
+        replyTo: sender.email,
       });
       if (!result.sent) {
         summary.failed += 1;
