@@ -15,6 +15,7 @@ import {
   senderKeyForNegotiator,
   type OwnerResponse,
 } from "@/lib/reactivation/model";
+import { pushReactivationWebhook } from "@/lib/reactivation/webhook";
 import { SITE_URL } from "@/lib/seo/site";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { getFollowupSecret } from "@/services/buyers/buyer-followup.service";
@@ -355,42 +356,10 @@ const writeSweepBrightNote = async (contact: ReactivationContactRow, response: O
   }
 };
 
-const pushWebhook = async (input: {
+const pushWebhook = (input: {
   contact: ReactivationContactRow;
   response: OwnerResponse;
   newStatus: string;
   sellerLeadId: string | null;
   at: string;
-}) => {
-  const url = (process.env.REACTIVATION_WEBHOOK_URL ?? process.env.BUYER_FOLLOWUP_WEBHOOK_URL)?.trim();
-  if (!url) return;
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 5000);
-  try {
-    const response = await fetch(url, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        event: ACTIVITY_EVENT_TYPE,
-        campaign: input.contact.campaign,
-        segment: input.contact.segment,
-        response: input.response,
-        response_label: OWNER_RESPONSE_LABELS[input.response],
-        contact_id: input.contact.id,
-        sweepbright_contact_id: input.contact.sweepbright_contact_id,
-        email: input.contact.email,
-        full_name: input.contact.full_name,
-        phone: input.contact.phone,
-        status: input.newStatus,
-        seller_lead_id: input.sellerLeadId,
-        answered_at: input.at,
-      }),
-      signal: controller.signal,
-    });
-    if (!response.ok) console.error(`[reactivation] webhook → ${response.status}`);
-  } catch (error) {
-    console.error("[reactivation] webhook failed:", error instanceof Error ? error.message : error);
-  } finally {
-    clearTimeout(timer);
-  }
-};
+}) => pushReactivationWebhook({ event: ACTIVITY_EVENT_TYPE, ...input });
