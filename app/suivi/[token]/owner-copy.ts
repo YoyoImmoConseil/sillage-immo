@@ -74,8 +74,67 @@ export const OWNER_SCREENS: Record<OwnerResponse, FollowupScreen> = {
   },
 };
 
-/** Confirmation avant d'enregistrer une réponse qui clôt le dossier (protège des robots qui suivent les liens). */
-export const OWNER_CONFIRM_SCREENS: Record<"vendu" | "stop", FollowupScreen & { confirm: string; decline: string; alternate?: { label: string; response: OwnerResponse } }> = {
+/**
+ * Écrans de confirmation : depuis le 09/11/2026, **toute** réponse est confirmée
+ * par un bouton (formulaire POST) avant d'être enregistrée — les scanners
+ * anti-hameçonnage des messageries ouvrent les liens des mails, un simple GET
+ * ne vaut donc pas une réponse. Textes courts, vouvoiement ; `{firstName}` et
+ * `{sender}` sont remplacés. `decline` ramène aux quatre choix.
+ */
+export type OwnerConfirmScreen = FollowupScreen & { confirm: string; decline: string; alternate?: { label: string; response: OwnerResponse } };
+
+const DECLINE = "Non, je me suis trompé(e)";
+
+export const OWNER_CONFIRM_SCREENS: Record<OwnerResponse, OwnerConfirmScreen> = {
+  vendre: {
+    eyebrow: EYEBROW,
+    title: "Vous envisagez de vendre, {firstName} ?",
+    body: "Confirmez d'un clic : {sender} vous recontacte dans la journée. Rien ne part avant.",
+    confirm: "Oui, parlons-en",
+    decline: DECLINE,
+  },
+  valeur: {
+    eyebrow: EYEBROW,
+    title: "Vous souhaitez connaître la valeur de votre bien aujourd'hui ?",
+    body: "Confirmez d'un clic : {sender} prépare votre avis de valeur et vous recontacte dans la journée.",
+    confirm: "Oui, je veux une estimation",
+    decline: DECLINE,
+  },
+  garde: {
+    eyebrow: EYEBROW,
+    title: "Vous gardez votre bien, sans projet pour l'instant ?",
+    body: "Confirmez d'un clic : plus de relance, votre dossier reste au calme.",
+    confirm: "Oui, je le garde",
+    decline: DECLINE,
+  },
+  cherche: {
+    eyebrow: EYEBROW,
+    title: "Vous cherchez un bien à acheter ?",
+    body: "Confirmez d'un clic : {sender} vous rappelle pour comprendre ce que vous cherchez.",
+    confirm: "Oui, je cherche",
+    decline: DECLINE,
+  },
+  vendu_cherche: {
+    eyebrow: EYEBROW,
+    title: "Vous cherchez un bien à acheter ?",
+    body: "Confirmez d'un clic : votre dossier est mis à jour et {sender} vous rappelle pour comprendre ce que vous cherchez.",
+    confirm: "Oui, je cherche",
+    decline: DECLINE,
+  },
+  rappel: {
+    eyebrow: EYEBROW,
+    title: "{sender} vous rappelle dans la journée ?",
+    body: "Confirmez d'un clic : {sender} vous appelle au numéro que nous avons pour vous.",
+    confirm: "Oui, qu'on m'appelle",
+    decline: DECLINE,
+  },
+  visio: {
+    eyebrow: EYEBROW,
+    title: "Réserver une visio avec {sender} ?",
+    body: "Confirmez d'un clic : vous choisissez ensuite un créneau de 15 minutes sur le planning de {sender}.",
+    confirm: "Oui, je choisis un créneau",
+    decline: DECLINE,
+  },
   vendu: {
     eyebrow: EYEBROW,
     title: "Vous avez vendu, {firstName} ?",

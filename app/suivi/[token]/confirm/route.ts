@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-
 import { isClosingResponse, isFollowupResponse } from "@/lib/buyers/followup-token";
-import { OWNER_CONFIRM_RESPONSES, isOwnerResponse, isReactivationCampaign } from "@/lib/reactivation/model";
+import { isOwnerResponse, isReactivationCampaign } from "@/lib/reactivation/model";
 import { recordFollowupResponse, verifyFollowupToken } from "@/services/buyers/buyer-followup.service";
 import { recordOwnerResponse } from "@/services/reactivation/reactivation-followup.service";
 
@@ -9,7 +8,16 @@ export const dynamic = "force-dynamic";
 
 type RouteContext = { params: Promise<{ token: string }> };
 
-/** Confirmation d'une réponse qui clôt le projet (formulaire de /suivi/<jeton>). */
+/**
+ * Enregistrement d'une réponse au clic sur un bouton de /suivi/<jeton>
+ * (formulaire POST, champ `r`). Un GET n'enregistre jamais rien : les scanners
+ * anti-hameçonnage des messageries ouvrent les liens des mails.
+ *
+ * - Réactivation propriétaires (campagnes `reac-*`) : toutes les réponses
+ *   passent par ici ; `apercu=1` (mails de test) affiche la suite sans rien
+ *   écrire. Retour sur /suivi/<jeton>?r=<réponse>&done=1.
+ * - Relance acquéreurs : les réponses qui clôturent le projet (conclu / abandon).
+ */
 export async function POST(request: Request, context: RouteContext) {
   const { token } = await context.params;
   const form = await request.formData().catch(() => null);
@@ -18,11 +26,8 @@ export async function POST(request: Request, context: RouteContext) {
   const back = new URL(`/suivi/${encodeURIComponent(token)}`, request.url);
   if (!payload) return NextResponse.redirect(back, 303);
 
-  // Réactivation propriétaires : vendu / vendu_cherche / stop passent par ici.
   if (isReactivationCampaign(payload.campaign)) {
-    const confirmable = isOwnerResponse(response) && (OWNER_CONFIRM_RESPONSES.has(response) || response === "vendu_cherche");
-    if (!confirmable) return NextResponse.redirect(back, 303);
-    // Aperçu (mails de test) : rien n'est enregistré, on affiche l'écran suivant.
+    if (!isOwnerResponse(response)) return NextResponse.redirect(back, 303);
     const preview = form?.get("apercu") === "1";
     if (!preview) {
       try {

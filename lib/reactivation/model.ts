@@ -26,8 +26,13 @@ export type OwnerResponse = (typeof OWNER_RESPONSES)[number];
 export const isOwnerResponse = (value: unknown): value is OwnerResponse =>
   typeof value === "string" && (OWNER_RESPONSES as readonly string[]).includes(value);
 
-/** Réponses qui demandent une confirmation à l'écran avant d'être enregistrées (robots d'analyse de liens). */
-export const OWNER_CONFIRM_RESPONSES: ReadonlySet<OwnerResponse> = new Set(["vendu", "stop"]);
+/**
+ * Réponses qui demandent une confirmation à l'écran (bouton, formulaire POST)
+ * avant d'être enregistrées : toutes, depuis le 09/11/2026 — les scanners
+ * anti-hameçonnage des messageries ouvrent les liens des mails, un GET ne vaut
+ * pas une réponse (un faux « garde » arrêtait la séquence en silence).
+ */
+export const OWNER_CONFIRM_RESPONSES: ReadonlySet<OwnerResponse> = new Set(OWNER_RESPONSES);
 
 /** Réponses « chaudes » : notification immédiate et promotion en lead vendeur. */
 export const OWNER_HOT_RESPONSES: ReadonlySet<OwnerResponse> = new Set(["vendre", "valeur"]);

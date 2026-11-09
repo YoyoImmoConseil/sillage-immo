@@ -38,8 +38,9 @@ const first = (value: string | string[] | undefined) => (Array.isArray(value) ? 
  * - conclu / abandon : écran de confirmation d'abord (un robot d'analyse de
  *   liens ne doit pas clore un projet), enregistrement au clic via
  *   /suivi/<jeton>/confirm, puis retour ici avec `done=1`.
- * - campagne `reac-*` : branche propriétaires (owner-page.tsx), mêmes
- *   principes avec les réponses vendre / valeur / vendu / garde / stop.
+ * - campagne `reac-*` : branche propriétaires (owner-page.tsx) — là, aucune
+ *   réponse n'est enregistrée au GET : toutes passent par un bouton (POST
+ *   /suivi/<jeton>/confirm), puis `done=1`.
  */
 export default async function FollowupPage({ params, searchParams }: PageProps) {
   const { token } = await params;
@@ -52,7 +53,6 @@ export default async function FollowupPage({ params, searchParams }: PageProps) 
 
   // Campagnes `reac-*` : contact de réactivation SweepBright (propriétaires), pas un lead acquéreur.
   if (isReactivationCampaign(payload.campaign)) {
-    const requestHeaders = await headers();
     return OwnerFollowupPage({
       token,
       payload,
@@ -60,7 +60,6 @@ export default async function FollowupPage({ params, searchParams }: PageProps) 
       done,
       choose: first(query.choose) === "1",
       preview: first(query.apercu) === "1",
-      userAgent: requestHeaders.get("user-agent"),
     });
   }
 

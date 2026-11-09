@@ -119,12 +119,34 @@ export type RecordOwnerResponseResult = {
   newStatus: string;
   sellerLeadId: string | null;
   notified: boolean;
+  /** Même réponse déjà enregistrée : historisée et journalisée, sans mail, note SweepBright ni webhook. */
+  duplicate: boolean;
 };
 
 /**
- * Enregistre la réponse d'un propriétaire. Un second clic réécrit la réponse
- * (le dernier mot du contact l'emporte) et ajoute une ligne d'historique ;
- * la promotion en lead vendeur n'est faite qu'une fois.
+ * Même réponse déjà en place ? Un double envoi de formulaire, un rechargement
+ * ou un robot qui rejoue le POST ne doivent pas renvoyer de mail au négociateur,
+ * réécrire la note SweepBright ni rappeler le webhook (09/11/2026 : quatre
+ * « Vendeur chaud » pour un seul clic). Une réponse secondaire (rappel, visio,
+ * cherche) est « déjà en place » si sa trace est dans les metadata.
+ */
+const isSameResponseAlreadyRecorded = (contact: ReactivationContactRow, response: OwnerResponse): boolean => {
+  if (contact.status !== "responded" && contact.status !== "unsubscribed") return false;
+  if (contact.response === response) return true;
+  const metadata = (contact.metadata ?? {}) as Record<string, unknown>;
+  if (response === "rappel") return metadata.prefers_callback === true;
+  if (response === "visio") return metadata.prefers_video === true;
+  if (response === "cherche" || response === "vendu_cherche") return metadata.wants_to_buy === true;
+  return false;
+};
+
+/**
+ * Enregistre la réponse d'un propriétaire (appelée uniquement par le POST de
+ * /suivi/<jeton>/confirm, jamais au chargement d'une page). Une réponse
+ * différente réécrit la réponse principale (le dernier mot du contact
+ * l'emporte) et ajoute une ligne d'historique ; la promotion en lead vendeur
+ * n'est faite qu'une fois ; la même réponse une seconde fois est seulement
+ * historisée (voir isSameResponseAlreadyRecorded).
  */
 export const recordOwnerResponse = async (input: {
   payload: FollowupTokenPayload;
@@ -140,12 +162,59 @@ export const recordOwnerResponse = async (input: {
   if (!row) return null;
   const contact = row as ReactivationContactRow;
   const nowIso = new Date().toISOString();
+  const history = Array.isArray(contact.response_history) ? contact.response_history : [];
+  const historyEntry = {
+    response: input.response,
+    at: nowIso,
+    sequence_step: contact.sequence_step,
+    subject_variant: contact.subject_variant,
+    user_agent: input.userAgent ?? null,
+  };
+
+  if (isSameResponseAlreadyRecorded(contact, input.response)) {
+    const { error: historyError } = await supabaseAdmin
+      .from("reactivation_contacts")
+      .update({ response_history: [...history, { ...historyEntry, duplicate: true }] })
+      .eq("id", contact.id);
+    if (historyError) throw new Error(historyError.message);
+    const { error: duplicateEventError } = await supabaseAdmin.from("activity_events").insert({
+      event_type: ACTIVITY_EVENT_TYPE,
+      source: ACTIVITY_SOURCE,
+      entity_type: "reactivation_contact",
+      entity_id: contact.id,
+      external_id: contact.sweepbright_contact_id,
+      payload: {
+        response: input.response,
+        duplicate: true,
+        campaign: input.payload.campaign,
+        segment: contact.segment,
+        sequence_step: contact.sequence_step,
+        subject_variant: contact.subject_variant,
+        token_issued_at: new Date(input.payload.issuedAt * 1000).toISOString(),
+        previous_status: contact.status,
+        new_status: contact.status,
+        seller_lead_id: contact.seller_lead_id,
+        user_agent: input.userAgent ?? null,
+      },
+    });
+    if (duplicateEventError) {
+      console.error("[reactivation] activity_events insert failed:", duplicateEventError.message);
+    }
+    return {
+      contact: toSummary(contact),
+      previousStatus: contact.status,
+      newStatus: contact.status,
+      sellerLeadId: contact.seller_lead_id,
+      notified: false,
+      duplicate: true,
+    };
+  }
+
   const secondary = OWNER_SECONDARY_RESPONSES.has(input.response);
   // Une réponse secondaire (rappel / cherche) complète la réponse principale sans la remplacer ;
   // sans réponse principale (lien suivi directement), elle devient la réponse.
   const mainResponse = secondary && contact.response ? contact.response : input.response;
   const newStatus = secondary && contact.status === "responded" ? "responded" : resolveOwnerResponseStatus(input.response);
-  const history = Array.isArray(contact.response_history) ? contact.response_history : [];
   const metadata = { ...(contact.metadata ?? {}) } as Record<string, unknown>;
   if (input.response === "rappel") metadata.prefers_callback = true;
   if (input.response === "visio") metadata.prefers_video = true;
@@ -165,16 +234,7 @@ export const recordOwnerResponse = async (input: {
       next_send_at: null,
       seller_lead_id: sellerLeadId,
       metadata,
-      response_history: [
-        ...history,
-        {
-          response: input.response,
-          at: nowIso,
-          sequence_step: contact.sequence_step,
-          subject_variant: contact.subject_variant,
-          user_agent: input.userAgent ?? null,
-        },
-      ],
+      response_history: [...history, historyEntry],
     })
     .eq("id", contact.id);
   if (updateError) throw new Error(updateError.message);
@@ -221,6 +281,7 @@ export const recordOwnerResponse = async (input: {
     newStatus,
     sellerLeadId,
     notified,
+    duplicate: false,
   };
 };
 
