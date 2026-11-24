@@ -3,6 +3,7 @@ import Link from "next/link";
 import { AdminShell } from "@/app/components/admin-shell";
 import { hasAdminPermission, requireAdminPagePermission } from "@/lib/admin/auth";
 import { SILLAGE_CONTACT_EMAIL } from "@/lib/brand/company";
+import { buildResponsesView } from "@/lib/reactivation/admin-filters";
 import { DEFAULT_REACTIVATION_CAMPAIGN, OWNER_RESPONSE_LABELS, OWNER_SUBJECTS, isOwnerResponse } from "@/lib/reactivation/model";
 import { loadProtectionIndex } from "@/services/reactivation/protected-contacts.service";
 import {
@@ -38,9 +39,24 @@ const formatDate = (iso: string | null) =>
 
 const rate = (part: number, whole: number) => (whole > 0 ? `${Math.round((part / whole) * 1000) / 10} %` : "—");
 
-export default async function ReactivationAdminPage() {
+type ReactivationAdminPageProps = {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+/** Puce de filtre : pleine quand elle est active, en contour sinon. */
+const chipClass = (active: boolean, count: number) =>
+  `rounded-full px-3 py-1 text-sm ${active ? "sillage-btn" : "sillage-btn-secondary"}${!active && count === 0 ? " opacity-50" : ""}`;
+
+export default async function ReactivationAdminPage({ searchParams }: ReactivationAdminPageProps) {
   const context = await requireAdminPagePermission("leads.sellers.view");
+  const params = (await searchParams) ?? {};
   const stats = await getReactivationStats(DEFAULT_REACTIVATION_CAMPAIGN);
+  // Filtres du tableau « Dernières réponses » : ?reponse=, ?negociateur=, ?segment= (valeurs inconnues ignorées).
+  const responses = buildResponsesView(stats.allResponses, {
+    response: params.reponse,
+    negotiator: params.negociateur,
+    segment: params.segment,
+  });
   const sentSoFar = await countSentSoFar(DEFAULT_REACTIVATION_CAMPAIGN);
   const dailyLimit = resolveDailyLimitWithRamp(sentSoFar);
   const canManage = hasAdminPermission(context, "leads.sellers.manage");
@@ -148,10 +164,54 @@ export default async function ReactivationAdminPage() {
           </article>
         </section>
 
-        <section className={`${border} p-2`}>
-          <div className="px-3 py-2">
+        <section id="reponses" className={`${border} p-2`}>
+          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-3 py-2">
             <h2 className="sillage-section-title">Dernières réponses</h2>
+            <p className="text-sm opacity-70">
+              {responses.summary}
+              {responses.filters.segment ? ` · segment ${SEGMENT_LABELS[responses.filters.segment] ?? responses.filters.segment}` : ""}
+              {responses.active ? (
+                <>
+                  {" · "}
+                  <Link href={responses.resetHref} scroll={false} className="underline">
+                    Réinitialiser les filtres
+                  </Link>
+                </>
+              ) : null}
+            </p>
           </div>
+          {responses.total > 0 ? (
+            <div className="space-y-2 px-3 pb-3 pt-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="w-24 shrink-0 text-xs font-medium uppercase tracking-wide opacity-60">Réponse</span>
+                {responses.responseChips.map((chip) => (
+                  <Link
+                    key={chip.key}
+                    href={chip.href}
+                    scroll={false}
+                    aria-current={chip.active ? "true" : undefined}
+                    className={chipClass(chip.active, chip.count)}
+                  >
+                    {chip.label} ({chip.count})
+                  </Link>
+                ))}
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="w-24 shrink-0 text-xs font-medium uppercase tracking-wide opacity-60">Négociateur</span>
+                {responses.negotiatorChips.map((chip) => (
+                  <Link
+                    key={chip.key}
+                    href={chip.href}
+                    scroll={false}
+                    aria-current={chip.active ? "true" : undefined}
+                    className={chipClass(chip.active, chip.count)}
+                  >
+                    {chip.label} ({chip.count})
+                  </Link>
+                ))}
+              </div>
+            </div>
+          ) : null}
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -165,14 +225,14 @@ export default async function ReactivationAdminPage() {
                 </tr>
               </thead>
               <tbody>
-                {stats.recentResponses.length === 0 ? (
+                {responses.rows.length === 0 ? (
                   <tr>
                     <td className="px-3 py-4 opacity-70" colSpan={6}>
-                      Aucune réponse pour l&apos;instant.
+                      {responses.active ? "Aucune réponse ne correspond à ces filtres." : "Aucune réponse pour l'instant."}
                     </td>
                   </tr>
                 ) : (
-                  stats.recentResponses.map((row) => (
+                  responses.rows.map((row) => (
                     <tr key={row.id} className="border-t border-[rgba(20,20,70,0.1)]">
                       <td className="px-3 py-2 whitespace-nowrap">{formatDate(row.respondedAt)}</td>
                       <td className="px-3 py-2">
@@ -182,7 +242,10 @@ export default async function ReactivationAdminPage() {
                           {row.phone ? ` · ${row.phone}` : ""}
                         </p>
                       </td>
-                      <td className="px-3 py-2">{isOwnerResponse(row.response) ? OWNER_RESPONSE_LABELS[row.response] : (row.response ?? "—")}</td>
+                      <td className="px-3 py-2">
+                        {isOwnerResponse(row.response) ? OWNER_RESPONSE_LABELS[row.response] : (row.response ?? "—")}
+                        {row.status === "unsubscribed" ? <p className="text-xs opacity-60">désinscrit</p> : null}
+                      </td>
                       <td className="px-3 py-2">{SEGMENT_LABELS[row.segment] ?? row.segment}</td>
                       <td className="px-3 py-2">{row.negotiator ?? "—"}</td>
                       <td className="px-3 py-2">

@@ -18,6 +18,7 @@ import {
   senderKeyForNegotiator,
   type OwnerSubjectVariant,
 } from "@/lib/reactivation/model";
+import type { ReactivationResponseRow } from "@/lib/reactivation/admin-filters";
 import { SITE_URL } from "@/lib/seo/site";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { isContactProtected } from "@/lib/reactivation/protection";
@@ -306,17 +307,8 @@ export type ReactivationStats = {
   byVariantSent: Record<string, number>;
   byVariantResponded: Record<string, number>;
   byResponse: Record<string, number>;
-  recentResponses: Array<{
-    id: string;
-    fullName: string;
-    email: string;
-    phone: string | null;
-    segment: string;
-    response: string | null;
-    respondedAt: string | null;
-    sellerLeadId: string | null;
-    negotiator: string | null;
-  }>;
+  /** Toutes les réponses reçues, de la plus récente à la plus ancienne (filtrées et tronquées par la page). */
+  allResponses: ReactivationResponseRow[];
 };
 
 /** Chiffres de la page admin « Réactivation ». */
@@ -349,16 +341,16 @@ export const getReactivationStats = async (campaign = DEFAULT_REACTIVATION_CAMPA
     }
     return out;
   };
-  const recentResponses = rows
+  const allResponses: ReactivationResponseRow[] = rows
     .filter((row) => row.responded_at)
     .sort((a, b) => (b.responded_at ?? "").localeCompare(a.responded_at ?? ""))
-    .slice(0, 50)
     .map((row) => ({
       id: row.id,
       fullName: row.full_name?.trim() || row.email,
       email: row.email,
       phone: row.phone,
       segment: row.segment,
+      status: row.status,
       response: row.response,
       respondedAt: row.responded_at,
       sellerLeadId: row.seller_lead_id,
@@ -375,6 +367,6 @@ export const getReactivationStats = async (campaign = DEFAULT_REACTIVATION_CAMPA
     byVariantSent: count((row) => (row.sequence_step >= 1 ? row.subject_variant : null)),
     byVariantResponded: count((row) => (row.responded_at ? row.subject_variant : null)),
     byResponse: count((row) => row.response),
-    recentResponses,
+    allResponses,
   };
 };
