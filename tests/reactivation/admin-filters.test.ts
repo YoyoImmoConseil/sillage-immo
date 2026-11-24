@@ -6,12 +6,13 @@ import {
   buildResponsesView,
   countByNegotiator,
   countByResponse,
+  countBySegment,
   filterResponses,
   negotiatorKey,
   resolveResponseFilters,
   type ReactivationResponseRow,
+  type ResponsesView,
 } from "@/lib/reactivation/admin-filters";
-import { OWNER_RESPONSE_LABELS } from "@/lib/reactivation/model";
 
 /** Fabrique une réponse ; `rank` croissant = réponse plus ancienne (les jeux sont donc triés du plus récent au plus ancien). */
 const make = (rank: number, overrides: Partial<ReactivationResponseRow> = {}): ReactivationResponseRow => ({
@@ -40,6 +41,12 @@ const sample = (): ReactivationResponseRow[] => [
 ];
 
 const ids = (rows: ReactivationResponseRow[]) => rows.map((row) => row.id);
+
+const facet = (view: ResponsesView, id: string) => {
+  const found = view.facets.find((item) => item.id === id);
+  if (!found) throw new Error(`critère absent : ${id}`);
+  return found;
+};
 
 describe("filterResponses", () => {
   it("filtre par réponse", () => {
@@ -169,6 +176,17 @@ describe("compteurs des puces", () => {
     const { groups } = countByNegotiator(rows, resolveResponseFilters(rows, {}));
     expect(groups).toEqual([{ key: "yoann uzzan", label: "Yoann UZZAN", count: 4 }]);
   });
+
+  it("compte les segments après le filtre réponse et négociateur, pas après le filtre segment", () => {
+    const rows = sample();
+    const none = countBySegment(rows, resolveResponseFilters(rows, {}));
+    expect(none.total).toBe(8);
+    expect(none.counts).toEqual({ v1_proprietaire: 7, a2_ancien: 1 });
+
+    const vendu = countBySegment(rows, resolveResponseFilters(rows, { response: "vendu", segment: "a2_ancien" }));
+    expect(vendu.total).toBe(2);
+    expect(vendu.counts).toEqual({ v1_proprietaire: 1, a2_ancien: 1 });
+  });
 });
 
 describe("buildFilterHref", () => {
@@ -182,6 +200,25 @@ describe("buildFilterHref", () => {
     );
     expect(buildFilterHref({ response: "stop", negotiator: "jordan", segment: null }, { response: null })).toBe(
       "/admin/reactivation?negociateur=jordan"
+    );
+  });
+
+  it("n'écrit le tri que s'il n'est pas celui par défaut", () => {
+    expect(buildFilterHref(none, { sort: "recent" })).toBe("/admin/reactivation");
+    expect(buildFilterHref(none, { sort: "ancien" })).toBe("/admin/reactivation?tri=ancien");
+    expect(buildFilterHref({ ...none, sort: "ancien" }, { response: "garde" })).toBe("/admin/reactivation?reponse=garde&tri=ancien");
+  });
+
+  it("n'écrit le panneau déplié que s'il diffère de l'état par défaut", () => {
+    // Sans filtre, « Réponse » est déplié par défaut.
+    expect(buildFilterHref(none, { open: "reponse" })).toBe("/admin/reactivation");
+    expect(buildFilterHref(none, { open: "negociateur" })).toBe("/admin/reactivation?ouvert=negociateur");
+    expect(buildFilterHref(none, { open: "aucun" })).toBe("/admin/reactivation?ouvert=aucun");
+    // Avec un filtre, tout est replié par défaut.
+    expect(buildFilterHref({ ...none, response: "vendu" }, { open: "aucun" })).toBe("/admin/reactivation?reponse=vendu");
+    expect(buildFilterHref({ ...none, response: "vendu" }, { open: "reponse" })).toBe("/admin/reactivation?reponse=vendu&ouvert=reponse");
+    expect(buildFilterHref({ ...none, response: "vendu", sort: "ancien" }, { open: "tri" })).toBe(
+      "/admin/reactivation?reponse=vendu&tri=ancien&ouvert=tri"
     );
   });
 });
@@ -199,13 +236,14 @@ describe("buildResponsesView", () => {
     expect(view.summary).toBe("50 dernières sur 120");
   });
 
-  it("avec un filtre : toutes les lignes correspondantes, avec « N réponses »", () => {
+  it("avec un filtre : toutes les lignes correspondantes, avec « N réponses sur le total »", () => {
     const rows = Array.from({ length: 120 }, (_, rank) => make(rank, { negotiator: rank % 3 === 0 ? "Yoann Uzzan" : "Jordan Saiman" }));
     const view = buildResponsesView(rows, { negotiator: "jordan" });
     expect(view.active).toBe(true);
     expect(view.limited).toBe(false);
     expect(view.rows).toHaveLength(80);
-    expect(view.summary).toBe("80 réponses");
+    expect(view.matching).toBe(80);
+    expect(view.summary).toBe("80 réponses sur 120");
     expect(view.resetHref).toBe("/admin/reactivation");
   });
 
@@ -219,40 +257,187 @@ describe("buildResponsesView", () => {
 
   it("accorde la mention au nombre de réponses", () => {
     expect(buildResponsesView(sample(), {}).summary).toBe("8 réponses");
-    expect(buildResponsesView(sample(), { response: "vendre" }).summary).toBe("1 réponse");
-    expect(buildResponsesView(sample(), { response: "vendre", negotiator: "yoann" }).summary).toBe("0 réponse");
+    expect(buildResponsesView(sample(), { response: "vendre" }).summary).toBe("1 réponse sur 8");
+    expect(buildResponsesView(sample(), { response: "vendre", negotiator: "yoann" }).summary).toBe("0 réponse sur 8");
     expect(buildResponsesView([], {}).summary).toBe("0 réponse");
   });
+});
 
-  it("construit les puces « Réponse » dans l'ordre demandé, avec des compteurs croisés", () => {
-    const rows = sample();
-    const view = buildResponsesView(rows, { negotiator: "jordan" });
-    expect(view.responseChips.map((chip) => [chip.key, chip.count, chip.active])).toEqual([
-      ["toutes", 4, true],
-      ["vendre", 1, false],
-      ["valeur", 1, false],
-      ["garde", 1, false],
-      ["vendu", 0, false],
-      ["stop", 1, false],
+describe("critères de la barre", () => {
+  it("« Réponse » : libellés courts, ordre demandé, compteurs croisés", () => {
+    const view = buildResponsesView(sample(), { negotiator: "jordan" });
+    const reponse = facet(view, "reponse");
+    expect(reponse.label).toBe("Réponse");
+    expect(reponse.value).toBeNull();
+    expect(reponse.clearHref).toBeNull();
+    expect(reponse.options.map((option) => [option.key, option.label, option.count, option.selected])).toEqual([
+      ["toutes", "Toutes", 4, true],
+      ["vendre", "Vend", 1, false],
+      ["valeur", "Valeur", 1, false],
+      ["garde", "Garde", 1, false],
+      ["vendu", "Vendu", 0, false],
+      ["stop", "Stop", 1, false],
     ]);
-    expect(view.responseChips[1]).toMatchObject({
-      label: OWNER_RESPONSE_LABELS.vendre,
-      href: "/admin/reactivation?reponse=vendre&negociateur=jordan",
-    });
-    expect(view.responseChips[0].href).toBe("/admin/reactivation?negociateur=jordan");
+    // Choisir une valeur referme le panneau : rien à écrire, tout est replié dès qu'un filtre est actif.
+    expect(reponse.options[1].href).toBe("/admin/reactivation?reponse=vendre&negociateur=jordan");
+    // « Toutes » retire le filtre et laisse le panneau déplié.
+    expect(reponse.options[0].href).toBe("/admin/reactivation?negociateur=jordan&ouvert=reponse");
   });
 
-  it("construit les puces « Négociateur » et marque celle qui est active", () => {
-    const rows = sample();
-    const view = buildResponsesView(rows, { response: "stop", negotiator: "jordan" });
-    expect(view.negotiatorChips.map((chip) => [chip.key, chip.label, chip.count, chip.active])).toEqual([
+  it("« Négociateur » : la valeur choisie est affichée et peut être retirée", () => {
+    const view = buildResponsesView(sample(), { response: "stop", negotiator: "jordan" });
+    const negociateur = facet(view, "negociateur");
+    expect(negociateur.value).toBe("Jordan Saiman");
+    expect(negociateur.clearHref).toBe("/admin/reactivation?reponse=stop");
+    expect(negociateur.options.map((option) => [option.key, option.label, option.count, option.selected])).toEqual([
       ["tous", "Tous", 2, false],
       ["jordan saiman", "Jordan Saiman", 1, true],
       ["yoann uzzan", "Yoann Uzzan", 1, false],
       ["aucun", "Sans négociateur", 0, false],
     ]);
-    expect(view.negotiatorChips[2].href).toBe("/admin/reactivation?reponse=stop&negociateur=yoann+uzzan");
-    expect(view.negotiatorChips[0].href).toBe("/admin/reactivation?reponse=stop");
-    expect(view.rows.map((row) => row.id)).toEqual(["contact-0005"]);
+    expect(negociateur.options[2].href).toBe("/admin/reactivation?reponse=stop&negociateur=yoann+uzzan");
+    expect(negociateur.options[0].href).toBe("/admin/reactivation?reponse=stop&ouvert=negociateur");
+    expect(facet(view, "reponse").value).toBe("Stop");
+    expect(facet(view, "reponse").clearHref).toBe("/admin/reactivation?negociateur=jordan");
+    expect(ids(view.rows)).toEqual(["contact-0005"]);
+  });
+
+  it("« Négociateur » : un texte libre qui retient plusieurs personnes est affiché tel quel", () => {
+    const rows = [make(0, { negotiator: "Laura" }), make(1, { negotiator: "Laura Zeisser" }), make(2, { negotiator: "laura" })];
+    const negociateur = facet(buildResponsesView(rows, { negotiator: "lau" }), "negociateur");
+    expect(negociateur.value).toBe("« lau »");
+    expect(negociateur.options.map((option) => [option.label, option.count, option.selected])).toEqual([
+      ["Tous", 3, false],
+      ["Laura", 2, true],
+      ["Laura Zeisser", 1, true],
+    ]);
+  });
+
+  it("« Segment » : compteurs croisés et libellés courts", () => {
+    const view = buildResponsesView(sample(), { response: "vendu" });
+    const segment = facet(view, "segment");
+    expect(segment.value).toBeNull();
+    expect(segment.options.map((option) => [option.key, option.label, option.count, option.selected])).toEqual([
+      ["tous", "Tous", 2, true],
+      ["v1_proprietaire", "Propriétaires", 1, false],
+      ["a2_ancien", "Anciens prospects", 1, false],
+    ]);
+    expect(segment.options[2].href).toBe("/admin/reactivation?reponse=vendu&segment=a2_ancien");
+  });
+
+  it("une valeur choisie mais absente des réponses reste visible, à zéro", () => {
+    const view = buildResponsesView(sample(), { response: "rappel" });
+    expect(view.active).toBe(true);
+    expect(view.rows).toEqual([]);
+    expect(view.summary).toBe("0 réponse sur 8");
+    const reponse = facet(view, "reponse");
+    expect(reponse.value).toBe("Rappel");
+    expect(reponse.options.map((option) => option.key)).toEqual(["toutes", "vendre", "valeur", "rappel", "garde", "vendu", "stop"]);
+    expect(reponse.options[3]).toMatchObject({ count: 0, selected: true });
+  });
+
+  it("n'affiche « Négociateur » et « Segment » que s'ils offrent un choix ou filtrent déjà", () => {
+    expect(buildResponsesView(sample(), {}).facets.map((item) => item.id)).toEqual(["reponse", "negociateur", "segment"]);
+
+    // Un seul négociateur, un seul segment : il ne reste que « Réponse ».
+    const rows = [make(0), make(1, { response: "stop" })];
+    expect(buildResponsesView(rows, {}).facets.map((item) => item.id)).toEqual(["reponse"]);
+
+    // Un filtre posé par l'adresse garde son critère affiché, pour qu'on puisse le retirer.
+    const filtered = buildResponsesView(rows, { segment: "v1_proprietaire" });
+    expect(filtered.facets.map((item) => item.id)).toEqual(["reponse", "segment"]);
+    expect(facet(filtered, "segment").value).toBe("Propriétaires");
+    expect(facet(filtered, "segment").clearHref).toBe("/admin/reactivation");
+  });
+});
+
+describe("panneau déplié", () => {
+  const opened = (view: ResponsesView) => view.facets.filter((item) => item.open).map((item) => item.id);
+
+  it("à l'arrivée, « Réponse » est déplié", () => {
+    const view = buildResponsesView(sample(), {});
+    expect(view.openPanel).toBe("reponse");
+    expect(opened(view)).toEqual(["reponse"]);
+    expect(view.sort.open).toBe(false);
+    // Le bouton déplié replie ; les autres déplient leur propre panneau.
+    expect(facet(view, "reponse").toggleHref).toBe("/admin/reactivation?ouvert=aucun");
+    expect(facet(view, "negociateur").toggleHref).toBe("/admin/reactivation?ouvert=negociateur");
+    expect(view.sort.toggleHref).toBe("/admin/reactivation?ouvert=tri");
+    // Choisir une valeur applique le filtre et replie.
+    expect(facet(view, "reponse").options.find((option) => option.key === "vendu")?.href).toBe("/admin/reactivation?reponse=vendu");
+  });
+
+  it("dès qu'un filtre est actif, tout est replié", () => {
+    const view = buildResponsesView(sample(), { response: "vendu" });
+    expect(view.openPanel).toBeNull();
+    expect(opened(view)).toEqual([]);
+    expect(facet(view, "reponse").toggleHref).toBe("/admin/reactivation?reponse=vendu&ouvert=reponse");
+    expect(facet(view, "reponse").clearHref).toBe("/admin/reactivation");
+  });
+
+  it("suit le paramètre « ouvert »", () => {
+    const negociateur = buildResponsesView(sample(), { open: "negociateur" });
+    expect(opened(negociateur)).toEqual(["negociateur"]);
+    expect(facet(negociateur, "negociateur").toggleHref).toBe("/admin/reactivation?ouvert=aucun");
+    expect(facet(negociateur, "reponse").toggleHref).toBe("/admin/reactivation");
+
+    const closed = buildResponsesView(sample(), { open: "aucun" });
+    expect(closed.openPanel).toBeNull();
+    expect(facet(closed, "reponse").toggleHref).toBe("/admin/reactivation");
+
+    const reopened = buildResponsesView(sample(), { response: "vendu", open: "reponse" });
+    expect(opened(reopened)).toEqual(["reponse"]);
+    expect(facet(reopened, "reponse").toggleHref).toBe("/admin/reactivation?reponse=vendu");
+
+    const tri = buildResponsesView(sample(), { open: "tri" });
+    expect(tri.openPanel).toBe("tri");
+    expect(tri.sort.open).toBe(true);
+    expect(opened(tri)).toEqual([]);
+    expect(tri.sort.toggleHref).toBe("/admin/reactivation?ouvert=aucun");
+  });
+
+  it("ignore un panneau inconnu ou un critère qui n'est pas affiché", () => {
+    expect(buildResponsesView(sample(), { open: "nimporte" }).openPanel).toBe("reponse");
+    expect(buildResponsesView(sample(), { response: "vendu", open: "nimporte" }).openPanel).toBeNull();
+    // Un seul segment : le critère « Segment » n'existe pas, on revient à l'état par défaut.
+    expect(buildResponsesView([make(0), make(1)], { open: "segment" }).openPanel).toBe("reponse");
+  });
+});
+
+describe("tri", () => {
+  it("par défaut, les plus récentes d'abord", () => {
+    const view = buildResponsesView(sample(), {});
+    expect(view.sort.value).toBe("recent");
+    expect(view.sort.label).toBe("Plus récentes");
+    expect(ids(view.rows)).toEqual(ids(sample()));
+    expect(view.sort.options).toEqual([
+      { key: "recent", label: "Plus récentes d'abord", selected: true, href: "/admin/reactivation" },
+      { key: "ancien", label: "Plus anciennes d'abord", selected: false, href: "/admin/reactivation?tri=ancien" },
+    ]);
+    expect(buildResponsesView(sample(), { sort: "nimporte" }).sort.value).toBe("recent");
+  });
+
+  it("« ancien » inverse l'ordre et reste dans tous les liens", () => {
+    const view = buildResponsesView(sample(), { sort: "ancien", response: "stop" });
+    expect(view.sort.value).toBe("ancien");
+    expect(view.sort.label).toBe("Plus anciennes");
+    expect(ids(view.rows)).toEqual(["contact-0005", "contact-0001"]);
+    expect(view.resetHref).toBe("/admin/reactivation?tri=ancien");
+    expect(facet(view, "reponse").clearHref).toBe("/admin/reactivation?tri=ancien");
+    expect(facet(view, "reponse").options.find((option) => option.key === "garde")?.href).toBe(
+      "/admin/reactivation?reponse=garde&tri=ancien"
+    );
+    expect(view.sort.options.map((option) => option.href)).toEqual([
+      "/admin/reactivation?reponse=stop",
+      "/admin/reactivation?reponse=stop&tri=ancien",
+    ]);
+  });
+
+  it("sans filtre, « ancien » montre les 50 plus anciennes", () => {
+    const rows = Array.from({ length: 120 }, (_, rank) => make(rank));
+    const view = buildResponsesView(rows, { sort: "ancien" });
+    expect(view.limited).toBe(true);
+    expect(ids(view.rows)).toEqual(ids(rows.slice(70).reverse()));
+    expect(view.summary).toBe("50 plus anciennes sur 120");
   });
 });

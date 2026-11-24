@@ -14,6 +14,7 @@ import {
   resolveDefaultOrder,
 } from "@/services/reactivation/reactivation-send.service";
 import { ReactivationTools } from "./reactivation-tools";
+import { ResponsesFilters } from "./responses-filters";
 
 export const dynamic = "force-dynamic";
 
@@ -43,19 +44,18 @@ type ReactivationAdminPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-/** Puce de filtre : pleine quand elle est active, en contour sinon. */
-const chipClass = (active: boolean, count: number) =>
-  `rounded-full px-3 py-1 text-sm ${active ? "sillage-btn" : "sillage-btn-secondary"}${!active && count === 0 ? " opacity-50" : ""}`;
-
 export default async function ReactivationAdminPage({ searchParams }: ReactivationAdminPageProps) {
   const context = await requireAdminPagePermission("leads.sellers.view");
   const params = (await searchParams) ?? {};
   const stats = await getReactivationStats(DEFAULT_REACTIVATION_CAMPAIGN);
-  // Filtres du tableau « Dernières réponses » : ?reponse=, ?negociateur=, ?segment= (valeurs inconnues ignorées).
+  // Barre de filtres du tableau « Dernières réponses » : ?reponse=, ?negociateur=, ?segment=, ?tri=, ?ouvert=
+  // (valeurs inconnues ignorées).
   const responses = buildResponsesView(stats.allResponses, {
     response: params.reponse,
     negotiator: params.negociateur,
     segment: params.segment,
+    sort: params.tri,
+    open: params.ouvert,
   });
   const sentSoFar = await countSentSoFar(DEFAULT_REACTIVATION_CAMPAIGN);
   const dailyLimit = resolveDailyLimitWithRamp(sentSoFar);
@@ -165,53 +165,7 @@ export default async function ReactivationAdminPage({ searchParams }: Reactivati
         </section>
 
         <section id="reponses" className={`${border} p-2`}>
-          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-3 py-2">
-            <h2 className="sillage-section-title">Dernières réponses</h2>
-            <p className="text-sm opacity-70">
-              {responses.summary}
-              {responses.filters.segment ? ` · segment ${SEGMENT_LABELS[responses.filters.segment] ?? responses.filters.segment}` : ""}
-              {responses.active ? (
-                <>
-                  {" · "}
-                  <Link href={responses.resetHref} scroll={false} className="underline">
-                    Réinitialiser les filtres
-                  </Link>
-                </>
-              ) : null}
-            </p>
-          </div>
-          {responses.total > 0 ? (
-            <div className="space-y-2 px-3 pb-3 pt-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="w-24 shrink-0 text-xs font-medium uppercase tracking-wide opacity-60">Réponse</span>
-                {responses.responseChips.map((chip) => (
-                  <Link
-                    key={chip.key}
-                    href={chip.href}
-                    scroll={false}
-                    aria-current={chip.active ? "true" : undefined}
-                    className={chipClass(chip.active, chip.count)}
-                  >
-                    {chip.label} ({chip.count})
-                  </Link>
-                ))}
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="w-24 shrink-0 text-xs font-medium uppercase tracking-wide opacity-60">Négociateur</span>
-                {responses.negotiatorChips.map((chip) => (
-                  <Link
-                    key={chip.key}
-                    href={chip.href}
-                    scroll={false}
-                    aria-current={chip.active ? "true" : undefined}
-                    className={chipClass(chip.active, chip.count)}
-                  >
-                    {chip.label} ({chip.count})
-                  </Link>
-                ))}
-              </div>
-            </div>
-          ) : null}
+          <ResponsesFilters view={responses} />
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>

@@ -173,6 +173,41 @@ label {
   color: var(--sillage-blue);
 }
 
+/* Barre de filtres de l'admin : boutons de critère et puces de valeur.
+   Variantes douces de .sillage-btn-secondary (contour léger au repos, contour
+   plein au survol ou quand le panneau est déplié). .sillage-filter-part sert
+   aux deux moitiés d'un bouton plein « critère : valeur » suivi de sa croix. */
+.sillage-btn-secondary.sillage-filter {
+  border-color: rgba(20, 20, 70, 0.22);
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.sillage-btn-secondary.sillage-filter-value {
+  border-color: var(--sillage-border);
+  background: #fff;
+}
+
+.sillage-btn-secondary.sillage-filter-open {
+  border-color: var(--sillage-blue);
+  background: rgba(20, 20, 70, 0.08);
+}
+
+.sillage-btn.sillage-filter-part:focus-visible {
+  transform: none;
+}
+
+@media (hover: hover) {
+  .sillage-btn-secondary.sillage-filter:hover,
+  .sillage-btn-secondary.sillage-filter-value:hover {
+    border-color: var(--sillage-blue);
+  }
+
+  .sillage-btn.sillage-filter-part:hover {
+    transform: none;
+    box-shadow: none;
+  }
+}
+
 .sillage-section-light {
   background: #f4ece4;
 }
